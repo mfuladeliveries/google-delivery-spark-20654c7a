@@ -1,10 +1,13 @@
 import { useState, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import Header from "@/components/Header";
 import HeroBanner from "@/components/HeroBanner";
 import CategoryNav from "@/components/CategoryNav";
 import MenuCard from "@/components/MenuCard";
 import Cart from "@/components/Cart";
+import CheckoutDialog from "@/components/CheckoutDialog";
 import { useCart } from "@/hooks/useCart";
+import { useAuth } from "@/hooks/useAuth";
 import { menuItems } from "@/data/menu";
 import { Search } from "lucide-react";
 
@@ -12,7 +15,10 @@ const Index = () => {
   const [category, setCategory] = useState("All");
   const [search, setSearch] = useState("");
   const [cartOpen, setCartOpen] = useState(false);
+  const [checkoutOpen, setCheckoutOpen] = useState(false);
   const cart = useCart();
+  const { user } = useAuth();
+  const navigate = useNavigate();
 
   const filtered = useMemo(() => {
     let items = menuItems.filter((i) => i.available && i.price > 0);
@@ -30,6 +36,15 @@ const Index = () => {
     }
     return items;
   }, [category, search]);
+
+  const handleCheckout = () => {
+    if (!user) {
+      navigate("/auth");
+      return;
+    }
+    setCartOpen(false);
+    setCheckoutOpen(true);
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -82,7 +97,18 @@ const Index = () => {
         }}
         onRemove={cart.removeItem}
         onClear={cart.clearCart}
-        onCheckout={cart.sendWhatsApp}
+        onCheckout={handleCheckout}
+      />
+
+      {/* Checkout */}
+      <CheckoutDialog
+        open={checkoutOpen}
+        onClose={() => setCheckoutOpen(false)}
+        items={cart.items}
+        subtotal={cart.subtotal}
+        tax={cart.tax}
+        delivery={cart.delivery}
+        onOrderPlaced={cart.clearCart}
       />
     </div>
   );
