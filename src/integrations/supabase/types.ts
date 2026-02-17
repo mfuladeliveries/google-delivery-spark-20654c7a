@@ -14,7 +14,93 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      orders: {
+        Row: {
+          created_at: string
+          customer_address: string
+          customer_contact: string
+          customer_name: string
+          delivery_fee: number
+          id: string
+          items: Json
+          order_number: number
+          restaurant: string
+          special_notes: string | null
+          status: string
+          subtotal: number
+          tax: number
+          tip: number
+          total: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          customer_address?: string
+          customer_contact?: string
+          customer_name?: string
+          delivery_fee?: number
+          id?: string
+          items?: Json
+          order_number?: number
+          restaurant?: string
+          special_notes?: string | null
+          status?: string
+          subtotal?: number
+          tax?: number
+          tip?: number
+          total?: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          customer_address?: string
+          customer_contact?: string
+          customer_name?: string
+          delivery_fee?: number
+          id?: string
+          items?: Json
+          order_number?: number
+          restaurant?: string
+          special_notes?: string | null
+          status?: string
+          subtotal?: number
+          tax?: number
+          tip?: number
+          total?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          address: string
+          contact_number: string
+          created_at: string
+          full_name: string
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          address?: string
+          contact_number?: string
+          created_at?: string
+          full_name?: string
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          address?: string
+          contact_number?: string
+          created_at?: string
+          full_name?: string
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
