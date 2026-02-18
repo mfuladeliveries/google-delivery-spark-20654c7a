@@ -84,7 +84,7 @@ const Auth = () => {
           </div>
 
           {error && <p className="text-sm text-destructive">{error}</p>}
-          {message && <p className="text-sm text-green-400">{message}</p>}
+          {message && <p className="text-sm text-primary">{message}</p>}
 
           <button
             type="submit"

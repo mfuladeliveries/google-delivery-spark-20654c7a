@@ -14,17 +14,64 @@ export type Database = {
   }
   public: {
     Tables: {
+      menu_items: {
+        Row: {
+          category: string
+          created_at: string
+          description: string
+          id: string
+          image: string
+          is_available: boolean
+          name: string
+          price: number
+          restaurant_id: string
+        }
+        Insert: {
+          category?: string
+          created_at?: string
+          description?: string
+          id?: string
+          image?: string
+          is_available?: boolean
+          name?: string
+          price?: number
+          restaurant_id: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          description?: string
+          id?: string
+          image?: string
+          is_available?: boolean
+          name?: string
+          price?: number
+          restaurant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "menu_items_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "restaurants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       orders: {
         Row: {
           created_at: string
           customer_address: string
           customer_contact: string
+          customer_id: string | null
           customer_name: string
           delivery_fee: number
+          driver_id: string | null
           id: string
           items: Json
           order_number: number
           restaurant: string
+          restaurant_id: string | null
           special_notes: string | null
           status: string
           subtotal: number
@@ -37,12 +84,15 @@ export type Database = {
           created_at?: string
           customer_address?: string
           customer_contact?: string
+          customer_id?: string | null
           customer_name?: string
           delivery_fee?: number
+          driver_id?: string | null
           id?: string
           items?: Json
           order_number?: number
           restaurant?: string
+          restaurant_id?: string | null
           special_notes?: string | null
           status?: string
           subtotal?: number
@@ -55,12 +105,15 @@ export type Database = {
           created_at?: string
           customer_address?: string
           customer_contact?: string
+          customer_id?: string | null
           customer_name?: string
           delivery_fee?: number
+          driver_id?: string | null
           id?: string
           items?: Json
           order_number?: number
           restaurant?: string
+          restaurant_id?: string | null
           special_notes?: string | null
           status?: string
           subtotal?: number
@@ -69,7 +122,15 @@ export type Database = {
           total?: number
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "orders_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "restaurants"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
@@ -101,15 +162,84 @@ export type Database = {
         }
         Relationships: []
       }
+      restaurants: {
+        Row: {
+          created_at: string
+          cuisine: string
+          delivery_time: string
+          description: string
+          id: string
+          is_active: boolean
+          location: string
+          logo: string
+          min_order: number
+          name: string
+          owner_user_id: string | null
+          rating: number
+        }
+        Insert: {
+          created_at?: string
+          cuisine?: string
+          delivery_time?: string
+          description?: string
+          id?: string
+          is_active?: boolean
+          location?: string
+          logo?: string
+          min_order?: number
+          name?: string
+          owner_user_id?: string | null
+          rating?: number
+        }
+        Update: {
+          created_at?: string
+          cuisine?: string
+          delivery_time?: string
+          description?: string
+          id?: string
+          is_active?: boolean
+          location?: string
+          logo?: string
+          min_order?: number
+          name?: string
+          owner_user_id?: string | null
+          rating?: number
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "customer" | "restaurant" | "driver"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -236,6 +366,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "customer", "restaurant", "driver"],
+    },
   },
 } as const
