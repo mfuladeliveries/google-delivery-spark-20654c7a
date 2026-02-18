@@ -8,6 +8,10 @@ import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Orders from "./pages/Orders";
 import NotFound from "./pages/NotFound";
+import RestaurantMenu from "./pages/RestaurantMenu";
+import RestaurantDashboard from "./pages/RestaurantDashboard";
+import DriverDashboard from "./pages/DriverDashboard";
+import AdminDashboard from "./pages/AdminDashboard";
 
 const queryClient = new QueryClient();
 
@@ -22,6 +26,13 @@ const App = () => (
             <Route path="/" element={<Index />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/orders" element={<Orders />} />
+            <Route path="/restaurant/:id" element={<RestaurantMenu />} />
+            <Route path="/restaurant/dashboard" element={<RestaurantDashboard />} />
+            <Route path="/restaurant/orders" element={<RestaurantDashboard />} />
+            <Route path="/restaurant/menu" element={<RestaurantDashboard />} />
+            <Route path="/driver" element={<DriverDashboard />} />
+            <Route path="/driver/active" element={<DriverDashboard />} />
+            <Route path="/admin" element={<AdminDashboard />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
