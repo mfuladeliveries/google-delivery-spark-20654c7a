@@ -39,6 +39,7 @@ const Profile = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [locating, setLocating] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !user) navigate("/auth");
@@ -144,12 +145,42 @@ const Profile = () => {
             <label className="mb-1 flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
               <MapPin className="h-3 w-3" /> Default Delivery Address
             </label>
-            <input
-              value={profile.address}
-              onChange={e => setProfile(p => ({ ...p, address: e.target.value }))}
-              placeholder="Street address, area"
-              className="w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-            />
+            <div className="flex gap-2">
+              <input
+                value={profile.address}
+                onChange={e => setProfile(p => ({ ...p, address: e.target.value }))}
+                placeholder="Street address, area"
+                className="flex-1 rounded-xl border border-border bg-background px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+              />
+              <button
+                type="button"
+                onClick={async () => {
+                  if (!navigator.geolocation) return;
+                  setLocating(true);
+                  navigator.geolocation.getCurrentPosition(
+                    async (pos) => {
+                      try {
+                        const res = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${pos.coords.latitude}&lon=${pos.coords.longitude}&format=json`);
+                        const data = await res.json();
+                        if (data.display_name) setProfile(p => ({ ...p, address: data.display_name }));
+                      } catch { /* ignore */ }
+                      setLocating(false);
+                    },
+                    () => setLocating(false),
+                    { enableHighAccuracy: true, timeout: 10000 }
+                  );
+                }}
+                disabled={locating}
+                className="flex items-center justify-center rounded-xl border border-border bg-card px-3 text-primary hover:bg-secondary transition-colors disabled:opacity-50"
+                title="Use my location"
+              >
+                {locating ? (
+                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+                ) : (
+                  <MapPin className="h-4 w-4" />
+                )}
+              </button>
+            </div>
           </div>
           <button
             onClick={handleSave}
