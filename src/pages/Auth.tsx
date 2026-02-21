@@ -83,6 +83,25 @@ const Auth = () => {
             />
           </div>
 
+          {isLogin && (
+            <button
+              type="button"
+              onClick={async () => {
+                if (!email) { setError("Enter your email first"); return; }
+                setLoading(true); setError(""); setMessage("");
+                const { error } = await supabase.auth.resetPasswordForEmail(email, {
+                  redirectTo: `${window.location.origin}/reset-password`,
+                });
+                if (error) setError(error.message);
+                else setMessage("Check your email for a password reset link!");
+                setLoading(false);
+              }}
+              className="text-sm text-primary hover:underline"
+            >
+              Forgot password?
+            </button>
+          )}
+
           {error && <p className="text-sm text-destructive">{error}</p>}
           {message && <p className="text-sm text-primary">{message}</p>}
 
