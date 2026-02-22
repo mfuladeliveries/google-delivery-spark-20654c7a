@@ -95,6 +95,21 @@ const Auth = () => {
             </button>
             <button
               type="button"
+              disabled={loading}
+              onClick={async () => {
+                setError("");
+                setLoading(true);
+                const { error } = await supabase.auth.resend({ type: "signup", email });
+                if (error) setError(error.message);
+                else setMessage("A new code has been sent to your email.");
+                setLoading(false);
+              }}
+              className="w-full text-sm font-semibold text-primary hover:underline disabled:opacity-50"
+            >
+              {loading ? "Sending..." : "Resend Code"}
+            </button>
+            <button
+              type="button"
               onClick={() => { setShowOtp(false); setOtp(""); setError(""); setMessage(""); }}
               className="w-full text-sm text-muted-foreground hover:underline"
             >

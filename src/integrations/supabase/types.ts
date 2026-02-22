@@ -65,8 +65,12 @@ export type Database = {
           customer_contact: string
           customer_id: string | null
           customer_name: string
+          delivery_code: string | null
           delivery_fee: number
           driver_id: string | null
+          driver_lat: number | null
+          driver_lng: number | null
+          driver_location_updated_at: string | null
           id: string
           items: Json
           order_number: number
@@ -86,8 +90,12 @@ export type Database = {
           customer_contact?: string
           customer_id?: string | null
           customer_name?: string
+          delivery_code?: string | null
           delivery_fee?: number
           driver_id?: string | null
+          driver_lat?: number | null
+          driver_lng?: number | null
+          driver_location_updated_at?: string | null
           id?: string
           items?: Json
           order_number?: number
@@ -107,8 +115,12 @@ export type Database = {
           customer_contact?: string
           customer_id?: string | null
           customer_name?: string
+          delivery_code?: string | null
           delivery_fee?: number
           driver_id?: string | null
+          driver_lat?: number | null
+          driver_lng?: number | null
+          driver_location_updated_at?: string | null
           id?: string
           items?: Json
           order_number?: number

@@ -1,9 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { Truck, MapPin, Clock, CheckCircle, ArrowLeft, Package, Navigation } from "lucide-react";
+import { Truck, MapPin, Clock, ArrowLeft, Package, Navigation } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
+import DeliveryVerification from "@/components/DeliveryVerification";
 
 interface Order {
   id: string;
@@ -26,6 +27,7 @@ const DriverDashboard = () => {
   const [myOrders, setMyOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [accepting, setAccepting] = useState<string | null>(null);
+  const locationWatchRef = useRef<number | null>(null);
 
   useEffect(() => {
     if (!authLoading && (!user || (role !== 'driver' && role !== 'admin'))) {
@@ -44,6 +46,39 @@ const DriverDashboard = () => {
 
     return () => { supabase.removeChannel(channel); };
   }, [user]);
+
+  // Live GPS location broadcasting
+  useEffect(() => {
+    if (!user || myOrders.length === 0) {
+      if (locationWatchRef.current !== null) {
+        navigator.geolocation.clearWatch(locationWatchRef.current);
+        locationWatchRef.current = null;
+      }
+      return;
+    }
+
+    locationWatchRef.current = navigator.geolocation.watchPosition(
+      async (pos) => {
+        const activeIds = myOrders.map(o => o.id);
+        for (const id of activeIds) {
+          await supabase.from("orders").update({
+            driver_lat: pos.coords.latitude,
+            driver_lng: pos.coords.longitude,
+            driver_location_updated_at: new Date().toISOString(),
+          }).eq("id", id);
+        }
+      },
+      () => {},
+      { enableHighAccuracy: true, maximumAge: 5000, timeout: 15000 }
+    );
+
+    return () => {
+      if (locationWatchRef.current !== null) {
+        navigator.geolocation.clearWatch(locationWatchRef.current);
+        locationWatchRef.current = null;
+      }
+    };
+  }, [user, myOrders.length]);
 
   const fetchOrders = async () => {
     const [{ data: pending }, { data: mine }] = await Promise.all([
@@ -64,11 +99,6 @@ const DriverDashboard = () => {
     await fetchOrders();
     setTab("active");
     setAccepting(null);
-  };
-
-  const completeDelivery = async (orderId: string) => {
-    await supabase.from("orders").update({ status: "delivered" }).eq("id", orderId);
-    await fetchOrders();
   };
 
   if (authLoading || loading) return (
@@ -166,7 +196,7 @@ const DriverDashboard = () => {
           <>
             <div className="mb-4 rounded-2xl border border-border bg-primary/5 p-3">
               <p className="text-sm text-foreground font-medium">🚗 Current Trips</p>
-              <p className="text-xs text-muted-foreground mt-0.5">Your active deliveries. Mark complete when delivered.</p>
+              <p className="text-xs text-muted-foreground mt-0.5">Your active deliveries. Enter customer's code to complete.</p>
             </div>
 
             {myOrders.length === 0 ? (
@@ -193,13 +223,10 @@ const DriverDashboard = () => {
                       </div>
                       <p className="text-xs text-muted-foreground">📞 {order.customer_name} · {order.customer_contact}</p>
                     </div>
-                    <button
-                      onClick={() => completeDelivery(order.id)}
-                      className="flex w-full items-center justify-center gap-2 rounded-xl py-3 text-sm font-bold" style={{ backgroundColor: '#22c55e', color: 'white' }}
-                    >
-                      <CheckCircle className="h-4 w-4" />
-                      Complete Delivery
-                    </button>
+                    <DeliveryVerification
+                      orderId={order.id}
+                      onVerified={fetchOrders}
+                    />
                   </div>
                 ))}
               </div>

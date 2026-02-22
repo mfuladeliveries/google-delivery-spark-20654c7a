@@ -2,9 +2,10 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate, Link } from "react-router-dom";
-import { ArrowLeft, Clock, Package, CheckCircle, Truck, ChefHat, AlertCircle } from "lucide-react";
+import { ArrowLeft, Clock, Package, CheckCircle, Truck, ChefHat, AlertCircle, ShieldCheck } from "lucide-react";
 import { storeInfo } from "@/data/menu";
 import BottomNav from "@/components/BottomNav";
+import OrderTrackingMap from "@/components/OrderTrackingMap";
 
 interface OrderItem {
   name: string;
@@ -26,6 +27,8 @@ interface Order {
   special_notes: string;
   status: string;
   created_at: string;
+  delivery_code: string;
+  customer_address: string;
 }
 
 const statusConfig: Record<string, { label: string; icon: any; color: string; bg: string }> = {
@@ -62,6 +65,8 @@ const Orders = () => {
           data.map((o) => ({
             ...o,
             items: (o.items as unknown as OrderItem[]) || [],
+            delivery_code: (o as any).delivery_code || "",
+            customer_address: o.customer_address || "",
           }))
         );
       }
@@ -69,7 +74,6 @@ const Orders = () => {
     };
     fetchOrders();
 
-    // Realtime updates
     const channel = supabase
       .channel('customer-orders')
       .on('postgres_changes', {
@@ -80,7 +84,7 @@ const Orders = () => {
       }, (payload) => {
         setOrders(prev => prev.map(o =>
           o.id === payload.new.id
-            ? { ...o, status: payload.new.status }
+            ? { ...o, status: (payload.new as any).status }
             : o
         ));
       })
@@ -123,6 +127,7 @@ const Orders = () => {
               const sc = statusConfig[order.status] || statusConfig.pending;
               const StatusIcon = sc.icon;
               const currentStep = statusOrder.indexOf(order.status);
+              const isActive = order.status === "out_for_delivery";
 
               return (
                 <div key={order.id} className="rounded-2xl border border-border bg-card shadow-card overflow-hidden">
@@ -138,7 +143,7 @@ const Orders = () => {
                   {/* Progress bar */}
                   {order.status !== "cancelled" && (
                     <div className="flex px-4 pt-3 gap-1">
-                      {statusOrder.slice(0, -0).map((s, i) => (
+                      {statusOrder.map((s, i) => (
                         <div
                           key={s}
                           className={`h-1 flex-1 rounded-full transition-colors ${
@@ -154,6 +159,28 @@ const Orders = () => {
                       <span className="font-bold text-foreground text-base">Order #{order.order_number}</span>
                       <span className="text-sm text-muted-foreground">🍽️ {order.restaurant}</span>
                     </div>
+
+                    {/* Delivery verification code */}
+                    {order.delivery_code && order.status !== "delivered" && order.status !== "cancelled" && (
+                      <div className="mb-3 flex items-center gap-2 rounded-xl border border-primary/20 bg-primary/5 px-3 py-2">
+                        <ShieldCheck className="h-4 w-4 text-primary" />
+                        <div>
+                          <p className="text-xs text-muted-foreground">Delivery Code</p>
+                          <p className="text-lg font-bold tracking-[0.3em] text-primary">{order.delivery_code}</p>
+                        </div>
+                        <p className="ml-auto text-[10px] text-muted-foreground max-w-[120px] text-right">
+                          Share this code with your driver to confirm delivery
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Live GPS Map for active deliveries */}
+                    {isActive && (
+                      <div className="mb-3">
+                        <p className="text-xs font-medium text-muted-foreground mb-1.5">📍 Live Tracking</p>
+                        <OrderTrackingMap orderId={order.id} customerAddress={order.customer_address} />
+                      </div>
+                    )}
 
                     <div className="space-y-1 text-sm">
                       {order.items.map((item, i) => (
