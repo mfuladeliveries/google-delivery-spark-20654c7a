@@ -76,6 +76,9 @@ const CheckoutDialog = ({
       })
       .eq("user_id", user.id);
 
+    // Generate 4-digit delivery verification code
+    const deliveryCode = String(Math.floor(1000 + Math.random() * 9000));
+
     // Save order
     const orderItems = items.map((ci) => ({
       id: ci.item.id,
@@ -100,6 +103,7 @@ const CheckoutDialog = ({
         customer_name: name.trim(),
         customer_contact: contact.trim(),
         customer_address: address.trim(),
+        delivery_code: deliveryCode,
       })
       .select("order_number")
       .single();
