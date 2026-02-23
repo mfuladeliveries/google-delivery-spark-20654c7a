@@ -158,6 +158,39 @@ const Install = () => {
             ))}
           </div>
         </div>
+
+        <div className="mt-8 space-y-3">
+          <h3 className="font-bold text-sm text-foreground text-center">Install for your role</h3>
+          <div className="space-y-3">
+            <Link
+              to="/driver"
+              className="flex items-center gap-3 rounded-2xl border border-border bg-card p-4 transition-colors hover:bg-secondary"
+            >
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10">
+                <span className="text-xl">🚗</span>
+              </div>
+              <div>
+                <p className="font-bold text-sm text-foreground">Driver App</p>
+                <p className="text-xs text-muted-foreground">Accept & deliver orders from customers</p>
+              </div>
+            </Link>
+            <Link
+              to="/restaurant/dashboard"
+              className="flex items-center gap-3 rounded-2xl border border-border bg-card p-4 transition-colors hover:bg-secondary"
+            >
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10">
+                <span className="text-xl">🍽️</span>
+              </div>
+              <div>
+                <p className="font-bold text-sm text-foreground">Restaurant App</p>
+                <p className="text-xs text-muted-foreground">Manage orders & menu from your kitchen</p>
+              </div>
+            </Link>
+          </div>
+          <p className="text-center text-[10px] text-muted-foreground">
+            Install the app first, then tap your role above to go to your dashboard.
+          </p>
+        </div>
       </main>
     </div>
   );
