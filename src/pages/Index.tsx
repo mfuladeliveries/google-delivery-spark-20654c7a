@@ -32,19 +32,19 @@ const cuisineIcons: Record<string, any> = {
   'Burgers': Utensils,
   'Seafood': Fish,
   'Groceries': ShoppingBasket,
-  'Liquor': Beer,
+  'Liquor': Beer
 };
 
 const cuisineCategories = [
-  { label: "All", icon: Utensils },
-  { label: "Fast Food", icon: Flame },
-  { label: "Chicken", icon: Utensils },
-  { label: "Burgers", icon: Utensils },
-  { label: "Pizza", icon: Pizza },
-  { label: "Traditional", icon: Utensils },
-  { label: "Seafood", icon: Fish },
-  { label: "Groceries", icon: ShoppingBasket },
-];
+{ label: "All", icon: Utensils },
+{ label: "Fast Food", icon: Flame },
+{ label: "Chicken", icon: Utensils },
+{ label: "Burgers", icon: Utensils },
+{ label: "Pizza", icon: Pizza },
+{ label: "Traditional", icon: Utensils },
+{ label: "Seafood", icon: Fish },
+{ label: "Groceries", icon: ShoppingBasket }];
+
 
 const restaurantImages: Record<string, string> = {
   'Kitchen': 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=600&h=300&fit=crop',
@@ -58,7 +58,7 @@ const restaurantImages: Record<string, string> = {
   'Fellos Fishery': 'https://images.unsplash.com/photo-1559847844-5315695dadae?w=600&h=300&fit=crop',
   'Shop': 'https://images.unsplash.com/photo-1578916171728-46686eac8d58?w=600&h=300&fit=crop',
   'Liquor': 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=600&h=300&fit=crop',
-  'Steers': 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=600&h=300&fit=crop',
+  'Steers': 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=600&h=300&fit=crop'
 };
 
 const Index = () => {
@@ -74,11 +74,11 @@ const Index = () => {
 
   useEffect(() => {
     const fetchRestaurants = async () => {
-      const { data } = await supabase
-        .from("restaurants")
-        .select("*")
-        .eq("is_active", true)
-        .order("rating", { ascending: false });
+      const { data } = await supabase.
+      from("restaurants").
+      select("*").
+      eq("is_active", true).
+      order("rating", { ascending: false });
       if (data) setRestaurants(data as Restaurant[]);
       setLoading(false);
     };
@@ -91,10 +91,10 @@ const Index = () => {
     return matchesCuisine && matchesSearch;
   });
 
-  const featured = restaurants.filter(r => r.rating >= 4.5).slice(0, 4);
+  const featured = restaurants.filter((r) => r.rating >= 4.5).slice(0, 4);
 
   const handleCheckout = () => {
-    if (!user) { navigate("/auth"); return; }
+    if (!user) {navigate("/auth");return;}
     setCartOpen(false);
     setCheckoutOpen(true);
   };
@@ -107,20 +107,20 @@ const Index = () => {
         {/* Hero */}
         <div className="mb-6 rounded-2xl overflow-hidden relative" style={{ background: 'linear-gradient(135deg, hsl(21 100% 50%), hsl(35 100% 55%))' }}>
           <div className="px-6 py-8">
-            <p className="text-primary-foreground/80 text-sm font-medium mb-1">Good day! 👋</p>
-            <h2 className="text-2xl font-bold text-primary-foreground mb-1">What would you like</h2>
+            <p className="text-primary-foreground/80 text-sm font-medium mb-1">
+            </p>
+            <h2 className="font-bold text-primary-foreground mb-1 font-[serif] text-center text-5xl">
+            </h2>
             <h2 className="text-2xl font-bold text-primary-foreground mb-5">to eat today?</h2>
             
             {/* Search */}
             <div className="relative">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <input
-                type="text"
-                value={search}
+              <input type="text" value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search restaurants or cuisines..."
-                className="w-full rounded-xl border-0 bg-card py-3 pl-10 pr-4 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary shadow-card"
-              />
+                className="w-full rounded-xl border-0 bg-card py-3 pl-10 pr-4 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary shadow-card" />
+
             </div>
           </div>
           <div className="absolute right-4 bottom-0 text-6xl opacity-20">🍽️</div>
@@ -130,26 +130,26 @@ const Index = () => {
         <section className="mb-6">
           <h3 className="mb-3 text-base font-bold text-foreground">Cuisines</h3>
           <div className="flex gap-3 overflow-x-auto scrollbar-hide pb-1">
-            {cuisineCategories.map(({ label, icon: Icon }) => (
-              <button
-                key={label}
-                onClick={() => setSelectedCuisine(label)}
-                className={`flex flex-shrink-0 flex-col items-center gap-1.5 rounded-2xl px-4 py-3 text-xs font-semibold transition-all ${
-                  selectedCuisine === label
-                    ? "bg-primary text-primary-foreground shadow-orange scale-105"
-                    : "bg-card text-muted-foreground hover:bg-secondary border border-border shadow-card"
-                }`}
-              >
+            {cuisineCategories.map(({ label, icon: Icon }) =>
+            <button
+              key={label}
+              onClick={() => setSelectedCuisine(label)}
+              className={`flex flex-shrink-0 flex-col items-center gap-1.5 rounded-2xl px-4 py-3 text-xs font-semibold transition-all ${
+              selectedCuisine === label ?
+              "bg-primary text-primary-foreground shadow-orange scale-105" :
+              "bg-card text-muted-foreground hover:bg-secondary border border-border shadow-card"}`
+              }>
+
                 <Icon className="h-5 w-5" />
                 {label}
               </button>
-            ))}
+            )}
           </div>
         </section>
 
         {/* Featured */}
-        {!search && selectedCuisine === "All" && featured.length > 0 && (
-          <section className="mb-6">
+        {!search && selectedCuisine === "All" && featured.length > 0 &&
+        <section className="mb-6">
             <div className="flex items-center justify-between mb-3">
               <h3 className="text-base font-bold text-foreground">⭐ Featured Restaurants</h3>
               <button className="flex items-center gap-1 text-xs font-medium text-primary">
@@ -157,19 +157,19 @@ const Index = () => {
               </button>
             </div>
             <div className="flex gap-3 overflow-x-auto scrollbar-hide pb-2">
-              {featured.map((r) => (
-                <div
-                  key={r.id}
-                  onClick={() => navigate(`/restaurant/${r.id}`)}
-                  className="flex-shrink-0 w-56 rounded-2xl border border-border bg-card overflow-hidden cursor-pointer hover:shadow-md transition-shadow shadow-card"
-                >
+              {featured.map((r) =>
+            <div
+              key={r.id}
+              onClick={() => navigate(`/restaurant/${r.id}`)}
+              className="flex-shrink-0 w-56 rounded-2xl border border-border bg-card overflow-hidden cursor-pointer hover:shadow-md transition-shadow shadow-card">
+
                   <div className="relative h-32 bg-muted">
                     <img
-                      src={restaurantImages[r.name] || `https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=400&h=200&fit=crop`}
-                      alt={r.name}
-                      className="h-full w-full object-cover"
-                      onError={(e) => { (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=400&h=200&fit=crop'; }}
-                    />
+                  src={restaurantImages[r.name] || `https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=400&h=200&fit=crop`}
+                  alt={r.name}
+                  className="h-full w-full object-cover"
+                  onError={(e) => {(e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=400&h=200&fit=crop';}} />
+
                     <span className="absolute top-2 left-2 rounded-full bg-primary px-2 py-0.5 text-[10px] font-bold text-primary-foreground">
                       {r.cuisine}
                     </span>
@@ -186,10 +186,10 @@ const Index = () => {
                     </div>
                   </div>
                 </div>
-              ))}
+            )}
             </div>
           </section>
-        )}
+        }
 
         {/* All Restaurants */}
         <section>
@@ -197,38 +197,38 @@ const Index = () => {
             {search ? `Results for "${search}"` : selectedCuisine !== "All" ? `${selectedCuisine} Restaurants` : "All Restaurants"}
           </h3>
 
-          {loading ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-              {[...Array(6)].map((_, i) => (
-                <div key={i} className="rounded-2xl bg-card border border-border overflow-hidden animate-pulse">
+          {loading ?
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              {[...Array(6)].map((_, i) =>
+            <div key={i} className="rounded-2xl bg-card border border-border overflow-hidden animate-pulse">
                   <div className="h-40 bg-muted" />
                   <div className="p-4 space-y-2">
                     <div className="h-4 bg-muted rounded w-3/4" />
                     <div className="h-3 bg-muted rounded w-1/2" />
                   </div>
                 </div>
-              ))}
-            </div>
-          ) : filtered.length === 0 ? (
-            <div className="py-16 text-center text-muted-foreground">
+            )}
+            </div> :
+          filtered.length === 0 ?
+          <div className="py-16 text-center text-muted-foreground">
               <div className="text-5xl mb-3">😕</div>
               <p className="font-semibold">No restaurants found</p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-              {filtered.map((r) => (
-                <div
-                  key={r.id}
-                  onClick={() => navigate(`/restaurant/${r.id}`)}
-                  className="rounded-2xl border border-border bg-card overflow-hidden cursor-pointer hover:shadow-md transition-all hover:-translate-y-0.5 shadow-card"
-                >
+            </div> :
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              {filtered.map((r) =>
+            <div
+              key={r.id}
+              onClick={() => navigate(`/restaurant/${r.id}`)}
+              className="rounded-2xl border border-border bg-card overflow-hidden cursor-pointer hover:shadow-md transition-all hover:-translate-y-0.5 shadow-card">
+
                   <div className="relative h-40 bg-muted">
                     <img
-                      src={restaurantImages[r.name] || `https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=600&h=300&fit=crop`}
-                      alt={r.name}
-                      className="h-full w-full object-cover"
-                      onError={(e) => { (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=600&h=300&fit=crop'; }}
-                    />
+                  src={restaurantImages[r.name] || `https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=600&h=300&fit=crop`}
+                  alt={r.name}
+                  className="h-full w-full object-cover"
+                  onError={(e) => {(e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=600&h=300&fit=crop';}} />
+
                     <span className="absolute top-2 right-2 rounded-full bg-card px-2 py-0.5 text-[10px] font-bold text-foreground border border-border">
                       Min R{r.min_order}
                     </span>
@@ -251,9 +251,9 @@ const Index = () => {
                     </div>
                   </div>
                 </div>
-              ))}
+            )}
             </div>
-          )}
+          }
         </section>
       </main>
 
@@ -271,8 +271,8 @@ const Index = () => {
         }}
         onRemove={cart.removeItem}
         onClear={cart.clearCart}
-        onCheckout={handleCheckout}
-      />
+        onCheckout={handleCheckout} />
+
       <CheckoutDialog
         open={checkoutOpen}
         onClose={() => setCheckoutOpen(false)}
@@ -280,11 +280,11 @@ const Index = () => {
         subtotal={cart.subtotal}
         tax={cart.tax}
         delivery={cart.delivery}
-        onOrderPlaced={cart.clearCart}
-      />
+        onOrderPlaced={cart.clearCart} />
+
       <BottomNav />
-    </div>
-  );
+    </div>);
+
 };
 
 export default Index;
