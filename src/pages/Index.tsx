@@ -110,8 +110,9 @@ const Index = () => {
             <p className="text-primary-foreground/80 text-sm font-medium mb-1">
             </p>
             <h2 className="font-bold text-primary-foreground mb-1 font-[serif] text-center text-5xl">
+              MFULA DELIVERIES
             </h2>
-            <h2 className="text-2xl font-bold text-primary-foreground mb-5">to eat today?</h2>
+            <h2 className="text-2xl font-bold text-primary-foreground mb-5">What you would like to order?</h2>
             
             {/* Search */}
             <div className="relative">
