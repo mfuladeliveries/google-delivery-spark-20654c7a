@@ -6,6 +6,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { z } from "zod";
 
+const sanitizeForWhatsApp = (text: string): string => {
+  return text.replace(/[*_~`]/g, '').replace(/\n/g, ' ').trim();
+};
+
 const checkoutSchema = z.object({
   name: z.string().trim().min(2, "Name must be at least 2 characters").max(100, "Name must be less than 100 characters"),
   contact: z.string().trim().min(7, "Contact number is too short").max(20, "Contact number is too long").regex(/^[0-9\s+()-]+$/, "Invalid phone number format"),
@@ -142,16 +146,22 @@ const CheckoutDialog = ({
     const lines = items.map(
       (ci) => `${ci.quantity}x ${ci.item.name} (${ci.item.category}) - R${ci.item.price * ci.quantity}`
     );
+    const safeName = sanitizeForWhatsApp(name);
+    const safeContact = sanitizeForWhatsApp(contact);
+    const safeAddress = sanitizeForWhatsApp(address);
+    const safeNotes = sanitizeForWhatsApp(notes);
+    const safeRestaurants = restaurants.map(r => sanitizeForWhatsApp(r)).join(", ");
+
     const message = [
       `🛒 *New Order from ${storeInfo.name}*`,
       `📋 Order #${orderNum}`,
       `📅 ${new Date().toLocaleString("en-ZA")}`,
       ``,
-      `👤 *Customer:* ${name}`,
-      `📞 *Contact:* ${contact}`,
-      `📍 *Address:* ${address}`,
+      `👤 *Customer:* ${safeName}`,
+      `📞 *Contact:* ${safeContact}`,
+      `📍 *Address:* ${safeAddress}`,
       ``,
-      `🍽️ *Restaurant(s):* ${restaurants.join(", ")}`,
+      `🍽️ *Restaurant(s):* ${safeRestaurants}`,
       ``,
       ...lines,
       ``,
@@ -160,7 +170,7 @@ const CheckoutDialog = ({
       `Delivery: R${delivery}`,
       actualTip > 0 ? `Tip: R${actualTip.toFixed(2)}` : null,
       `*Total: R${total.toFixed(2)}*`,
-      notes.trim() ? `\n📝 *Special Notes:* ${notes}` : null,
+      safeNotes ? `\n📝 *Special Notes:* ${safeNotes}` : null,
       ``,
       `💳 ${storeInfo.paymentNote}`,
     ]
