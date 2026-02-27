@@ -4,6 +4,15 @@ import { CartItem } from "@/hooks/useCart";
 import { storeInfo } from "@/data/menu";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { z } from "zod";
+
+const checkoutSchema = z.object({
+  name: z.string().trim().min(2, "Name must be at least 2 characters").max(100, "Name must be less than 100 characters"),
+  contact: z.string().trim().min(7, "Contact number is too short").max(20, "Contact number is too long").regex(/^[0-9\s+()-]+$/, "Invalid phone number format"),
+  address: z.string().trim().min(5, "Address must be at least 5 characters").max(300, "Address must be less than 300 characters"),
+  notes: z.string().max(500, "Notes must be less than 500 characters").optional(),
+  tip: z.number().min(0, "Tip cannot be negative").max(10000, "Tip amount is too large"),
+});
 
 interface CheckoutDialogProps {
   open: boolean;
@@ -36,6 +45,7 @@ const CheckoutDialog = ({
   const [loading, setLoading] = useState(false);
   const [locating, setLocating] = useState(false);
   const [profileLoaded, setProfileLoaded] = useState(false);
+  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
 
   const actualTip = customTip ? parseFloat(customTip) || 0 : tip;
   const total = subtotal + tax + delivery + actualTip;
@@ -63,7 +73,26 @@ const CheckoutDialog = ({
   }, [user, profileLoaded]);
 
   const handleCheckout = async () => {
-    if (!user || !name.trim() || !contact.trim() || !address.trim()) return;
+    if (!user) return;
+
+    const result = checkoutSchema.safeParse({
+      name,
+      contact,
+      address,
+      notes,
+      tip: actualTip,
+    });
+
+    if (!result.success) {
+      const errors: Record<string, string> = {};
+      result.error.errors.forEach((err) => {
+        const field = err.path[0] as string;
+        errors[field] = err.message;
+      });
+      setValidationErrors(errors);
+      return;
+    }
+    setValidationErrors({});
     setLoading(true);
 
     // Save profile info
@@ -173,6 +202,7 @@ const CheckoutDialog = ({
               placeholder="Your full name"
               className="w-full rounded-xl border border-border bg-card px-4 py-2.5 text-sm text-card-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
             />
+            {validationErrors.name && <p className="mt-1 text-xs text-destructive">{validationErrors.name}</p>}
           </div>
           <div>
             <label className="mb-1 flex items-center gap-1.5 text-sm font-medium text-foreground">
@@ -184,6 +214,7 @@ const CheckoutDialog = ({
               placeholder="e.g. 072 123 4567"
               className="w-full rounded-xl border border-border bg-card px-4 py-2.5 text-sm text-card-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
             />
+            {validationErrors.contact && <p className="mt-1 text-xs text-destructive">{validationErrors.contact}</p>}
           </div>
           <div>
             <label className="mb-1 flex items-center gap-1.5 text-sm font-medium text-foreground">
@@ -225,6 +256,7 @@ const CheckoutDialog = ({
                 )}
               </button>
             </div>
+            {validationErrors.address && <p className="mt-1 text-xs text-destructive">{validationErrors.address}</p>}
           </div>
           <div>
             <label className="mb-1 flex items-center gap-1.5 text-sm font-medium text-foreground">
@@ -235,8 +267,10 @@ const CheckoutDialog = ({
               onChange={(e) => setNotes(e.target.value)}
               placeholder="Any special requests? e.g. extra sauce, no onions..."
               rows={2}
+              maxLength={500}
               className="w-full rounded-xl border border-border bg-card px-4 py-2.5 text-sm text-card-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary resize-none"
             />
+            {validationErrors.notes && <p className="mt-1 text-xs text-destructive">{validationErrors.notes}</p>}
           </div>
 
           {/* Tip */}
