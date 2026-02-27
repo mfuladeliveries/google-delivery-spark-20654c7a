@@ -51,7 +51,7 @@ const Profile = () => {
       const [{ data: prof }, { data: orders }] = await Promise.all([
         supabase.from("profiles").select("full_name, contact_number, address").eq("user_id", user.id).single(),
         supabase.from("orders").select("id, order_number, restaurant, total, status, created_at")
-          .order("created_at", { ascending: false }).limit(5),
+          .eq("user_id", user.id).order("created_at", { ascending: false }).limit(5),
       ]);
       if (prof) setProfile({ full_name: prof.full_name || "", contact_number: prof.contact_number || "", address: prof.address || "" });
       if (orders) setRecentOrders(orders as Order[]);
