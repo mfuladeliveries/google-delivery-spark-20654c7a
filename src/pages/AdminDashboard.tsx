@@ -519,16 +519,17 @@ const OrdersTable = ({ orders }: { orders: RecentOrder[] }) => (
             <th className="px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground">#</th>
             <th className="px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground">Customer</th>
             <th className="px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground">Restaurant</th>
+            <th className="px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground">Driver</th>
             <th className="px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground">Total</th>
             <th className="px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground">Payment</th>
             <th className="px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground">Status</th>
-            <th className="px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground">Time</th>
+            <th className="px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground">Date</th>
           </tr>
         </thead>
         <tbody>
           {orders.length === 0 ? (
             <tr>
-              <td colSpan={7} className="px-4 py-8 text-center text-muted-foreground text-xs">No orders</td>
+              <td colSpan={8} className="px-4 py-8 text-center text-muted-foreground text-xs">No orders</td>
             </tr>
           ) : (
             orders.map((order, i) => (
@@ -536,6 +537,13 @@ const OrdersTable = ({ orders }: { orders: RecentOrder[] }) => (
                 <td className="px-3 py-2.5 font-bold text-foreground">#{order.order_number}</td>
                 <td className="px-3 py-2.5 text-foreground text-xs">{order.customer_name || "—"}</td>
                 <td className="px-3 py-2.5 text-muted-foreground text-xs">{order.restaurant || "—"}</td>
+                <td className="px-3 py-2.5 text-xs">
+                  {order.driver_id ? (
+                    <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-bold text-primary">Assigned</span>
+                  ) : (
+                    <span className="text-muted-foreground">—</span>
+                  )}
+                </td>
                 <td className="px-3 py-2.5 font-semibold text-primary">R{order.total}</td>
                 <td className="px-3 py-2.5">
                   <span className={`rounded-full px-1.5 py-0.5 text-[9px] font-bold ${
@@ -549,8 +557,8 @@ const OrdersTable = ({ orders }: { orders: RecentOrder[] }) => (
                     {order.status.replace(/_/g, " ")}
                   </span>
                 </td>
-                <td className="px-3 py-2.5 text-xs text-muted-foreground">
-                  {new Date(order.created_at).toLocaleTimeString("en-ZA", { hour: "2-digit", minute: "2-digit" })}
+                <td className="px-3 py-2.5 text-xs text-muted-foreground whitespace-nowrap">
+                  {new Date(order.created_at).toLocaleString("en-ZA", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}
                 </td>
               </tr>
             ))
