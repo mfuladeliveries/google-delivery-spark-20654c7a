@@ -1,4 +1,5 @@
-import { DollarSign, Package, TrendingUp, Calendar } from "lucide-react";
+import { DollarSign, Package, TrendingUp, Calendar, MapPin, Clock, ChevronDown, ChevronUp } from "lucide-react";
+import { useState } from "react";
 
 interface Order {
   id: string;
@@ -8,6 +9,7 @@ interface Order {
   created_at: string;
   total: number;
   customer_address: string;
+  status?: string;
 }
 
 interface DriverProfile {
@@ -22,6 +24,7 @@ interface DriverEarningsProps {
 }
 
 const DriverEarnings = ({ driverProfile, completedOrders }: DriverEarningsProps) => {
+  const [showAll, setShowAll] = useState(false);
   const now = new Date();
   const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const startOfWeek = new Date(startOfToday);
@@ -33,6 +36,8 @@ const DriverEarnings = ({ driverProfile, completedOrders }: DriverEarningsProps)
   const todayEarnings = todaysOrders.reduce((sum, o) => sum + o.delivery_fee, 0);
   const weekEarnings = weekOrders.reduce((sum, o) => sum + o.delivery_fee, 0);
 
+  const displayedOrders = showAll ? completedOrders : completedOrders.slice(0, 10);
+
   return (
     <div className="space-y-4">
       {/* Stats grid */}
@@ -43,6 +48,7 @@ const DriverEarnings = ({ driverProfile, completedOrders }: DriverEarningsProps)
           </div>
           <p className="text-2xl font-bold text-foreground">R{todayEarnings.toFixed(0)}</p>
           <p className="text-xs text-muted-foreground font-medium">Today's Earnings</p>
+          <p className="text-[10px] text-muted-foreground">{todaysOrders.length} deliveries</p>
         </div>
 
         <div className="rounded-2xl border border-border bg-card p-4 shadow-card">
@@ -51,6 +57,7 @@ const DriverEarnings = ({ driverProfile, completedOrders }: DriverEarningsProps)
           </div>
           <p className="text-2xl font-bold text-foreground">R{weekEarnings.toFixed(0)}</p>
           <p className="text-xs text-muted-foreground font-medium">This Week</p>
+          <p className="text-[10px] text-muted-foreground">{weekOrders.length} deliveries</p>
         </div>
 
         <div className="rounded-2xl border border-border bg-card p-4 shadow-card">
@@ -70,6 +77,13 @@ const DriverEarnings = ({ driverProfile, completedOrders }: DriverEarningsProps)
         </div>
       </div>
 
+      {/* Earnings rate info */}
+      <div className="rounded-2xl bg-primary/5 border border-primary/20 p-3">
+        <p className="text-xs text-muted-foreground">
+          💡 <span className="font-semibold text-foreground">Earnings rate:</span> R30/km base + bonus for urgent deliveries
+        </p>
+      </div>
+
       {/* Delivery history */}
       <div>
         <h3 className="font-bold text-foreground mb-3 flex items-center gap-2">
@@ -82,30 +96,43 @@ const DriverEarnings = ({ driverProfile, completedOrders }: DriverEarningsProps)
             <p className="text-sm mt-1">Complete deliveries to see your history</p>
           </div>
         ) : (
-          <div className="rounded-2xl border border-border overflow-hidden">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="bg-secondary/50 border-b border-border">
-                  <th className="py-2.5 px-3 text-left font-semibold text-muted-foreground text-xs">Order</th>
-                  <th className="py-2.5 px-3 text-left font-semibold text-muted-foreground text-xs">Restaurant</th>
-                  <th className="py-2.5 px-3 text-right font-semibold text-muted-foreground text-xs">Earned</th>
-                  <th className="py-2.5 px-3 text-right font-semibold text-muted-foreground text-xs hidden sm:table-cell">Date</th>
-                </tr>
-              </thead>
-              <tbody>
-                {completedOrders.map(order => (
-                  <tr key={order.id} className="border-b border-border/50 last:border-0">
-                    <td className="py-2.5 px-3 font-bold text-foreground">#{order.order_number}</td>
-                    <td className="py-2.5 px-3 text-muted-foreground truncate max-w-[120px]">{order.restaurant}</td>
-                    <td className="py-2.5 px-3 text-right font-bold text-[hsl(var(--driver-success))]">+R{order.delivery_fee}</td>
-                    <td className="py-2.5 px-3 text-right text-muted-foreground text-xs hidden sm:table-cell">
-                      {new Date(order.created_at).toLocaleDateString("en-ZA", { day: "numeric", month: "short" })}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <>
+            <div className="space-y-2">
+              {displayedOrders.map(order => (
+                <div key={order.id} className="rounded-xl border border-border bg-card p-3 flex items-center gap-3">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[hsl(var(--driver-success)/0.1)] shrink-0">
+                    <Package className="h-4 w-4 text-[hsl(var(--driver-success))]" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-bold text-foreground">#{order.order_number}</span>
+                      <span className="text-sm font-bold text-[hsl(var(--driver-success))]">+R{order.delivery_fee}</span>
+                    </div>
+                    <div className="flex items-center gap-2 mt-0.5">
+                      <span className="text-[11px] text-muted-foreground truncate">{order.restaurant}</span>
+                      <span className="text-[10px] text-muted-foreground">·</span>
+                      <span className="text-[11px] text-muted-foreground flex items-center gap-0.5 shrink-0">
+                        <Clock className="h-3 w-3" />
+                        {new Date(order.created_at).toLocaleDateString("en-ZA", { day: "numeric", month: "short" })}
+                      </span>
+                    </div>
+                    <p className="text-[10px] text-muted-foreground truncate mt-0.5 flex items-center gap-0.5">
+                      <MapPin className="h-3 w-3 shrink-0" /> {order.customer_address}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {completedOrders.length > 10 && (
+              <button
+                onClick={() => setShowAll(!showAll)}
+                className="w-full mt-3 rounded-xl border border-border py-2.5 text-xs font-semibold text-muted-foreground hover:bg-secondary transition-colors flex items-center justify-center gap-1"
+              >
+                {showAll ? <><ChevronUp className="h-3 w-3" /> Show Less</> : <><ChevronDown className="h-3 w-3" /> Show All ({completedOrders.length})</>}
+              </button>
+            )}
+          </>
         )}
       </div>
     </div>
