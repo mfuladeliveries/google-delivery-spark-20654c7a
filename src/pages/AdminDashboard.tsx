@@ -85,6 +85,16 @@ const AdminDashboard = () => {
   useEffect(() => {
     if (!user || role !== 'admin') return;
     fetchAll();
+
+    // Real-time subscription for live order updates
+    const channel = supabase
+      .channel('admin-orders-realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, () => {
+        fetchStats();
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
   }, [user, role]);
 
   const fetchAll = async () => {
