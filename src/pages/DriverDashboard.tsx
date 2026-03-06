@@ -28,7 +28,7 @@ interface DriverProfile {
 }
 
 const DriverDashboard = () => {
-  const { user, role, loading: authLoading } = useAuth();
+  const { user, role, roles, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const [tab, setTab] = useState<"jobs" | "active" | "earnings">("jobs");
   const [pendingOrders, setPendingOrders] = useState<Order[]>([]);
@@ -67,10 +67,11 @@ const DriverDashboard = () => {
   }, []);
 
   useEffect(() => {
-    if (!authLoading && (!user || (role !== 'driver' && role !== 'admin'))) {
+    const hasAccess = roles.includes('driver') || roles.includes('admin');
+    if (!authLoading && (!user || !hasAccess)) {
       navigate("/");
     }
-  }, [user, role, authLoading, navigate]);
+  }, [user, roles, authLoading, navigate]);
 
   useEffect(() => {
     if (!user) return;

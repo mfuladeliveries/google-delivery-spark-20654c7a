@@ -9,6 +9,7 @@ interface AuthContextType {
   session: Session | null;
   loading: boolean;
   role: AppRole | null;
+  roles: AppRole[];
   signOut: () => Promise<void>;
 }
 
@@ -17,6 +18,7 @@ const AuthContext = createContext<AuthContextType>({
   session: null,
   loading: true,
   role: null,
+  roles: [],
   signOut: async () => {},
 });
 
@@ -25,15 +27,23 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [role, setRole] = useState<AppRole | null>(null);
+  const [roles, setRoles] = useState<AppRole[]>([]);
 
   const fetchRole = async (userId: string) => {
     const { data } = await supabase
       .from("user_roles")
       .select("role")
-      .eq("user_id", userId)
-      .maybeSingle();
-    if (data) setRole(data.role as AppRole);
-    else setRole('customer');
+      .eq("user_id", userId);
+    if (data && data.length > 0) {
+      const priority: AppRole[] = ['admin', 'restaurant', 'driver', 'customer'];
+      const allRoles = data.map(r => r.role as AppRole);
+      const best = priority.find(p => allRoles.includes(p)) || 'customer';
+      setRole(best);
+      setRoles(allRoles);
+    } else {
+      setRole('customer');
+      setRoles(['customer']);
+    }
   };
 
   useEffect(() => {
@@ -63,10 +73,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const signOut = async () => {
     await supabase.auth.signOut();
     setRole(null);
+    setRoles([]);
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, loading, role, signOut }}>
+    <AuthContext.Provider value={{ user, session, loading, role, roles, signOut }}>
       {children}
     </AuthContext.Provider>
   );
