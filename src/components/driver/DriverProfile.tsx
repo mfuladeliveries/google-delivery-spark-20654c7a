@@ -35,7 +35,19 @@ const DriverProfileTab = () => {
       supabase.from("driver_profiles").select("vehicle_type, license_plate, license_url, id_document_url").eq("user_id", user!.id).maybeSingle(),
     ]);
     if (p) setProfile(p);
-    if (d) setDriverData(d);
+    if (d) {
+      // Generate signed URLs for private bucket documents
+      const withSignedUrls = { ...d };
+      if (d.license_url) {
+        const { data: s1 } = await supabase.storage.from("driver-documents").createSignedUrl(d.license_url, 3600);
+        if (s1?.signedUrl) withSignedUrls.license_url = s1.signedUrl;
+      }
+      if (d.id_document_url) {
+        const { data: s2 } = await supabase.storage.from("driver-documents").createSignedUrl(d.id_document_url, 3600);
+        if (s2?.signedUrl) withSignedUrls.id_document_url = s2.signedUrl;
+      }
+      setDriverData(withSignedUrls);
+    }
   };
 
   const handleSave = async () => {
