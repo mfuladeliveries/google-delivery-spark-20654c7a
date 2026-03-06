@@ -111,7 +111,7 @@ const AdminDashboard = () => {
       { data: restaurantList },
       { data: driverRoles },
     ] = await Promise.all([
-      supabase.from("orders").select("total, status, created_at, order_number, customer_name, restaurant, payment_method, id")
+      supabase.from("orders").select("total, status, created_at, order_number, customer_name, restaurant, payment_method, id, driver_id")
         .order("created_at", { ascending: false }),
       supabase.from("restaurants").select("id", { count: 'exact' }),
       supabase.from("user_roles").select("id").eq("role", "driver"),
