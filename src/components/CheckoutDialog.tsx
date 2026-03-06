@@ -74,7 +74,15 @@ const CheckoutDialog = ({
   }, [user, profileLoaded]);
 
   const handleCheckout = async () => {
-    if (!user) return;
+    if (!user) {
+      toast.error("Please sign in to place an order.");
+      return;
+    }
+
+    if (items.length === 0) {
+      toast.error("Your cart is empty.");
+      return;
+    }
 
     const result = checkoutSchema.safeParse({
       name, contact, address, notes, tip: actualTip,
@@ -87,55 +95,65 @@ const CheckoutDialog = ({
         errors[field] = err.message;
       });
       setValidationErrors(errors);
+      toast.error("Please fix the highlighted fields.");
       return;
     }
     setValidationErrors({});
     setLoading(true);
 
-    await supabase
-      .from("profiles")
-      .update({
-        full_name: name.trim(),
-        contact_number: contact.trim(),
-        address: address.trim(),
-      })
-      .eq("user_id", user.id);
+    try {
+      await supabase
+        .from("profiles")
+        .update({
+          full_name: name.trim(),
+          contact_number: contact.trim(),
+          address: address.trim(),
+        })
+        .eq("user_id", user.id);
 
-    const deliveryCode = String(Math.floor(1000 + Math.random() * 9000));
+      const deliveryCode = String(Math.floor(1000 + Math.random() * 9000));
 
-    const orderItems = items.map((ci) => ({
-      id: ci.item.id,
-      quantity: ci.quantity,
-    }));
+      const orderItems = items.map((ci) => ({
+        id: ci.item.id,
+        quantity: ci.quantity,
+      }));
 
-    const { data: order, error: orderError } = await supabase.rpc("create_verified_order", {
-      p_items: orderItems,
-      p_restaurant_name: restaurants[0] || "",
-      p_customer_name: name.trim(),
-      p_customer_contact: contact.trim(),
-      p_customer_address: address.trim(),
-      p_special_notes: notes.trim(),
-      p_tip: actualTip,
-      p_delivery_code: deliveryCode,
-      p_payment_method: paymentMethod,
-    });
+      const { data: order, error: orderError } = await supabase.rpc("create_verified_order", {
+        p_items: orderItems,
+        p_restaurant_name: restaurants[0] || "",
+        p_customer_name: name.trim(),
+        p_customer_contact: contact.trim(),
+        p_customer_address: address.trim(),
+        p_special_notes: notes.trim(),
+        p_tip: actualTip,
+        p_delivery_code: deliveryCode,
+        p_payment_method: paymentMethod,
+      });
 
-    if (orderError) {
-      toast.error("Failed to place order. Please try again.");
+      if (orderError) {
+        console.error("Order placement failed:", orderError.message, orderError.details, orderError.hint);
+        toast.error("Failed to place your order, try again.", {
+          description: orderError.message,
+        });
+        setLoading(false);
+        return;
+      }
+
+      const orderResult = order as Record<string, unknown> | null;
+      const orderNum = orderResult?.order_number || "N/A";
+
+      toast.success("Your order has been placed successfully! 🎉", {
+        description: `Order #${orderNum} • Delivery PIN: ${deliveryCode}. We'll notify you as your order progresses.`,
+        duration: 8000,
+      });
       setLoading(false);
-      return;
+      onOrderPlaced();
+      onClose();
+    } catch (err) {
+      console.error("Unexpected order error:", err);
+      toast.error("Failed to place your order, try again.");
+      setLoading(false);
     }
-
-    const orderResult = order as Record<string, unknown> | null;
-    const orderNum = orderResult?.order_number || "N/A";
-
-    toast.success(`🎉 Order #${orderNum} placed!`, {
-      description: `Your delivery code is ${deliveryCode}. We'll notify you as your order progresses.`,
-      duration: 6000,
-    });
-    setLoading(false);
-    onOrderPlaced();
-    onClose();
   };
 
   if (!open) return null;
