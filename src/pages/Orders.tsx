@@ -143,7 +143,7 @@ const Orders = () => {
                   </div>
 
                   {/* Progress bar */}
-                  {order.status !== "cancelled" && (
+                  {order.status !== "cancelled" && order.status !== "rejected" && (
                     <div className="flex px-4 pt-3 gap-1">
                       {statusOrder.map((s, i) => (
                         <div
