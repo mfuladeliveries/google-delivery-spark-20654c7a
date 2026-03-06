@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { Truck, MapPin, Clock, ArrowLeft, Package, Navigation } from "lucide-react";
+import { Truck, MapPin, Clock, ArrowLeft, Package, Navigation, DollarSign, Power, ExternalLink } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
 import DeliveryVerification from "@/components/DeliveryVerification";
 import { toast } from "sonner";
@@ -18,18 +18,27 @@ interface Order {
   status: string;
   restaurant: string;
   created_at: string;
+  delivery_fee: number;
+}
+
+interface DriverProfile {
+  is_online: boolean;
+  total_earnings: number;
+  total_deliveries: number;
 }
 
 const DriverDashboard = () => {
   const { user, role, loading: authLoading } = useAuth();
   const navigate = useNavigate();
-  const [tab, setTab] = useState<"jobs" | "active">("jobs");
+  const [tab, setTab] = useState<"jobs" | "active" | "earnings">("jobs");
   const [pendingOrders, setPendingOrders] = useState<Order[]>([]);
   const [myOrders, setMyOrders] = useState<Order[]>([]);
+  const [completedOrders, setCompletedOrders] = useState<Order[]>([]);
+  const [driverProfile, setDriverProfile] = useState<DriverProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [accepting, setAccepting] = useState<string | null>(null);
+  const [togglingOnline, setTogglingOnline] = useState(false);
   const locationWatchRef = useRef<number | null>(null);
-  const prevJobCountRef = useRef(0);
 
   const playNotificationSound = useCallback(() => {
     try {
@@ -65,7 +74,7 @@ const DriverDashboard = () => {
 
   useEffect(() => {
     if (!user) return;
-    fetchOrders();
+    fetchAll();
 
     const channel = supabase
       .channel('driver-orders')
@@ -115,6 +124,11 @@ const DriverDashboard = () => {
     };
   }, [user, myOrders.length]);
 
+  const fetchAll = async () => {
+    await Promise.all([fetchOrders(), fetchDriverProfile(), fetchCompletedOrders()]);
+    setLoading(false);
+  };
+
   const fetchOrders = async () => {
     const [{ data: pending }, { data: mine }] = await Promise.all([
       supabase.from("orders").select("*").eq("status", "ready").is("driver_id", null).order("created_at"),
@@ -122,7 +136,42 @@ const DriverDashboard = () => {
     ]);
     if (pending) setPendingOrders(pending.map(o => ({ ...o, items: (o.items as any[]) || [] })));
     if (mine) setMyOrders(mine.map(o => ({ ...o, items: (o.items as any[]) || [] })));
-    setLoading(false);
+  };
+
+  const fetchCompletedOrders = async () => {
+    const { data } = await supabase
+      .from("orders")
+      .select("*")
+      .eq("driver_id", user!.id)
+      .eq("status", "delivered")
+      .order("created_at", { ascending: false })
+      .limit(20);
+    if (data) setCompletedOrders(data.map(o => ({ ...o, items: (o.items as any[]) || [] })));
+  };
+
+  const fetchDriverProfile = async () => {
+    const { data } = await supabase
+      .from("driver_profiles")
+      .select("is_online, total_earnings, total_deliveries")
+      .eq("user_id", user!.id)
+      .maybeSingle();
+    if (data) {
+      setDriverProfile(data);
+    } else {
+      // Auto-create driver profile if missing
+      await supabase.from("driver_profiles").insert({ user_id: user!.id });
+      setDriverProfile({ is_online: false, total_earnings: 0, total_deliveries: 0 });
+    }
+  };
+
+  const toggleOnline = async () => {
+    if (!driverProfile) return;
+    setTogglingOnline(true);
+    const newStatus = !driverProfile.is_online;
+    await supabase.from("driver_profiles").update({ is_online: newStatus }).eq("user_id", user!.id);
+    setDriverProfile(prev => prev ? { ...prev, is_online: newStatus } : prev);
+    toast.success(newStatus ? "You're now online! 🟢" : "You're now offline 🔴");
+    setTogglingOnline(false);
   };
 
   const acceptDelivery = async (orderId: string) => {
@@ -134,6 +183,12 @@ const DriverDashboard = () => {
     await fetchOrders();
     setTab("active");
     setAccepting(null);
+    toast.success("Delivery accepted! Navigate to restaurant for pickup.");
+  };
+
+  const openGoogleMaps = (address: string) => {
+    const url = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(address)}`;
+    window.open(url, "_blank");
   };
 
   if (authLoading || loading) return (
@@ -141,6 +196,8 @@ const DriverDashboard = () => {
       <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
     </div>
   );
+
+  const isOnline = driverProfile?.is_online ?? false;
 
   return (
     <div className="min-h-screen bg-background">
@@ -160,24 +217,46 @@ const DriverDashboard = () => {
               </div>
             </div>
           </div>
-          <div className="flex gap-1">
-            {(["jobs", "active"] as const).map(t => (
-              <button
-                key={t}
-                onClick={() => setTab(t)}
-                className={`rounded-lg px-3 py-1.5 text-xs font-semibold capitalize transition-colors ${
-                  tab === t ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-secondary"
-                }`}
-              >
-                {t === "jobs" ? `Jobs (${pendingOrders.length})` : `Active (${myOrders.length})`}
-              </button>
-            ))}
-          </div>
+          {/* Online/Offline Toggle */}
+          <button
+            onClick={toggleOnline}
+            disabled={togglingOnline}
+            className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold transition-all ${
+              isOnline
+                ? "bg-green-100 text-green-700 border border-green-200"
+                : "bg-red-100 text-red-600 border border-red-200"
+            }`}
+          >
+            <Power className="h-3.5 w-3.5" />
+            {togglingOnline ? "..." : isOnline ? "Online" : "Offline"}
+          </button>
+        </div>
+
+        {/* Tab bar */}
+        <div className="mx-auto flex max-w-2xl gap-1 px-4 pb-2">
+          {(["jobs", "active", "earnings"] as const).map(t => (
+            <button
+              key={t}
+              onClick={() => setTab(t)}
+              className={`flex-1 rounded-xl py-2 text-xs font-bold capitalize transition-colors ${
+                tab === t ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-secondary"
+              }`}
+            >
+              {t === "jobs" ? `Jobs (${pendingOrders.length})` : t === "active" ? `Active (${myOrders.length})` : "Earnings"}
+            </button>
+          ))}
         </div>
       </header>
 
       <main className="mx-auto max-w-2xl px-4 py-4 pb-nav md:pb-8">
-        {tab === "jobs" ? (
+        {!isOnline && tab !== "earnings" && (
+          <div className="mb-4 rounded-2xl border-2 border-red-200 bg-red-50 p-3 text-center">
+            <p className="text-sm font-bold text-red-700">You're offline</p>
+            <p className="text-xs text-red-600 mt-0.5">Go online to receive delivery requests</p>
+          </div>
+        )}
+
+        {tab === "jobs" && (
           <>
             <div className="mb-4 rounded-2xl border border-border bg-primary/5 p-3">
               <p className="text-sm text-foreground font-medium">📦 Job Board</p>
@@ -199,11 +278,20 @@ const DriverDashboard = () => {
                         <span className="font-bold text-foreground">Order #{order.order_number}</span>
                         <p className="text-xs text-muted-foreground mt-0.5">🍽️ {order.restaurant}</p>
                       </div>
-                      <span className="font-bold text-primary text-sm">R{order.total}</span>
+                      <div className="text-right">
+                        <span className="font-bold text-primary text-sm">R{order.total}</span>
+                        <p className="text-[10px] text-green-600 font-semibold">+R{order.delivery_fee} fee</p>
+                      </div>
                     </div>
                     <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-1">
                       <MapPin className="h-3 w-3 text-primary" />
-                      <span>{order.customer_address}</span>
+                      <span className="flex-1">{order.customer_address}</span>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); openGoogleMaps(order.customer_address); }}
+                        className="flex items-center gap-1 rounded-lg bg-blue-50 px-2 py-1 text-blue-600 font-semibold hover:bg-blue-100 transition-colors"
+                      >
+                        <ExternalLink className="h-3 w-3" /> Maps
+                      </button>
                     </div>
                     <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-3">
                       <Clock className="h-3 w-3" />
@@ -217,17 +305,19 @@ const DriverDashboard = () => {
                     </div>
                     <button
                       onClick={() => acceptDelivery(order.id)}
-                      disabled={accepting === order.id}
-                      className="w-full rounded-xl bg-primary py-2.5 text-sm font-bold text-primary-foreground disabled:opacity-50"
+                      disabled={accepting === order.id || !isOnline}
+                      className="w-full rounded-xl bg-primary py-2.5 text-sm font-bold text-primary-foreground disabled:opacity-50 transition-all hover:scale-[1.02] active:scale-[0.98]"
                     >
-                      {accepting === order.id ? "Accepting..." : "Accept Delivery"}
+                      {accepting === order.id ? "Accepting..." : !isOnline ? "Go online to accept" : "Accept Delivery"}
                     </button>
                   </div>
                 ))}
               </div>
             )}
           </>
-        ) : (
+        )}
+
+        {tab === "active" && (
           <>
             <div className="mb-4 rounded-2xl border border-border bg-primary/5 p-3">
               <p className="text-sm text-foreground font-medium">🚗 Current Trips</p>
@@ -251,17 +341,68 @@ const DriverDashboard = () => {
                       </div>
                       <span className="font-bold text-primary">R{order.total}</span>
                     </div>
-                    <div className="space-y-1 mb-3">
-                      <div className="flex items-center gap-1.5 text-sm font-medium text-foreground">
-                        <MapPin className="h-4 w-4 text-primary" />
-                        {order.customer_address}
-                      </div>
-                      <p className="text-xs text-muted-foreground">📞 {order.customer_name} · {order.customer_contact}</p>
+                    <div className="space-y-1.5 mb-3">
+                      <button
+                        onClick={() => openGoogleMaps(order.customer_address)}
+                        className="flex w-full items-center gap-2 rounded-xl bg-blue-50 px-3 py-2.5 text-sm font-medium text-blue-700 hover:bg-blue-100 transition-colors"
+                      >
+                        <Navigation className="h-4 w-4" />
+                        <span className="flex-1 text-left">{order.customer_address}</span>
+                        <ExternalLink className="h-3.5 w-3.5" />
+                      </button>
+                      <p className="text-xs text-muted-foreground px-1">📞 {order.customer_name} · {order.customer_contact}</p>
                     </div>
                     <DeliveryVerification
                       orderId={order.id}
-                      onVerified={fetchOrders}
+                      onVerified={() => { fetchOrders(); fetchCompletedOrders(); fetchDriverProfile(); }}
                     />
+                  </div>
+                ))}
+              </div>
+            )}
+          </>
+        )}
+
+        {tab === "earnings" && (
+          <>
+            {/* Earnings Summary */}
+            <div className="mb-4 grid grid-cols-2 gap-3">
+              <div className="rounded-2xl border border-border bg-card p-4 shadow-card">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-green-50 mb-2">
+                  <DollarSign className="h-5 w-5 text-green-600" />
+                </div>
+                <p className="text-2xl font-bold text-foreground">R{(driverProfile?.total_earnings || 0).toFixed(0)}</p>
+                <p className="text-xs text-muted-foreground">Total Earnings</p>
+              </div>
+              <div className="rounded-2xl border border-border bg-card p-4 shadow-card">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 mb-2">
+                  <Package className="h-5 w-5 text-primary" />
+                </div>
+                <p className="text-2xl font-bold text-foreground">{driverProfile?.total_deliveries || 0}</p>
+                <p className="text-xs text-muted-foreground">Deliveries</p>
+              </div>
+            </div>
+
+            {/* Completed Deliveries */}
+            <h3 className="font-bold text-foreground mb-3">📋 Delivery History</h3>
+            {completedOrders.length === 0 ? (
+              <div className="py-12 text-center text-muted-foreground">
+                <p className="font-semibold">No completed deliveries yet</p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {completedOrders.map(order => (
+                  <div key={order.id} className="rounded-xl border border-border bg-card p-3 shadow-card">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <span className="font-bold text-sm text-foreground">#{order.order_number}</span>
+                        <span className="ml-2 text-xs text-muted-foreground">{order.restaurant}</span>
+                      </div>
+                      <span className="font-bold text-green-600 text-sm">+R{order.delivery_fee}</span>
+                    </div>
+                    <p className="text-[10px] text-muted-foreground mt-1">
+                      {new Date(order.created_at).toLocaleString("en-ZA")}
+                    </p>
                   </div>
                 ))}
               </div>
