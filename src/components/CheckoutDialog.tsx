@@ -347,8 +347,8 @@ const CheckoutDialog = ({
             disabled={loading || !name.trim() || !contact.trim() || !address.trim()}
             className="flex w-full items-center justify-center gap-2 rounded-2xl bg-primary py-3.5 font-display font-bold text-primary-foreground transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:hover:scale-100 shadow-orange"
           >
-            <MessageCircle className="h-5 w-5" />
-            {loading ? "Placing Order..." : "Place Order via WhatsApp"}
+            <Package className="h-5 w-5" />
+            {loading ? "Placing Order..." : "Place Order"}
           </button>
 
           <p className="text-center text-[10px] text-muted-foreground">
