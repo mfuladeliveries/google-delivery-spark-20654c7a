@@ -350,6 +350,154 @@ const AdminDashboard = () => {
   );
 };
 
+// Driver registration + listing component
+const DriversTab = ({ drivers, onDriverAdded }: { drivers: DriverRecord[]; onDriverAdded: () => void }) => {
+  const [showForm, setShowForm] = useState(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [fullName, setFullName] = useState("");
+  const [contact, setContact] = useState("");
+  const [vehicleType, setVehicleType] = useState("car");
+  const [licensePlate, setLicensePlate] = useState("");
+  const [registering, setRegistering] = useState(false);
+
+  const handleRegisterDriver = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email || !password || !fullName) {
+      toast.error("Please fill in all required fields");
+      return;
+    }
+    setRegistering(true);
+    try {
+      // Create the user account
+      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+        email,
+        password,
+        options: { data: { full_name: fullName } },
+      });
+      if (signUpError) throw signUpError;
+      if (!signUpData.user) throw new Error("Failed to create user");
+
+      const newUserId = signUpData.user.id;
+
+      // Update profile
+      await supabase.from("profiles").update({
+        full_name: fullName,
+        contact_number: contact,
+      }).eq("user_id", newUserId);
+
+      // Set role to driver (remove default customer role, add driver)
+      await supabase.from("user_roles").update({ role: "driver" as any }).eq("user_id", newUserId);
+
+      // Update driver profile with vehicle info
+      await supabase.from("driver_profiles").update({
+        vehicle_type: vehicleType,
+        license_plate: licensePlate,
+      }).eq("user_id", newUserId);
+
+      toast.success(`Driver ${fullName} registered! They'll need to verify their email.`);
+      setShowForm(false);
+      setEmail(""); setPassword(""); setFullName(""); setContact(""); setLicensePlate("");
+      onDriverAdded();
+    } catch (err: any) {
+      toast.error(err.message || "Failed to register driver");
+    }
+    setRegistering(false);
+  };
+
+  return (
+    <>
+      <div className="flex items-center justify-between mb-3">
+        <h2 className="font-bold text-foreground">🚗 Drivers ({drivers.length})</h2>
+        <button
+          onClick={() => setShowForm(!showForm)}
+          className="flex items-center gap-1.5 rounded-xl bg-primary px-3 py-2 text-xs font-bold text-primary-foreground hover:opacity-90 transition-opacity"
+        >
+          <UserPlus className="h-3.5 w-3.5" />
+          {showForm ? "Cancel" : "Register Driver"}
+        </button>
+      </div>
+
+      {showForm && (
+        <form onSubmit={handleRegisterDriver} className="mb-4 rounded-2xl border-2 border-primary bg-card p-4 shadow-card space-y-3">
+          <h3 className="font-bold text-sm text-foreground">New Driver Registration</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-semibold text-muted-foreground mb-1">Full Name *</label>
+              <input value={fullName} onChange={e => setFullName(e.target.value)} required
+                className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20" />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-muted-foreground mb-1">Email *</label>
+              <input type="email" value={email} onChange={e => setEmail(e.target.value)} required
+                className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20" />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-muted-foreground mb-1">Password *</label>
+              <input type="password" value={password} onChange={e => setPassword(e.target.value)} required minLength={6}
+                className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20" />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-muted-foreground mb-1">Contact Number</label>
+              <input value={contact} onChange={e => setContact(e.target.value)}
+                className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20" />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-muted-foreground mb-1">Vehicle Type</label>
+              <select value={vehicleType} onChange={e => setVehicleType(e.target.value)}
+                className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary">
+                <option value="car">Car</option>
+                <option value="motorcycle">Motorcycle</option>
+                <option value="bicycle">Bicycle</option>
+                <option value="scooter">Scooter</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-muted-foreground mb-1">License Plate</label>
+              <input value={licensePlate} onChange={e => setLicensePlate(e.target.value)}
+                className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20" />
+            </div>
+          </div>
+          <button type="submit" disabled={registering}
+            className="w-full rounded-xl bg-primary py-2.5 text-sm font-bold text-primary-foreground disabled:opacity-50 hover:opacity-90 transition-opacity">
+            {registering ? "Registering..." : "Register Driver"}
+          </button>
+        </form>
+      )}
+
+      {drivers.length === 0 && !showForm ? (
+        <div className="py-12 text-center text-muted-foreground">
+          <Truck className="mx-auto h-10 w-10 opacity-40 mb-2" />
+          <p className="font-semibold">No drivers registered yet</p>
+          <p className="text-sm mt-1">Click "Register Driver" to add one</p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {drivers.map(d => (
+            <div key={d.user_id} className="rounded-2xl border border-border bg-card p-4 shadow-card">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="font-bold text-sm text-foreground">{d.profile?.full_name || "Unknown"}</h3>
+                  <p className="text-xs text-muted-foreground">{d.profile?.contact_number || "—"}</p>
+                </div>
+                <span className={`rounded-full px-2.5 py-1 text-[10px] font-bold ${
+                  d.is_online ? "bg-green-100 text-green-700" : "bg-red-100 text-red-600"
+                }`}>
+                  {d.is_online ? "🟢 Online" : "🔴 Offline"}
+                </span>
+              </div>
+              <div className="mt-2 flex gap-4 text-xs text-muted-foreground">
+                <span>💰 R{d.total_earnings.toFixed(0)} earned</span>
+                <span>📦 {d.total_deliveries} deliveries</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </>
+  );
+};
+
 // Extracted orders table component
 const OrdersTable = ({ orders }: { orders: RecentOrder[] }) => (
   <div className="rounded-2xl border border-border bg-card overflow-hidden shadow-card">
