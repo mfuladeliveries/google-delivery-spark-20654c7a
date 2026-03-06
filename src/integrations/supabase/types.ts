@@ -14,6 +14,48 @@ export type Database = {
   }
   public: {
     Tables: {
+      driver_profiles: {
+        Row: {
+          created_at: string
+          id: string
+          id_document_url: string
+          is_online: boolean
+          license_plate: string
+          license_url: string
+          total_deliveries: number
+          total_earnings: number
+          updated_at: string
+          user_id: string
+          vehicle_type: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          id_document_url?: string
+          is_online?: boolean
+          license_plate?: string
+          license_url?: string
+          total_deliveries?: number
+          total_earnings?: number
+          updated_at?: string
+          user_id: string
+          vehicle_type?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          id_document_url?: string
+          is_online?: boolean
+          license_plate?: string
+          license_url?: string
+          total_deliveries?: number
+          total_earnings?: number
+          updated_at?: string
+          user_id?: string
+          vehicle_type?: string
+        }
+        Relationships: []
+      }
       menu_items: {
         Row: {
           category: string
@@ -74,6 +116,7 @@ export type Database = {
           id: string
           items: Json
           order_number: number
+          payment_method: string
           payment_status: string
           restaurant: string
           restaurant_id: string | null
@@ -100,6 +143,7 @@ export type Database = {
           id?: string
           items?: Json
           order_number?: number
+          payment_method?: string
           payment_status?: string
           restaurant?: string
           restaurant_id?: string | null
@@ -126,6 +170,7 @@ export type Database = {
           id?: string
           items?: Json
           order_number?: number
+          payment_method?: string
           payment_status?: string
           restaurant?: string
           restaurant_id?: string | null
