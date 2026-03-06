@@ -112,47 +112,28 @@ const CheckoutDialog = ({
     // Generate 4-digit delivery verification code
     const deliveryCode = String(Math.floor(1000 + Math.random() * 9000));
 
-    // Resolve restaurant_id from the restaurant name
-    let restaurantId: string | null = null;
-    if (restaurants.length > 0) {
-      const { data: restData } = await supabase
-        .from("restaurants")
-        .select("id")
-        .eq("name", restaurants[0])
-        .maybeSingle();
-      if (restData) restaurantId = restData.id;
-    }
-
-    // Save order
+    // Build items payload with only id + quantity (server validates prices)
     const orderItems = items.map((ci) => ({
       id: ci.item.id,
-      name: ci.item.name,
-      category: ci.item.category,
-      price: ci.item.price,
       quantity: ci.quantity,
     }));
 
-    const { data: order } = await supabase
-      .from("orders")
-      .insert({
-        user_id: user.id,
-        customer_id: user.id,
-        restaurant_id: restaurantId,
-        items: orderItems,
-        restaurant: restaurants.join(", "),
-        subtotal,
-        tax,
-        delivery_fee: delivery,
-        tip: actualTip,
-        total,
-        special_notes: notes.trim(),
-        customer_name: name.trim(),
-        customer_contact: contact.trim(),
-        customer_address: address.trim(),
-        delivery_code: deliveryCode,
-      })
-      .select("order_number")
-      .single();
+    // Use server-side RPC to create order with validated prices
+    const { data: order, error: orderError } = await supabase.rpc("create_verified_order", {
+      p_items: orderItems,
+      p_restaurant_name: restaurants[0] || "",
+      p_customer_name: name.trim(),
+      p_customer_contact: contact.trim(),
+      p_customer_address: address.trim(),
+      p_special_notes: notes.trim(),
+      p_tip: actualTip,
+      p_delivery_code: deliveryCode,
+    });
+
+    if (orderError) {
+      setLoading(false);
+      return;
+    }
 
     // Send WhatsApp
     const orderNum = order?.order_number || "N/A";
