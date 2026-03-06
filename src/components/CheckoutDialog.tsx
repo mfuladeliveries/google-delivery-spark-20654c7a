@@ -131,51 +131,11 @@ const CheckoutDialog = ({
 
     const orderResult = order as Record<string, unknown> | null;
     const orderNum = orderResult?.order_number || "N/A";
-    const serverSubtotal = Number(orderResult?.subtotal) || subtotal;
-    const serverTax = Number(orderResult?.tax) || tax;
-    const serverTotal = Number(orderResult?.total) || total;
-    const lines = items.map(
-      (ci) => `${ci.quantity}x ${ci.item.name} (${ci.item.category}) - R${ci.item.price * ci.quantity}`
-    );
-    const safeName = sanitizeForWhatsApp(name);
-    const safeContact = sanitizeForWhatsApp(contact);
-    const safeAddress = sanitizeForWhatsApp(address);
-    const safeNotes = sanitizeForWhatsApp(notes);
-    const safeRestaurants = restaurants.map(r => sanitizeForWhatsApp(r)).join(", ");
 
-    const paymentLabel = paymentMethod === "cash" ? "💵 Cash on Delivery" : "💳 Online Payment";
-
-    const message = [
-      `🛒 *New Order from ${storeInfo.name}*`,
-      `📋 Order #${orderNum}`,
-      `📅 ${new Date().toLocaleString("en-ZA")}`,
-      ``,
-      `👤 *Customer:* ${safeName}`,
-      `📞 *Contact:* ${safeContact}`,
-      `📍 *Address:* ${safeAddress}`,
-      ``,
-      `🍽️ *Restaurant(s):* ${safeRestaurants}`,
-      ``,
-      ...lines,
-      ``,
-      `Subtotal: R${serverSubtotal.toFixed(2)}`,
-      `Tax (5%): R${serverTax.toFixed(2)}`,
-      `Delivery: R${delivery}`,
-      actualTip > 0 ? `Tip: R${actualTip.toFixed(2)}` : null,
-      `*Total: R${serverTotal.toFixed(2)}*`,
-      ``,
-      `*Payment:* ${paymentLabel}`,
-      safeNotes ? `\n📝 *Special Notes:* ${safeNotes}` : null,
-    ]
-      .filter(Boolean)
-      .join("\n");
-
-    window.open(
-      `https://wa.me/${storeInfo.whatsapp}?text=${encodeURIComponent(message)}`,
-      "_blank"
-    );
-
-    toast.success(`Order #${orderNum} placed!`, { description: `Your delivery code is ${deliveryCode}` });
+    toast.success(`🎉 Order #${orderNum} placed!`, {
+      description: `Your delivery code is ${deliveryCode}. We'll notify you as your order progresses.`,
+      duration: 6000,
+    });
     setLoading(false);
     onOrderPlaced();
     onClose();
