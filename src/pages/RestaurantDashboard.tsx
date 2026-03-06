@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { ChefHat, Package, CheckCircle, Clock, Plus, Trash2, ArrowLeft, XCircle } from "lucide-react";
+import { ChefHat, Package, CheckCircle, Clock, Plus, Trash2, ArrowLeft, XCircle, ShieldCheck } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
 import { toast } from "sonner";
 
