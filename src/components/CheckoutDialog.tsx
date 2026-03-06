@@ -54,7 +54,7 @@ const CheckoutDialog = ({
   const actualTip = customTip ? parseFloat(customTip) || 0 : tip;
   const total = subtotal + tax + delivery + actualTip;
 
-  // Get unique restaurants from cart
+  // Get unique restaurant names from cart
   const restaurants = [...new Set(items.map((ci) => ci.item.category))];
 
   // Load saved profile
