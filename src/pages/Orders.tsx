@@ -39,6 +39,7 @@ const statusConfig: Record<string, { label: string; icon: any; color: string; bg
   out_for_delivery: { label: "On the Way", icon: Truck, color: "text-primary", bg: "bg-primary/10" },
   delivered: { label: "Delivered", icon: CheckCircle, color: "text-green-600", bg: "bg-green-100" },
   cancelled: { label: "Cancelled", icon: AlertCircle, color: "text-destructive", bg: "bg-destructive/10" },
+  rejected: { label: "Rejected", icon: AlertCircle, color: "text-destructive", bg: "bg-destructive/10" },
 };
 
 const statusOrder = ["pending", "confirmed", "preparing", "ready", "out_for_delivery", "delivered"];
@@ -142,7 +143,7 @@ const Orders = () => {
                   </div>
 
                   {/* Progress bar */}
-                  {order.status !== "cancelled" && (
+                  {order.status !== "cancelled" && order.status !== "rejected" && (
                     <div className="flex px-4 pt-3 gap-1">
                       {statusOrder.map((s, i) => (
                         <div

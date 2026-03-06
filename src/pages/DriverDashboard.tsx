@@ -1,10 +1,11 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Truck, MapPin, Clock, ArrowLeft, Package, Navigation } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
 import DeliveryVerification from "@/components/DeliveryVerification";
+import { toast } from "sonner";
 
 interface Order {
   id: string;
@@ -28,6 +29,33 @@ const DriverDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [accepting, setAccepting] = useState<string | null>(null);
   const locationWatchRef = useRef<number | null>(null);
+  const prevJobCountRef = useRef(0);
+
+  const playNotificationSound = useCallback(() => {
+    try {
+      const ctx = new AudioContext();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.frequency.value = 660;
+      osc.type = "triangle";
+      gain.gain.value = 0.4;
+      osc.start();
+      osc.stop(ctx.currentTime + 0.2);
+      setTimeout(() => {
+        const osc2 = ctx.createOscillator();
+        const gain2 = ctx.createGain();
+        osc2.connect(gain2);
+        gain2.connect(ctx.destination);
+        osc2.frequency.value = 880;
+        osc2.type = "triangle";
+        gain2.gain.value = 0.4;
+        osc2.start();
+        osc2.stop(ctx.currentTime + 0.2);
+      }, 150);
+    } catch { /* silent */ }
+  }, []);
 
   useEffect(() => {
     if (!authLoading && (!user || (role !== 'driver' && role !== 'admin'))) {
@@ -41,7 +69,14 @@ const DriverDashboard = () => {
 
     const channel = supabase
       .channel('driver-orders')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, fetchOrders)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, (payload) => {
+        const newStatus = (payload.new as any)?.status;
+        if (payload.eventType === 'UPDATE' && newStatus === 'ready') {
+          playNotificationSound();
+          toast.info("🚗 New delivery available!", { description: `Order #${(payload.new as any).order_number} is ready for pickup` });
+        }
+        fetchOrders();
+      })
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };

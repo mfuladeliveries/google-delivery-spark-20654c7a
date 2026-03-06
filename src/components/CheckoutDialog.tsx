@@ -54,7 +54,7 @@ const CheckoutDialog = ({
   const actualTip = customTip ? parseFloat(customTip) || 0 : tip;
   const total = subtotal + tax + delivery + actualTip;
 
-  // Get unique restaurants from cart
+  // Get unique restaurant names from cart
   const restaurants = [...new Set(items.map((ci) => ci.item.category))];
 
   // Load saved profile
@@ -112,6 +112,17 @@ const CheckoutDialog = ({
     // Generate 4-digit delivery verification code
     const deliveryCode = String(Math.floor(1000 + Math.random() * 9000));
 
+    // Resolve restaurant_id from the restaurant name
+    let restaurantId: string | null = null;
+    if (restaurants.length > 0) {
+      const { data: restData } = await supabase
+        .from("restaurants")
+        .select("id")
+        .eq("name", restaurants[0])
+        .maybeSingle();
+      if (restData) restaurantId = restData.id;
+    }
+
     // Save order
     const orderItems = items.map((ci) => ({
       id: ci.item.id,
@@ -125,6 +136,8 @@ const CheckoutDialog = ({
       .from("orders")
       .insert({
         user_id: user.id,
+        customer_id: user.id,
+        restaurant_id: restaurantId,
         items: orderItems,
         restaurant: restaurants.join(", "),
         subtotal,

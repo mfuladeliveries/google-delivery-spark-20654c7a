@@ -1,9 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { ChefHat, Package, CheckCircle, Clock, Plus, Trash2, ArrowLeft, Edit2 } from "lucide-react";
+import { ChefHat, Package, CheckCircle, Clock, Plus, Trash2, ArrowLeft, XCircle } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
+import { toast } from "sonner";
 
 interface Order {
   id: string;
@@ -41,9 +42,10 @@ const statusColors: Record<string, string> = {
   out_for_delivery: "bg-orange-100 text-orange-700",
   delivered: "bg-green-100 text-green-700",
   cancelled: "bg-red-100 text-red-700",
+  rejected: "bg-red-100 text-red-700",
 };
 
-const statusFlow = ["pending", "confirmed", "preparing", "ready", "out_for_delivery", "delivered"];
+const statusFlow = ["confirmed", "preparing", "ready"];
 
 const RestaurantDashboard = () => {
   const { user, role, loading: authLoading } = useAuth();
@@ -57,6 +59,7 @@ const RestaurantDashboard = () => {
   const [showAddItem, setShowAddItem] = useState(false);
   const [newItem, setNewItem] = useState({ name: "", description: "", price: "", image: "", category: "" });
   const [saving, setSaving] = useState(false);
+  const prevOrderCountRef = useRef(0);
 
   useEffect(() => {
     if (!authLoading && (!user || (role !== 'restaurant' && role !== 'admin'))) {
@@ -64,15 +67,48 @@ const RestaurantDashboard = () => {
     }
   }, [user, role, authLoading, navigate]);
 
+  const playNotificationSound = useCallback(() => {
+    try {
+      const ctx = new AudioContext();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.frequency.value = 880;
+      osc.type = "sine";
+      gain.gain.value = 0.3;
+      osc.start();
+      osc.stop(ctx.currentTime + 0.3);
+      setTimeout(() => {
+        const osc2 = ctx.createOscillator();
+        const gain2 = ctx.createGain();
+        osc2.connect(gain2);
+        gain2.connect(ctx.destination);
+        osc2.frequency.value = 1100;
+        osc2.type = "sine";
+        gain2.gain.value = 0.3;
+        osc2.start();
+        osc2.stop(ctx.currentTime + 0.3);
+      }, 200);
+    } catch { /* silent */ }
+  }, []);
+
   useEffect(() => {
     if (!user) return;
     fetchAll();
 
-    // Realtime
     const channel = supabase
       .channel('restaurant-orders')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, () => {
-        fetchOrders();
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, (payload) => {
+        if (payload.eventType === 'INSERT') {
+          playNotificationSound();
+          toast.info("🔔 New Order!", { description: `Order #${(payload.new as any).order_number} received` });
+        }
+        if (restaurant?.id) {
+          fetchOrdersFor(restaurant.id);
+        } else if (role === 'admin') {
+          fetchOrders();
+        }
       })
       .subscribe();
 
@@ -80,7 +116,6 @@ const RestaurantDashboard = () => {
   }, [user, restaurant?.id]);
 
   const fetchAll = async () => {
-    // Get restaurant for this owner
     const { data: rest } = await supabase
       .from("restaurants")
       .select("id, name")
@@ -91,7 +126,6 @@ const RestaurantDashboard = () => {
       setRestaurant(rest as Restaurant);
       await Promise.all([fetchOrdersFor(rest.id), fetchMenuFor(rest.id)]);
     } else if (role === 'admin') {
-      // Admin sees all orders
       await fetchOrders();
     }
     setLoading(false);
@@ -128,6 +162,22 @@ const RestaurantDashboard = () => {
     setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status } : o));
   };
 
+  const acceptOrder = async (orderId: string) => {
+    await updateOrderStatus(orderId, "confirmed");
+    toast.success("Order accepted!");
+  };
+
+  const rejectOrder = async (orderId: string) => {
+    await updateOrderStatus(orderId, "rejected");
+    toast.error("Order rejected");
+  };
+
+  const getNextStatus = (current: string) => {
+    const idx = statusFlow.indexOf(current);
+    if (idx >= 0 && idx < statusFlow.length - 1) return statusFlow[idx + 1];
+    return null;
+  };
+
   const addMenuItem = async () => {
     if (!restaurant || !newItem.name || !newItem.price) return;
     setSaving(true);
@@ -152,8 +202,8 @@ const RestaurantDashboard = () => {
     setMenuItems(prev => prev.filter(i => i.id !== itemId));
   };
 
-  const incomingOrders = orders.filter(o => !["delivered", "cancelled"].includes(o.status));
-  const completedOrders = orders.filter(o => ["delivered", "cancelled"].includes(o.status));
+  const incomingOrders = orders.filter(o => !["delivered", "cancelled", "rejected"].includes(o.status));
+  const completedOrders = orders.filter(o => ["delivered", "cancelled", "rejected"].includes(o.status));
   const displayOrders = ordersTab === "incoming" ? incomingOrders : completedOrders;
 
   if (authLoading || loading) return (
@@ -230,7 +280,7 @@ const RestaurantDashboard = () => {
             ) : (
               <div className="space-y-3">
                 {displayOrders.map(order => (
-                  <div key={order.id} className="rounded-2xl border border-border bg-card p-4 shadow-card">
+                  <div key={order.id} className={`rounded-2xl border bg-card p-4 shadow-card ${order.status === 'pending' ? 'border-primary border-2 animate-pulse' : 'border-border'}`}>
                     <div className="flex items-start justify-between mb-3">
                       <div>
                         <span className="font-bold text-foreground">Order #{order.order_number}</span>
@@ -252,9 +302,9 @@ const RestaurantDashboard = () => {
                           <span className="font-medium text-foreground">R{item.price * item.quantity}</span>
                         </div>
                       ))}
-                        {order.special_notes && (
-                          <p className="mt-1 rounded-lg bg-secondary px-2 py-1 text-xs text-muted-foreground">📝 {order.special_notes}</p>
-                        )}
+                      {order.special_notes && (
+                        <p className="mt-1 rounded-lg bg-secondary px-2 py-1 text-xs text-muted-foreground">📝 {order.special_notes}</p>
+                      )}
                       <div className="flex justify-between font-bold text-sm pt-1 border-t border-border">
                         <span>Total</span>
                         <span className="text-primary">R{order.total}</span>
@@ -263,20 +313,54 @@ const RestaurantDashboard = () => {
 
                     {ordersTab === "incoming" && (
                       <div className="mt-3 flex flex-wrap gap-2">
-                        {statusFlow.indexOf(order.status) < statusFlow.length - 1 && (
-                          <button
-                            onClick={() => updateOrderStatus(order.id, statusFlow[statusFlow.indexOf(order.status) + 1])}
-                            className="rounded-xl bg-primary px-3 py-1.5 text-xs font-bold text-primary-foreground"
-                          >
-                            → {statusFlow[statusFlow.indexOf(order.status) + 1]?.replace(/_/g, " ")}
-                          </button>
+                        {/* Pending: Accept / Reject */}
+                        {order.status === "pending" && (
+                          <>
+                            <button
+                              onClick={() => acceptOrder(order.id)}
+                              className="flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-xs font-bold text-primary-foreground"
+                            >
+                              <CheckCircle className="h-3.5 w-3.5" /> Accept Order
+                            </button>
+                            <button
+                              onClick={() => rejectOrder(order.id)}
+                              className="flex items-center gap-1.5 rounded-xl bg-destructive/10 px-4 py-2 text-xs font-bold text-destructive"
+                            >
+                              <XCircle className="h-3.5 w-3.5" /> Reject Order
+                            </button>
+                          </>
                         )}
-                        <button
-                          onClick={() => updateOrderStatus(order.id, "cancelled")}
-                          className="rounded-xl bg-destructive/10 px-3 py-1.5 text-xs font-bold text-destructive"
-                        >
-                          Cancel
-                        </button>
+                        {/* Confirmed/Preparing: advance to next */}
+                        {["confirmed", "preparing"].includes(order.status) && (
+                          <>
+                            {getNextStatus(order.status) && (
+                              <button
+                                onClick={() => updateOrderStatus(order.id, getNextStatus(order.status)!)}
+                                className="rounded-xl bg-primary px-3 py-1.5 text-xs font-bold text-primary-foreground"
+                              >
+                                → {getNextStatus(order.status)!.replace(/_/g, " ")}
+                              </button>
+                            )}
+                            <button
+                              onClick={() => updateOrderStatus(order.id, "cancelled")}
+                              className="rounded-xl bg-destructive/10 px-3 py-1.5 text-xs font-bold text-destructive"
+                            >
+                              Cancel
+                            </button>
+                          </>
+                        )}
+                        {/* Ready: waiting for driver */}
+                        {order.status === "ready" && (
+                          <span className="rounded-xl bg-cyan-100 px-3 py-1.5 text-xs font-bold text-cyan-700">
+                            ⏳ Waiting for driver pickup
+                          </span>
+                        )}
+                        {/* Out for delivery */}
+                        {order.status === "out_for_delivery" && (
+                          <span className="rounded-xl bg-orange-100 px-3 py-1.5 text-xs font-bold text-orange-700">
+                            🚗 Driver is delivering
+                          </span>
+                        )}
                       </div>
                     )}
                   </div>
@@ -306,51 +390,18 @@ const RestaurantDashboard = () => {
               <div className="rounded-2xl border border-border bg-card p-4 mb-4 shadow-card">
                 <h3 className="font-semibold text-sm text-foreground mb-3">Add New Item</h3>
                 <div className="space-y-2">
-                  <input
-                    value={newItem.name}
-                    onChange={e => setNewItem(p => ({ ...p, name: e.target.value }))}
-                    placeholder="Item name *"
-                    className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-                  />
-                  <input
-                    value={newItem.description}
-                    onChange={e => setNewItem(p => ({ ...p, description: e.target.value }))}
-                    placeholder="Description"
-                    className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-                  />
+                  <input value={newItem.name} onChange={e => setNewItem(p => ({ ...p, name: e.target.value }))} placeholder="Item name *" className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary" />
+                  <input value={newItem.description} onChange={e => setNewItem(p => ({ ...p, description: e.target.value }))} placeholder="Description" className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary" />
                   <div className="flex gap-2">
-                    <input
-                      value={newItem.price}
-                      onChange={e => setNewItem(p => ({ ...p, price: e.target.value }))}
-                      placeholder="Price (R) *"
-                      type="number"
-                      className="flex-1 rounded-xl border border-border bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-                    />
-                    <input
-                      value={newItem.category}
-                      onChange={e => setNewItem(p => ({ ...p, category: e.target.value }))}
-                      placeholder="Category"
-                      className="flex-1 rounded-xl border border-border bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-                    />
+                    <input value={newItem.price} onChange={e => setNewItem(p => ({ ...p, price: e.target.value }))} placeholder="Price (R) *" type="number" className="flex-1 rounded-xl border border-border bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary" />
+                    <input value={newItem.category} onChange={e => setNewItem(p => ({ ...p, category: e.target.value }))} placeholder="Category" className="flex-1 rounded-xl border border-border bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary" />
                   </div>
-                  <input
-                    value={newItem.image}
-                    onChange={e => setNewItem(p => ({ ...p, image: e.target.value }))}
-                    placeholder="Image URL (optional)"
-                    className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-                  />
+                  <input value={newItem.image} onChange={e => setNewItem(p => ({ ...p, image: e.target.value }))} placeholder="Image URL (optional)" className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary" />
                   <div className="flex gap-2 pt-1">
-                    <button
-                      onClick={addMenuItem}
-                      disabled={saving || !newItem.name || !newItem.price}
-                      className="flex-1 rounded-xl bg-primary py-2 text-xs font-bold text-primary-foreground disabled:opacity-50"
-                    >
+                    <button onClick={addMenuItem} disabled={saving || !newItem.name || !newItem.price} className="flex-1 rounded-xl bg-primary py-2 text-xs font-bold text-primary-foreground disabled:opacity-50">
                       {saving ? "Adding..." : "Add Item"}
                     </button>
-                    <button
-                      onClick={() => setShowAddItem(false)}
-                      className="rounded-xl bg-secondary px-4 py-2 text-xs font-bold text-muted-foreground"
-                    >
+                    <button onClick={() => setShowAddItem(false)} className="rounded-xl bg-secondary px-4 py-2 text-xs font-bold text-muted-foreground">
                       Cancel
                     </button>
                   </div>
@@ -383,10 +434,7 @@ const RestaurantDashboard = () => {
                         <span className="text-[10px] text-muted-foreground bg-secondary rounded-full px-2 py-0.5">{item.category}</span>
                       </div>
                     </div>
-                    <button
-                      onClick={() => deleteMenuItem(item.id)}
-                      className="rounded-lg p-2 text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors"
-                    >
+                    <button onClick={() => deleteMenuItem(item.id)} className="rounded-lg p-2 text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors">
                       <Trash2 className="h-4 w-4" />
                     </button>
                   </div>
