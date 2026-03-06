@@ -252,6 +252,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      verify_and_complete_delivery: {
+        Args: { p_code: string; p_order_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
       app_role: "admin" | "customer" | "restaurant" | "driver"

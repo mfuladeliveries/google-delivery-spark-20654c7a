@@ -17,14 +17,14 @@ const DeliveryVerification = ({ orderId, onVerified }: DeliveryVerificationProps
     setError("");
     setLoading(true);
 
-    const { data } = await supabase
-      .from("orders")
-      .select("delivery_code")
-      .eq("id", orderId)
-      .single();
+    const { data, error: rpcError } = await supabase.rpc("verify_and_complete_delivery", {
+      p_order_id: orderId,
+      p_code: code,
+    });
 
-    if (data?.delivery_code === code) {
-      await supabase.from("orders").update({ status: "delivered" }).eq("id", orderId);
+    if (rpcError) {
+      setError("Verification failed. Please try again.");
+    } else if (data === true) {
       onVerified();
     } else {
       setError("Invalid code. Please check with the customer.");
