@@ -141,6 +141,7 @@ const CheckoutDialog = ({
     const serverSubtotal = Number(orderResult?.subtotal) || subtotal;
     const serverTax = Number(orderResult?.tax) || tax;
     const serverTotal = Number(orderResult?.total) || total;
+    const lines = items.map(
       (ci) => `${ci.quantity}x ${ci.item.name} (${ci.item.category}) - R${ci.item.price * ci.quantity}`
     );
     const safeName = sanitizeForWhatsApp(name);
@@ -162,11 +163,11 @@ const CheckoutDialog = ({
       ``,
       ...lines,
       ``,
-      `Subtotal: R${subtotal.toFixed(2)}`,
-      `Tax (5%): R${tax.toFixed(2)}`,
+      `Subtotal: R${serverSubtotal.toFixed(2)}`,
+      `Tax (5%): R${serverTax.toFixed(2)}`,
       `Delivery: R${delivery}`,
       actualTip > 0 ? `Tip: R${actualTip.toFixed(2)}` : null,
-      `*Total: R${total.toFixed(2)}*`,
+      `*Total: R${serverTotal.toFixed(2)}*`,
       safeNotes ? `\n📝 *Special Notes:* ${safeNotes}` : null,
       ``,
       `💳 ${storeInfo.paymentNote}`,
