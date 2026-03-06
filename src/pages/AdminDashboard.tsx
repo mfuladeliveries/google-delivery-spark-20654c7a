@@ -342,37 +342,7 @@ const AdminDashboard = () => {
 
         {/* Drivers Tab */}
         {tab === "drivers" && (
-          <>
-            <h2 className="font-bold text-foreground mb-3">🚗 Drivers ({drivers.length})</h2>
-            {drivers.length === 0 ? (
-              <div className="py-12 text-center text-muted-foreground">
-                <Truck className="mx-auto h-10 w-10 opacity-40 mb-2" />
-                <p className="font-semibold">No drivers registered yet</p>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {drivers.map(d => (
-                  <div key={d.user_id} className="rounded-2xl border border-border bg-card p-4 shadow-card">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h3 className="font-bold text-sm text-foreground">{d.profile?.full_name || "Unknown"}</h3>
-                        <p className="text-xs text-muted-foreground">{d.profile?.contact_number || "—"}</p>
-                      </div>
-                      <span className={`rounded-full px-2.5 py-1 text-[10px] font-bold ${
-                        d.is_online ? "bg-green-100 text-green-700" : "bg-red-100 text-red-600"
-                      }`}>
-                        {d.is_online ? "🟢 Online" : "🔴 Offline"}
-                      </span>
-                    </div>
-                    <div className="mt-2 flex gap-4 text-xs text-muted-foreground">
-                      <span>💰 R{d.total_earnings.toFixed(0)} earned</span>
-                      <span>📦 {d.total_deliveries} deliveries</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </>
+          <DriversTab drivers={drivers} onDriverAdded={() => { fetchDrivers(); fetchUsers(); }} />
         )}
       </main>
       <BottomNav />
