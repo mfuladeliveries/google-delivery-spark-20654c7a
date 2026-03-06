@@ -11,6 +11,7 @@ const statusLabels: Record<string, string> = {
   out_for_delivery: "Out for Delivery",
   delivered: "Delivered",
   cancelled: "Order Cancelled",
+  rejected: "Order Rejected",
 };
 
 const statusEmojis: Record<string, string> = {
@@ -21,6 +22,7 @@ const statusEmojis: Record<string, string> = {
   out_for_delivery: "🚗",
   delivered: "🎉",
   cancelled: "❌",
+  rejected: "🚫",
 };
 
 const requestNotificationPermission = async () => {
@@ -34,40 +36,34 @@ const requestNotificationPermission = async () => {
 const sendBrowserNotification = (title: string, body: string) => {
   if (!("Notification" in window) || Notification.permission !== "granted") return;
   try {
-    new Notification(title, {
-      body,
-      icon: "/favicon.ico",
-      badge: "/favicon.ico",
-    });
-  } catch {
-    // Silently fail on environments that don't support notifications
-  }
+    new Notification(title, { body, icon: "/favicon.ico", badge: "/favicon.ico" });
+  } catch { /* silent */ }
 };
 
 const OrderNotifications = () => {
-  const { user } = useAuth();
+  const { user, role } = useAuth();
   const hasRequestedPermission = useRef(false);
 
   useEffect(() => {
     if (!user) return;
 
-    // Request permission once
     if (!hasRequestedPermission.current) {
       hasRequestedPermission.current = true;
       requestNotificationPermission();
     }
 
-    const channel = supabase
-      .channel("order-notifications")
-      .on(
-        "postgres_changes",
-        {
+    const channels: ReturnType<typeof supabase.channel>[] = [];
+
+    // Customer notifications: order status updates
+    if (role === "customer" || !role) {
+      const ch = supabase
+        .channel("customer-notifications")
+        .on("postgres_changes", {
           event: "UPDATE",
           schema: "public",
           table: "orders",
           filter: `user_id=eq.${user.id}`,
-        },
-        (payload: any) => {
+        }, (payload: any) => {
           const newStatus = payload.new?.status;
           const orderNumber = payload.new?.order_number;
           if (!newStatus || !orderNumber) return;
@@ -75,29 +71,61 @@ const OrderNotifications = () => {
           const emoji = statusEmojis[newStatus] || "📋";
           const label = statusLabels[newStatus] || newStatus;
           const title = `${emoji} Order #${orderNumber}`;
-          const body = label;
 
-          // In-app toast
-          if (newStatus === "delivered") {
-            toast.success(title, { description: body });
-          } else if (newStatus === "cancelled") {
-            toast.error(title, { description: body });
-          } else {
+          if (newStatus === "delivered") toast.success(title, { description: label });
+          else if (newStatus === "cancelled" || newStatus === "rejected") toast.error(title, { description: label });
+          else toast.info(title, { description: label });
+
+          if (document.hidden) sendBrowserNotification(title, label);
+        })
+        .subscribe();
+      channels.push(ch);
+    }
+
+    // Restaurant notifications: new incoming orders
+    if (role === "restaurant") {
+      const ch = supabase
+        .channel("restaurant-notifications")
+        .on("postgres_changes", {
+          event: "INSERT",
+          schema: "public",
+          table: "orders",
+        }, (payload: any) => {
+          const orderNumber = payload.new?.order_number;
+          if (!orderNumber) return;
+          const title = "🔔 New Order Received";
+          const body = `Order #${orderNumber} — R${payload.new?.total || 0}`;
+          toast.info(title, { description: body });
+          if (document.hidden) sendBrowserNotification(title, body);
+        })
+        .subscribe();
+      channels.push(ch);
+    }
+
+    // Driver notifications: orders ready for pickup
+    if (role === "driver") {
+      const ch = supabase
+        .channel("driver-notifications")
+        .on("postgres_changes", {
+          event: "UPDATE",
+          schema: "public",
+          table: "orders",
+        }, (payload: any) => {
+          if (payload.new?.status === "ready" && !payload.new?.driver_id) {
+            const title = "🚗 New Delivery Available";
+            const body = `Order #${payload.new?.order_number} ready at ${payload.new?.restaurant || "restaurant"}`;
             toast.info(title, { description: body });
+            if (document.hidden) sendBrowserNotification(title, body);
           }
-
-          // Browser push notification (works in background)
-          if (document.hidden) {
-            sendBrowserNotification(title, body);
-          }
-        }
-      )
-      .subscribe();
+        })
+        .subscribe();
+      channels.push(ch);
+    }
 
     return () => {
-      supabase.removeChannel(channel);
+      channels.forEach(ch => supabase.removeChannel(ch));
     };
-  }, [user]);
+  }, [user, role]);
 
   return null;
 };

@@ -69,7 +69,14 @@ const DriverDashboard = () => {
 
     const channel = supabase
       .channel('driver-orders')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, fetchOrders)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, (payload) => {
+        const newStatus = (payload.new as any)?.status;
+        if (payload.eventType === 'UPDATE' && newStatus === 'ready') {
+          playNotificationSound();
+          toast.info("🚗 New delivery available!", { description: `Order #${(payload.new as any).order_number} is ready for pickup` });
+        }
+        fetchOrders();
+      })
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };
