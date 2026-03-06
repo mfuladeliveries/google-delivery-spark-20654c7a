@@ -29,6 +29,33 @@ const DriverDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [accepting, setAccepting] = useState<string | null>(null);
   const locationWatchRef = useRef<number | null>(null);
+  const prevJobCountRef = useRef(0);
+
+  const playNotificationSound = useCallback(() => {
+    try {
+      const ctx = new AudioContext();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.frequency.value = 660;
+      osc.type = "triangle";
+      gain.gain.value = 0.4;
+      osc.start();
+      osc.stop(ctx.currentTime + 0.2);
+      setTimeout(() => {
+        const osc2 = ctx.createOscillator();
+        const gain2 = ctx.createGain();
+        osc2.connect(gain2);
+        gain2.connect(ctx.destination);
+        osc2.frequency.value = 880;
+        osc2.type = "triangle";
+        gain2.gain.value = 0.4;
+        osc2.start();
+        osc2.stop(ctx.currentTime + 0.2);
+      }, 150);
+    } catch { /* silent */ }
+  }, []);
 
   useEffect(() => {
     if (!authLoading && (!user || (role !== 'driver' && role !== 'admin'))) {
