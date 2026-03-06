@@ -5,9 +5,10 @@ import { toast } from "sonner";
 
 const statusLabels: Record<string, string> = {
   pending: "Order Placed",
-  confirmed: "Order Confirmed",
+  confirmed: "Accepted by Restaurant",
   preparing: "Being Prepared",
   ready: "Ready for Pickup",
+  driver_assigned: "Driver Assigned",
   out_for_delivery: "Out for Delivery",
   delivered: "Delivered",
   cancelled: "Order Cancelled",
@@ -19,6 +20,7 @@ const statusEmojis: Record<string, string> = {
   confirmed: "✅",
   preparing: "👨‍🍳",
   ready: "📦",
+  driver_assigned: "🧑‍✈️",
   out_for_delivery: "🚗",
   delivered: "🎉",
   cancelled: "❌",
