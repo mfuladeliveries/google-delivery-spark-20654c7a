@@ -74,6 +74,7 @@ export type Database = {
           id: string
           items: Json
           order_number: number
+          payment_status: string
           restaurant: string
           restaurant_id: string | null
           special_notes: string | null
@@ -99,6 +100,7 @@ export type Database = {
           id?: string
           items?: Json
           order_number?: number
+          payment_status?: string
           restaurant?: string
           restaurant_id?: string | null
           special_notes?: string | null
@@ -124,6 +126,7 @@ export type Database = {
           id?: string
           items?: Json
           order_number?: number
+          payment_status?: string
           restaurant?: string
           restaurant_id?: string | null
           special_notes?: string | null
