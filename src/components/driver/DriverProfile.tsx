@@ -35,7 +35,19 @@ const DriverProfileTab = () => {
       supabase.from("driver_profiles").select("vehicle_type, license_plate, license_url, id_document_url").eq("user_id", user!.id).maybeSingle(),
     ]);
     if (p) setProfile(p);
-    if (d) setDriverData(d);
+    if (d) {
+      // Generate signed URLs for private bucket documents
+      const withSignedUrls = { ...d };
+      if (d.license_url) {
+        const { data: s1 } = await supabase.storage.from("driver-documents").createSignedUrl(d.license_url, 3600);
+        if (s1?.signedUrl) withSignedUrls.license_url = s1.signedUrl;
+      }
+      if (d.id_document_url) {
+        const { data: s2 } = await supabase.storage.from("driver-documents").createSignedUrl(d.id_document_url, 3600);
+        if (s2?.signedUrl) withSignedUrls.id_document_url = s2.signedUrl;
+      }
+      setDriverData(withSignedUrls);
+    }
   };
 
   const handleSave = async () => {
@@ -64,9 +76,12 @@ const DriverProfileTab = () => {
       return;
     }
 
-    const { data: urlData } = supabase.storage.from("driver-documents").getPublicUrl(path);
-    await supabase.from("driver_profiles").update({ [field]: urlData.publicUrl }).eq("user_id", user.id);
-    setDriverData(prev => ({ ...prev, [field]: urlData.publicUrl }));
+    // Store the path (not a public URL) since bucket is private
+    const storagePath = path;
+    await supabase.from("driver_profiles").update({ [field]: storagePath }).eq("user_id", user.id);
+    // Generate a signed URL for display
+    const { data: signedData } = await supabase.storage.from("driver-documents").createSignedUrl(storagePath, 3600);
+    setDriverData(prev => ({ ...prev, [field]: signedData?.signedUrl || storagePath }));
     toast.success("Document uploaded!");
     setUploading(null);
   };
