@@ -136,8 +136,11 @@ const CheckoutDialog = ({
     }
 
     // Send WhatsApp
-    const orderNum = order?.order_number || "N/A";
-    const lines = items.map(
+    const orderResult = order as Record<string, unknown> | null;
+    const orderNum = orderResult?.order_number || "N/A";
+    const serverSubtotal = Number(orderResult?.subtotal) || subtotal;
+    const serverTax = Number(orderResult?.tax) || tax;
+    const serverTotal = Number(orderResult?.total) || total;
       (ci) => `${ci.quantity}x ${ci.item.name} (${ci.item.category}) - R${ci.item.price * ci.quantity}`
     );
     const safeName = sanitizeForWhatsApp(name);
