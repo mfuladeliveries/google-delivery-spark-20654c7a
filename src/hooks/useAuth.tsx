@@ -35,13 +35,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       .select("role")
       .eq("user_id", userId);
     if (data && data.length > 0) {
-      // Priority: admin > restaurant > driver > customer
       const priority: AppRole[] = ['admin', 'restaurant', 'driver', 'customer'];
-      const roles = data.map(r => r.role as AppRole);
-      const best = priority.find(p => roles.includes(p)) || 'customer';
+      const allRoles = data.map(r => r.role as AppRole);
+      const best = priority.find(p => allRoles.includes(p)) || 'customer';
       setRole(best);
+      setRoles(allRoles);
     } else {
       setRole('customer');
+      setRoles(['customer']);
     }
   };
 
