@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate, Link } from "react-router-dom";
-import { ArrowLeft, Clock, Package, CheckCircle, Truck, ChefHat, AlertCircle, ShieldCheck } from "lucide-react";
+import { ArrowLeft, Clock, Package, CheckCircle, Truck, ChefHat, AlertCircle, ShieldCheck, UserCheck, Store } from "lucide-react";
 import { storeInfo } from "@/data/menu";
 import BottomNav from "@/components/BottomNav";
 import OrderTrackingMap from "@/components/OrderTrackingMap";
@@ -31,18 +31,29 @@ interface Order {
   customer_address: string;
 }
 
-const statusConfig: Record<string, { label: string; icon: any; color: string; bg: string }> = {
-  pending: { label: "Order Placed", icon: Clock, color: "text-amber-600", bg: "bg-amber-100" },
-  confirmed: { label: "Confirmed", icon: CheckCircle, color: "text-blue-600", bg: "bg-blue-100" },
-  preparing: { label: "Preparing", icon: ChefHat, color: "text-purple-600", bg: "bg-purple-100" },
-  ready: { label: "Ready for Pickup", icon: Package, color: "text-cyan-600", bg: "bg-cyan-100" },
-  out_for_delivery: { label: "On the Way", icon: Truck, color: "text-primary", bg: "bg-primary/10" },
-  delivered: { label: "Delivered", icon: CheckCircle, color: "text-green-600", bg: "bg-green-100" },
-  cancelled: { label: "Cancelled", icon: AlertCircle, color: "text-destructive", bg: "bg-destructive/10" },
-  rejected: { label: "Rejected", icon: AlertCircle, color: "text-destructive", bg: "bg-destructive/10" },
+const statusSteps = [
+  { key: "pending", label: "Order Placed", icon: Clock, color: "text-amber-600", bg: "bg-amber-100" },
+  { key: "confirmed", label: "Accepted by Restaurant", icon: Store, color: "text-blue-600", bg: "bg-blue-100" },
+  { key: "preparing", label: "Preparing", icon: ChefHat, color: "text-purple-600", bg: "bg-purple-100" },
+  { key: "ready", label: "Ready for Pickup", icon: Package, color: "text-cyan-600", bg: "bg-cyan-100" },
+  { key: "driver_assigned", label: "Driver Assigned", icon: UserCheck, color: "text-indigo-600", bg: "bg-indigo-100" },
+  { key: "out_for_delivery", label: "Out for Delivery", icon: Truck, color: "text-primary", bg: "bg-primary/10" },
+  { key: "delivered", label: "Delivered", icon: CheckCircle, color: "text-green-600", bg: "bg-green-100" },
+];
+
+const cancelledConfig = { label: "Cancelled", icon: AlertCircle, color: "text-destructive", bg: "bg-destructive/10" };
+const rejectedConfig = { label: "Rejected", icon: AlertCircle, color: "text-destructive", bg: "bg-destructive/10" };
+
+const getStatusConfig = (status: string) => {
+  if (status === "cancelled") return cancelledConfig;
+  if (status === "rejected") return rejectedConfig;
+  return statusSteps.find(s => s.key === status) || statusSteps[0];
 };
 
-const statusOrder = ["pending", "confirmed", "preparing", "ready", "out_for_delivery", "delivered"];
+const getStepIndex = (status: string) => {
+  const idx = statusSteps.findIndex(s => s.key === status);
+  return idx >= 0 ? idx : 0;
+};
 
 const Orders = () => {
   const { user, loading: authLoading } = useAuth();
@@ -126,10 +137,11 @@ const Orders = () => {
         ) : (
           <div className="space-y-4">
             {orders.map((order) => {
-              const sc = statusConfig[order.status] || statusConfig.pending;
+              const sc = getStatusConfig(order.status);
               const StatusIcon = sc.icon;
-              const currentStep = statusOrder.indexOf(order.status);
-              const isActive = order.status === "out_for_delivery";
+              const currentStep = getStepIndex(order.status);
+              const isActive = order.status === "out_for_delivery" || order.status === "driver_assigned";
+              const isCancelled = order.status === "cancelled" || order.status === "rejected";
 
               return (
                 <div key={order.id} className="rounded-2xl border border-border bg-card shadow-card overflow-hidden">
@@ -142,17 +154,42 @@ const Orders = () => {
                     </span>
                   </div>
 
-                  {/* Progress bar */}
-                  {order.status !== "cancelled" && order.status !== "rejected" && (
-                    <div className="flex px-4 pt-3 gap-1">
-                      {statusOrder.map((s, i) => (
-                        <div
-                          key={s}
-                          className={`h-1 flex-1 rounded-full transition-colors ${
-                            i <= currentStep ? "bg-primary" : "bg-muted"
-                          }`}
-                        />
-                      ))}
+                  {/* 7-stage progress tracker */}
+                  {!isCancelled && (
+                    <div className="px-4 pt-3">
+                      <div className="flex gap-0.5">
+                        {statusSteps.map((step, i) => (
+                          <div
+                            key={step.key}
+                            className={`h-1.5 flex-1 rounded-full transition-all duration-500 ${
+                              i <= currentStep ? "bg-primary" : "bg-muted"
+                            }`}
+                          />
+                        ))}
+                      </div>
+                      <div className="mt-2 flex justify-between">
+                        {statusSteps.map((step, i) => {
+                          const StepIcon = step.icon;
+                          const isCompleted = i <= currentStep;
+                          const isCurrent = i === currentStep;
+                          return (
+                            <div key={step.key} className="flex flex-col items-center" style={{ width: `${100 / statusSteps.length}%` }}>
+                              <div className={`flex h-6 w-6 items-center justify-center rounded-full transition-all ${
+                                isCurrent ? "bg-primary text-primary-foreground scale-110" :
+                                isCompleted ? "bg-primary/20 text-primary" : "bg-muted text-muted-foreground"
+                              }`}>
+                                <StepIcon className="h-3 w-3" />
+                              </div>
+                              <span className={`mt-0.5 text-[8px] text-center leading-tight ${
+                                isCurrent ? "font-bold text-primary" :
+                                isCompleted ? "text-foreground" : "text-muted-foreground"
+                              }`}>
+                                {step.label}
+                              </span>
+                            </div>
+                          );
+                        })}
+                      </div>
                     </div>
                   )}
 
@@ -163,7 +200,7 @@ const Orders = () => {
                     </div>
 
                     {/* Delivery verification code */}
-                    {order.delivery_code && order.status !== "delivered" && order.status !== "cancelled" && (
+                    {order.delivery_code && order.status !== "delivered" && !isCancelled && (
                       <div className="mb-3 flex items-center gap-2 rounded-xl border border-primary/20 bg-primary/5 px-3 py-2">
                         <ShieldCheck className="h-4 w-4 text-primary" />
                         <div>

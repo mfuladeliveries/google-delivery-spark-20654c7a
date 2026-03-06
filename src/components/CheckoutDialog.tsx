@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { X, MessageCircle, MapPin, Phone, User, StickyNote, Banknote, CreditCard } from "lucide-react";
+import { X, Package, MapPin, Phone, User, StickyNote, Banknote, CreditCard } from "lucide-react";
 import { CartItem } from "@/hooks/useCart";
 import { storeInfo } from "@/data/menu";
 import { supabase } from "@/integrations/supabase/client";
@@ -7,9 +7,6 @@ import { useAuth } from "@/hooks/useAuth";
 import { z } from "zod";
 import { toast } from "sonner";
 
-const sanitizeForWhatsApp = (text: string): string => {
-  return text.replace(/[*_~`]/g, '').replace(/\n/g, ' ').trim();
-};
 
 const checkoutSchema = z.object({
   name: z.string().trim().min(2, "Name must be at least 2 characters").max(100, "Name must be less than 100 characters"),
@@ -131,51 +128,11 @@ const CheckoutDialog = ({
 
     const orderResult = order as Record<string, unknown> | null;
     const orderNum = orderResult?.order_number || "N/A";
-    const serverSubtotal = Number(orderResult?.subtotal) || subtotal;
-    const serverTax = Number(orderResult?.tax) || tax;
-    const serverTotal = Number(orderResult?.total) || total;
-    const lines = items.map(
-      (ci) => `${ci.quantity}x ${ci.item.name} (${ci.item.category}) - R${ci.item.price * ci.quantity}`
-    );
-    const safeName = sanitizeForWhatsApp(name);
-    const safeContact = sanitizeForWhatsApp(contact);
-    const safeAddress = sanitizeForWhatsApp(address);
-    const safeNotes = sanitizeForWhatsApp(notes);
-    const safeRestaurants = restaurants.map(r => sanitizeForWhatsApp(r)).join(", ");
 
-    const paymentLabel = paymentMethod === "cash" ? "💵 Cash on Delivery" : "💳 Online Payment";
-
-    const message = [
-      `🛒 *New Order from ${storeInfo.name}*`,
-      `📋 Order #${orderNum}`,
-      `📅 ${new Date().toLocaleString("en-ZA")}`,
-      ``,
-      `👤 *Customer:* ${safeName}`,
-      `📞 *Contact:* ${safeContact}`,
-      `📍 *Address:* ${safeAddress}`,
-      ``,
-      `🍽️ *Restaurant(s):* ${safeRestaurants}`,
-      ``,
-      ...lines,
-      ``,
-      `Subtotal: R${serverSubtotal.toFixed(2)}`,
-      `Tax (5%): R${serverTax.toFixed(2)}`,
-      `Delivery: R${delivery}`,
-      actualTip > 0 ? `Tip: R${actualTip.toFixed(2)}` : null,
-      `*Total: R${serverTotal.toFixed(2)}*`,
-      ``,
-      `*Payment:* ${paymentLabel}`,
-      safeNotes ? `\n📝 *Special Notes:* ${safeNotes}` : null,
-    ]
-      .filter(Boolean)
-      .join("\n");
-
-    window.open(
-      `https://wa.me/${storeInfo.whatsapp}?text=${encodeURIComponent(message)}`,
-      "_blank"
-    );
-
-    toast.success(`Order #${orderNum} placed!`, { description: `Your delivery code is ${deliveryCode}` });
+    toast.success(`🎉 Order #${orderNum} placed!`, {
+      description: `Your delivery code is ${deliveryCode}. We'll notify you as your order progresses.`,
+      duration: 6000,
+    });
     setLoading(false);
     onOrderPlaced();
     onClose();
@@ -387,8 +344,8 @@ const CheckoutDialog = ({
             disabled={loading || !name.trim() || !contact.trim() || !address.trim()}
             className="flex w-full items-center justify-center gap-2 rounded-2xl bg-primary py-3.5 font-display font-bold text-primary-foreground transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:hover:scale-100 shadow-orange"
           >
-            <MessageCircle className="h-5 w-5" />
-            {loading ? "Placing Order..." : "Place Order via WhatsApp"}
+            <Package className="h-5 w-5" />
+            {loading ? "Placing Order..." : "Place Order"}
           </button>
 
           <p className="text-center text-[10px] text-muted-foreground">

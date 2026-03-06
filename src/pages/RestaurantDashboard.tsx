@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { ChefHat, Package, CheckCircle, Clock, Plus, Trash2, ArrowLeft, XCircle } from "lucide-react";
+import { ChefHat, Package, CheckCircle, Clock, Plus, Trash2, ArrowLeft, XCircle, ShieldCheck } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
 import { toast } from "sonner";
 
@@ -17,6 +17,7 @@ interface Order {
   status: string;
   special_notes: string;
   created_at: string;
+  delivery_code: string | null;
 }
 
 interface MenuItem {
@@ -39,6 +40,7 @@ const statusColors: Record<string, string> = {
   confirmed: "bg-blue-100 text-blue-700",
   preparing: "bg-purple-100 text-purple-700",
   ready: "bg-cyan-100 text-cyan-700",
+  driver_assigned: "bg-indigo-100 text-indigo-700",
   out_for_delivery: "bg-orange-100 text-orange-700",
   delivered: "bg-green-100 text-green-700",
   cancelled: "bg-red-100 text-red-700",
@@ -304,6 +306,14 @@ const RestaurantDashboard = () => {
                       ))}
                       {order.special_notes && (
                         <p className="mt-1 rounded-lg bg-secondary px-2 py-1 text-xs text-muted-foreground">📝 {order.special_notes}</p>
+                      )}
+                      {/* Delivery PIN */}
+                      {order.delivery_code && !["delivered", "cancelled", "rejected"].includes(order.status) && (
+                        <div className="mt-1.5 flex items-center gap-1.5 rounded-lg bg-primary/5 border border-primary/20 px-2 py-1">
+                          <ShieldCheck className="h-3 w-3 text-primary" />
+                          <span className="text-[10px] text-muted-foreground">PIN:</span>
+                          <span className="text-xs font-bold tracking-[0.2em] text-primary">{order.delivery_code}</span>
+                        </div>
                       )}
                       <div className="flex justify-between font-bold text-sm pt-1 border-t border-border">
                         <span>Total</span>
