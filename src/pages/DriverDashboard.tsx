@@ -28,7 +28,7 @@ interface DriverProfile {
 }
 
 const DriverDashboard = () => {
-  const { user, role, loading: authLoading } = useAuth();
+  const { user, role, roles, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const [tab, setTab] = useState<"jobs" | "active" | "earnings">("jobs");
   const [pendingOrders, setPendingOrders] = useState<Order[]>([]);
