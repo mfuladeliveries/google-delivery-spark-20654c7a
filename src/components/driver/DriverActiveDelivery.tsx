@@ -1,6 +1,9 @@
-import { Navigation, Phone, ExternalLink, MapPin } from "lucide-react";
+import { useState } from "react";
+import { Navigation, Phone, ExternalLink, MapPin, CheckCircle2, Truck, Package, ShieldCheck } from "lucide-react";
 import DeliveryVerification from "@/components/DeliveryVerification";
 import DriverDeliveryMap from "./DriverDeliveryMap";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 interface Order {
   id: string;
@@ -20,13 +23,47 @@ interface DriverActiveDeliveryProps {
   orders: Order[];
   driverLocation: { lat: number; lng: number } | null;
   onDeliveryComplete: () => void;
+  onStatusChange?: () => void;
 }
 
 const openGoogleMaps = (address: string) => {
   window.open(`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(address)}`, "_blank");
 };
 
-const DriverActiveDelivery = ({ orders, driverLocation, onDeliveryComplete }: DriverActiveDeliveryProps) => {
+// Progress steps based on status
+const STEPS = [
+  { key: "driver_assigned", label: "Assigned", icon: Package },
+  { key: "picking_up", label: "Picking Up", icon: Truck },
+  { key: "out_for_delivery", label: "On the Way", icon: Navigation },
+  { key: "delivered", label: "Delivered", icon: CheckCircle2 },
+];
+
+const getStepIndex = (status: string) => {
+  if (status === "out_for_delivery") return 2;
+  if (status === "picking_up") return 1;
+  if (status === "delivered") return 3;
+  return 0; // driver_assigned or default
+};
+
+const DriverActiveDelivery = ({ orders, driverLocation, onDeliveryComplete, onStatusChange }: DriverActiveDeliveryProps) => {
+  const [updatingStatus, setUpdatingStatus] = useState<string | null>(null);
+
+  const handleConfirmArrival = async (orderId: string) => {
+    setUpdatingStatus(orderId);
+    await supabase.from("orders").update({ status: "picking_up" }).eq("id", orderId);
+    toast.success("Arrival confirmed! Pick up the order.");
+    onStatusChange?.();
+    setUpdatingStatus(null);
+  };
+
+  const handleConfirmPickup = async (orderId: string) => {
+    setUpdatingStatus(orderId);
+    await supabase.from("orders").update({ status: "out_for_delivery" }).eq("id", orderId);
+    toast.success("Pickup confirmed! Heading to customer.");
+    onStatusChange?.();
+    setUpdatingStatus(null);
+  };
+
   if (orders.length === 0) {
     return (
       <div className="py-20 text-center text-muted-foreground">
@@ -43,76 +80,139 @@ const DriverActiveDelivery = ({ orders, driverLocation, onDeliveryComplete }: Dr
         <p className="text-sm text-foreground font-semibold flex items-center gap-2">
           <Navigation className="h-4 w-4 text-primary" /> Current Trips
         </p>
-        <p className="text-xs text-muted-foreground mt-1">Enter customer's delivery code to complete.</p>
+        <p className="text-xs text-muted-foreground mt-1">Follow the progress bar for each delivery.</p>
       </div>
 
-      {orders.map(order => (
-        <div key={order.id} className="rounded-2xl border-2 border-primary bg-card shadow-orange overflow-hidden">
-          {/* Map */}
-          <DriverDeliveryMap
-            driverLocation={driverLocation}
-            customerAddress={order.customer_address}
-            restaurantName={order.restaurant}
-          />
+      {orders.map(order => {
+        const currentStep = getStepIndex(order.status);
 
-          <div className="p-4 space-y-4">
-            {/* Order info */}
-            <div className="flex items-start justify-between">
-              <div>
-                <span className="font-bold text-foreground text-lg">Order #{order.order_number}</span>
-                <span className="ml-2 rounded-full bg-primary/10 px-2.5 py-1 text-xs font-bold text-primary">
-                  On the way
-                </span>
+        return (
+          <div key={order.id} className="rounded-2xl border-2 border-primary bg-card shadow-orange overflow-hidden">
+            {/* Map */}
+            <DriverDeliveryMap
+              driverLocation={driverLocation}
+              customerAddress={order.customer_address}
+              restaurantName={order.restaurant}
+            />
+
+            <div className="p-4 space-y-4">
+              {/* Order info */}
+              <div className="flex items-start justify-between">
+                <div>
+                  <span className="font-bold text-foreground text-lg">Order #{order.order_number}</span>
+                  <span className="ml-2 rounded-full bg-primary/10 px-2.5 py-1 text-xs font-bold text-primary capitalize">
+                    {order.status.replace(/_/g, " ")}
+                  </span>
+                </div>
+                <span className="font-bold text-primary text-lg">R{order.total}</span>
               </div>
-              <span className="font-bold text-primary text-lg">R{order.total}</span>
-            </div>
 
-            {/* Navigate button */}
-            <button
-              onClick={() => openGoogleMaps(order.customer_address)}
-              className="flex w-full items-center gap-3 rounded-2xl bg-[hsl(var(--driver-info)/0.08)] border border-[hsl(var(--driver-info)/0.2)] px-4 py-3.5 text-sm font-semibold text-[hsl(var(--driver-info))] hover:bg-[hsl(var(--driver-info)/0.15)] transition-colors"
-            >
-              <Navigation className="h-5 w-5" />
-              <span className="flex-1 text-left truncate">{order.customer_address}</span>
-              <ExternalLink className="h-4 w-4 shrink-0" />
-            </button>
-
-            {/* Customer info & call */}
-            <div className="flex items-center justify-between rounded-xl bg-secondary/50 px-4 py-3">
-              <div>
-                <p className="text-sm font-semibold text-foreground">{order.customer_name}</p>
-                <p className="text-xs text-muted-foreground">{order.customer_contact}</p>
+              {/* Progress bar */}
+              <div className="relative">
+                <div className="flex items-center justify-between mb-2">
+                  {STEPS.map((step, i) => {
+                    const Icon = step.icon;
+                    const isActive = i <= currentStep;
+                    const isCurrent = i === currentStep;
+                    return (
+                      <div key={step.key} className="flex flex-col items-center z-10 relative">
+                        <div className={`flex h-8 w-8 items-center justify-center rounded-full transition-all ${
+                          isCurrent
+                            ? "bg-primary text-primary-foreground ring-4 ring-primary/20 scale-110"
+                            : isActive
+                              ? "bg-[hsl(var(--driver-success))] text-white"
+                              : "bg-secondary text-muted-foreground"
+                        }`}>
+                          <Icon className="h-4 w-4" />
+                        </div>
+                        <span className={`text-[9px] mt-1 font-semibold ${isCurrent ? "text-primary" : isActive ? "text-[hsl(var(--driver-success))]" : "text-muted-foreground"}`}>
+                          {step.label}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+                {/* Progress line */}
+                <div className="absolute top-4 left-4 right-4 h-0.5 bg-secondary -z-0">
+                  <div
+                    className="h-full bg-primary transition-all duration-500"
+                    style={{ width: `${(currentStep / (STEPS.length - 1)) * 100}%` }}
+                  />
+                </div>
               </div>
-              <a
-                href={`tel:${order.customer_contact}`}
-                className="flex h-10 w-10 items-center justify-center rounded-full bg-[hsl(var(--driver-success)/0.1)] text-[hsl(var(--driver-success))] hover:bg-[hsl(var(--driver-success)/0.2)] transition-colors"
+
+              {/* Action buttons based on status */}
+              {order.status === "driver_assigned" || order.status === "ready" && (
+                <button
+                  onClick={() => handleConfirmArrival(order.id)}
+                  disabled={updatingStatus === order.id}
+                  className="w-full rounded-xl bg-[hsl(var(--driver-info))] py-3.5 text-sm font-bold text-white disabled:opacity-50 transition-all hover:scale-[1.01] active:scale-[0.99] flex items-center justify-center gap-2"
+                >
+                  <MapPin className="h-4 w-4" />
+                  {updatingStatus === order.id ? "Updating..." : "Confirm Arrival at Restaurant"}
+                </button>
+              )}
+
+              {order.status === "picking_up" && (
+                <button
+                  onClick={() => handleConfirmPickup(order.id)}
+                  disabled={updatingStatus === order.id}
+                  className="w-full rounded-xl bg-[hsl(var(--driver-warning))] py-3.5 text-sm font-bold text-white disabled:opacity-50 transition-all hover:scale-[1.01] active:scale-[0.99] flex items-center justify-center gap-2"
+                >
+                  <Truck className="h-4 w-4" />
+                  {updatingStatus === order.id ? "Updating..." : "Confirm Pickup — Head to Customer"}
+                </button>
+              )}
+
+              {/* Navigate button */}
+              <button
+                onClick={() => openGoogleMaps(order.customer_address)}
+                className="flex w-full items-center gap-3 rounded-2xl bg-[hsl(var(--driver-info)/0.08)] border border-[hsl(var(--driver-info)/0.2)] px-4 py-3.5 text-sm font-semibold text-[hsl(var(--driver-info))] hover:bg-[hsl(var(--driver-info)/0.15)] transition-colors"
               >
-                <Phone className="h-5 w-5" />
-              </a>
-            </div>
+                <Navigation className="h-5 w-5" />
+                <span className="flex-1 text-left truncate">{order.customer_address}</span>
+                <ExternalLink className="h-4 w-4 shrink-0" />
+              </button>
 
-            {/* Order items */}
-            <div className="rounded-xl border border-border p-3">
-              <p className="text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wide">Order Items</p>
-              <div className="space-y-1">
-                {order.items.map((item: any, i: number) => (
-                  <div key={i} className="flex justify-between text-sm">
-                    <span className="text-foreground">{item.quantity}× {item.name}</span>
-                    <span className="text-muted-foreground">R{(item.price * item.quantity).toFixed(0)}</span>
-                  </div>
-                ))}
+              {/* Customer info & call */}
+              <div className="flex items-center justify-between rounded-xl bg-secondary/50 px-4 py-3">
+                <div>
+                  <p className="text-sm font-semibold text-foreground">{order.customer_name}</p>
+                  <p className="text-xs text-muted-foreground">{order.customer_contact}</p>
+                </div>
+                <a
+                  href={`tel:${order.customer_contact}`}
+                  className="flex h-10 w-10 items-center justify-center rounded-full bg-[hsl(var(--driver-success)/0.1)] text-[hsl(var(--driver-success))] hover:bg-[hsl(var(--driver-success)/0.2)] transition-colors"
+                >
+                  <Phone className="h-5 w-5" />
+                </a>
               </div>
-              <div className="mt-2 border-t border-border pt-2 flex justify-between">
-                <span className="text-sm font-bold text-foreground">Delivery Fee</span>
-                <span className="text-sm font-bold text-[hsl(var(--driver-success))]">+R{order.delivery_fee}</span>
-              </div>
-            </div>
 
-            {/* Verification */}
-            <DeliveryVerification orderId={order.id} onVerified={onDeliveryComplete} />
+              {/* Order items */}
+              <div className="rounded-xl border border-border p-3">
+                <p className="text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wide">Order Items</p>
+                <div className="space-y-1">
+                  {order.items.map((item: any, i: number) => (
+                    <div key={i} className="flex justify-between text-sm">
+                      <span className="text-foreground">{item.quantity}× {item.name}</span>
+                      <span className="text-muted-foreground">R{(item.price * item.quantity).toFixed(0)}</span>
+                    </div>
+                  ))}
+                </div>
+                <div className="mt-2 border-t border-border pt-2 flex justify-between">
+                  <span className="text-sm font-bold text-foreground">Delivery Fee</span>
+                  <span className="text-sm font-bold text-[hsl(var(--driver-success))]">+R{order.delivery_fee}</span>
+                </div>
+              </div>
+
+              {/* Verification - only show when out for delivery */}
+              {order.status === "out_for_delivery" && (
+                <DeliveryVerification orderId={order.id} onVerified={onDeliveryComplete} />
+              )}
+            </div>
           </div>
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 };
