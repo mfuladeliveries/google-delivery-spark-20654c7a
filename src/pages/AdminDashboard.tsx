@@ -24,6 +24,7 @@ interface RecentOrder {
   restaurant: string;
   created_at: string;
   payment_method: string;
+  driver_id: string | null;
 }
 
 interface UserRecord {
