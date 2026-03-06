@@ -22,8 +22,7 @@ const BottomNav = () => {
   ];
 
   const driverLinks = [
-    { to: "/driver", icon: Truck, label: "Jobs" },
-    { to: "/driver/active", icon: Home, label: "Active" },
+    { to: "/driver", icon: Truck, label: "Driver" },
     { to: user ? "/profile" : "/auth", icon: User, label: "Profile" },
   ];
 

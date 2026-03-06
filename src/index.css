@@ -15,8 +15,13 @@
     --popover: 0 0% 100%;
     --popover-foreground: 0 0% 10%;
 
-    --primary: 0 70% 35.2941%;
+    --primary: 21 100% 50%;
     --primary-foreground: 0 0% 100%;
+
+    --driver-success: 142 76% 36%;
+    --driver-success-foreground: 0 0% 100%;
+    --driver-warning: 38 92% 50%;
+    --driver-info: 217 91% 60%;
 
     --secondary: 0 0% 95%;
     --secondary-foreground: 0 0% 20%;
