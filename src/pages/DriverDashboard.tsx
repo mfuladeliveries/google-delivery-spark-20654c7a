@@ -67,10 +67,11 @@ const DriverDashboard = () => {
   }, []);
 
   useEffect(() => {
-    if (!authLoading && (!user || (role !== 'driver' && role !== 'admin'))) {
+    const hasAccess = roles.includes('driver') || roles.includes('admin');
+    if (!authLoading && (!user || !hasAccess)) {
       navigate("/");
     }
-  }, [user, role, authLoading, navigate]);
+  }, [user, roles, authLoading, navigate]);
 
   useEffect(() => {
     if (!user) return;
