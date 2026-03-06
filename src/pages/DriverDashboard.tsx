@@ -104,7 +104,6 @@ const DriverDashboard = () => {
 
   // GPS tracking
   useEffect(() => {
-    // Always track driver location when online
     if (!user || !driverProfile?.is_online) {
       if (locationWatchRef.current !== null) {
         navigator.geolocation.clearWatch(locationWatchRef.current);
@@ -118,7 +117,6 @@ const DriverDashboard = () => {
         const loc = { lat: pos.coords.latitude, lng: pos.coords.longitude };
         setDriverLocation(loc);
 
-        // Broadcast to active orders
         const activeIds = myOrders.map((o) => o.id);
         for (const id of activeIds) {
           await supabase.from("orders").update({
@@ -148,7 +146,7 @@ const DriverDashboard = () => {
   const fetchOrders = async () => {
     const [{ data: pending }, { data: mine }] = await Promise.all([
       supabase.from("orders").select("*").eq("status", "ready").is("driver_id", null).order("created_at"),
-      supabase.from("orders").select("*").eq("driver_id", user!.id).in("status", ["out_for_delivery"]).order("created_at"),
+      supabase.from("orders").select("*").eq("driver_id", user!.id).in("status", ["driver_assigned", "picking_up", "out_for_delivery"]).order("created_at"),
     ]);
     if (pending) setPendingOrders(pending.map((o) => ({ ...o, items: (o.items as any[]) || [] })));
     if (mine) setMyOrders(mine.map((o) => ({ ...o, items: (o.items as any[]) || [] })));
@@ -193,7 +191,7 @@ const DriverDashboard = () => {
     setAccepting(orderId);
     await supabase.from("orders").update({
       driver_id: user!.id,
-      status: "out_for_delivery",
+      status: "driver_assigned",
     }).eq("id", orderId);
     await fetchOrders();
     setTab("active");
@@ -219,7 +217,13 @@ const DriverDashboard = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <DriverHeader isOnline={isOnline} togglingOnline={togglingOnline} onToggleOnline={toggleOnline} />
+      <DriverHeader
+        isOnline={isOnline}
+        togglingOnline={togglingOnline}
+        onToggleOnline={toggleOnline}
+        activeCount={myOrders.length}
+        onProfileClick={() => setTab("profile")}
+      />
 
       <main className="mx-auto max-w-2xl px-4 py-4 pb-24">
         {tab === "jobs" && (
@@ -237,6 +241,7 @@ const DriverDashboard = () => {
             orders={myOrders}
             driverLocation={driverLocation}
             onDeliveryComplete={handleDeliveryComplete}
+            onStatusChange={fetchOrders}
           />
         )}
 
