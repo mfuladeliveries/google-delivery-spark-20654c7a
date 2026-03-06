@@ -17,6 +17,7 @@ interface Order {
   status: string;
   special_notes: string;
   created_at: string;
+  delivery_code: string | null;
 }
 
 interface MenuItem {
