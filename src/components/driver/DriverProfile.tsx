@@ -64,9 +64,12 @@ const DriverProfileTab = () => {
       return;
     }
 
-    const { data: urlData } = supabase.storage.from("driver-documents").getPublicUrl(path);
-    await supabase.from("driver_profiles").update({ [field]: urlData.publicUrl }).eq("user_id", user.id);
-    setDriverData(prev => ({ ...prev, [field]: urlData.publicUrl }));
+    // Store the path (not a public URL) since bucket is private
+    const storagePath = path;
+    await supabase.from("driver_profiles").update({ [field]: storagePath }).eq("user_id", user.id);
+    // Generate a signed URL for display
+    const { data: signedData } = await supabase.storage.from("driver-documents").createSignedUrl(storagePath, 3600);
+    setDriverData(prev => ({ ...prev, [field]: signedData?.signedUrl || storagePath }));
     toast.success("Document uploaded!");
     setUploading(null);
   };
