@@ -307,6 +307,14 @@ const RestaurantDashboard = () => {
                       {order.special_notes && (
                         <p className="mt-1 rounded-lg bg-secondary px-2 py-1 text-xs text-muted-foreground">📝 {order.special_notes}</p>
                       )}
+                      {/* Delivery PIN */}
+                      {order.delivery_code && !["delivered", "cancelled", "rejected"].includes(order.status) && (
+                        <div className="mt-1.5 flex items-center gap-1.5 rounded-lg bg-primary/5 border border-primary/20 px-2 py-1">
+                          <ShieldCheck className="h-3 w-3 text-primary" />
+                          <span className="text-[10px] text-muted-foreground">PIN:</span>
+                          <span className="text-xs font-bold tracking-[0.2em] text-primary">{order.delivery_code}</span>
+                        </div>
+                      )}
                       <div className="flex justify-between font-bold text-sm pt-1 border-t border-border">
                         <span>Total</span>
                         <span className="text-primary">R{order.total}</span>
