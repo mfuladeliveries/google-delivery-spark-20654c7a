@@ -197,10 +197,18 @@ const DriverDashboard = () => {
 
   const acceptDelivery = async (orderId: string) => {
     setAccepting(orderId);
-    await supabase.from("orders").update({
-      driver_id: user!.id,
-      status: "driver_assigned",
-    }).eq("id", orderId);
+    const { data, error } = await supabase.rpc("claim_order", { p_order_id: orderId });
+    if (error) {
+      toast.error(error.message || "Failed to claim order");
+      setAccepting(null);
+      return;
+    }
+    if (data === false) {
+      toast.error("Order already taken by another driver!");
+      await fetchOrders();
+      setAccepting(null);
+      return;
+    }
     await fetchOrders();
     setTab("active");
     setAccepting(null);

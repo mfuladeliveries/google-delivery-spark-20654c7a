@@ -305,6 +305,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      claim_order: { Args: { p_order_id: string }; Returns: boolean }
       create_verified_order:
         | {
             Args: {
