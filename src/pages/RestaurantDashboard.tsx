@@ -654,7 +654,7 @@ const RestaurantDashboard = () => {
                             <div className="flex items-center gap-2 rounded-xl bg-emerald-50 border border-emerald-200 px-4 py-3">
                               <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
                               <span className="text-sm font-semibold text-emerald-700">
-                                Waiting for driver pickup — auto-assigning nearest driver...
+                                Waiting for driver pickup — broadcasted to all drivers
                               </span>
                             </div>
                           )}
