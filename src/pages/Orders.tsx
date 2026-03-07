@@ -207,22 +207,18 @@ const Orders = () => {
                   )}
 
                   <div className="p-4">
-                    <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center justify-between mb-1">
                       <span className="font-bold text-foreground text-base">Order #{order.order_number}</span>
                       <span className="text-sm text-muted-foreground">🍽️ {order.restaurant}</span>
                     </div>
 
-                    {/* Delivery verification code from localStorage */}
+                    {/* Delivery PIN shown directly under order number until delivered */}
                     {deliveryPins[order.id] && order.status !== "delivered" && !isCancelled && (
-                      <div className="mb-3 flex items-center gap-2 rounded-xl border border-primary/20 bg-primary/5 px-3 py-2">
-                        <ShieldCheck className="h-4 w-4 text-primary" />
-                        <div>
-                          <p className="text-xs text-muted-foreground">Delivery PIN</p>
-                          <p className="text-lg font-bold tracking-[0.3em] text-primary">{deliveryPins[order.id]}</p>
-                        </div>
-                        <p className="ml-auto text-[10px] text-muted-foreground max-w-[120px] text-right">
-                          Share this PIN with your driver to confirm delivery
-                        </p>
+                      <div className="mb-3 flex items-center gap-2 rounded-lg border border-primary/20 bg-primary/5 px-3 py-1.5">
+                        <ShieldCheck className="h-4 w-4 text-primary shrink-0" />
+                        <span className="text-xs text-muted-foreground">Delivery PIN:</span>
+                        <span className="text-base font-bold tracking-[0.3em] text-primary">{deliveryPins[order.id]}</span>
+                        <span className="ml-auto text-[9px] text-muted-foreground">Share with driver</span>
                       </div>
                     )}
 
