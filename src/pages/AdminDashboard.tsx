@@ -563,6 +563,15 @@ const OrdersTable = ({ orders }: { orders: RecentOrder[] }) => (
                 <td className="px-3 py-2.5 text-xs text-muted-foreground whitespace-nowrap">
                   {new Date(order.created_at).toLocaleString("en-ZA", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}
                 </td>
+                <td className="px-3 py-2.5 text-xs whitespace-nowrap">
+                  {order.delivered_at ? (
+                    <span className="text-emerald-600 font-medium">
+                      {new Date(order.delivered_at).toLocaleString("en-ZA", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}
+                    </span>
+                  ) : (
+                    <span className="text-muted-foreground">—</span>
+                  )}
+                </td>
               </tr>
             ))
           )}
