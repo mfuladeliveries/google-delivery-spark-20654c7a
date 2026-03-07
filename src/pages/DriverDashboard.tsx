@@ -117,6 +117,14 @@ const DriverDashboard = () => {
         const loc = { lat: pos.coords.latitude, lng: pos.coords.longitude };
         setDriverLocation(loc);
 
+        // Persist location to driver_profiles for auto-assignment
+        await supabase.from("driver_profiles").update({
+          current_lat: loc.lat,
+          current_lng: loc.lng,
+          location_updated_at: new Date().toISOString(),
+        }).eq("user_id", user!.id);
+
+        // Update active order locations for customer tracking
         const activeIds = myOrders.map((o) => o.id);
         for (const id of activeIds) {
           await supabase.from("orders").update({
