@@ -74,6 +74,7 @@ const RestaurantDashboard = () => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [restaurant, setRestaurant] = useState<Restaurant | null>(null);
+  const [allRestaurants, setAllRestaurants] = useState<RestaurantOption[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddItem, setShowAddItem] = useState(false);
   const [newItem, setNewItem] = useState({ name: "", description: "", price: "", image: "", category: "" });
