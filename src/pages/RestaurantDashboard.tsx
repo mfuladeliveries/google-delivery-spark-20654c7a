@@ -166,6 +166,15 @@ const RestaurantDashboard = () => {
     setLoading(false);
   };
 
+  const switchRestaurant = async (restId: string) => {
+    const selected = allRestaurants.find(r => r.id === restId);
+    if (!selected) return;
+    setRestaurant(selected as Restaurant);
+    setLoading(true);
+    await Promise.all([fetchOrdersFor(selected.id), fetchMenuFor(selected.id)]);
+    setLoading(false);
+  };
+
   const fetchOrders = async () => {
     const { data } = await supabase
       .from("orders")
