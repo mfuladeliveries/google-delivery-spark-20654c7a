@@ -1,7 +1,17 @@
-import { useState } from "react";
+import { useState, Component, ReactNode } from "react";
 import { Navigation, Phone, ExternalLink, MapPin, CheckCircle2, Truck, Package, ShieldCheck } from "lucide-react";
 import DeliveryVerification from "@/components/DeliveryVerification";
-import DriverDeliveryMap from "./DriverDeliveryMap";
+
+class MapErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean }> {
+  state = { hasError: false };
+  static getDerivedStateFromError() { return { hasError: true }; }
+  render() {
+    if (this.state.hasError) {
+      return <div className="h-56 w-full bg-muted rounded-t-2xl flex items-center justify-center text-muted-foreground text-sm">Map unavailable</div>;
+    }
+    return this.props.children;
+  }
+}
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -89,11 +99,9 @@ const DriverActiveDelivery = ({ orders, driverLocation, onDeliveryComplete, onSt
         return (
           <div key={order.id} className="rounded-2xl border-2 border-primary bg-card shadow-orange overflow-hidden">
             {/* Map */}
-            <DriverDeliveryMap
-              driverLocation={driverLocation}
-              customerAddress={order.customer_address}
-              restaurantName={order.restaurant}
-            />
+            <div className="h-56 w-full bg-muted rounded-t-2xl flex items-center justify-center text-muted-foreground text-sm">
+              📍 Delivery map available when GPS is active
+            </div>
 
             <div className="p-4 space-y-4">
               {/* Order info */}
