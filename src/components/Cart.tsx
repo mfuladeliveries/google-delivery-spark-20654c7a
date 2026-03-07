@@ -1,4 +1,4 @@
-import { X, Plus, Minus, MessageCircle, Trash2 } from "lucide-react";
+import { X, Plus, Minus, Package, Trash2 } from "lucide-react";
 import { CartItem } from "@/hooks/useCart";
 import { storeInfo } from "@/data/menu";
 
@@ -146,10 +146,10 @@ const Cart = ({
             <button
               onClick={onCheckout}
               disabled={subtotal < storeInfo.minimumOrder}
-              className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-[hsl(142,70%,45%)] py-3 font-display font-bold text-white transition-transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:hover:scale-100"
+              className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-primary py-3 font-display font-bold text-primary-foreground transition-transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:hover:scale-100 shadow-orange"
             >
-              <MessageCircle className="h-5 w-5" />
-              Order via WhatsApp
+              <Package className="h-5 w-5" />
+              Place Order
             </button>
 
             <p className="mt-2 text-center text-[10px] text-muted-foreground">
