@@ -345,6 +345,18 @@ const AdminDashboard = () => {
   );
 };
 
+// Helper to create user via edge function (doesn't log admin out)
+const adminCreateUser = async (payload: Record<string, any>) => {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) throw new Error("Not authenticated");
+  const res = await supabase.functions.invoke("admin-create-user", {
+    body: payload,
+  });
+  if (res.error) throw new Error(res.error.message || "Failed to create user");
+  if (res.data?.error) throw new Error(res.data.error);
+  return res.data;
+};
+
 // Driver registration + listing component
 const DriversTab = ({ drivers, onDriverAdded }: { drivers: DriverRecord[]; onDriverAdded: () => void }) => {
   const [showForm, setShowForm] = useState(false);
@@ -364,33 +376,11 @@ const DriversTab = ({ drivers, onDriverAdded }: { drivers: DriverRecord[]; onDri
     }
     setRegistering(true);
     try {
-      // Create the user account
-      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-        email,
-        password,
-        options: { data: { full_name: fullName } },
+      await adminCreateUser({
+        email, password, full_name: fullName, contact_number: contact,
+        role: "driver", vehicle_type: vehicleType, license_plate: licensePlate,
       });
-      if (signUpError) throw signUpError;
-      if (!signUpData.user) throw new Error("Failed to create user");
-
-      const newUserId = signUpData.user.id;
-
-      // Update profile
-      await supabase.from("profiles").update({
-        full_name: fullName,
-        contact_number: contact,
-      }).eq("user_id", newUserId);
-
-      // Set role to driver (remove default customer role, add driver)
-      await supabase.from("user_roles").update({ role: "driver" as any }).eq("user_id", newUserId);
-
-      // Update driver profile with vehicle info
-      await supabase.from("driver_profiles").update({
-        vehicle_type: vehicleType,
-        license_plate: licensePlate,
-      }).eq("user_id", newUserId);
-
-      toast.success(`Driver ${fullName} registered! They'll need to verify their email.`);
+      toast.success(`Driver ${fullName} registered successfully!`);
       setShowForm(false);
       setEmail(""); setPassword(""); setFullName(""); setContact(""); setLicensePlate("");
       onDriverAdded();
