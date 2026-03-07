@@ -99,13 +99,18 @@ const DriverActiveDelivery = ({ orders, driverLocation, onDeliveryComplete, onSt
         return (
           <div key={order.id} className="rounded-2xl border-2 border-primary bg-card shadow-orange overflow-hidden">
             {/* Map */}
-            <Suspense fallback={<div className="h-56 w-full bg-muted animate-pulse rounded-t-2xl" />}>
-              <DriverDeliveryMap
-                driverLocation={driverLocation}
-                customerAddress={order.customer_address}
-                restaurantName={order.restaurant}
-              />
-            </Suspense>
+            <MapErrorBoundary>
+              {(() => {
+                const DriverDeliveryMap = require("./DriverDeliveryMap").default;
+                return (
+                  <DriverDeliveryMap
+                    driverLocation={driverLocation}
+                    customerAddress={order.customer_address}
+                    restaurantName={order.restaurant}
+                  />
+                );
+              })()}
+            </MapErrorBoundary>
 
             <div className="p-4 space-y-4">
               {/* Order info */}
