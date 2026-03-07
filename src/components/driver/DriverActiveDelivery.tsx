@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useState, lazy, Suspense } from "react";
 import { Navigation, Phone, ExternalLink, MapPin, CheckCircle2, Truck, Package, ShieldCheck } from "lucide-react";
 import DeliveryVerification from "@/components/DeliveryVerification";
-import DriverDeliveryMap from "./DriverDeliveryMap";
+const DriverDeliveryMap = lazy(() => import("./DriverDeliveryMap"));
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
