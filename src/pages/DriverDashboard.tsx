@@ -154,7 +154,7 @@ const DriverDashboard = () => {
 
   const fetchOrders = async () => {
     const [{ data: pending }, { data: mine }] = await Promise.all([
-      supabase.from("orders").select("id, order_number, restaurant, customer_address, total, delivery_fee, created_at, items").eq("status", "ready").is("driver_id", null).order("created_at"),
+      supabase.from("driver_job_board" as any).select("id, order_number, restaurant, customer_address, total, delivery_fee, created_at, items").order("created_at"),
       supabase.from("orders").select("*").eq("driver_id", user!.id).in("status", ["driver_assigned", "picking_up", "out_for_delivery"]).order("created_at"),
     ]);
     if (pending) setPendingOrders(pending.map((o) => ({ ...o, items: (o.items as any[]) || [], customer_name: "", customer_contact: "", status: "ready" })));
