@@ -212,16 +212,16 @@ const Orders = () => {
                       <span className="text-sm text-muted-foreground">🍽️ {order.restaurant}</span>
                     </div>
 
-                    {/* Delivery verification code */}
-                    {order.delivery_code && order.status !== "delivered" && !isCancelled && (
+                    {/* Delivery verification code from localStorage */}
+                    {deliveryPins[order.id] && order.status !== "delivered" && !isCancelled && (
                       <div className="mb-3 flex items-center gap-2 rounded-xl border border-primary/20 bg-primary/5 px-3 py-2">
                         <ShieldCheck className="h-4 w-4 text-primary" />
                         <div>
-                          <p className="text-xs text-muted-foreground">Delivery Code</p>
-                          <p className="text-lg font-bold tracking-[0.3em] text-primary">{order.delivery_code}</p>
+                          <p className="text-xs text-muted-foreground">Delivery PIN</p>
+                          <p className="text-lg font-bold tracking-[0.3em] text-primary">{deliveryPins[order.id]}</p>
                         </div>
                         <p className="ml-auto text-[10px] text-muted-foreground max-w-[120px] text-right">
-                          Share this code with your driver to confirm delivery
+                          Share this PIN with your driver to confirm delivery
                         </p>
                       </div>
                     )}
