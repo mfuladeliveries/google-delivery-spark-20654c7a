@@ -121,6 +121,11 @@ const RestaurantDashboard = () => {
   useEffect(() => {
     if (!user) return;
     fetchAll();
+  }, [user]);
+
+  // Realtime subscription - updates when restaurant changes
+  useEffect(() => {
+    if (!user) return;
 
     const channel = supabase
       .channel('restaurant-orders')
