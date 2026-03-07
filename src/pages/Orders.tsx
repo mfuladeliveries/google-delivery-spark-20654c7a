@@ -68,6 +68,10 @@ const Orders = () => {
 
   useEffect(() => {
     if (!user) return;
+    // Load saved delivery PINs from localStorage
+    const savedPins = JSON.parse(localStorage.getItem("delivery_pins") || "{}");
+    setDeliveryPins(savedPins);
+
     const fetchOrders = async () => {
       const { data } = await supabase
         .from("orders")
@@ -79,10 +83,18 @@ const Orders = () => {
           data.map((o) => ({
             ...o,
             items: (o.items as unknown as OrderItem[]) || [],
-            delivery_code: (o as any).delivery_code || "",
+            delivery_code: "",
             customer_address: o.customer_address || "",
           }))
         );
+        // Clean up PINs for delivered orders
+        const deliveredIds = data.filter(o => o.status === "delivered" || o.status === "cancelled" || o.status === "rejected").map(o => o.id);
+        if (deliveredIds.length > 0) {
+          const updated = { ...savedPins };
+          deliveredIds.forEach(id => delete updated[id]);
+          localStorage.setItem("delivery_pins", JSON.stringify(updated));
+          setDeliveryPins(updated);
+        }
       }
       setLoading(false);
     };
