@@ -48,6 +48,11 @@ interface Restaurant {
   name: string;
 }
 
+interface RestaurantOption {
+  id: string;
+  name: string;
+}
+
 const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string; icon: string }> = {
   pending: { label: "Pending", color: "text-muted-foreground", bg: "bg-muted", icon: "🕐" },
   confirmed: { label: "Accepted", color: "text-blue-700", bg: "bg-blue-50 border-blue-200", icon: "✅" },
@@ -69,6 +74,7 @@ const RestaurantDashboard = () => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [restaurant, setRestaurant] = useState<Restaurant | null>(null);
+  const [allRestaurants, setAllRestaurants] = useState<RestaurantOption[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddItem, setShowAddItem] = useState(false);
   const [newItem, setNewItem] = useState({ name: "", description: "", price: "", image: "", category: "" });
@@ -135,18 +141,37 @@ const RestaurantDashboard = () => {
   }, [user, restaurant?.id]);
 
   const fetchAll = async () => {
-    const { data: rest } = await supabase
+    const { data: restList } = await supabase
       .from("restaurants")
       .select("id, name")
       .eq("owner_user_id", user!.id)
-      .maybeSingle();
+      .order("name");
 
-    if (rest) {
-      setRestaurant(rest as Restaurant);
-      await Promise.all([fetchOrdersFor(rest.id), fetchMenuFor(rest.id)]);
+    if (restList && restList.length > 0) {
+      setAllRestaurants(restList);
+      const first = restList[0];
+      setRestaurant(first as Restaurant);
+      await Promise.all([fetchOrdersFor(first.id), fetchMenuFor(first.id)]);
     } else if (role === 'admin') {
-      await fetchOrders();
+      // Admin without restaurant ownership - fetch all
+      const { data: allRest } = await supabase.from("restaurants").select("id, name").order("name");
+      if (allRest && allRest.length > 0) {
+        setAllRestaurants(allRest);
+        setRestaurant(allRest[0] as Restaurant);
+        await Promise.all([fetchOrdersFor(allRest[0].id), fetchMenuFor(allRest[0].id)]);
+      } else {
+        await fetchOrders();
+      }
     }
+    setLoading(false);
+  };
+
+  const switchRestaurant = async (restId: string) => {
+    const selected = allRestaurants.find(r => r.id === restId);
+    if (!selected) return;
+    setRestaurant(selected as Restaurant);
+    setLoading(true);
+    await Promise.all([fetchOrdersFor(selected.id), fetchMenuFor(selected.id)]);
     setLoading(false);
   };
 
@@ -322,7 +347,19 @@ const RestaurantDashboard = () => {
                 <ChefHat className="h-5 w-5 text-primary-foreground" />
               </div>
               <div>
-                <h1 className="font-display text-sm text-foreground">{restaurant?.name || "Restaurant"}</h1>
+                {allRestaurants.length > 1 ? (
+                  <select
+                    value={restaurant?.id || ""}
+                    onChange={e => switchRestaurant(e.target.value)}
+                    className="font-display text-sm text-foreground bg-transparent border-none focus:outline-none focus:ring-0 cursor-pointer pr-4 -ml-1 max-w-[140px] sm:max-w-[200px]"
+                  >
+                    {allRestaurants.map(r => (
+                      <option key={r.id} value={r.id}>{r.name}</option>
+                    ))}
+                  </select>
+                ) : (
+                  <h1 className="font-display text-sm text-foreground">{restaurant?.name || "Restaurant"}</h1>
+                )}
                 <p className="text-[10px] text-muted-foreground">Management Dashboard</p>
               </div>
             </div>
