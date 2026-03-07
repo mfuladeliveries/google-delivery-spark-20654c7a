@@ -1,4 +1,4 @@
-import { X, Plus, Minus, MessageCircle, Trash2 } from "lucide-react";
+import { X, Plus, Minus, Package, Trash2 } from "lucide-react";
 import { CartItem } from "@/hooks/useCart";
 import { storeInfo } from "@/data/menu";
 
