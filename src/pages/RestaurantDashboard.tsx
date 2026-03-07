@@ -262,10 +262,11 @@ const RestaurantDashboard = () => {
 
   // CSV Export
   const exportCSV = () => {
-    const headers = ["Order #", "Date", "Customer", "Contact", "Address", "Items", "Subtotal", "Tax", "Delivery Fee", "Tip", "Total", "Status", "Payment"];
+    const headers = ["Order #", "Date", "Delivered At", "Customer", "Contact", "Address", "Items", "Subtotal", "Tax", "Delivery Fee", "Tip", "Total", "Status", "Payment"];
     const rows = filteredOrders.map(o => [
       o.order_number,
       new Date(o.created_at).toLocaleString("en-ZA"),
+      (o as any).delivered_at ? new Date((o as any).delivered_at).toLocaleString("en-ZA") : "",
       o.customer_name,
       o.customer_contact,
       o.customer_address,
