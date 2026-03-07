@@ -634,6 +634,7 @@ const RestaurantsTab = ({
       </div>
     </>
   );
+};
 
 // Extracted orders table component
 const OrdersTable = ({ orders }: { orders: RecentOrder[] }) => (
