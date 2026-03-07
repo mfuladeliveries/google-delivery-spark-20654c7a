@@ -347,7 +347,19 @@ const RestaurantDashboard = () => {
                 <ChefHat className="h-5 w-5 text-primary-foreground" />
               </div>
               <div>
-                <h1 className="font-display text-sm text-foreground">{restaurant?.name || "Restaurant"}</h1>
+                {allRestaurants.length > 1 ? (
+                  <select
+                    value={restaurant?.id || ""}
+                    onChange={e => switchRestaurant(e.target.value)}
+                    className="font-display text-sm text-foreground bg-transparent border-none focus:outline-none focus:ring-0 cursor-pointer pr-4 -ml-1 max-w-[140px] sm:max-w-[200px]"
+                  >
+                    {allRestaurants.map(r => (
+                      <option key={r.id} value={r.id}>{r.name}</option>
+                    ))}
+                  </select>
+                ) : (
+                  <h1 className="font-display text-sm text-foreground">{restaurant?.name || "Restaurant"}</h1>
+                )}
                 <p className="text-[10px] text-muted-foreground">Management Dashboard</p>
               </div>
             </div>
