@@ -1,7 +1,17 @@
-import { useState, lazy, Suspense } from "react";
+import { useState, Component, ReactNode } from "react";
 import { Navigation, Phone, ExternalLink, MapPin, CheckCircle2, Truck, Package, ShieldCheck } from "lucide-react";
 import DeliveryVerification from "@/components/DeliveryVerification";
-const DriverDeliveryMap = lazy(() => import("./DriverDeliveryMap"));
+
+class MapErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean }> {
+  state = { hasError: false };
+  static getDerivedStateFromError() { return { hasError: true }; }
+  render() {
+    if (this.state.hasError) {
+      return <div className="h-56 w-full bg-muted rounded-t-2xl flex items-center justify-center text-muted-foreground text-sm">Map unavailable</div>;
+    }
+    return this.props.children;
+  }
+}
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
