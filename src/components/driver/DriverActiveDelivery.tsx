@@ -62,16 +62,24 @@ const DriverActiveDelivery = ({ orders, driverLocation, onDeliveryComplete, onSt
 
   const handleConfirmArrival = async (orderId: string) => {
     setUpdatingStatus(orderId);
-    await supabase.from("orders").update({ status: "picking_up" }).eq("id", orderId);
-    toast.success("Arrival confirmed! Pick up the order.");
+    const { error } = await supabase.rpc("driver_update_order", { p_order_id: orderId, p_status: "picking_up" });
+    if (error) {
+      toast.error(error.message || "Failed to update status");
+    } else {
+      toast.success("Arrival confirmed! Pick up the order.");
+    }
     onStatusChange?.();
     setUpdatingStatus(null);
   };
 
   const handleConfirmPickup = async (orderId: string) => {
     setUpdatingStatus(orderId);
-    await supabase.from("orders").update({ status: "out_for_delivery" }).eq("id", orderId);
-    toast.success("Pickup confirmed! Heading to customer.");
+    const { error } = await supabase.rpc("driver_update_order", { p_order_id: orderId, p_status: "out_for_delivery" });
+    if (error) {
+      toast.error(error.message || "Failed to update status");
+    } else {
+      toast.success("Pickup confirmed! Heading to customer.");
+    }
     onStatusChange?.();
     setUpdatingStatus(null);
   };
