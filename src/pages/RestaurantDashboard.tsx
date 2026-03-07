@@ -362,7 +362,12 @@ const RestaurantDashboard = () => {
                         {/* Ready: waiting for driver */}
                         {order.status === "ready" && (
                           <span className="rounded-xl bg-cyan-100 px-3 py-1.5 text-xs font-bold text-cyan-700">
-                            ⏳ Waiting for driver pickup
+                            ⏳ Waiting for driver pickup (auto-assigning nearest driver...)
+                          </span>
+                        )}
+                        {order.status === "driver_assigned" && (
+                          <span className="rounded-xl bg-indigo-100 px-3 py-1.5 text-xs font-bold text-indigo-700">
+                            ✅ Driver assigned — awaiting pickup
                           </span>
                         )}
                         {/* Out for delivery */}
