@@ -607,6 +607,33 @@ const RestaurantsTab = ({
                 className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20" />
             </div>
           </div>
+
+          <div className="border-t border-border pt-3 mt-1">
+            <h4 className="font-bold text-xs text-foreground mb-2">🔐 Restaurant Login (Optional)</h4>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-semibold text-muted-foreground mb-1">Owner Name</label>
+                <input value={ownerName} onChange={e => setOwnerName(e.target.value)} placeholder="Restaurant manager name"
+                  className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20" />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-muted-foreground mb-1">Owner Contact</label>
+                <input value={ownerContact} onChange={e => setOwnerContact(e.target.value)} placeholder="Phone number"
+                  className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20" />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-muted-foreground mb-1">Email</label>
+                <input type="email" value={ownerEmail} onChange={e => setOwnerEmail(e.target.value)} placeholder="login@restaurant.com"
+                  className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20" />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-muted-foreground mb-1">Password</label>
+                <input type="password" value={ownerPassword} onChange={e => setOwnerPassword(e.target.value)} placeholder="Min 6 characters" minLength={6}
+                  className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20" />
+              </div>
+            </div>
+          </div>
+
           <button type="submit" disabled={saving}
             className="w-full rounded-xl bg-primary py-2.5 text-sm font-bold text-primary-foreground disabled:opacity-50 hover:opacity-90 transition-opacity">
             {saving ? "Adding..." : "Add Restaurant"}
