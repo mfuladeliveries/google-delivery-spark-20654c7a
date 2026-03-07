@@ -1,4 +1,4 @@
-import { useState, Component, ReactNode } from "react";
+import { useState, Component, ReactNode, lazy, Suspense } from "react";
 import { Navigation, Phone, ExternalLink, MapPin, CheckCircle2, Truck, Package, ShieldCheck } from "lucide-react";
 import DeliveryVerification from "@/components/DeliveryVerification";
 
