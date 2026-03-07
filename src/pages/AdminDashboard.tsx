@@ -25,6 +25,7 @@ interface RecentOrder {
   created_at: string;
   payment_method: string;
   driver_id: string | null;
+  delivered_at: string | null;
 }
 
 interface UserRecord {
@@ -112,7 +113,7 @@ const AdminDashboard = () => {
       { data: restaurantList },
       { data: driverRoles },
     ] = await Promise.all([
-      supabase.from("orders").select("total, status, created_at, order_number, customer_name, restaurant, payment_method, id, driver_id")
+      supabase.from("orders").select("total, status, created_at, order_number, customer_name, restaurant, payment_method, id, driver_id, delivered_at")
         .order("created_at", { ascending: false }),
       supabase.from("restaurants").select("id", { count: 'exact' }),
       supabase.from("user_roles").select("id").eq("role", "driver"),
@@ -524,13 +525,14 @@ const OrdersTable = ({ orders }: { orders: RecentOrder[] }) => (
             <th className="px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground">Total</th>
             <th className="px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground">Payment</th>
             <th className="px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground">Status</th>
-            <th className="px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground">Date</th>
+            <th className="px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground">Ordered</th>
+            <th className="px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground">Delivered</th>
           </tr>
         </thead>
         <tbody>
           {orders.length === 0 ? (
             <tr>
-              <td colSpan={8} className="px-4 py-8 text-center text-muted-foreground text-xs">No orders</td>
+              <td colSpan={9} className="px-4 py-8 text-center text-muted-foreground text-xs">No orders</td>
             </tr>
           ) : (
             orders.map((order, i) => (
@@ -560,6 +562,15 @@ const OrdersTable = ({ orders }: { orders: RecentOrder[] }) => (
                 </td>
                 <td className="px-3 py-2.5 text-xs text-muted-foreground whitespace-nowrap">
                   {new Date(order.created_at).toLocaleString("en-ZA", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}
+                </td>
+                <td className="px-3 py-2.5 text-xs whitespace-nowrap">
+                  {order.delivered_at ? (
+                    <span className="text-emerald-600 font-medium">
+                      {new Date(order.delivered_at).toLocaleString("en-ZA", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}
+                    </span>
+                  ) : (
+                    <span className="text-muted-foreground">—</span>
+                  )}
                 </td>
               </tr>
             ))

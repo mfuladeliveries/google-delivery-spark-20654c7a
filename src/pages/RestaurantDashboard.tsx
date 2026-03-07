@@ -262,10 +262,11 @@ const RestaurantDashboard = () => {
 
   // CSV Export
   const exportCSV = () => {
-    const headers = ["Order #", "Date", "Customer", "Contact", "Address", "Items", "Subtotal", "Tax", "Delivery Fee", "Tip", "Total", "Status", "Payment"];
+    const headers = ["Order #", "Date", "Delivered At", "Customer", "Contact", "Address", "Items", "Subtotal", "Tax", "Delivery Fee", "Tip", "Total", "Status", "Payment"];
     const rows = filteredOrders.map(o => [
       o.order_number,
       new Date(o.created_at).toLocaleString("en-ZA"),
+      (o as any).delivered_at ? new Date((o as any).delivered_at).toLocaleString("en-ZA") : "",
       o.customer_name,
       o.customer_contact,
       o.customer_address,
@@ -629,8 +630,16 @@ const RestaurantDashboard = () => {
                           )}
 
                           {order.status === "delivered" && (
-                            <div className="flex items-center gap-2 rounded-xl bg-emerald-50 border border-emerald-200 px-4 py-3">
+                            <div className="rounded-xl bg-emerald-50 border border-emerald-200 px-4 py-3 space-y-1">
                               <span className="text-sm font-semibold text-emerald-700">🎉 Order completed</span>
+                              {(order as any).delivered_at && (
+                                <p className="text-xs text-emerald-600">
+                                  📅 Delivered: {new Date((order as any).delivered_at).toLocaleString("en-ZA", {
+                                    day: "2-digit", month: "short", year: "numeric",
+                                    hour: "2-digit", minute: "2-digit", second: "2-digit"
+                                  })}
+                                </p>
+                              )}
                             </div>
                           )}
                         </div>
