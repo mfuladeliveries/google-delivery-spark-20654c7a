@@ -499,6 +499,10 @@ const RestaurantsTab = ({
   const [location, setLocation] = useState("");
   const [description, setDescription] = useState("");
   const [minOrder, setMinOrder] = useState("0");
+  const [ownerEmail, setOwnerEmail] = useState("");
+  const [ownerPassword, setOwnerPassword] = useState("");
+  const [ownerName, setOwnerName] = useState("");
+  const [ownerContact, setOwnerContact] = useState("");
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState<string | null>(null);
 
@@ -507,18 +511,36 @@ const RestaurantsTab = ({
     if (!name.trim()) { toast.error("Restaurant name is required"); return; }
     setSaving(true);
     try {
-      const { error } = await supabase.from("restaurants").insert({
+      // Create restaurant first
+      const { data: newRestaurant, error } = await supabase.from("restaurants").insert({
         name: name.trim(),
         cuisine: cuisine.trim(),
         location: location.trim(),
         description: description.trim(),
         min_order: Number(minOrder) || 0,
         owner_user_id: null,
-      });
+      }).select("id").single();
       if (error) throw error;
-      toast.success(`${name} added successfully!`);
+
+      // If login credentials provided, create a restaurant user account
+      if (ownerEmail && ownerPassword) {
+        try {
+          await adminCreateUser({
+            email: ownerEmail, password: ownerPassword,
+            full_name: ownerName || name.trim(), contact_number: ownerContact,
+            role: "restaurant", restaurant_id: newRestaurant.id,
+          });
+          toast.success(`${name} added with login: ${ownerEmail}`);
+        } catch (userErr: any) {
+          toast.error(`Restaurant added but login failed: ${userErr.message}`);
+        }
+      } else {
+        toast.success(`${name} added successfully!`);
+      }
+
       setShowForm(false);
       setName(""); setCuisine(""); setLocation(""); setDescription(""); setMinOrder("0");
+      setOwnerEmail(""); setOwnerPassword(""); setOwnerName(""); setOwnerContact("");
       onRestaurantChanged();
     } catch (err: any) {
       toast.error(err.message || "Failed to add restaurant");
