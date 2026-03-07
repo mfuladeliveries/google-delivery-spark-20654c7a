@@ -99,18 +99,9 @@ const DriverActiveDelivery = ({ orders, driverLocation, onDeliveryComplete, onSt
         return (
           <div key={order.id} className="rounded-2xl border-2 border-primary bg-card shadow-orange overflow-hidden">
             {/* Map */}
-            <MapErrorBoundary>
-              {(() => {
-                const DriverDeliveryMap = require("./DriverDeliveryMap").default;
-                return (
-                  <DriverDeliveryMap
-                    driverLocation={driverLocation}
-                    customerAddress={order.customer_address}
-                    restaurantName={order.restaurant}
-                  />
-                );
-              })()}
-            </MapErrorBoundary>
+            <div className="h-56 w-full bg-muted rounded-t-2xl flex items-center justify-center text-muted-foreground text-sm">
+              📍 Delivery map available when GPS is active
+            </div>
 
             <div className="p-4 space-y-4">
               {/* Order info */}
