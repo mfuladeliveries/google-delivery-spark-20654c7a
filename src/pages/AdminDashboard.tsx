@@ -525,7 +525,8 @@ const OrdersTable = ({ orders }: { orders: RecentOrder[] }) => (
             <th className="px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground">Total</th>
             <th className="px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground">Payment</th>
             <th className="px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground">Status</th>
-            <th className="px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground">Date</th>
+            <th className="px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground">Ordered</th>
+            <th className="px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground">Delivered</th>
           </tr>
         </thead>
         <tbody>
