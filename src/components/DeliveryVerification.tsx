@@ -42,10 +42,10 @@ const DeliveryVerification = ({ orderId, onVerified }: DeliveryVerificationProps
         <input
           type="text"
           inputMode="numeric"
-          maxLength={4}
+          maxLength={6}
           value={code}
           onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
-          placeholder="0000"
+          placeholder="000000"
           className="flex-1 rounded-xl border border-border bg-card px-4 py-2.5 text-center text-lg tracking-[0.5em] text-card-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
         />
         <button
