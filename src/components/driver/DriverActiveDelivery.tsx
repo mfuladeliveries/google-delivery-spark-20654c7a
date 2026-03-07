@@ -164,7 +164,7 @@ const DriverActiveDelivery = ({ orders, driverLocation, onDeliveryComplete, onSt
               </div>
 
               {/* Action buttons based on status */}
-              {order.status === "driver_assigned" || order.status === "ready" && (
+              {(order.status === "driver_assigned" || order.status === "ready") && (
                 <button
                   onClick={() => handleConfirmArrival(order.id)}
                   disabled={updatingStatus === order.id}
