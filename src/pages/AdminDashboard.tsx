@@ -345,6 +345,18 @@ const AdminDashboard = () => {
   );
 };
 
+// Helper to create user via edge function (doesn't log admin out)
+const adminCreateUser = async (payload: Record<string, any>) => {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) throw new Error("Not authenticated");
+  const res = await supabase.functions.invoke("admin-create-user", {
+    body: payload,
+  });
+  if (res.error) throw new Error(res.error.message || "Failed to create user");
+  if (res.data?.error) throw new Error(res.data.error);
+  return res.data;
+};
+
 // Driver registration + listing component
 const DriversTab = ({ drivers, onDriverAdded }: { drivers: DriverRecord[]; onDriverAdded: () => void }) => {
   const [showForm, setShowForm] = useState(false);
@@ -364,33 +376,11 @@ const DriversTab = ({ drivers, onDriverAdded }: { drivers: DriverRecord[]; onDri
     }
     setRegistering(true);
     try {
-      // Create the user account
-      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-        email,
-        password,
-        options: { data: { full_name: fullName } },
+      await adminCreateUser({
+        email, password, full_name: fullName, contact_number: contact,
+        role: "driver", vehicle_type: vehicleType, license_plate: licensePlate,
       });
-      if (signUpError) throw signUpError;
-      if (!signUpData.user) throw new Error("Failed to create user");
-
-      const newUserId = signUpData.user.id;
-
-      // Update profile
-      await supabase.from("profiles").update({
-        full_name: fullName,
-        contact_number: contact,
-      }).eq("user_id", newUserId);
-
-      // Set role to driver (remove default customer role, add driver)
-      await supabase.from("user_roles").update({ role: "driver" as any }).eq("user_id", newUserId);
-
-      // Update driver profile with vehicle info
-      await supabase.from("driver_profiles").update({
-        vehicle_type: vehicleType,
-        license_plate: licensePlate,
-      }).eq("user_id", newUserId);
-
-      toast.success(`Driver ${fullName} registered! They'll need to verify their email.`);
+      toast.success(`Driver ${fullName} registered successfully!`);
       setShowForm(false);
       setEmail(""); setPassword(""); setFullName(""); setContact(""); setLicensePlate("");
       onDriverAdded();
@@ -509,6 +499,10 @@ const RestaurantsTab = ({
   const [location, setLocation] = useState("");
   const [description, setDescription] = useState("");
   const [minOrder, setMinOrder] = useState("0");
+  const [ownerEmail, setOwnerEmail] = useState("");
+  const [ownerPassword, setOwnerPassword] = useState("");
+  const [ownerName, setOwnerName] = useState("");
+  const [ownerContact, setOwnerContact] = useState("");
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState<string | null>(null);
 
@@ -517,18 +511,36 @@ const RestaurantsTab = ({
     if (!name.trim()) { toast.error("Restaurant name is required"); return; }
     setSaving(true);
     try {
-      const { error } = await supabase.from("restaurants").insert({
+      // Create restaurant first
+      const { data: newRestaurant, error } = await supabase.from("restaurants").insert({
         name: name.trim(),
         cuisine: cuisine.trim(),
         location: location.trim(),
         description: description.trim(),
         min_order: Number(minOrder) || 0,
         owner_user_id: null,
-      });
+      }).select("id").single();
       if (error) throw error;
-      toast.success(`${name} added successfully!`);
+
+      // If login credentials provided, create a restaurant user account
+      if (ownerEmail && ownerPassword) {
+        try {
+          await adminCreateUser({
+            email: ownerEmail, password: ownerPassword,
+            full_name: ownerName || name.trim(), contact_number: ownerContact,
+            role: "restaurant", restaurant_id: newRestaurant.id,
+          });
+          toast.success(`${name} added with login: ${ownerEmail}`);
+        } catch (userErr: any) {
+          toast.error(`Restaurant added but login failed: ${userErr.message}`);
+        }
+      } else {
+        toast.success(`${name} added successfully!`);
+      }
+
       setShowForm(false);
       setName(""); setCuisine(""); setLocation(""); setDescription(""); setMinOrder("0");
+      setOwnerEmail(""); setOwnerPassword(""); setOwnerName(""); setOwnerContact("");
       onRestaurantChanged();
     } catch (err: any) {
       toast.error(err.message || "Failed to add restaurant");
@@ -595,6 +607,33 @@ const RestaurantsTab = ({
                 className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20" />
             </div>
           </div>
+
+          <div className="border-t border-border pt-3 mt-1">
+            <h4 className="font-bold text-xs text-foreground mb-2">🔐 Restaurant Login (Optional)</h4>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-semibold text-muted-foreground mb-1">Owner Name</label>
+                <input value={ownerName} onChange={e => setOwnerName(e.target.value)} placeholder="Restaurant manager name"
+                  className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20" />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-muted-foreground mb-1">Owner Contact</label>
+                <input value={ownerContact} onChange={e => setOwnerContact(e.target.value)} placeholder="Phone number"
+                  className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20" />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-muted-foreground mb-1">Email</label>
+                <input type="email" value={ownerEmail} onChange={e => setOwnerEmail(e.target.value)} placeholder="login@restaurant.com"
+                  className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20" />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-muted-foreground mb-1">Password</label>
+                <input type="password" value={ownerPassword} onChange={e => setOwnerPassword(e.target.value)} placeholder="Min 6 characters" minLength={6}
+                  className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20" />
+              </div>
+            </div>
+          </div>
+
           <button type="submit" disabled={saving}
             className="w-full rounded-xl bg-primary py-2.5 text-sm font-bold text-primary-foreground disabled:opacity-50 hover:opacity-90 transition-opacity">
             {saving ? "Adding..." : "Add Restaurant"}
