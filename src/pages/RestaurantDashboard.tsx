@@ -1,10 +1,17 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { ChefHat, Package, CheckCircle, Clock, Plus, Trash2, ArrowLeft, XCircle, ShieldCheck } from "lucide-react";
+import {
+  ChefHat, Package, CheckCircle, Clock, Plus, Trash2, ArrowLeft, XCircle,
+  ShieldCheck, Search, Download, Filter, TrendingUp, AlertCircle, Utensils
+} from "lucide-react";
 import BottomNav from "@/components/BottomNav";
 import { toast } from "sonner";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 interface Order {
   id: string;
@@ -18,6 +25,12 @@ interface Order {
   special_notes: string;
   created_at: string;
   delivery_code: string | null;
+  delivery_fee: number;
+  subtotal: number;
+  tax: number;
+  tip: number;
+  payment_method: string;
+  payment_status: string;
 }
 
 interface MenuItem {
@@ -35,16 +48,16 @@ interface Restaurant {
   name: string;
 }
 
-const statusColors: Record<string, string> = {
-  pending: "bg-amber-100 text-amber-700",
-  confirmed: "bg-blue-100 text-blue-700",
-  preparing: "bg-purple-100 text-purple-700",
-  ready: "bg-cyan-100 text-cyan-700",
-  driver_assigned: "bg-indigo-100 text-indigo-700",
-  out_for_delivery: "bg-orange-100 text-orange-700",
-  delivered: "bg-green-100 text-green-700",
-  cancelled: "bg-red-100 text-red-700",
-  rejected: "bg-red-100 text-red-700",
+const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string; icon: string }> = {
+  pending: { label: "Pending", color: "text-muted-foreground", bg: "bg-muted", icon: "🕐" },
+  confirmed: { label: "Accepted", color: "text-blue-700", bg: "bg-blue-50 border-blue-200", icon: "✅" },
+  preparing: { label: "Preparing", color: "text-blue-700", bg: "bg-blue-50 border-blue-200", icon: "👨‍🍳" },
+  ready: { label: "Ready for Pickup", color: "text-emerald-700", bg: "bg-emerald-50 border-emerald-200", icon: "📦" },
+  driver_assigned: { label: "Driver Assigned", color: "text-emerald-700", bg: "bg-emerald-50 border-emerald-200", icon: "🧑‍✈️" },
+  out_for_delivery: { label: "Out for Delivery", color: "text-primary", bg: "bg-primary/5 border-primary/20", icon: "🚗" },
+  delivered: { label: "Delivered", color: "text-emerald-700", bg: "bg-emerald-50 border-emerald-200", icon: "🎉" },
+  cancelled: { label: "Cancelled", color: "text-destructive", bg: "bg-destructive/5 border-destructive/20", icon: "❌" },
+  rejected: { label: "Rejected", color: "text-destructive", bg: "bg-destructive/5 border-destructive/20", icon: "🚫" },
 };
 
 const statusFlow = ["confirmed", "preparing", "ready"];
@@ -53,7 +66,6 @@ const RestaurantDashboard = () => {
   const { user, role, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const [tab, setTab] = useState<"orders" | "menu">("orders");
-  const [ordersTab, setOrdersTab] = useState<"incoming" | "completed">("incoming");
   const [orders, setOrders] = useState<Order[]>([]);
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [restaurant, setRestaurant] = useState<Restaurant | null>(null);
@@ -62,6 +74,11 @@ const RestaurantDashboard = () => {
   const [newItem, setNewItem] = useState({ name: "", description: "", price: "", image: "", category: "" });
   const [saving, setSaving] = useState(false);
   const prevOrderCountRef = useRef(0);
+
+  // Filters
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [dateFilter, setDateFilter] = useState<"today" | "week" | "all">("all");
 
   useEffect(() => {
     if (!authLoading && (!user || (role !== 'restaurant' && role !== 'admin'))) {
@@ -123,7 +140,7 @@ const RestaurantDashboard = () => {
       .select("id, name")
       .eq("owner_user_id", user!.id)
       .maybeSingle();
-    
+
     if (rest) {
       setRestaurant(rest as Restaurant);
       await Promise.all([fetchOrdersFor(rest.id), fetchMenuFor(rest.id)]);
@@ -166,7 +183,7 @@ const RestaurantDashboard = () => {
 
   const acceptOrder = async (orderId: string) => {
     await updateOrderStatus(orderId, "confirmed");
-    toast.success("Order accepted!");
+    toast.success("✅ Order accepted!");
   };
 
   const rejectOrder = async (orderId: string) => {
@@ -195,6 +212,7 @@ const RestaurantDashboard = () => {
       setMenuItems(prev => [data as MenuItem, ...prev]);
       setNewItem({ name: "", description: "", price: "", image: "", category: "" });
       setShowAddItem(false);
+      toast.success("Menu item added!");
     }
     setSaving(false);
   };
@@ -202,11 +220,74 @@ const RestaurantDashboard = () => {
   const deleteMenuItem = async (itemId: string) => {
     await supabase.from("menu_items").delete().eq("id", itemId);
     setMenuItems(prev => prev.filter(i => i.id !== itemId));
+    toast.success("Item deleted");
   };
 
-  const incomingOrders = orders.filter(o => !["delivered", "cancelled", "rejected"].includes(o.status));
-  const completedOrders = orders.filter(o => ["delivered", "cancelled", "rejected"].includes(o.status));
-  const displayOrders = ordersTab === "incoming" ? incomingOrders : completedOrders;
+  // Metrics
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const todayOrders = useMemo(() => orders.filter(o => new Date(o.created_at) >= today), [orders]);
+  const pendingOrders = useMemo(() => orders.filter(o => o.status === "pending"), [orders]);
+  const inProgressOrders = useMemo(() => orders.filter(o => ["confirmed", "preparing", "ready", "driver_assigned", "out_for_delivery"].includes(o.status)), [orders]);
+  const completedOrders = useMemo(() => orders.filter(o => o.status === "delivered"), [orders]);
+  const todayRevenue = useMemo(() => todayOrders.filter(o => o.status === "delivered").reduce((sum, o) => sum + Number(o.total), 0), [todayOrders]);
+
+  // Filtered orders
+  const filteredOrders = useMemo(() => {
+    let result = orders;
+
+    if (statusFilter !== "all") {
+      result = result.filter(o => o.status === statusFilter);
+    }
+
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      result = result.filter(o =>
+        o.customer_name.toLowerCase().includes(q) ||
+        o.order_number.toString().includes(q) ||
+        o.customer_contact.includes(q)
+      );
+    }
+
+    if (dateFilter === "today") {
+      result = result.filter(o => new Date(o.created_at) >= today);
+    } else if (dateFilter === "week") {
+      const weekAgo = new Date();
+      weekAgo.setDate(weekAgo.getDate() - 7);
+      result = result.filter(o => new Date(o.created_at) >= weekAgo);
+    }
+
+    return result;
+  }, [orders, statusFilter, searchQuery, dateFilter]);
+
+  // CSV Export
+  const exportCSV = () => {
+    const headers = ["Order #", "Date", "Customer", "Contact", "Address", "Items", "Subtotal", "Tax", "Delivery Fee", "Tip", "Total", "Status", "Payment"];
+    const rows = filteredOrders.map(o => [
+      o.order_number,
+      new Date(o.created_at).toLocaleString("en-ZA"),
+      o.customer_name,
+      o.customer_contact,
+      o.customer_address,
+      o.items.map((i: any) => `${i.quantity}x ${i.name}`).join("; "),
+      o.subtotal,
+      o.tax,
+      o.delivery_fee,
+      o.tip,
+      o.total,
+      o.status,
+      o.payment_method,
+    ]);
+    const csv = [headers.join(","), ...rows.map(r => r.map(v => `"${v}"`).join(","))].join("\n");
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `orders-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success("Orders exported!");
+  };
 
   if (authLoading || loading) return (
     <div className="flex min-h-screen items-center justify-center bg-background">
@@ -214,22 +295,34 @@ const RestaurantDashboard = () => {
     </div>
   );
 
+  const statusFilters = [
+    { value: "all", label: "All" },
+    { value: "pending", label: "Pending" },
+    { value: "confirmed", label: "Accepted" },
+    { value: "preparing", label: "Preparing" },
+    { value: "ready", label: "Ready" },
+    { value: "driver_assigned", label: "Driver Assigned" },
+    { value: "out_for_delivery", label: "In Transit" },
+    { value: "delivered", label: "Delivered" },
+    { value: "rejected", label: "Rejected" },
+  ];
+
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="sticky top-0 z-50 border-b border-border bg-card/95 backdrop-blur-xl shadow-card">
-        <div className="mx-auto flex max-w-4xl items-center justify-between px-4 py-3">
+        <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
           <div className="flex items-center gap-2">
             <Link to="/" className="rounded-lg p-1.5 text-muted-foreground hover:bg-secondary">
               <ArrowLeft className="h-5 w-5" />
             </Link>
             <div className="flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-primary/10">
-                <ChefHat className="h-4 w-4 text-primary" />
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl gradient-orange shadow-orange">
+                <ChefHat className="h-5 w-5 text-primary-foreground" />
               </div>
               <div>
-                <h1 className="font-bold text-sm text-foreground">{restaurant?.name || "Restaurant"}</h1>
-                <p className="text-[10px] text-muted-foreground">Dashboard</p>
+                <h1 className="font-display text-sm text-foreground">{restaurant?.name || "Restaurant"}</h1>
+                <p className="text-[10px] text-muted-foreground">Management Dashboard</p>
               </div>
             </div>
           </div>
@@ -239,220 +332,387 @@ const RestaurantDashboard = () => {
                 key={t}
                 onClick={() => setTab(t)}
                 className={`rounded-lg px-3 py-1.5 text-xs font-semibold capitalize transition-colors ${
-                  tab === t ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-secondary"
+                  tab === t ? "gradient-orange text-primary-foreground shadow-orange" : "text-muted-foreground hover:bg-secondary"
                 }`}
               >
-                {t}
+                {t === "orders" ? "Orders" : "Menu"}
               </button>
             ))}
           </div>
         </div>
       </header>
 
-      <main className="mx-auto max-w-4xl px-4 py-4 pb-nav md:pb-8">
+      <main className="mx-auto max-w-6xl px-4 py-4 pb-nav md:pb-8">
         {tab === "orders" ? (
-          <>
-            {/* Orders tab toggle */}
-            <div className="flex gap-2 mb-4">
-              <button
-                onClick={() => setOrdersTab("incoming")}
-                className={`flex items-center gap-1.5 rounded-xl px-4 py-2 text-sm font-semibold transition-colors ${
-                  ordersTab === "incoming" ? "bg-primary text-primary-foreground" : "bg-secondary text-muted-foreground"
-                }`}
-              >
-                <Clock className="h-4 w-4" />
-                Incoming ({incomingOrders.length})
-              </button>
-              <button
-                onClick={() => setOrdersTab("completed")}
-                className={`flex items-center gap-1.5 rounded-xl px-4 py-2 text-sm font-semibold transition-colors ${
-                  ordersTab === "completed" ? "bg-primary text-primary-foreground" : "bg-secondary text-muted-foreground"
-                }`}
-              >
-                <CheckCircle className="h-4 w-4" />
-                Completed ({completedOrders.length})
-              </button>
+          <div className="space-y-4">
+            {/* Metrics Grid */}
+            <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+              <Card className="border-none shadow-card">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">Today's Orders</p>
+                      <p className="text-2xl font-display text-foreground mt-1">{todayOrders.length}</p>
+                    </div>
+                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10">
+                      <TrendingUp className="h-5 w-5 text-primary" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              <Card className="border-none shadow-card">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">Pending</p>
+                      <p className="text-2xl font-display text-foreground mt-1">{pendingOrders.length}</p>
+                    </div>
+                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-100">
+                      <AlertCircle className="h-5 w-5 text-amber-600" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              <Card className="border-none shadow-card">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">In Progress</p>
+                      <p className="text-2xl font-display text-foreground mt-1">{inProgressOrders.length}</p>
+                    </div>
+                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-100">
+                      <Clock className="h-5 w-5 text-blue-600" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              <Card className="border-none shadow-card">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">Revenue Today</p>
+                      <p className="text-2xl font-display text-foreground mt-1">R{todayRevenue.toFixed(0)}</p>
+                    </div>
+                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-100">
+                      <CheckCircle className="h-5 w-5 text-emerald-600" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
             </div>
 
-            {displayOrders.length === 0 ? (
+            {/* Search, Filter & Export */}
+            <div className="space-y-3">
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                <div className="relative flex-1">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Search by customer, order # or phone..."
+                    value={searchQuery}
+                    onChange={e => setSearchQuery(e.target.value)}
+                    className="pl-9"
+                  />
+                </div>
+                <div className="flex gap-2">
+                  <select
+                    value={dateFilter}
+                    onChange={e => setDateFilter(e.target.value as any)}
+                    className="rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                  >
+                    <option value="all">All time</option>
+                    <option value="today">Today</option>
+                    <option value="week">This week</option>
+                  </select>
+                  <Button variant="outline" size="sm" onClick={exportCSV} className="gap-1.5">
+                    <Download className="h-4 w-4" />
+                    <span className="hidden sm:inline">Export</span>
+                  </Button>
+                </div>
+              </div>
+
+              {/* Status filter chips */}
+              <div className="flex gap-1.5 overflow-x-auto scrollbar-hide pb-1">
+                {statusFilters.map(sf => (
+                  <button
+                    key={sf.value}
+                    onClick={() => setStatusFilter(sf.value)}
+                    className={`whitespace-nowrap rounded-full px-3 py-1.5 text-xs font-semibold transition-colors ${
+                      statusFilter === sf.value
+                        ? "gradient-orange text-primary-foreground shadow-orange"
+                        : "bg-secondary text-muted-foreground hover:bg-muted"
+                    }`}
+                  >
+                    {sf.label}
+                    {sf.value !== "all" && (
+                      <span className="ml-1 opacity-70">
+                        ({orders.filter(o => o.status === sf.value).length})
+                      </span>
+                    )}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Orders List */}
+            {filteredOrders.length === 0 ? (
               <div className="py-16 text-center text-muted-foreground">
-                <Package className="mx-auto h-10 w-10 opacity-40 mb-2" />
-                <p className="font-semibold">No {ordersTab} orders</p>
+                <Package className="mx-auto h-12 w-12 opacity-30 mb-3" />
+                <p className="font-semibold text-lg">No orders found</p>
+                <p className="text-sm mt-1">Try adjusting your filters</p>
               </div>
             ) : (
               <div className="space-y-3">
-                {displayOrders.map(order => (
-                  <div key={order.id} className={`rounded-2xl border bg-card p-4 shadow-card ${order.status === 'pending' ? 'border-primary border-2 animate-pulse' : 'border-border'}`}>
-                    <div className="flex items-start justify-between mb-3">
-                      <div>
-                        <span className="font-bold text-foreground">Order #{order.order_number}</span>
-                        <p className="text-xs text-muted-foreground mt-0.5">
-                          {new Date(order.created_at).toLocaleString("en-ZA")}
-                        </p>
-                        <p className="text-xs text-foreground mt-1 font-medium">{order.customer_name} · {order.customer_contact}</p>
-                        <p className="text-xs text-muted-foreground">{order.customer_address}</p>
-                      </div>
-                      <span className={`rounded-full px-2.5 py-1 text-[10px] font-bold capitalize ${statusColors[order.status] || "bg-muted text-muted-foreground"}`}>
-                        {order.status.replace(/_/g, " ")}
-                      </span>
-                    </div>
+                {filteredOrders.map(order => {
+                  const sc = STATUS_CONFIG[order.status] || STATUS_CONFIG.pending;
+                  const isPending = order.status === "pending";
 
-                    <div className="space-y-1 border-t border-border pt-2">
-                      {order.items.map((item: any, i: number) => (
-                        <div key={i} className="flex justify-between text-sm">
-                          <span className="text-muted-foreground">{item.quantity}x {item.name}</span>
-                          <span className="font-medium text-foreground">R{item.price * item.quantity}</span>
+                  return (
+                    <Card
+                      key={order.id}
+                      className={`overflow-hidden transition-all ${
+                        isPending ? "border-primary border-2 ring-2 ring-primary/20 animate-pulse" : "border-border"
+                      }`}
+                    >
+                      <CardContent className="p-0">
+                        {/* Order Header */}
+                        <div className="flex items-start justify-between p-4 pb-3">
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-2">
+                              <span className="font-display text-base text-foreground">#{order.order_number}</span>
+                              {isPending && (
+                                <Badge variant="destructive" className="text-[10px] animate-bounce">NEW</Badge>
+                              )}
+                            </div>
+                            <p className="text-xs text-muted-foreground">
+                              {new Date(order.created_at).toLocaleString("en-ZA", {
+                                day: "2-digit", month: "short", year: "numeric",
+                                hour: "2-digit", minute: "2-digit"
+                              })}
+                            </p>
+                          </div>
+                          <span className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-bold ${sc.bg} ${sc.color}`}>
+                            <span>{sc.icon}</span> {sc.label}
+                          </span>
                         </div>
-                      ))}
-                      {order.special_notes && (
-                        <p className="mt-1 rounded-lg bg-secondary px-2 py-1 text-xs text-muted-foreground">📝 {order.special_notes}</p>
-                      )}
-                      {/* Delivery PIN */}
-                      {order.delivery_code && !["delivered", "cancelled", "rejected"].includes(order.status) && (
-                        <div className="mt-1.5 flex items-center gap-1.5 rounded-lg bg-primary/5 border border-primary/20 px-2 py-1">
-                          <ShieldCheck className="h-3 w-3 text-primary" />
-                          <span className="text-[10px] text-muted-foreground">PIN:</span>
-                          <span className="text-xs font-bold tracking-[0.2em] text-primary">{order.delivery_code}</span>
-                        </div>
-                      )}
-                      <div className="flex justify-between font-bold text-sm pt-1 border-t border-border">
-                        <span>Total</span>
-                        <span className="text-primary">R{order.total}</span>
-                      </div>
-                    </div>
 
-                    {ordersTab === "incoming" && (
-                      <div className="mt-3 flex flex-wrap gap-2">
-                        {/* Pending: Accept / Reject */}
-                        {order.status === "pending" && (
-                          <>
-                            <button
-                              onClick={() => acceptOrder(order.id)}
-                              className="flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-xs font-bold text-primary-foreground"
-                            >
-                              <CheckCircle className="h-3.5 w-3.5" /> Accept Order
-                            </button>
-                            <button
-                              onClick={() => rejectOrder(order.id)}
-                              className="flex items-center gap-1.5 rounded-xl bg-destructive/10 px-4 py-2 text-xs font-bold text-destructive"
-                            >
-                              <XCircle className="h-3.5 w-3.5" /> Reject Order
-                            </button>
-                          </>
+                        {/* Customer Info */}
+                        <div className="px-4 pb-3 border-b border-border">
+                          <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4">
+                            <p className="text-sm font-semibold text-foreground">{order.customer_name}</p>
+                            <p className="text-xs text-muted-foreground">{order.customer_contact}</p>
+                          </div>
+                          <p className="text-xs text-muted-foreground mt-0.5">📍 {order.customer_address}</p>
+                        </div>
+
+                        {/* Items Table */}
+                        <div className="px-4 py-3 border-b border-border">
+                          <div className="space-y-1.5">
+                            {order.items.map((item: any, i: number) => (
+                              <div key={i} className="flex justify-between text-sm">
+                                <span className="text-muted-foreground">
+                                  <span className="inline-flex h-5 w-5 items-center justify-center rounded bg-secondary text-[10px] font-bold text-secondary-foreground mr-1.5">
+                                    {item.quantity}x
+                                  </span>
+                                  {item.name}
+                                </span>
+                                <span className="font-semibold text-foreground">R{(item.price * item.quantity).toFixed(2)}</span>
+                              </div>
+                            ))}
+                          </div>
+                          {order.special_notes && (
+                            <p className="mt-2 rounded-lg bg-amber-50 border border-amber-200 px-3 py-1.5 text-xs text-amber-800">
+                              📝 {order.special_notes}
+                            </p>
+                          )}
+                        </div>
+
+                        {/* Pricing Breakdown */}
+                        <div className="px-4 py-3 border-b border-border text-xs space-y-1">
+                          <div className="flex justify-between text-muted-foreground">
+                            <span>Subtotal</span><span>R{Number(order.subtotal).toFixed(2)}</span>
+                          </div>
+                          <div className="flex justify-between text-muted-foreground">
+                            <span>Tax</span><span>R{Number(order.tax).toFixed(2)}</span>
+                          </div>
+                          <div className="flex justify-between text-muted-foreground">
+                            <span>Delivery</span><span>R{Number(order.delivery_fee).toFixed(2)}</span>
+                          </div>
+                          {Number(order.tip) > 0 && (
+                            <div className="flex justify-between text-muted-foreground">
+                              <span>Tip</span><span>R{Number(order.tip).toFixed(2)}</span>
+                            </div>
+                          )}
+                          <div className="flex justify-between font-display text-sm text-foreground pt-1 border-t border-border">
+                            <span>Total</span>
+                            <span className="text-primary">R{Number(order.total).toFixed(2)}</span>
+                          </div>
+                          <div className="flex items-center gap-2 pt-1">
+                            <Badge variant="outline" className="text-[10px]">
+                              {order.payment_method === "online" ? "💳 Online" : "💵 Cash"}
+                            </Badge>
+                            <Badge variant={order.payment_status === "paid" ? "default" : "secondary"} className="text-[10px]">
+                              {order.payment_status}
+                            </Badge>
+                          </div>
+                        </div>
+
+                        {/* Delivery PIN */}
+                        {order.delivery_code && !["delivered", "cancelled", "rejected"].includes(order.status) && (
+                          <div className="px-4 py-2.5 border-b border-border">
+                            <div className="flex items-center gap-2 rounded-lg bg-primary/5 border border-primary/20 px-3 py-2">
+                              <ShieldCheck className="h-4 w-4 text-primary" />
+                              <span className="text-xs text-muted-foreground">Delivery PIN:</span>
+                              <span className="font-display text-sm tracking-[0.25em] text-primary">{order.delivery_code}</span>
+                            </div>
+                          </div>
                         )}
-                        {/* Confirmed/Preparing: advance to next */}
-                        {["confirmed", "preparing"].includes(order.status) && (
-                          <>
-                            {getNextStatus(order.status) && (
-                              <button
-                                onClick={() => updateOrderStatus(order.id, getNextStatus(order.status)!)}
-                                className="rounded-xl bg-primary px-3 py-1.5 text-xs font-bold text-primary-foreground"
+
+                        {/* Action Buttons */}
+                        <div className="p-4">
+                          {order.status === "pending" && (
+                            <div className="flex gap-2">
+                              <Button
+                                onClick={() => acceptOrder(order.id)}
+                                className="flex-1 gradient-orange text-primary-foreground shadow-orange h-12 text-sm font-display"
                               >
-                                → {getNextStatus(order.status)!.replace(/_/g, " ")}
-                              </button>
-                            )}
-                            <button
-                              onClick={() => updateOrderStatus(order.id, "cancelled")}
-                              className="rounded-xl bg-destructive/10 px-3 py-1.5 text-xs font-bold text-destructive"
-                            >
-                              Cancel
-                            </button>
-                          </>
-                        )}
-                        {/* Ready: waiting for driver */}
-                        {order.status === "ready" && (
-                          <span className="rounded-xl bg-cyan-100 px-3 py-1.5 text-xs font-bold text-cyan-700">
-                            ⏳ Waiting for driver pickup (auto-assigning nearest driver...)
-                          </span>
-                        )}
-                        {order.status === "driver_assigned" && (
-                          <span className="rounded-xl bg-indigo-100 px-3 py-1.5 text-xs font-bold text-indigo-700">
-                            ✅ Driver assigned — awaiting pickup
-                          </span>
-                        )}
-                        {/* Out for delivery */}
-                        {order.status === "out_for_delivery" && (
-                          <span className="rounded-xl bg-orange-100 px-3 py-1.5 text-xs font-bold text-orange-700">
-                            🚗 Driver is delivering
-                          </span>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                ))}
+                                <CheckCircle className="h-5 w-5 mr-1.5" /> Accept Order
+                              </Button>
+                              <Button
+                                variant="outline"
+                                onClick={() => rejectOrder(order.id)}
+                                className="flex-1 border-destructive/30 text-destructive hover:bg-destructive/10 h-12 text-sm font-display"
+                              >
+                                <XCircle className="h-5 w-5 mr-1.5" /> Reject
+                              </Button>
+                            </div>
+                          )}
+
+                          {["confirmed", "preparing"].includes(order.status) && (
+                            <div className="flex gap-2">
+                              {getNextStatus(order.status) && (
+                                <Button
+                                  onClick={() => updateOrderStatus(order.id, getNextStatus(order.status)!)}
+                                  className="flex-1 gradient-orange text-primary-foreground shadow-orange h-12 text-sm font-display"
+                                >
+                                  {order.status === "confirmed" ? "🍳 Start Preparing" : "📦 Ready for Pickup"}
+                                </Button>
+                              )}
+                              <Button
+                                variant="outline"
+                                onClick={() => updateOrderStatus(order.id, "cancelled")}
+                                className="border-destructive/30 text-destructive hover:bg-destructive/10 h-12 px-4"
+                              >
+                                <XCircle className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          )}
+
+                          {order.status === "ready" && (
+                            <div className="flex items-center gap-2 rounded-xl bg-emerald-50 border border-emerald-200 px-4 py-3">
+                              <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+                              <span className="text-sm font-semibold text-emerald-700">
+                                Waiting for driver pickup — auto-assigning nearest driver...
+                              </span>
+                            </div>
+                          )}
+
+                          {order.status === "driver_assigned" && (
+                            <div className="flex items-center gap-2 rounded-xl bg-blue-50 border border-blue-200 px-4 py-3">
+                              <span className="text-sm font-semibold text-blue-700">✅ Driver assigned — awaiting pickup</span>
+                            </div>
+                          )}
+
+                          {order.status === "out_for_delivery" && (
+                            <div className="flex items-center gap-2 rounded-xl bg-primary/5 border border-primary/20 px-4 py-3">
+                              <span className="text-sm font-semibold text-primary">🚗 Driver is delivering to customer</span>
+                            </div>
+                          )}
+
+                          {order.status === "delivered" && (
+                            <div className="flex items-center gap-2 rounded-xl bg-emerald-50 border border-emerald-200 px-4 py-3">
+                              <span className="text-sm font-semibold text-emerald-700">🎉 Order completed</span>
+                            </div>
+                          )}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
               </div>
             )}
-          </>
+          </div>
         ) : (
+          /* Menu Tab */
           <>
             <div className="flex items-center justify-between mb-4">
-              <h2 className="font-bold text-foreground">Menu Items ({menuItems.length})</h2>
-              <button
-                onClick={() => setShowAddItem(!showAddItem)}
-                className="flex items-center gap-1.5 rounded-xl bg-primary px-3 py-2 text-xs font-bold text-primary-foreground"
-              >
+              <h2 className="font-display text-foreground">Menu Items ({menuItems.length})</h2>
+              <Button onClick={() => setShowAddItem(!showAddItem)} size="sm" className="gradient-orange text-primary-foreground shadow-orange gap-1.5">
                 <Plus className="h-4 w-4" /> Add Item
-              </button>
+              </Button>
             </div>
 
             {!restaurant && (
-              <div className="rounded-2xl border border-border bg-secondary p-4 mb-4">
-                <p className="text-sm text-muted-foreground font-medium">No restaurant linked to your account. Contact admin to link your restaurant.</p>
-              </div>
+              <Card className="mb-4 border-amber-200 bg-amber-50">
+                <CardContent className="p-4">
+                  <p className="text-sm text-amber-800 font-medium">⚠️ No restaurant linked to your account. Contact admin to link your restaurant.</p>
+                </CardContent>
+              </Card>
             )}
 
             {showAddItem && (
-              <div className="rounded-2xl border border-border bg-card p-4 mb-4 shadow-card">
-                <h3 className="font-semibold text-sm text-foreground mb-3">Add New Item</h3>
-                <div className="space-y-2">
-                  <input value={newItem.name} onChange={e => setNewItem(p => ({ ...p, name: e.target.value }))} placeholder="Item name *" className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary" />
-                  <input value={newItem.description} onChange={e => setNewItem(p => ({ ...p, description: e.target.value }))} placeholder="Description" className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary" />
+              <Card className="mb-4 shadow-card">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm">Add New Menu Item</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  <Input value={newItem.name} onChange={e => setNewItem(p => ({ ...p, name: e.target.value }))} placeholder="Item name *" />
+                  <Input value={newItem.description} onChange={e => setNewItem(p => ({ ...p, description: e.target.value }))} placeholder="Description" />
                   <div className="flex gap-2">
-                    <input value={newItem.price} onChange={e => setNewItem(p => ({ ...p, price: e.target.value }))} placeholder="Price (R) *" type="number" className="flex-1 rounded-xl border border-border bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary" />
-                    <input value={newItem.category} onChange={e => setNewItem(p => ({ ...p, category: e.target.value }))} placeholder="Category" className="flex-1 rounded-xl border border-border bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary" />
+                    <Input value={newItem.price} onChange={e => setNewItem(p => ({ ...p, price: e.target.value }))} placeholder="Price (R) *" type="number" className="flex-1" />
+                    <Input value={newItem.category} onChange={e => setNewItem(p => ({ ...p, category: e.target.value }))} placeholder="Category" className="flex-1" />
                   </div>
-                  <input value={newItem.image} onChange={e => setNewItem(p => ({ ...p, image: e.target.value }))} placeholder="Image URL (optional)" className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary" />
+                  <Input value={newItem.image} onChange={e => setNewItem(p => ({ ...p, image: e.target.value }))} placeholder="Image URL (optional)" />
                   <div className="flex gap-2 pt-1">
-                    <button onClick={addMenuItem} disabled={saving || !newItem.name || !newItem.price} className="flex-1 rounded-xl bg-primary py-2 text-xs font-bold text-primary-foreground disabled:opacity-50">
+                    <Button onClick={addMenuItem} disabled={saving || !newItem.name || !newItem.price} className="flex-1 gradient-orange text-primary-foreground shadow-orange">
                       {saving ? "Adding..." : "Add Item"}
-                    </button>
-                    <button onClick={() => setShowAddItem(false)} className="rounded-xl bg-secondary px-4 py-2 text-xs font-bold text-muted-foreground">
-                      Cancel
-                    </button>
+                    </Button>
+                    <Button variant="outline" onClick={() => setShowAddItem(false)}>Cancel</Button>
                   </div>
-                </div>
-              </div>
+                </CardContent>
+              </Card>
             )}
 
             {menuItems.length === 0 ? (
               <div className="py-16 text-center text-muted-foreground">
-                <div className="text-4xl mb-2">🍽️</div>
-                <p className="font-semibold">No menu items yet</p>
+                <Utensils className="mx-auto h-12 w-12 opacity-30 mb-3" />
+                <p className="font-semibold text-lg">No menu items yet</p>
                 <p className="text-sm mt-1">Add your first item above</p>
               </div>
             ) : (
               <div className="space-y-2">
                 {menuItems.map(item => (
-                  <div key={item.id} className="flex items-center gap-3 rounded-2xl border border-border bg-card p-3 shadow-card">
-                    <div className="h-14 w-14 flex-shrink-0 overflow-hidden rounded-xl bg-muted">
-                      {item.image ? (
-                        <img src={item.image} alt={item.name} className="h-full w-full object-cover" />
-                      ) : (
-                        <div className="h-full w-full flex items-center justify-center text-lg">🍽️</div>
-                      )}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <h4 className="font-semibold text-sm text-foreground truncate">{item.name}</h4>
-                      <p className="text-xs text-muted-foreground truncate">{item.description}</p>
-                      <div className="flex items-center gap-2 mt-1">
-                        <span className="font-bold text-xs text-primary">R{item.price}</span>
-                        <span className="text-[10px] text-muted-foreground bg-secondary rounded-full px-2 py-0.5">{item.category}</span>
+                  <Card key={item.id} className="shadow-card">
+                    <CardContent className="flex items-center gap-3 p-3">
+                      <div className="h-14 w-14 flex-shrink-0 overflow-hidden rounded-xl bg-muted">
+                        {item.image ? (
+                          <img src={item.image} alt={item.name} className="h-full w-full object-cover" />
+                        ) : (
+                          <div className="h-full w-full flex items-center justify-center text-lg">🍽️</div>
+                        )}
                       </div>
-                    </div>
-                    <button onClick={() => deleteMenuItem(item.id)} className="rounded-lg p-2 text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors">
-                      <Trash2 className="h-4 w-4" />
-                    </button>
-                  </div>
+                      <div className="flex-1 min-w-0">
+                        <h4 className="font-semibold text-sm text-foreground truncate">{item.name}</h4>
+                        <p className="text-xs text-muted-foreground truncate">{item.description}</p>
+                        <div className="flex items-center gap-2 mt-1">
+                          <span className="font-display text-xs text-primary">R{item.price}</span>
+                          <Badge variant="secondary" className="text-[10px]">{item.category}</Badge>
+                        </div>
+                      </div>
+                      <button onClick={() => deleteMenuItem(item.id)} className="rounded-lg p-2 text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors">
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </CardContent>
+                  </Card>
                 ))}
               </div>
             )}
