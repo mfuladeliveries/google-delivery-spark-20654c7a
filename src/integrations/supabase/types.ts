@@ -305,7 +305,39 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      driver_job_board: {
+        Row: {
+          created_at: string | null
+          customer_address: string | null
+          delivery_fee: number | null
+          id: string | null
+          items: Json | null
+          order_number: number | null
+          restaurant: string | null
+          total: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          customer_address?: string | null
+          delivery_fee?: number | null
+          id?: string | null
+          items?: Json | null
+          order_number?: number | null
+          restaurant?: string | null
+          total?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          customer_address?: string | null
+          delivery_fee?: number | null
+          id?: string | null
+          items?: Json | null
+          order_number?: number | null
+          restaurant?: string | null
+          total?: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       claim_order: { Args: { p_order_id: string }; Returns: boolean }
