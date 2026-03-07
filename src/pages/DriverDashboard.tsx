@@ -157,7 +157,7 @@ const DriverDashboard = () => {
       supabase.from("driver_job_board" as any).select("id, order_number, restaurant, customer_address, total, delivery_fee, created_at, items").order("created_at"),
       supabase.from("orders").select("*").eq("driver_id", user!.id).in("status", ["driver_assigned", "picking_up", "out_for_delivery"]).order("created_at"),
     ]);
-    if (pending) setPendingOrders(pending.map((o) => ({ ...o, items: (o.items as any[]) || [], customer_name: "", customer_contact: "", status: "ready" })));
+    if (pending) setPendingOrders((pending as any[]).map((o: any) => ({ ...o, items: (o.items as any[]) || [], customer_name: "", customer_contact: "", status: "ready" })));
     if (mine) setMyOrders(mine.map((o) => ({ ...o, items: (o.items as any[]) || [] })));
   };
 
