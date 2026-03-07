@@ -48,6 +48,11 @@ interface Restaurant {
   name: string;
 }
 
+interface RestaurantOption {
+  id: string;
+  name: string;
+}
+
 const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string; icon: string }> = {
   pending: { label: "Pending", color: "text-muted-foreground", bg: "bg-muted", icon: "🕐" },
   confirmed: { label: "Accepted", color: "text-blue-700", bg: "bg-blue-50 border-blue-200", icon: "✅" },
