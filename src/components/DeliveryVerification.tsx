@@ -13,7 +13,7 @@ const DeliveryVerification = ({ orderId, onVerified }: DeliveryVerificationProps
   const [loading, setLoading] = useState(false);
 
   const handleVerify = async () => {
-    if (code.length < 4) return;
+    if (code.length < 6) return;
     setError("");
     setLoading(true);
 
@@ -42,15 +42,15 @@ const DeliveryVerification = ({ orderId, onVerified }: DeliveryVerificationProps
         <input
           type="text"
           inputMode="numeric"
-          maxLength={4}
+          maxLength={6}
           value={code}
           onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
-          placeholder="0000"
+          placeholder="000000"
           className="flex-1 rounded-xl border border-border bg-card px-4 py-2.5 text-center text-lg tracking-[0.5em] text-card-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
         />
         <button
           onClick={handleVerify}
-          disabled={loading || code.length < 4}
+          disabled={loading || code.length < 6}
           className="rounded-xl bg-primary px-5 py-2.5 text-sm font-bold text-primary-foreground disabled:opacity-50"
         >
           {loading ? "..." : "Verify"}

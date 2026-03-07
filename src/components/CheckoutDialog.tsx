@@ -111,7 +111,7 @@ const CheckoutDialog = ({
         })
         .eq("user_id", user.id);
 
-      const deliveryCode = String(Math.floor(1000 + Math.random() * 9000));
+      const deliveryCode = String(Math.floor(100000 + Math.random() * 900000));
 
       const orderItems = items.map((ci) => ({
         id: ci.item.id,

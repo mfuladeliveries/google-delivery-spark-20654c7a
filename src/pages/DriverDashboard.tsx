@@ -124,14 +124,15 @@ const DriverDashboard = () => {
           location_updated_at: new Date().toISOString(),
         }).eq("user_id", user!.id);
 
-        // Update active order locations for customer tracking
+        // Update active order locations for customer tracking via secure RPC
         const activeIds = myOrders.map((o) => o.id);
         for (const id of activeIds) {
-          await supabase.from("orders").update({
-            driver_lat: loc.lat,
-            driver_lng: loc.lng,
-            driver_location_updated_at: new Date().toISOString(),
-          }).eq("id", id);
+          await supabase.rpc("driver_update_order", {
+            p_order_id: id,
+            p_status: null,
+            p_lat: loc.lat,
+            p_lng: loc.lng,
+          });
         }
       },
       () => {},
