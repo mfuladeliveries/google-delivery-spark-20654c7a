@@ -129,6 +129,7 @@ export type Database = {
           order_number: number
           payment_method: string
           payment_status: string
+          pin_attempts: number
           restaurant: string
           restaurant_id: string | null
           special_notes: string | null
@@ -158,6 +159,7 @@ export type Database = {
           order_number?: number
           payment_method?: string
           payment_status?: string
+          pin_attempts?: number
           restaurant?: string
           restaurant_id?: string | null
           special_notes?: string | null
@@ -187,6 +189,7 @@ export type Database = {
           order_number?: number
           payment_method?: string
           payment_status?: string
+          pin_attempts?: number
           restaurant?: string
           restaurant_id?: string | null
           special_notes?: string | null
@@ -334,6 +337,15 @@ export type Database = {
             }
             Returns: Json
           }
+      driver_update_order: {
+        Args: {
+          p_lat?: number
+          p_lng?: number
+          p_order_id: string
+          p_status: string
+        }
+        Returns: undefined
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
