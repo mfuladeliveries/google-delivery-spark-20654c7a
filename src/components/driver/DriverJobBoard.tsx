@@ -262,13 +262,13 @@ const DriverJobBoard = ({ orders, isOnline, accepting, onAccept, driverLocation 
 
                 {/* Actions */}
                 <div className="flex gap-2">
-                  <a
-                    href={`tel:${order.customer_contact}`}
-                    className="flex items-center justify-center gap-1.5 rounded-xl border-2 border-border bg-secondary px-4 py-3 text-sm font-semibold text-foreground hover:bg-secondary/80 transition-colors"
-                    onClick={(e) => e.stopPropagation()}
+                  <button
+                    onClick={() => onAccept(order.id)}
+                    disabled={accepting === order.id || !isOnline}
+                    className="flex-1 rounded-xl bg-primary py-3 text-sm font-bold text-primary-foreground disabled:opacity-50 transition-all hover:scale-[1.01] active:scale-[0.99] shadow-orange"
                   >
-                    <Phone className="h-4 w-4" />
-                  </a>
+                    {accepting === order.id ? "Accepting..." : !isOnline ? "Go online to accept" : "🚗 Accept Delivery"}
+                  </button>
                   <button
                     onClick={() => onAccept(order.id)}
                     disabled={accepting === order.id || !isOnline}
