@@ -60,6 +60,7 @@ const Orders = () => {
   const navigate = useNavigate();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
+  const [deliveryPins, setDeliveryPins] = useState<Record<string, string>>({});
 
   useEffect(() => {
     if (!authLoading && !user) navigate("/auth");
@@ -67,6 +68,10 @@ const Orders = () => {
 
   useEffect(() => {
     if (!user) return;
+    // Load saved delivery PINs from localStorage
+    const savedPins = JSON.parse(localStorage.getItem("delivery_pins") || "{}");
+    setDeliveryPins(savedPins);
+
     const fetchOrders = async () => {
       const { data } = await supabase
         .from("orders")
@@ -78,10 +83,18 @@ const Orders = () => {
           data.map((o) => ({
             ...o,
             items: (o.items as unknown as OrderItem[]) || [],
-            delivery_code: (o as any).delivery_code || "",
+            delivery_code: "",
             customer_address: o.customer_address || "",
           }))
         );
+        // Clean up PINs for delivered orders
+        const deliveredIds = data.filter(o => o.status === "delivered" || o.status === "cancelled" || o.status === "rejected").map(o => o.id);
+        if (deliveredIds.length > 0) {
+          const updated = { ...savedPins };
+          deliveredIds.forEach(id => delete updated[id]);
+          localStorage.setItem("delivery_pins", JSON.stringify(updated));
+          setDeliveryPins(updated);
+        }
       }
       setLoading(false);
     };
@@ -199,16 +212,16 @@ const Orders = () => {
                       <span className="text-sm text-muted-foreground">🍽️ {order.restaurant}</span>
                     </div>
 
-                    {/* Delivery verification code */}
-                    {order.delivery_code && order.status !== "delivered" && !isCancelled && (
+                    {/* Delivery verification code from localStorage */}
+                    {deliveryPins[order.id] && order.status !== "delivered" && !isCancelled && (
                       <div className="mb-3 flex items-center gap-2 rounded-xl border border-primary/20 bg-primary/5 px-3 py-2">
                         <ShieldCheck className="h-4 w-4 text-primary" />
                         <div>
-                          <p className="text-xs text-muted-foreground">Delivery Code</p>
-                          <p className="text-lg font-bold tracking-[0.3em] text-primary">{order.delivery_code}</p>
+                          <p className="text-xs text-muted-foreground">Delivery PIN</p>
+                          <p className="text-lg font-bold tracking-[0.3em] text-primary">{deliveryPins[order.id]}</p>
                         </div>
                         <p className="ml-auto text-[10px] text-muted-foreground max-w-[120px] text-right">
-                          Share this code with your driver to confirm delivery
+                          Share this PIN with your driver to confirm delivery
                         </p>
                       </div>
                     )}
@@ -238,7 +251,7 @@ const Orders = () => {
 
                     <div className="mt-3 flex justify-between border-t border-border pt-2 text-sm font-bold text-foreground">
                       <span>Total {order.tip > 0 && `(incl. R${order.tip} tip)`}</span>
-                      <span className="text-primary">{storeInfo.currency}{order.total}</span>
+                      <span className="text-primary">{storeInfo.currency}{(order.total + 15).toFixed(2)}</span>
                     </div>
                   </div>
                 </div>

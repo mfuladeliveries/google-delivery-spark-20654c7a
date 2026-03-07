@@ -141,6 +141,14 @@ const CheckoutDialog = ({
 
       const orderResult = order as Record<string, unknown> | null;
       const orderNum = orderResult?.order_number || "N/A";
+      const orderId = orderResult?.order_id as string;
+
+      // Save delivery PIN to localStorage so customer can view it later
+      if (orderId) {
+        const pins = JSON.parse(localStorage.getItem("delivery_pins") || "{}");
+        pins[orderId] = deliveryCode;
+        localStorage.setItem("delivery_pins", JSON.stringify(pins));
+      }
 
       toast.success("Your order has been placed successfully! 🎉", {
         description: `Order #${orderNum} • Delivery PIN: ${deliveryCode}. We'll notify you as your order progresses.`,
