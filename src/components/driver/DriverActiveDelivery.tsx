@@ -2,6 +2,8 @@ import { useState, Component, ReactNode, lazy, Suspense } from "react";
 import { Navigation, Phone, ExternalLink, MapPin, CheckCircle2, Truck, Package, ShieldCheck } from "lucide-react";
 import DeliveryVerification from "@/components/DeliveryVerification";
 
+const DriverDeliveryMap = lazy(() => import("@/components/driver/DriverDeliveryMap"));
+
 class MapErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean }> {
   state = { hasError: false };
   static getDerivedStateFromError() { return { hasError: true }; }
