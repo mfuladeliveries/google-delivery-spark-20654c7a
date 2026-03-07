@@ -17,11 +17,14 @@ export type Database = {
       driver_profiles: {
         Row: {
           created_at: string
+          current_lat: number | null
+          current_lng: number | null
           id: string
           id_document_url: string
           is_online: boolean
           license_plate: string
           license_url: string
+          location_updated_at: string | null
           total_deliveries: number
           total_earnings: number
           updated_at: string
@@ -30,11 +33,14 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          current_lat?: number | null
+          current_lng?: number | null
           id?: string
           id_document_url?: string
           is_online?: boolean
           license_plate?: string
           license_url?: string
+          location_updated_at?: string | null
           total_deliveries?: number
           total_earnings?: number
           updated_at?: string
@@ -43,11 +49,14 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          current_lat?: number | null
+          current_lng?: number | null
           id?: string
           id_document_url?: string
           is_online?: boolean
           license_plate?: string
           license_url?: string
+          location_updated_at?: string | null
           total_deliveries?: number
           total_earnings?: number
           updated_at?: string
