@@ -28,8 +28,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
   const [role, setRole] = useState<AppRole | null>(null);
   const [roles, setRoles] = useState<AppRole[]>([]);
+  const [roleLoading, setRoleLoading] = useState(false);
 
   const fetchRole = async (userId: string) => {
+    setRoleLoading(true);
     const { data } = await supabase
       .from("user_roles")
       .select("role")
@@ -44,29 +46,46 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setRole('customer');
       setRoles(['customer']);
     }
+    setRoleLoading(false);
   };
 
   useEffect(() => {
+    let mounted = true;
+    
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_event, session) => {
+      (_event, session) => {
+        if (!mounted) return;
         setSession(session);
         setUser(session?.user ?? null);
         if (session?.user) {
-          await fetchRole(session.user.id);
+          fetchRole(session.user.id).then(() => {
+            if (mounted) setLoading(false);
+          });
         } else {
           setRole(null);
           setRoles([]);
+          setLoading(false);
         }
-        setLoading(false);
       }
     );
 
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!mounted) return;
       setSession(session);
       setUser(session?.user ?? null);
-      if (session?.user) await fetchRole(session.user.id);
-      setLoading(false);
+      if (session?.user) {
+        fetchRole(session.user.id).then(() => {
+          if (mounted) setLoading(false);
+        });
+      } else {
+        setLoading(false);
+      }
     });
+
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
 
     return () => subscription.unsubscribe();
   }, []);
