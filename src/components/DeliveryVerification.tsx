@@ -13,7 +13,7 @@ const DeliveryVerification = ({ orderId, onVerified }: DeliveryVerificationProps
   const [loading, setLoading] = useState(false);
 
   const handleVerify = async () => {
-    if (code.length < 4) return;
+    if (code.length < 6) return;
     setError("");
     setLoading(true);
 
