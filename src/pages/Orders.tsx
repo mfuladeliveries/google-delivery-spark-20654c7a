@@ -251,7 +251,7 @@ const Orders = () => {
 
                     <div className="mt-3 flex justify-between border-t border-border pt-2 text-sm font-bold text-foreground">
                       <span>Total {order.tip > 0 && `(incl. R${order.tip} tip)`}</span>
-                      <span className="text-primary">{storeInfo.currency}{order.total}</span>
+                      <span className="text-primary">{storeInfo.currency}{(order.total + 15).toFixed(2)}</span>
                     </div>
                   </div>
                 </div>
