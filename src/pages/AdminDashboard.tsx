@@ -328,29 +328,11 @@ const AdminDashboard = () => {
 
         {/* Restaurants Tab */}
         {tab === "restaurants" && (
-          <>
-            <h2 className="font-bold text-foreground mb-3">🍽️ Restaurants ({restaurants.length})</h2>
-            <div className="space-y-3">
-              {restaurants.map(r => (
-                <div key={r.id} className="flex items-center justify-between rounded-2xl border border-border bg-card p-4 shadow-card">
-                  <div>
-                    <h3 className="font-bold text-sm text-foreground">{r.name}</h3>
-                    <p className="text-xs text-muted-foreground">{r.cuisine} · ⭐ {r.rating}</p>
-                  </div>
-                  <button
-                    onClick={() => toggleRestaurantActive(r.id, r.is_active)}
-                    className={`rounded-xl px-3 py-1.5 text-xs font-bold transition-colors ${
-                      r.is_active
-                        ? "bg-green-100 text-green-700 hover:bg-green-200"
-                        : "bg-red-100 text-red-600 hover:bg-red-200"
-                    }`}
-                  >
-                    {r.is_active ? "Active" : "Inactive"}
-                  </button>
-                </div>
-              ))}
-            </div>
-          </>
+          <RestaurantsTab
+            restaurants={restaurants}
+            onToggleActive={toggleRestaurantActive}
+            onRestaurantChanged={() => { fetchRestaurants(); fetchStats(); }}
+          />
         )}
 
         {/* Drivers Tab */}
