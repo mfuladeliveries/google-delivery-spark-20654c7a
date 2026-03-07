@@ -141,17 +141,27 @@ const RestaurantDashboard = () => {
   }, [user, restaurant?.id]);
 
   const fetchAll = async () => {
-    const { data: rest } = await supabase
+    const { data: restList } = await supabase
       .from("restaurants")
       .select("id, name")
       .eq("owner_user_id", user!.id)
-      .maybeSingle();
+      .order("name");
 
-    if (rest) {
-      setRestaurant(rest as Restaurant);
-      await Promise.all([fetchOrdersFor(rest.id), fetchMenuFor(rest.id)]);
+    if (restList && restList.length > 0) {
+      setAllRestaurants(restList);
+      const first = restList[0];
+      setRestaurant(first as Restaurant);
+      await Promise.all([fetchOrdersFor(first.id), fetchMenuFor(first.id)]);
     } else if (role === 'admin') {
-      await fetchOrders();
+      // Admin without restaurant ownership - fetch all
+      const { data: allRest } = await supabase.from("restaurants").select("id, name").order("name");
+      if (allRest && allRest.length > 0) {
+        setAllRestaurants(allRest);
+        setRestaurant(allRest[0] as Restaurant);
+        await Promise.all([fetchOrdersFor(allRest[0].id), fetchMenuFor(allRest[0].id)]);
+      } else {
+        await fetchOrders();
+      }
     }
     setLoading(false);
   };
