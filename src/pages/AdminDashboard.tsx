@@ -643,35 +643,190 @@ const RestaurantsTab = ({
 
       <div className="space-y-3">
         {restaurants.map(r => (
-          <div key={r.id} className="flex items-center justify-between rounded-2xl border border-border bg-card p-4 shadow-card">
-            <div>
-              <h3 className="font-bold text-sm text-foreground">{r.name}</h3>
-              <p className="text-xs text-muted-foreground">{r.cuisine} · ⭐ {r.rating}</p>
-            </div>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => onToggleActive(r.id, r.is_active)}
-                className={`rounded-xl px-3 py-1.5 text-xs font-bold transition-colors ${
-                  r.is_active
-                    ? "bg-green-100 text-green-700 hover:bg-green-200"
-                    : "bg-red-100 text-red-600 hover:bg-red-200"
-                }`}
-              >
-                {r.is_active ? "Active" : "Inactive"}
-              </button>
-              <button
-                onClick={() => handleDelete(r.id, r.name)}
-                disabled={deleting === r.id}
-                className="rounded-xl p-1.5 text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors disabled:opacity-50"
-                title="Delete restaurant"
-              >
-                <Trash2 className="h-4 w-4" />
-              </button>
-            </div>
-          </div>
+          <RestaurantCard
+            key={r.id}
+            restaurant={r}
+            onToggleActive={onToggleActive}
+            onDelete={handleDelete}
+            deleting={deleting}
+            onRestaurantChanged={onRestaurantChanged}
+          />
         ))}
       </div>
     </>
+  );
+};
+
+// Individual restaurant card with inline edit
+const RestaurantCard = ({
+  restaurant: r,
+  onToggleActive,
+  onDelete,
+  deleting,
+  onRestaurantChanged,
+}: {
+  restaurant: RestaurantRecord;
+  onToggleActive: (id: string, isActive: boolean) => void;
+  onDelete: (id: string, name: string) => void;
+  deleting: string | null;
+  onRestaurantChanged: () => void;
+}) => {
+  const [editing, setEditing] = useState(false);
+  const [editEmail, setEditEmail] = useState("");
+  const [editPassword, setEditPassword] = useState("");
+  const [editName, setEditName] = useState("");
+  const [editContact, setEditContact] = useState("");
+  const [savingEdit, setSavingEdit] = useState(false);
+  const [ownerInfo, setOwnerInfo] = useState<{ email: string; full_name: string; contact_number: string } | null>(null);
+  const [loadingOwner, setLoadingOwner] = useState(false);
+
+  const loadOwnerInfo = async () => {
+    if (!r.owner_user_id) {
+      setOwnerInfo(null);
+      return;
+    }
+    setLoadingOwner(true);
+    // Get profile info
+    const { data: profile } = await supabase.from("profiles").select("full_name, contact_number").eq("user_id", r.owner_user_id).single();
+    // We can't get email from client, but we show profile info
+    setOwnerInfo({
+      email: "", // will be shown as "current email on file"
+      full_name: profile?.full_name || "",
+      contact_number: profile?.contact_number || "",
+    });
+    setEditName(profile?.full_name || "");
+    setEditContact(profile?.contact_number || "");
+    setLoadingOwner(false);
+  };
+
+  const handleEdit = async () => {
+    if (!editing) {
+      setEditing(true);
+      setEditEmail("");
+      setEditPassword("");
+      await loadOwnerInfo();
+      return;
+    }
+    setEditing(false);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!r.owner_user_id) {
+      toast.error("No owner account linked to this restaurant");
+      return;
+    }
+    setSavingEdit(true);
+    try {
+      const payload: Record<string, any> = { user_id: r.owner_user_id };
+      if (editEmail.trim()) payload.email = editEmail.trim();
+      if (editPassword.trim()) payload.password = editPassword.trim();
+      if (editName.trim()) payload.full_name = editName.trim();
+      if (editContact.trim()) payload.contact_number = editContact.trim();
+
+      const res = await supabase.functions.invoke("admin-update-user", { body: payload });
+      if (res.error) throw new Error(res.error.message);
+      if (res.data?.error) throw new Error(res.data.error);
+
+      toast.success(`${r.name} credentials updated!`);
+      setEditing(false);
+      setEditEmail("");
+      setEditPassword("");
+      onRestaurantChanged();
+    } catch (err: any) {
+      toast.error(err.message || "Failed to update credentials");
+    }
+    setSavingEdit(false);
+  };
+
+  return (
+    <div className="rounded-2xl border border-border bg-card shadow-card overflow-hidden">
+      <div className="flex items-center justify-between p-4">
+        <div>
+          <h3 className="font-bold text-sm text-foreground">{r.name}</h3>
+          <p className="text-xs text-muted-foreground">{r.cuisine} · ⭐ {r.rating}</p>
+          {r.owner_user_id && (
+            <p className="text-[10px] text-primary mt-0.5">🔐 Has login</p>
+          )}
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handleEdit}
+            className={`rounded-xl p-1.5 transition-colors ${
+              editing ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-secondary"
+            }`}
+            title="Edit credentials"
+          >
+            {editing ? <X className="h-4 w-4" /> : <Pencil className="h-4 w-4" />}
+          </button>
+          <button
+            onClick={() => onToggleActive(r.id, r.is_active)}
+            className={`rounded-xl px-3 py-1.5 text-xs font-bold transition-colors ${
+              r.is_active
+                ? "bg-green-100 text-green-700 hover:bg-green-200"
+                : "bg-red-100 text-red-600 hover:bg-red-200"
+            }`}
+          >
+            {r.is_active ? "Active" : "Inactive"}
+          </button>
+          <button
+            onClick={() => onDelete(r.id, r.name)}
+            disabled={deleting === r.id}
+            className="rounded-xl p-1.5 text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors disabled:opacity-50"
+            title="Delete restaurant"
+          >
+            <Trash2 className="h-4 w-4" />
+          </button>
+        </div>
+      </div>
+
+      {editing && (
+        <div className="border-t border-border bg-secondary/30 p-4 space-y-3">
+          {loadingOwner ? (
+            <div className="flex justify-center py-2">
+              <div className="h-5 w-5 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+            </div>
+          ) : !r.owner_user_id ? (
+            <p className="text-xs text-muted-foreground text-center py-2">
+              No login account linked. Add one when creating the restaurant or assign an owner first.
+            </p>
+          ) : (
+            <>
+              <h4 className="font-bold text-xs text-foreground">Edit Login Credentials</h4>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-muted-foreground mb-1">Owner Name</label>
+                  <input value={editName} onChange={e => setEditName(e.target.value)}
+                    className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20" />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-muted-foreground mb-1">Contact</label>
+                  <input value={editContact} onChange={e => setEditContact(e.target.value)}
+                    className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20" />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-muted-foreground mb-1">New Email (leave blank to keep)</label>
+                  <input type="email" value={editEmail} onChange={e => setEditEmail(e.target.value)} placeholder="new@email.com"
+                    className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20" />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-muted-foreground mb-1">New Password (leave blank to keep)</label>
+                  <input type="password" value={editPassword} onChange={e => setEditPassword(e.target.value)} placeholder="••••••" minLength={6}
+                    className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20" />
+                </div>
+              </div>
+              <button
+                onClick={handleSaveEdit}
+                disabled={savingEdit}
+                className="flex items-center justify-center gap-1.5 w-full rounded-xl bg-primary py-2.5 text-sm font-bold text-primary-foreground disabled:opacity-50 hover:opacity-90 transition-opacity"
+              >
+                <Save className="h-3.5 w-3.5" />
+                {savingEdit ? "Saving..." : "Save Changes"}
+              </button>
+            </>
+          )}
+        </div>
+      )}
+    </div>
   );
 };
 
