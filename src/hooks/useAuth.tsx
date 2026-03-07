@@ -85,9 +85,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return () => {
       mounted = false;
       subscription.unsubscribe();
-    };
-
-    return () => subscription.unsubscribe();
   }, []);
 
   const signOut = async () => {
