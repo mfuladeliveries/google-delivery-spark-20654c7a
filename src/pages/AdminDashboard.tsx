@@ -25,6 +25,7 @@ interface RecentOrder {
   created_at: string;
   payment_method: string;
   driver_id: string | null;
+  delivered_at: string | null;
 }
 
 interface UserRecord {
