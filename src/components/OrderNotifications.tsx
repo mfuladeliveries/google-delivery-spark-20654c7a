@@ -47,6 +47,9 @@ const OrderNotifications = () => {
   const { user, role } = useAuth();
   const hasRequestedPermission = useRef(false);
 
+  // Subscribe to Web Push notifications for background alerts
+  usePushNotifications();
+
   useEffect(() => {
     if (!user) return;
 
