@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
 import { toast } from "sonner";
+import { sendPushNotification } from "@/lib/pushNotify";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -207,8 +208,25 @@ const RestaurantDashboard = () => {
   };
 
   const updateOrderStatus = async (orderId: string, status: string) => {
+    const order = orders.find(o => o.id === orderId);
+    const oldStatus = order?.status;
     await supabase.from("orders").update({ status }).eq("id", orderId);
     setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status } : o));
+    
+    // Send push notification
+    if (order) {
+      sendPushNotification({
+        order_id: orderId,
+        order_number: order.order_number,
+        status,
+        restaurant: restaurant?.name || "",
+        total: order.total,
+        user_id: (order as any).user_id,
+        driver_id: (order as any).driver_id || null,
+        restaurant_id: restaurant?.id || null,
+        old_status: oldStatus || null,
+      });
+    }
   };
 
   const acceptOrder = async (orderId: string) => {

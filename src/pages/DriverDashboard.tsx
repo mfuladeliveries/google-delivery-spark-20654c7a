@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
+import { sendPushNotification } from "@/lib/pushNotify";
 import DriverHeader from "@/components/driver/DriverHeader";
 import DriverBottomNav from "@/components/driver/DriverBottomNav";
 import DriverJobBoard from "@/components/driver/DriverJobBoard";
@@ -198,6 +199,7 @@ const DriverDashboard = () => {
 
   const acceptDelivery = async (orderId: string) => {
     setAccepting(orderId);
+    const order = pendingOrders.find(o => o.id === orderId);
     const { data, error } = await supabase.rpc("claim_order", { p_order_id: orderId });
     if (error) {
       toast.error(error.message || "Failed to claim order");
@@ -209,6 +211,20 @@ const DriverDashboard = () => {
       await fetchOrders();
       setAccepting(null);
       return;
+    }
+    // Notify customer that a driver has been assigned
+    if (order) {
+      sendPushNotification({
+        order_id: orderId,
+        order_number: order.order_number,
+        status: "driver_assigned",
+        restaurant: order.restaurant,
+        total: order.total,
+        user_id: (order as any).user_id,
+        driver_id: user!.id,
+        restaurant_id: null,
+        old_status: "ready",
+      });
     }
     await fetchOrders();
     setTab("active");
