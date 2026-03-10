@@ -13,6 +13,7 @@ import NotFound from "./pages/NotFound";
 import RestaurantMenu from "./pages/RestaurantMenu";
 import RestaurantDashboard from "./pages/RestaurantDashboard";
 import DriverDashboard from "./pages/DriverDashboard";
+import DriverAuth from "./pages/DriverAuth";
 import AdminDashboard from "./pages/AdminDashboard";
 import Profile from "./pages/Profile";
 import Search from "./pages/Search";
