@@ -38,6 +38,7 @@ const App = () => (
             <Route path="/restaurant/:id" element={<RestaurantMenu />} />
             <Route path="/restaurant/orders" element={<RestaurantDashboard />} />
             <Route path="/restaurant/menu" element={<RestaurantDashboard />} />
+            <Route path="/driver/auth" element={<DriverAuth />} />
             <Route path="/driver" element={<DriverDashboard />} />
             <Route path="/driver/*" element={<DriverDashboard />} />
             <Route path="/admin" element={<AdminDashboard />} />
