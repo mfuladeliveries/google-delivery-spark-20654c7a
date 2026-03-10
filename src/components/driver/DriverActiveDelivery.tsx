@@ -63,11 +63,25 @@ const DriverActiveDelivery = ({ orders, driverLocation, onDeliveryComplete, onSt
 
   const handleConfirmArrival = async (orderId: string) => {
     setUpdatingStatus(orderId);
+    const order = orders.find(o => o.id === orderId);
     const { error } = await supabase.rpc("driver_update_order", { p_order_id: orderId, p_status: "picking_up" });
     if (error) {
       toast.error(error.message || "Failed to update status");
     } else {
       toast.success("Arrival confirmed! Pick up the order.");
+      if (order) {
+        sendPushNotification({
+          order_id: orderId,
+          order_number: order.order_number,
+          status: "picking_up",
+          restaurant: order.restaurant,
+          total: order.total,
+          user_id: (order as any).user_id,
+          driver_id: (order as any).driver_id || null,
+          restaurant_id: (order as any).restaurant_id || null,
+          old_status: order.status,
+        });
+      }
     }
     onStatusChange?.();
     setUpdatingStatus(null);
@@ -75,11 +89,25 @@ const DriverActiveDelivery = ({ orders, driverLocation, onDeliveryComplete, onSt
 
   const handleConfirmPickup = async (orderId: string) => {
     setUpdatingStatus(orderId);
+    const order = orders.find(o => o.id === orderId);
     const { error } = await supabase.rpc("driver_update_order", { p_order_id: orderId, p_status: "out_for_delivery" });
     if (error) {
       toast.error(error.message || "Failed to update status");
     } else {
       toast.success("Pickup confirmed! Heading to customer.");
+      if (order) {
+        sendPushNotification({
+          order_id: orderId,
+          order_number: order.order_number,
+          status: "out_for_delivery",
+          restaurant: order.restaurant,
+          total: order.total,
+          user_id: (order as any).user_id,
+          driver_id: (order as any).driver_id || null,
+          restaurant_id: (order as any).restaurant_id || null,
+          old_status: order.status,
+        });
+      }
     }
     onStatusChange?.();
     setUpdatingStatus(null);
