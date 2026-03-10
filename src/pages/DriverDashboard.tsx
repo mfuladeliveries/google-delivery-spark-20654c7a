@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
+import { sendPushNotification } from "@/lib/pushNotify";
 import DriverHeader from "@/components/driver/DriverHeader";
 import DriverBottomNav from "@/components/driver/DriverBottomNav";
 import DriverJobBoard from "@/components/driver/DriverJobBoard";
