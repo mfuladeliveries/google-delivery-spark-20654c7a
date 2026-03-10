@@ -150,6 +150,21 @@ const CheckoutDialog = ({
         localStorage.setItem("delivery_pins", JSON.stringify(pins));
       }
 
+      // Trigger push notifications for restaurant/drivers
+      supabase.functions.invoke("push-notify", {
+        body: {
+          order_id: orderId,
+          order_number: orderNum,
+          status: "pending",
+          restaurant: restaurants[0] || "",
+          total: orderResult?.total,
+          user_id: user.id,
+          driver_id: null,
+          restaurant_id: null,
+          old_status: null,
+        },
+      }).catch(() => {}); // fire and forget
+
       toast.success("Your order has been placed successfully! 🎉", {
         description: `Order #${orderNum} • Delivery PIN: ${deliveryCode}. We'll notify you as your order progresses.`,
         duration: 8000,
