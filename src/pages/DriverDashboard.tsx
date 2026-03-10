@@ -75,9 +75,14 @@ const DriverDashboard = () => {
 
   // Auth guard
   useEffect(() => {
+    if (authLoading) return;
+    if (!user) {
+      navigate("/driver/auth");
+      return;
+    }
     const hasAccess = roles.includes("driver") || roles.includes("admin");
-    if (!authLoading && (!user || !hasAccess)) {
-      navigate("/");
+    if (!hasAccess) {
+      navigate("/driver/auth");
     }
   }, [user, roles, authLoading, navigate]);
 
