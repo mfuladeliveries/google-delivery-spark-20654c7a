@@ -80,6 +80,9 @@ const RestaurantDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [showAddItem, setShowAddItem] = useState(false);
   const [newItem, setNewItem] = useState({ name: "", description: "", price: "", image: "", category: "" });
+  const [editingItem, setEditingItem] = useState<string | null>(null);
+  const [editData, setEditData] = useState({ name: "", description: "", price: "", image: "", category: "" });
+  const [savingEdit, setSavingEdit] = useState(false);
   const [saving, setSaving] = useState(false);
   const prevOrderCountRef = useRef(0);
 
