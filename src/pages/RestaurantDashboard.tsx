@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import {
   ChefHat, Package, CheckCircle, Clock, Plus, Trash2, ArrowLeft, XCircle,
-  ShieldCheck, Search, Download, Filter, TrendingUp, AlertCircle, Utensils
+  ShieldCheck, Search, Download, Filter, TrendingUp, AlertCircle, Utensils, Pencil, Save, X
 } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
 import { toast } from "sonner";
