@@ -807,27 +807,77 @@ const RestaurantDashboard = () => {
             ) : (
               <div className="space-y-2">
                 {menuItems.map(item => (
-                  <Card key={item.id} className="shadow-card">
-                    <CardContent className="flex items-center gap-3 p-3">
-                      <div className="h-14 w-14 flex-shrink-0 overflow-hidden rounded-xl bg-muted">
-                        {item.image ? (
-                          <img src={item.image} alt={item.name} className="h-full w-full object-cover" />
-                        ) : (
-                          <div className="h-full w-full flex items-center justify-center text-lg">🍽️</div>
-                        )}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <h4 className="font-semibold text-sm text-foreground truncate">{item.name}</h4>
-                        <p className="text-xs text-muted-foreground truncate">{item.description}</p>
-                        <div className="flex items-center gap-2 mt-1">
-                          <span className="font-display text-xs text-primary">R{item.price}</span>
-                          <Badge variant="secondary" className="text-[10px]">{item.category}</Badge>
+                  <Card key={item.id} className="shadow-card overflow-hidden">
+                    {editingItem === item.id ? (
+                      /* Inline Edit Mode */
+                      <CardContent className="p-3 space-y-2">
+                        <div className="flex items-center justify-between mb-1">
+                          <h4 className="font-semibold text-sm text-foreground">Edit Item</h4>
+                          <button onClick={() => setEditingItem(null)} className="rounded-lg p-1 text-muted-foreground hover:bg-secondary">
+                            <X className="h-4 w-4" />
+                          </button>
                         </div>
-                      </div>
-                      <button onClick={() => deleteMenuItem(item.id)} className="rounded-lg p-2 text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors">
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    </CardContent>
+                        <FoodImageUpload
+                          value={editData.image}
+                          onChange={(url) => setEditData(p => ({ ...p, image: url }))}
+                          restaurantId={restaurant?.id}
+                        />
+                        <Input value={editData.name} onChange={e => setEditData(p => ({ ...p, name: e.target.value }))} placeholder="Item name *" />
+                        <Input value={editData.description} onChange={e => setEditData(p => ({ ...p, description: e.target.value }))} placeholder="Description" />
+                        <div className="flex gap-2">
+                          <Input value={editData.price} onChange={e => setEditData(p => ({ ...p, price: e.target.value }))} placeholder="Price (R) *" type="number" className="flex-1" />
+                          <Input value={editData.category} onChange={e => setEditData(p => ({ ...p, category: e.target.value }))} placeholder="Category" className="flex-1" />
+                        </div>
+                        <div className="flex gap-2 pt-1">
+                          <Button onClick={saveEditItem} disabled={savingEdit || !editData.name || !editData.price} className="flex-1 gradient-orange text-primary-foreground shadow-orange gap-1.5">
+                            <Save className="h-3.5 w-3.5" />
+                            {savingEdit ? "Saving..." : "Save Changes"}
+                          </Button>
+                          <Button variant="outline" onClick={() => setEditingItem(null)}>Cancel</Button>
+                        </div>
+                      </CardContent>
+                    ) : (
+                      /* Display Mode */
+                      <CardContent className="flex items-center gap-3 p-3">
+                        <div className="h-14 w-14 flex-shrink-0 overflow-hidden rounded-xl bg-muted">
+                          {item.image ? (
+                            <img src={item.image} alt={item.name} className="h-full w-full object-cover" />
+                          ) : (
+                            <div className="h-full w-full flex items-center justify-center text-lg">🍽️</div>
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h4 className="font-semibold text-sm text-foreground truncate">{item.name}</h4>
+                          <p className="text-xs text-muted-foreground truncate">{item.description}</p>
+                          <div className="flex items-center gap-2 mt-1">
+                            <span className="font-display text-xs text-primary">R{item.price}</span>
+                            <Badge variant="secondary" className="text-[10px]">{item.category}</Badge>
+                            {!item.is_available && (
+                              <Badge variant="outline" className="text-[10px] text-destructive border-destructive/30">Unavailable</Badge>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <button
+                            onClick={() => toggleAvailability(item)}
+                            className={`rounded-lg px-2 py-1.5 text-[10px] font-bold transition-colors ${
+                              item.is_available
+                                ? "bg-emerald-100 text-emerald-700 hover:bg-emerald-200"
+                                : "bg-muted text-muted-foreground hover:bg-secondary"
+                            }`}
+                            title={item.is_available ? "Mark unavailable" : "Mark available"}
+                          >
+                            {item.is_available ? "✓" : "✗"}
+                          </button>
+                          <button onClick={() => startEditItem(item)} className="rounded-lg p-2 text-muted-foreground hover:bg-primary/10 hover:text-primary transition-colors">
+                            <Pencil className="h-4 w-4" />
+                          </button>
+                          <button onClick={() => deleteMenuItem(item.id)} className="rounded-lg p-2 text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors">
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
+                      </CardContent>
+                    )}
                   </Card>
                 ))}
               </div>
