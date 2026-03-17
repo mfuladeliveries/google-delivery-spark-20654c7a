@@ -741,7 +741,11 @@ const RestaurantDashboard = () => {
                     <Input value={newItem.price} onChange={e => setNewItem(p => ({ ...p, price: e.target.value }))} placeholder="Price (R) *" type="number" className="flex-1" />
                     <Input value={newItem.category} onChange={e => setNewItem(p => ({ ...p, category: e.target.value }))} placeholder="Category" className="flex-1" />
                   </div>
-                  <Input value={newItem.image} onChange={e => setNewItem(p => ({ ...p, image: e.target.value }))} placeholder="Image URL (optional)" />
+                  <FoodImageUpload
+                    value={newItem.image}
+                    onChange={(url) => setNewItem(p => ({ ...p, image: url }))}
+                    restaurantId={restaurant?.id}
+                  />
                   <div className="flex gap-2 pt-1">
                     <Button onClick={addMenuItem} disabled={saving || !newItem.name || !newItem.price} className="flex-1 gradient-orange text-primary-foreground shadow-orange">
                       {saving ? "Adding..." : "Add Item"}
