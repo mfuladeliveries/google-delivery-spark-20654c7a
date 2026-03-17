@@ -275,6 +275,45 @@ const RestaurantDashboard = () => {
     toast.success("Item deleted");
   };
 
+  const startEditItem = (item: MenuItem) => {
+    setEditingItem(item.id);
+    setEditData({
+      name: item.name,
+      description: item.description,
+      price: String(item.price),
+      image: item.image,
+      category: item.category,
+    });
+  };
+
+  const saveEditItem = async () => {
+    if (!editingItem || !editData.name || !editData.price) return;
+    setSavingEdit(true);
+    const updates = {
+      name: editData.name,
+      description: editData.description,
+      price: parseFloat(editData.price),
+      image: editData.image,
+      category: editData.category || "General",
+    };
+    const { error } = await supabase.from("menu_items").update(updates).eq("id", editingItem);
+    if (error) {
+      toast.error("Failed to update: " + error.message);
+    } else {
+      setMenuItems(prev => prev.map(i => i.id === editingItem ? { ...i, ...updates } : i));
+      setEditingItem(null);
+      toast.success("Menu item updated!");
+    }
+    setSavingEdit(false);
+  };
+
+  const toggleAvailability = async (item: MenuItem) => {
+    const newVal = !item.is_available;
+    await supabase.from("menu_items").update({ is_available: newVal }).eq("id", item.id);
+    setMenuItems(prev => prev.map(i => i.id === item.id ? { ...i, is_available: newVal } : i));
+    toast.success(newVal ? "Item marked available" : "Item marked unavailable");
+  };
+
   // Metrics
   const today = new Date();
   today.setHours(0, 0, 0, 0);
