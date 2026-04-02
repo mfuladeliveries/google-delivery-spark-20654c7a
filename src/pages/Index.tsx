@@ -102,7 +102,7 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <Header cartCount={cart.totalItems} onCartClick={() => setCartOpen(true)} />
+      <Navbar cartCount={cart.totalItems} onCartClick={() => setCartOpen(true)} />
 
       <main className="mx-auto max-w-7xl px-4 pb-nav pt-4 md:pb-8">
         {/* Hero */}
