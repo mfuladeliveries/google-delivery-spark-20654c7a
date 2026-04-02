@@ -2,7 +2,8 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Search, Star, Clock, ChevronRight, Flame, Utensils, Pizza, Coffee, Fish, ShoppingBasket, Beer } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import Header from "@/components/Header";
+import Navbar from "@/components/Navbar";
+import Footer from "@/components/Footer";
 import BottomNav from "@/components/BottomNav";
 import Cart from "@/components/Cart";
 import CheckoutDialog from "@/components/CheckoutDialog";
@@ -101,7 +102,7 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <Header cartCount={cart.totalItems} onCartClick={() => setCartOpen(true)} />
+      <Navbar cartCount={cart.totalItems} onCartClick={() => setCartOpen(true)} />
 
       <main className="mx-auto max-w-7xl px-4 pb-nav pt-4 md:pb-8">
         {/* Hero */}
@@ -283,6 +284,7 @@ const Index = () => {
         delivery={cart.delivery}
         onOrderPlaced={cart.clearCart} />
 
+      <Footer />
       <BottomNav />
     </div>);
 
