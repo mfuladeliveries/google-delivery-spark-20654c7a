@@ -284,6 +284,7 @@ const Index = () => {
         delivery={cart.delivery}
         onOrderPlaced={cart.clearCart} />
 
+      <Footer />
       <BottomNav />
     </div>);
 
