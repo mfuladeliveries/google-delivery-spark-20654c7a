@@ -108,22 +108,28 @@ const OrderNotifications = () => {
       channels.push(ch);
     }
 
-    // Driver notifications: orders ready for pickup
+    // Driver notifications: orders ready for pickup (auto-accepted on creation OR moved to ready by restaurant)
     if (role === "driver") {
+      const handleReady = (payload: any) => {
+        if (payload.new?.status === "ready" && !payload.new?.driver_id) {
+          const title = "🚗 New Delivery Available";
+          const body = `Order #${payload.new?.order_number} ready at ${payload.new?.restaurant || "restaurant"}`;
+          toast.info(title, { description: body });
+          if (document.hidden) sendBrowserNotification(title, body);
+        }
+      };
       const ch = supabase
         .channel("driver-notifications")
+        .on("postgres_changes", {
+          event: "INSERT",
+          schema: "public",
+          table: "orders",
+        }, handleReady)
         .on("postgres_changes", {
           event: "UPDATE",
           schema: "public",
           table: "orders",
-        }, (payload: any) => {
-          if (payload.new?.status === "ready" && !payload.new?.driver_id) {
-            const title = "🚗 New Delivery Available";
-            const body = `Order #${payload.new?.order_number} ready at ${payload.new?.restaurant || "restaurant"}`;
-            toast.info(title, { description: body });
-            if (document.hidden) sendBrowserNotification(title, body);
-          }
-        })
+        }, handleReady)
         .subscribe();
       channels.push(ch);
     }

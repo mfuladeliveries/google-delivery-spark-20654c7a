@@ -150,18 +150,18 @@ const CheckoutDialog = ({
         localStorage.setItem("delivery_pins", JSON.stringify(pins));
       }
 
-      // Trigger push notifications for restaurant/drivers
+      // Orders auto-accept to "ready" — notify online drivers immediately
       supabase.functions.invoke("push-notify", {
         body: {
           order_id: orderId,
           order_number: orderNum,
-          status: "pending",
+          status: "ready",
           restaurant: restaurants[0] || "",
           total: orderResult?.total,
           user_id: user.id,
           driver_id: null,
           restaurant_id: null,
-          old_status: null,
+          old_status: "pending",
         },
       }).catch(() => {}); // fire and forget
 
