@@ -10,6 +10,7 @@ import CheckoutDialog from "@/components/CheckoutDialog";
 import { useCart } from "@/hooks/useCart";
 import { useAuth } from "@/hooks/useAuth";
 import { menuItems, storeInfo } from "@/data/menu";
+import mfulaLogo from "@/assets/mfula-logo.png";
 
 interface Restaurant {
   id: string;
@@ -107,12 +108,22 @@ const Index = () => {
       <main className="mx-auto max-w-7xl px-4 pb-nav pt-4 md:pb-8">
         {/* Hero */}
         <div className="mb-6 rounded-2xl overflow-hidden relative" style={{ background: 'linear-gradient(135deg, hsl(21 100% 50%), hsl(35 100% 55%))' }}>
-          <div className="px-6 py-8">
+          <div className="px-6 py-8 relative">
             <p className="text-primary-foreground/80 text-sm font-medium mb-1">
             </p>
-            <h2 className="font-bold text-primary-foreground mb-1 font-[serif] text-center text-5xl">
-              MFULA DELIVERIES
-            </h2>
+            <div className="relative flex items-center justify-center mb-1">
+              <img
+                src={mfulaLogo}
+                alt=""
+                aria-hidden="true"
+                width={512}
+                height={512}
+                className="absolute h-40 w-40 sm:h-48 sm:w-48 opacity-20 pointer-events-none select-none"
+              />
+              <h2 className="relative font-bold text-primary-foreground font-[serif] text-center text-5xl drop-shadow-lg">
+                MFULA DELIVERIES
+              </h2>
+            </div>
             <h2 className="text-2xl font-bold text-primary-foreground mb-5">What you would like to order?</h2>
             
             {/* Search */}
