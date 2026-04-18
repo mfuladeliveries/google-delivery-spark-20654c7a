@@ -20,13 +20,17 @@ const DriverAuth = () => {
   const { user, roles, loading: authLoading } = useAuth();
 
   useEffect(() => {
-    if (!authLoading && user) {
-      const hasAccess = roles.includes("driver") || roles.includes("admin");
-      if (hasAccess) {
-        navigate("/driver");
-      } else {
-        navigate("/");
-      }
+    // Wait for auth AND roles to be loaded before deciding where to redirect.
+    // Without this, a freshly-logged-in user with empty roles[] would be sent to "/".
+    if (authLoading) return;
+    if (!user) return;
+    if (roles.length === 0) return;
+
+    const hasAccess = roles.includes("driver") || roles.includes("admin");
+    if (hasAccess) {
+      navigate("/driver", { replace: true });
+    } else {
+      navigate("/", { replace: true });
     }
   }, [user, roles, authLoading, navigate]);
 
