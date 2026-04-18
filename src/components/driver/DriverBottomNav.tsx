@@ -1,7 +1,7 @@
 import { Briefcase, Navigation, DollarSign, UserCircle } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 
-type DriverTab = "jobs" | "active" | "earnings" | "profile";
+type DriverTab = "orders" | "earnings" | "profile";
 
 interface DriverBottomNavProps {
   activeTab: DriverTab;
@@ -11,8 +11,7 @@ interface DriverBottomNavProps {
 }
 
 const tabs = [
-  { id: "jobs" as DriverTab, icon: Briefcase, label: "Jobs" },
-  { id: "active" as DriverTab, icon: Navigation, label: "Active" },
+  { id: "orders" as DriverTab, icon: Briefcase, label: "Orders" },
   { id: "earnings" as DriverTab, icon: DollarSign, label: "Earnings" },
   { id: "profile" as DriverTab, icon: UserCircle, label: "Profile" },
 ];
@@ -23,7 +22,7 @@ const DriverBottomNav = ({ activeTab, onTabChange, jobCount = 0, activeCount = 0
       <div className="flex items-center justify-around px-2 py-2">
         {tabs.map(({ id, icon: Icon, label }) => {
           const isActive = activeTab === id;
-          const badge = id === "jobs" ? jobCount : id === "active" ? activeCount : 0;
+          const badge = id === "orders" ? jobCount + activeCount : 0;
           return (
             <button
               key={id}
