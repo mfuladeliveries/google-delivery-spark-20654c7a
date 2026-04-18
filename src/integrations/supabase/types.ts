@@ -65,6 +65,27 @@ export type Database = {
         }
         Relationships: []
       }
+      driver_rejected_orders: {
+        Row: {
+          created_at: string
+          driver_id: string
+          id: string
+          order_id: string
+        }
+        Insert: {
+          created_at?: string
+          driver_id: string
+          id?: string
+          order_id: string
+        }
+        Update: {
+          created_at?: string
+          driver_id?: string
+          id?: string
+          order_id?: string
+        }
+        Relationships: []
+      }
       menu_items: {
         Row: {
           category: string

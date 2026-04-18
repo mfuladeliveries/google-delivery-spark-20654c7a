@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -6,7 +6,8 @@ import { toast } from "sonner";
 import { sendPushNotification } from "@/lib/pushNotify";
 import DriverHeader from "@/components/driver/DriverHeader";
 import DriverBottomNav from "@/components/driver/DriverBottomNav";
-import DriverJobBoard from "@/components/driver/DriverJobBoard";
+import DriverOrdersList from "@/components/driver/DriverOrdersList";
+import NewOrderModal from "@/components/driver/NewOrderModal";
 import DriverActiveDelivery from "@/components/driver/DriverActiveDelivery";
 import DriverEarnings from "@/components/driver/DriverEarnings";
 import DriverProfileTab from "@/components/driver/DriverProfile";
@@ -31,20 +32,24 @@ interface DriverProfile {
   total_deliveries: number;
 }
 
-type DriverTab = "jobs" | "active" | "earnings" | "profile";
+type DriverTab = "orders" | "earnings" | "profile";
 
 const DriverDashboard = () => {
   const { user, roles, loading: authLoading } = useAuth();
   const navigate = useNavigate();
-  const [tab, setTab] = useState<DriverTab>("jobs");
+  const [tab, setTab] = useState<DriverTab>("orders");
   const [pendingOrders, setPendingOrders] = useState<Order[]>([]);
   const [myOrders, setMyOrders] = useState<Order[]>([]);
   const [completedOrders, setCompletedOrders] = useState<Order[]>([]);
   const [driverProfile, setDriverProfile] = useState<DriverProfile | null>(null);
   const [loading, setLoading] = useState(true);
-  const [accepting, setAccepting] = useState<string | null>(null);
+  const [accepting, setAccepting] = useState(false);
+  const [rejecting, setRejecting] = useState(false);
   const [togglingOnline, setTogglingOnline] = useState(false);
   const [driverLocation, setDriverLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [rejectedIds, setRejectedIds] = useState<Set<string>>(new Set());
+  const [activeOffer, setActiveOffer] = useState<Order | null>(null);
+  const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
   const locationWatchRef = useRef<number | null>(null);
 
   const playNotificationSound = useCallback(() => {
@@ -52,23 +57,14 @@ const DriverDashboard = () => {
       const ctx = new AudioContext();
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.frequency.value = 660;
-      osc.type = "triangle";
-      gain.gain.value = 0.4;
-      osc.start();
-      osc.stop(ctx.currentTime + 0.2);
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.frequency.value = 660; osc.type = "triangle"; gain.gain.value = 0.4;
+      osc.start(); osc.stop(ctx.currentTime + 0.2);
       setTimeout(() => {
-        const osc2 = ctx.createOscillator();
-        const gain2 = ctx.createGain();
-        osc2.connect(gain2);
-        gain2.connect(ctx.destination);
-        osc2.frequency.value = 880;
-        osc2.type = "triangle";
-        gain2.gain.value = 0.4;
-        osc2.start();
-        osc2.stop(ctx.currentTime + 0.2);
+        const o2 = ctx.createOscillator(); const g2 = ctx.createGain();
+        o2.connect(g2); g2.connect(ctx.destination);
+        o2.frequency.value = 880; o2.type = "triangle"; g2.gain.value = 0.4;
+        o2.start(); o2.stop(ctx.currentTime + 0.2);
       }, 150);
     } catch {}
   }, []);
@@ -76,31 +72,19 @@ const DriverDashboard = () => {
   // Auth guard
   useEffect(() => {
     if (authLoading) return;
-    if (!user) {
-      navigate("/driver/auth");
-      return;
-    }
+    if (!user) { navigate("/driver/auth"); return; }
     const hasAccess = roles.includes("driver") || roles.includes("admin");
-    if (!hasAccess) {
-      navigate("/driver/auth");
-    }
+    if (!hasAccess) navigate("/driver/auth");
   }, [user, roles, authLoading, navigate]);
 
-  // Data + realtime
+  // Initial load + realtime
   useEffect(() => {
     if (!user) return;
     fetchAll();
 
     const channel = supabase
       .channel("driver-orders")
-      .on("postgres_changes", { event: "*", schema: "public", table: "orders" }, (payload) => {
-        const newStatus = (payload.new as any)?.status;
-        if (payload.eventType === "UPDATE" && newStatus === "ready") {
-          playNotificationSound();
-          toast.info("🚗 New delivery available!", {
-            description: `Order #${(payload.new as any).order_number} is ready for pickup`,
-          });
-        }
+      .on("postgres_changes", { event: "*", schema: "public", table: "orders" }, () => {
         fetchOrders();
       })
       .subscribe();
@@ -108,7 +92,18 @@ const DriverDashboard = () => {
     return () => { supabase.removeChannel(channel); };
   }, [user]);
 
-  // GPS tracking
+  // Pop modal when a new pending order appears (not rejected, no active offer, and driver is online)
+  useEffect(() => {
+    if (!driverProfile?.is_online) return;
+    if (activeOffer) return;
+    const next = pendingOrders.find((o) => !rejectedIds.has(o.id));
+    if (next) {
+      setActiveOffer(next);
+      playNotificationSound();
+    }
+  }, [pendingOrders, rejectedIds, driverProfile?.is_online, activeOffer, playNotificationSound]);
+
+  // GPS tracking when online
   useEffect(() => {
     if (!user || !driverProfile?.is_online) {
       if (locationWatchRef.current !== null) {
@@ -117,34 +112,23 @@ const DriverDashboard = () => {
       }
       return;
     }
-
     locationWatchRef.current = navigator.geolocation.watchPosition(
       async (pos) => {
         const loc = { lat: pos.coords.latitude, lng: pos.coords.longitude };
         setDriverLocation(loc);
-
-        // Persist location to driver_profiles for auto-assignment
         await supabase.from("driver_profiles").update({
           current_lat: loc.lat,
           current_lng: loc.lng,
           location_updated_at: new Date().toISOString(),
         }).eq("user_id", user!.id);
-
-        // Update active order locations for customer tracking via secure RPC
         const activeIds = myOrders.map((o) => o.id);
         for (const id of activeIds) {
-          await supabase.rpc("driver_update_order", {
-            p_order_id: id,
-            p_status: null,
-            p_lat: loc.lat,
-            p_lng: loc.lng,
-          });
+          await supabase.rpc("driver_update_order", { p_order_id: id, p_status: null, p_lat: loc.lat, p_lng: loc.lng });
         }
       },
       () => {},
       { enableHighAccuracy: true, maximumAge: 10000, timeout: 15000 }
     );
-
     return () => {
       if (locationWatchRef.current !== null) {
         navigator.geolocation.clearWatch(locationWatchRef.current);
@@ -154,8 +138,16 @@ const DriverDashboard = () => {
   }, [user, driverProfile?.is_online, myOrders.length]);
 
   const fetchAll = async () => {
-    await Promise.all([fetchOrders(), fetchDriverProfile(), fetchCompletedOrders()]);
+    await Promise.all([fetchOrders(), fetchDriverProfile(), fetchCompletedOrders(), fetchRejected()]);
     setLoading(false);
+  };
+
+  const fetchRejected = async () => {
+    const { data } = await supabase
+      .from("driver_rejected_orders")
+      .select("order_id")
+      .eq("driver_id", user!.id);
+    if (data) setRejectedIds(new Set(data.map((r: any) => r.order_id)));
   };
 
   const fetchOrders = async () => {
@@ -169,24 +161,17 @@ const DriverDashboard = () => {
 
   const fetchCompletedOrders = async () => {
     const { data } = await supabase
-      .from("orders")
-      .select("*")
-      .eq("driver_id", user!.id)
-      .eq("status", "delivered")
-      .order("created_at", { ascending: false })
-      .limit(50);
+      .from("orders").select("*").eq("driver_id", user!.id).eq("status", "delivered")
+      .order("created_at", { ascending: false }).limit(50);
     if (data) setCompletedOrders(data.map((o) => ({ ...o, items: (o.items as any[]) || [] })));
   };
 
   const fetchDriverProfile = async () => {
     const { data } = await supabase
-      .from("driver_profiles")
-      .select("is_online, total_earnings, total_deliveries")
-      .eq("user_id", user!.id)
-      .maybeSingle();
-    if (data) {
-      setDriverProfile(data);
-    } else {
+      .from("driver_profiles").select("is_online, total_earnings, total_deliveries")
+      .eq("user_id", user!.id).maybeSingle();
+    if (data) setDriverProfile(data);
+    else {
       await supabase.from("driver_profiles").insert({ user_id: user!.id });
       setDriverProfile({ is_online: false, total_earnings: 0, total_deliveries: 0 });
     }
@@ -202,47 +187,72 @@ const DriverDashboard = () => {
     setTogglingOnline(false);
   };
 
-  const acceptDelivery = async (orderId: string) => {
-    setAccepting(orderId);
-    const order = pendingOrders.find(o => o.id === orderId);
-    const { data, error } = await supabase.rpc("claim_order", { p_order_id: orderId });
+  const handleAcceptOffer = async () => {
+    if (!activeOffer) return;
+    setAccepting(true);
+    const order = activeOffer;
+    const { data, error } = await supabase.rpc("claim_order", { p_order_id: order.id });
     if (error) {
-      toast.error(error.message || "Failed to claim order");
-      setAccepting(null);
+      toast.error(error.message || "Failed to accept");
+      setAccepting(false);
       return;
     }
     if (data === false) {
-      toast.error("Order already taken by another driver!");
+      toast.error("Order already taken by another driver");
+      setActiveOffer(null);
       await fetchOrders();
-      setAccepting(null);
+      setAccepting(false);
       return;
     }
-    // Notify customer that a driver has been assigned
-    if (order) {
-      sendPushNotification({
-        order_id: orderId,
-        order_number: order.order_number,
-        status: "driver_assigned",
-        restaurant: order.restaurant,
-        total: order.total,
-        user_id: (order as any).user_id,
-        driver_id: user!.id,
-        restaurant_id: null,
-        old_status: "ready",
-      });
-    }
+    sendPushNotification({
+      order_id: order.id,
+      order_number: order.order_number,
+      status: "driver_assigned",
+      restaurant: order.restaurant,
+      total: order.total,
+      user_id: (order as any).user_id,
+      driver_id: user!.id,
+      restaurant_id: null,
+      old_status: "ready",
+    });
+    toast.success("Delivery accepted! Head to the restaurant. 🚗");
+    setActiveOffer(null);
     await fetchOrders();
-    setTab("active");
-    setAccepting(null);
-    toast.success("Delivery accepted! Navigate to restaurant for pickup. 🚗");
+    setAccepting(false);
+  };
+
+  const handleRejectOffer = async () => {
+    if (!activeOffer) return;
+    setRejecting(true);
+    const id = activeOffer.id;
+    const { error } = await supabase
+      .from("driver_rejected_orders")
+      .insert({ driver_id: user!.id, order_id: id });
+    if (error && !error.message.includes("duplicate")) {
+      toast.error("Failed to reject");
+      setRejecting(false);
+      return;
+    }
+    setRejectedIds((prev) => new Set(prev).add(id));
+    setActiveOffer(null);
+    setRejecting(false);
   };
 
   const handleDeliveryComplete = () => {
     fetchOrders();
     fetchCompletedOrders();
     fetchDriverProfile();
+    setExpandedOrderId(null);
     toast.success("Delivery completed! 🎉");
   };
+
+  // Available = pending minus rejected
+  const availableOrders = useMemo(
+    () => pendingOrders.filter((o) => !rejectedIds.has(o.id)),
+    [pendingOrders, rejectedIds]
+  );
+
+  const expandedOrder = expandedOrderId ? myOrders.find((o) => o.id === expandedOrderId) ?? null : null;
 
   if (authLoading || loading)
     return (
@@ -264,23 +274,35 @@ const DriverDashboard = () => {
       />
 
       <main className="mx-auto max-w-2xl px-4 py-4 pb-24">
-        {tab === "jobs" && (
-          <DriverJobBoard
-            orders={pendingOrders}
-            isOnline={isOnline}
-            accepting={accepting}
-            onAccept={acceptDelivery}
-            driverLocation={driverLocation}
-          />
-        )}
-
-        {tab === "active" && (
-          <DriverActiveDelivery
-            orders={myOrders}
-            driverLocation={driverLocation}
-            onDeliveryComplete={handleDeliveryComplete}
-            onStatusChange={fetchOrders}
-          />
+        {tab === "orders" && (
+          <>
+            {expandedOrder ? (
+              <div className="space-y-3">
+                <button
+                  onClick={() => setExpandedOrderId(null)}
+                  className="text-sm font-semibold text-primary hover:underline"
+                >
+                  ← Back to orders
+                </button>
+                <DriverActiveDelivery
+                  orders={[expandedOrder]}
+                  driverLocation={driverLocation}
+                  onDeliveryComplete={handleDeliveryComplete}
+                  onStatusChange={fetchOrders}
+                />
+              </div>
+            ) : (
+              <DriverOrdersList
+                assignedOrders={myOrders}
+                availableOrders={availableOrders}
+                isOnline={isOnline}
+                driverLocation={driverLocation}
+                onCardClick={(id) => {
+                  if (myOrders.some((o) => o.id === id)) setExpandedOrderId(id);
+                }}
+              />
+            )}
+          </>
         )}
 
         {tab === "earnings" && (
@@ -293,8 +315,18 @@ const DriverDashboard = () => {
       <DriverBottomNav
         activeTab={tab}
         onTabChange={setTab}
-        jobCount={pendingOrders.length}
+        jobCount={availableOrders.length}
         activeCount={myOrders.length}
+      />
+
+      <NewOrderModal
+        open={!!activeOffer}
+        offer={activeOffer}
+        distanceKm={null}
+        accepting={accepting}
+        rejecting={rejecting}
+        onAccept={handleAcceptOffer}
+        onReject={handleRejectOffer}
       />
     </div>
   );
