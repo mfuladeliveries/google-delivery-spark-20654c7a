@@ -329,6 +329,27 @@ const DriverActiveDelivery = ({ orders, driverLocation, onDeliveryComplete, onSt
           </div>
         );
       })}
+
+      <AlertDialog open={!!cancelOrderId} onOpenChange={(open) => !open && setCancelOrderId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Cancel order — item not available?</AlertDialogTitle>
+            <AlertDialogDescription>
+              The customer will be notified that their order was cancelled because the item is not available at the restaurant. This cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={cancelling}>Keep Order</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleCancelUnavailable}
+              disabled={cancelling}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {cancelling ? "Cancelling..." : "Yes, Cancel Order"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
