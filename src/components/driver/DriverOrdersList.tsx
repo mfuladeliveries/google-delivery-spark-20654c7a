@@ -21,6 +21,10 @@ interface DriverOrdersListProps {
   isOnline: boolean;
   driverLocation: { lat: number; lng: number } | null;
   onCardClick?: (orderId: string) => void;
+  onAccept?: (orderId: string) => void;
+  onReject?: (orderId: string) => void;
+  acceptingId?: string | null;
+  rejectingId?: string | null;
 }
 
 const getDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
