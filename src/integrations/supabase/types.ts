@@ -436,6 +436,10 @@ export type Database = {
             }
             Returns: Json
           }
+      driver_cancel_order: {
+        Args: { p_order_id: string; p_reason?: string }
+        Returns: undefined
+      }
       driver_update_order: {
         Args: {
           p_lat?: number
