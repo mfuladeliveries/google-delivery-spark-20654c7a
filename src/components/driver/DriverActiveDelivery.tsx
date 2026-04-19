@@ -268,6 +268,18 @@ const DriverActiveDelivery = ({ orders, driverLocation, onDeliveryComplete, onSt
                 </button>
               )}
 
+              {/* Cancel — item not available (only before pickup) */}
+              {(order.status === "driver_assigned" || order.status === "picking_up") && (
+                <button
+                  onClick={() => setCancelOrderId(order.id)}
+                  disabled={cancelling || updatingStatus === order.id}
+                  className="w-full rounded-xl border-2 border-destructive/30 bg-destructive/5 py-3 text-sm font-bold text-destructive disabled:opacity-50 transition-all hover:bg-destructive/10 active:scale-[0.99] flex items-center justify-center gap-2"
+                >
+                  <XCircle className="h-4 w-4" />
+                  Cancel — Item Not Available
+                </button>
+              )}
+
               {/* Navigate button */}
               <button
                 onClick={() => openGoogleMaps(order.customer_address)}
