@@ -406,6 +406,7 @@ export type Database = {
       }
     }
     Functions: {
+      auto_cancel_stale_orders: { Args: never; Returns: number }
       claim_order: { Args: { p_order_id: string }; Returns: boolean }
       create_verified_order:
         | {
