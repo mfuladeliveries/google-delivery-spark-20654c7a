@@ -305,6 +305,10 @@ const DriverDashboard = () => {
                 onCardClick={(id) => {
                   if (myOrders.some((o) => o.id === id)) setExpandedOrderId(id);
                 }}
+                onAccept={handleAccept}
+                onReject={handleReject}
+                acceptingId={acceptingId}
+                rejectingId={rejectingId}
               />
             )}
           </>
@@ -328,8 +332,8 @@ const DriverDashboard = () => {
         open={!!activeOffer}
         offer={activeOffer}
         distanceKm={null}
-        accepting={accepting}
-        rejecting={rejecting}
+        accepting={!!acceptingId && acceptingId === activeOffer?.id}
+        rejecting={!!rejectingId && rejectingId === activeOffer?.id}
         onAccept={handleAcceptOffer}
         onReject={handleRejectOffer}
       />
