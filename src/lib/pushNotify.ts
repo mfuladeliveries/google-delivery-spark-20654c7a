@@ -10,6 +10,7 @@ interface PushNotifyParams {
   driver_id?: string | null;
   restaurant_id?: string | null;
   old_status?: string | null;
+  reason?: string;
 }
 
 export const sendPushNotification = (params: PushNotifyParams) => {
