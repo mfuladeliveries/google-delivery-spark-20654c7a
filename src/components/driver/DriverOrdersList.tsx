@@ -55,93 +55,129 @@ const OrderCard = ({
   order,
   distance,
   onClick,
+  onAccept,
+  onReject,
+  accepting,
+  rejecting,
+  disableActions,
 }: {
   order: Order;
   distance: number | null;
   onClick?: () => void;
+  onAccept?: () => void;
+  onReject?: () => void;
+  accepting?: boolean;
+  rejecting?: boolean;
+  disableActions?: boolean;
 }) => {
   const status = STATUS_CONFIG[order.status] ?? STATUS_CONFIG.ready;
   const minutesAgo = Math.max(0, Math.floor((Date.now() - new Date(order.created_at).getTime()) / 60000));
   const isAssigned = order.status !== "ready";
+  const showActions = !isAssigned && (onAccept || onReject);
 
   return (
-    <button
-      onClick={onClick}
+    <div
       className={`w-full text-left rounded-2xl border-2 ${
         isAssigned ? "border-primary/40 bg-primary/5" : "border-border bg-card"
-      } p-4 shadow-card hover:shadow-orange/20 transition-all active:scale-[0.99]`}
+      } p-4 shadow-card hover:shadow-orange/20 transition-all`}
     >
-      {/* Header: # + status + amount */}
-      <div className="flex items-start justify-between mb-3">
-        <div className="flex items-center gap-2">
-          <span className="font-bold text-foreground text-base">#{order.order_number}</span>
-          <span className={`rounded-full ${status.bg} ${status.text} px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide`}>
-            {status.label}
+      <button onClick={onClick} className="w-full text-left active:scale-[0.99] transition-transform">
+        {/* Header: # + status + amount */}
+        <div className="flex items-start justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <span className="font-bold text-foreground text-base">#{order.order_number}</span>
+            <span className={`rounded-full ${status.bg} ${status.text} px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide`}>
+              {status.label}
+            </span>
+          </div>
+          <div className="text-right">
+            <span className="font-bold text-primary text-lg leading-none">R{order.total}</span>
+            <p className="text-[10px] text-[hsl(var(--driver-success))] font-bold mt-0.5">+R{order.delivery_fee} fee</p>
+          </div>
+        </div>
+
+        {/* Customer */}
+        <div className="flex items-center gap-2 mb-2 text-sm">
+          <User className="h-4 w-4 text-muted-foreground shrink-0" />
+          <span className="text-foreground font-semibold truncate">
+            {order.customer_name || "Customer"}
+          </span>
+          {isAssigned && order.customer_contact && (
+            <a
+              href={`tel:${order.customer_contact}`}
+              onClick={(e) => e.stopPropagation()}
+              className="ml-auto flex h-7 w-7 items-center justify-center rounded-full bg-[hsl(var(--driver-success)/0.1)] text-[hsl(var(--driver-success))]"
+            >
+              <Phone className="h-3.5 w-3.5" />
+            </a>
+          )}
+        </div>
+
+        {/* Pickup */}
+        <div className="flex items-start gap-2 mb-1.5 text-xs">
+          <Store className="h-4 w-4 text-primary shrink-0 mt-0.5" />
+          <div className="flex-1 min-w-0">
+            <p className="text-[10px] text-muted-foreground uppercase font-semibold tracking-wide">Pickup</p>
+            <p className="text-foreground truncate">{order.restaurant}</p>
+          </div>
+        </div>
+
+        {/* Delivery */}
+        <div className="flex items-start gap-2 mb-3 text-xs">
+          <MapPin className="h-4 w-4 text-[hsl(var(--driver-info))] shrink-0 mt-0.5" />
+          <div className="flex-1 min-w-0">
+            <p className="text-[10px] text-muted-foreground uppercase font-semibold tracking-wide">Delivery</p>
+            <p className="text-foreground truncate">{order.customer_address}</p>
+          </div>
+          <span
+            role="button"
+            tabIndex={0}
+            onClick={(e) => {
+              e.stopPropagation();
+              openGoogleMaps(order.customer_address);
+            }}
+            className="rounded-lg bg-[hsl(var(--driver-info)/0.1)] px-2 py-1 text-[hsl(var(--driver-info))] font-semibold text-[10px] flex items-center gap-1 cursor-pointer"
+          >
+            <Navigation className="h-3 w-3" /> Maps
           </span>
         </div>
-        <div className="text-right">
-          <span className="font-bold text-primary text-lg leading-none">R{order.total}</span>
-          <p className="text-[10px] text-[hsl(var(--driver-success))] font-bold mt-0.5">+R{order.delivery_fee} fee</p>
-        </div>
-      </div>
 
-      {/* Customer */}
-      <div className="flex items-center gap-2 mb-2 text-sm">
-        <User className="h-4 w-4 text-muted-foreground shrink-0" />
-        <span className="text-foreground font-semibold truncate">
-          {order.customer_name || "Customer"}
-        </span>
-        {isAssigned && order.customer_contact && (
-          <a
-            href={`tel:${order.customer_contact}`}
-            onClick={(e) => e.stopPropagation()}
-            className="ml-auto flex h-7 w-7 items-center justify-center rounded-full bg-[hsl(var(--driver-success)/0.1)] text-[hsl(var(--driver-success))]"
+        {/* Footer: distance + time */}
+        <div className="flex items-center gap-3 text-[11px] border-t border-border/60 pt-2">
+          <span className="flex items-center gap-1 text-muted-foreground">
+            <MapPin className="h-3 w-3" />
+            {distance !== null ? `${distance.toFixed(1)} km` : "— km"}
+          </span>
+          <span className="flex items-center gap-1 text-muted-foreground">
+            <Clock className="h-3 w-3" />
+            {minutesAgo}m ago
+          </span>
+          <span className="ml-auto text-[10px] text-muted-foreground">{order.items.length} items</span>
+        </div>
+      </button>
+
+      {/* Accept / Reject actions for available orders */}
+      {showActions && (
+        <div className="grid grid-cols-2 gap-2 mt-3 pt-3 border-t border-border/60">
+          <button
+            onClick={(e) => { e.stopPropagation(); onReject?.(); }}
+            disabled={disableActions || rejecting || accepting}
+            className="rounded-xl border-2 border-destructive/30 bg-card py-2.5 text-xs font-bold text-destructive disabled:opacity-50 transition-all hover:bg-destructive/5 active:scale-[0.98] flex items-center justify-center gap-1.5"
           >
-            <Phone className="h-3.5 w-3.5" />
-          </a>
-        )}
-      </div>
-
-      {/* Pickup */}
-      <div className="flex items-start gap-2 mb-1.5 text-xs">
-        <Store className="h-4 w-4 text-primary shrink-0 mt-0.5" />
-        <div className="flex-1 min-w-0">
-          <p className="text-[10px] text-muted-foreground uppercase font-semibold tracking-wide">Pickup</p>
-          <p className="text-foreground truncate">{order.restaurant}</p>
+            <X className="h-3.5 w-3.5" />
+            {rejecting ? "Rejecting..." : "Reject"}
+          </button>
+          <button
+            onClick={(e) => { e.stopPropagation(); onAccept?.(); }}
+            disabled={disableActions || accepting || rejecting}
+            className="rounded-xl bg-primary py-2.5 text-xs font-bold text-primary-foreground disabled:opacity-50 transition-all hover:opacity-95 active:scale-[0.98] shadow-orange flex items-center justify-center gap-1.5"
+          >
+            <Check className="h-3.5 w-3.5" />
+            {accepting ? "Accepting..." : "Accept"}
+          </button>
         </div>
-      </div>
-
-      {/* Delivery */}
-      <div className="flex items-start gap-2 mb-3 text-xs">
-        <MapPin className="h-4 w-4 text-[hsl(var(--driver-info))] shrink-0 mt-0.5" />
-        <div className="flex-1 min-w-0">
-          <p className="text-[10px] text-muted-foreground uppercase font-semibold tracking-wide">Delivery</p>
-          <p className="text-foreground truncate">{order.customer_address}</p>
-        </div>
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            openGoogleMaps(order.customer_address);
-          }}
-          className="rounded-lg bg-[hsl(var(--driver-info)/0.1)] px-2 py-1 text-[hsl(var(--driver-info))] font-semibold text-[10px] flex items-center gap-1"
-        >
-          <Navigation className="h-3 w-3" /> Maps
-        </button>
-      </div>
-
-      {/* Footer: distance + time */}
-      <div className="flex items-center gap-3 text-[11px] border-t border-border/60 pt-2">
-        <span className="flex items-center gap-1 text-muted-foreground">
-          <MapPin className="h-3 w-3" />
-          {distance !== null ? `${distance.toFixed(1)} km` : "— km"}
-        </span>
-        <span className="flex items-center gap-1 text-muted-foreground">
-          <Clock className="h-3 w-3" />
-          {minutesAgo}m ago
-        </span>
-        <span className="ml-auto text-[10px] text-muted-foreground">{order.items.length} items</span>
-      </div>
-    </button>
+      )}
+    </div>
   );
 };
 
