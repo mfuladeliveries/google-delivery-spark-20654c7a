@@ -30,21 +30,21 @@ const NewOrderModal = ({ open, offer, distanceKm, accepting, rejecting, onAccept
   return (
     <Dialog open={open} onOpenChange={() => { /* no-op: must Accept or Reject */ }}>
       <DialogContent
-        className="sm:max-w-md p-0 overflow-hidden border-2 border-primary"
+        className="sm:max-w-md p-0 overflow-hidden border-2 border-primary max-h-[90vh] flex flex-col gap-0 top-[5vh] translate-y-0 sm:top-[50%] sm:translate-y-[-50%]"
         onPointerDownOutside={(e) => e.preventDefault()}
         onEscapeKeyDown={(e) => e.preventDefault()}
       >
         {/* Header */}
-        <div className="bg-primary px-5 py-4 text-primary-foreground">
-          <div className="flex items-center gap-2 mb-1">
+        <div className="bg-primary px-5 py-3 text-primary-foreground shrink-0">
+          <div className="flex items-center gap-2 mb-0.5">
             <Package className="h-5 w-5" />
-            <h2 className="text-lg font-bold">New Delivery Request</h2>
+            <h2 className="text-base font-bold">New Delivery Request</h2>
           </div>
           <p className="text-xs opacity-90">Order #{offer.order_number} • {minutesAgo}m ago</p>
         </div>
 
-        {/* Body */}
-        <div className="p-5 space-y-4">
+        {/* Body - scrollable */}
+        <div className="p-4 space-y-3 overflow-y-auto flex-1 min-h-0">
           {/* Earnings */}
           <div className="flex items-center justify-between rounded-xl bg-[hsl(var(--driver-success)/0.08)] border border-[hsl(var(--driver-success)/0.2)] px-4 py-3">
             <div>
@@ -94,7 +94,7 @@ const NewOrderModal = ({ open, offer, distanceKm, accepting, rejecting, onAccept
         </div>
 
         {/* Actions */}
-        <div className="grid grid-cols-2 gap-2 p-4 bg-secondary/30 border-t border-border">
+        <div className="grid grid-cols-2 gap-2 p-4 bg-secondary/30 border-t border-border shrink-0">
           <button
             onClick={onReject}
             disabled={accepting || rejecting}
