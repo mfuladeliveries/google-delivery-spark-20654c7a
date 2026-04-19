@@ -43,8 +43,8 @@ const DriverDashboard = () => {
   const [completedOrders, setCompletedOrders] = useState<Order[]>([]);
   const [driverProfile, setDriverProfile] = useState<DriverProfile | null>(null);
   const [loading, setLoading] = useState(true);
-  const [accepting, setAccepting] = useState(false);
-  const [rejecting, setRejecting] = useState(false);
+  const [acceptingId, setAcceptingId] = useState<string | null>(null);
+  const [rejectingId, setRejectingId] = useState<string | null>(null);
   const [togglingOnline, setTogglingOnline] = useState(false);
   const [driverLocation, setDriverLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [rejectedIds, setRejectedIds] = useState<Set<string>>(new Set());
