@@ -84,10 +84,12 @@ Deno.serve(async (req) => {
     webpush.setVapidDetails("mailto:noreply@mfula.app", publicKey, privateKey);
 
     const event = await req.json();
-    const { order_number, status, restaurant, total, user_id, driver_id, restaurant_id, old_status } = event;
+    const { order_number, status, restaurant, total, user_id, driver_id, restaurant_id, old_status, reason } = event;
 
     const emoji = statusEmojis[status] || "📋";
     const label = statusLabels[status] || status;
+    // Special-case: driver-cancelled because item not available
+    const isDriverCancelUnavailable = status === "cancelled" && reason === "item_unavailable";
 
     // Determine who to notify
     const targetUserIds: string[] = [];
@@ -162,8 +164,12 @@ Deno.serve(async (req) => {
     // For customer notifications, use the specific title/body
     // For other targets, we might want a different message
     const customerPayload = JSON.stringify({
-      title: `${emoji} Order #${order_number}`,
-      body: label,
+      title: isDriverCancelUnavailable
+        ? `❌ Order #${order_number} Cancelled`
+        : `${emoji} Order #${order_number}`,
+      body: isDriverCancelUnavailable
+        ? `Sorry, your order was cancelled because the item is not available at ${restaurant || "the restaurant"}. You won't be charged.`
+        : label,
       icon: "/pwa-192x192.png",
       badge: "/favicon.ico",
       data: { url: "/orders", order_number },

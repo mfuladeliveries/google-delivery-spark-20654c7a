@@ -1,6 +1,16 @@
 import { useState, Component, ReactNode, lazy, Suspense } from "react";
-import { Navigation, Phone, ExternalLink, MapPin, CheckCircle2, Truck, Package, ShieldCheck } from "lucide-react";
+import { Navigation, Phone, ExternalLink, MapPin, CheckCircle2, Truck, Package, ShieldCheck, XCircle } from "lucide-react";
 import DeliveryVerification from "@/components/DeliveryVerification";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 const DriverDeliveryMap = lazy(() => import("@/components/driver/DriverDeliveryMap"));
 
@@ -60,6 +70,41 @@ const getStepIndex = (status: string) => {
 
 const DriverActiveDelivery = ({ orders, driverLocation, onDeliveryComplete, onStatusChange }: DriverActiveDeliveryProps) => {
   const [updatingStatus, setUpdatingStatus] = useState<string | null>(null);
+  const [cancelOrderId, setCancelOrderId] = useState<string | null>(null);
+  const [cancelling, setCancelling] = useState(false);
+
+  const handleCancelUnavailable = async () => {
+    if (!cancelOrderId) return;
+    setCancelling(true);
+    const order = orders.find(o => o.id === cancelOrderId);
+    const { error } = await supabase.rpc("driver_cancel_order" as any, {
+      p_order_id: cancelOrderId,
+      p_reason: "Item not available at the restaurant",
+    });
+    if (error) {
+      toast.error(error.message || "Failed to cancel order");
+    } else {
+      toast.success("Order cancelled. Customer has been notified.");
+      if (order) {
+        sendPushNotification({
+          order_id: cancelOrderId,
+          order_number: order.order_number,
+          status: "cancelled",
+          restaurant: order.restaurant,
+          total: order.total,
+          user_id: (order as any).user_id,
+          driver_id: (order as any).driver_id || null,
+          restaurant_id: (order as any).restaurant_id || null,
+          old_status: order.status,
+          reason: "item_unavailable",
+        });
+      }
+      onStatusChange?.();
+      onDeliveryComplete();
+    }
+    setCancelling(false);
+    setCancelOrderId(null);
+  };
 
   const handleConfirmArrival = async (orderId: string) => {
     setUpdatingStatus(orderId);
@@ -223,6 +268,18 @@ const DriverActiveDelivery = ({ orders, driverLocation, onDeliveryComplete, onSt
                 </button>
               )}
 
+              {/* Cancel — item not available (only before pickup) */}
+              {(order.status === "driver_assigned" || order.status === "picking_up") && (
+                <button
+                  onClick={() => setCancelOrderId(order.id)}
+                  disabled={cancelling || updatingStatus === order.id}
+                  className="w-full rounded-xl border-2 border-destructive/30 bg-destructive/5 py-3 text-sm font-bold text-destructive disabled:opacity-50 transition-all hover:bg-destructive/10 active:scale-[0.99] flex items-center justify-center gap-2"
+                >
+                  <XCircle className="h-4 w-4" />
+                  Cancel — Item Not Available
+                </button>
+              )}
+
               {/* Navigate button */}
               <button
                 onClick={() => openGoogleMaps(order.customer_address)}
@@ -272,6 +329,27 @@ const DriverActiveDelivery = ({ orders, driverLocation, onDeliveryComplete, onSt
           </div>
         );
       })}
+
+      <AlertDialog open={!!cancelOrderId} onOpenChange={(open) => !open && setCancelOrderId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Cancel order — item not available?</AlertDialogTitle>
+            <AlertDialogDescription>
+              The customer will be notified that their order was cancelled because the item is not available at the restaurant. This cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={cancelling}>Keep Order</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleCancelUnavailable}
+              disabled={cancelling}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {cancelling ? "Cancelling..." : "Yes, Cancel Order"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
