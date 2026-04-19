@@ -1,6 +1,16 @@
 import { useState, Component, ReactNode, lazy, Suspense } from "react";
-import { Navigation, Phone, ExternalLink, MapPin, CheckCircle2, Truck, Package, ShieldCheck } from "lucide-react";
+import { Navigation, Phone, ExternalLink, MapPin, CheckCircle2, Truck, Package, ShieldCheck, XCircle } from "lucide-react";
 import DeliveryVerification from "@/components/DeliveryVerification";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 const DriverDeliveryMap = lazy(() => import("@/components/driver/DriverDeliveryMap"));
 
@@ -60,6 +70,41 @@ const getStepIndex = (status: string) => {
 
 const DriverActiveDelivery = ({ orders, driverLocation, onDeliveryComplete, onStatusChange }: DriverActiveDeliveryProps) => {
   const [updatingStatus, setUpdatingStatus] = useState<string | null>(null);
+  const [cancelOrderId, setCancelOrderId] = useState<string | null>(null);
+  const [cancelling, setCancelling] = useState(false);
+
+  const handleCancelUnavailable = async () => {
+    if (!cancelOrderId) return;
+    setCancelling(true);
+    const order = orders.find(o => o.id === cancelOrderId);
+    const { error } = await supabase.rpc("driver_cancel_order" as any, {
+      p_order_id: cancelOrderId,
+      p_reason: "Item not available at the restaurant",
+    });
+    if (error) {
+      toast.error(error.message || "Failed to cancel order");
+    } else {
+      toast.success("Order cancelled. Customer has been notified.");
+      if (order) {
+        sendPushNotification({
+          order_id: cancelOrderId,
+          order_number: order.order_number,
+          status: "cancelled",
+          restaurant: order.restaurant,
+          total: order.total,
+          user_id: (order as any).user_id,
+          driver_id: (order as any).driver_id || null,
+          restaurant_id: (order as any).restaurant_id || null,
+          old_status: order.status,
+          reason: "item_unavailable",
+        });
+      }
+      onStatusChange?.();
+      onDeliveryComplete();
+    }
+    setCancelling(false);
+    setCancelOrderId(null);
+  };
 
   const handleConfirmArrival = async (orderId: string) => {
     setUpdatingStatus(orderId);
