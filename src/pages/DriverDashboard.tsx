@@ -43,8 +43,8 @@ const DriverDashboard = () => {
   const [completedOrders, setCompletedOrders] = useState<Order[]>([]);
   const [driverProfile, setDriverProfile] = useState<DriverProfile | null>(null);
   const [loading, setLoading] = useState(true);
-  const [accepting, setAccepting] = useState(false);
-  const [rejecting, setRejecting] = useState(false);
+  const [acceptingId, setAcceptingId] = useState<string | null>(null);
+  const [rejectingId, setRejectingId] = useState<string | null>(null);
   const [togglingOnline, setTogglingOnline] = useState(false);
   const [driverLocation, setDriverLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [rejectedIds, setRejectedIds] = useState<Set<string>>(new Set());
@@ -189,21 +189,23 @@ const DriverDashboard = () => {
     setTogglingOnline(false);
   };
 
-  const handleAcceptOffer = async () => {
-    if (!activeOffer) return;
-    setAccepting(true);
-    const order = activeOffer;
-    const { data, error } = await supabase.rpc("claim_order", { p_order_id: order.id });
+  const handleAccept = async (orderId: string) => {
+    const order =
+      (activeOffer && activeOffer.id === orderId ? activeOffer : null) ||
+      pendingOrders.find((o) => o.id === orderId);
+    if (!order) return;
+    setAcceptingId(orderId);
+    const { data, error } = await supabase.rpc("claim_order", { p_order_id: orderId });
     if (error) {
       toast.error(error.message || "Failed to accept");
-      setAccepting(false);
+      setAcceptingId(null);
       return;
     }
     if (data === false) {
       toast.error("Order already taken by another driver");
-      setActiveOffer(null);
+      if (activeOffer?.id === orderId) setActiveOffer(null);
       await fetchOrders();
-      setAccepting(false);
+      setAcceptingId(null);
       return;
     }
     sendPushNotification({
@@ -218,27 +220,28 @@ const DriverDashboard = () => {
       old_status: "ready",
     });
     toast.success("Delivery accepted! Head to the restaurant. 🚗");
-    setActiveOffer(null);
+    if (activeOffer?.id === orderId) setActiveOffer(null);
     await fetchOrders();
-    setAccepting(false);
+    setAcceptingId(null);
   };
 
-  const handleRejectOffer = async () => {
-    if (!activeOffer) return;
-    setRejecting(true);
-    const id = activeOffer.id;
+  const handleReject = async (orderId: string) => {
+    setRejectingId(orderId);
     const { error } = await supabase
       .from("driver_rejected_orders")
-      .insert({ driver_id: user!.id, order_id: id });
+      .insert({ driver_id: user!.id, order_id: orderId });
     if (error && !error.message.includes("duplicate")) {
       toast.error("Failed to reject");
-      setRejecting(false);
+      setRejectingId(null);
       return;
     }
-    setRejectedIds((prev) => new Set(prev).add(id));
-    setActiveOffer(null);
-    setRejecting(false);
+    setRejectedIds((prev) => new Set(prev).add(orderId));
+    if (activeOffer?.id === orderId) setActiveOffer(null);
+    setRejectingId(null);
   };
+
+  const handleAcceptOffer = () => activeOffer && handleAccept(activeOffer.id);
+  const handleRejectOffer = () => activeOffer && handleReject(activeOffer.id);
 
   const handleDeliveryComplete = () => {
     fetchOrders();
@@ -302,6 +305,10 @@ const DriverDashboard = () => {
                 onCardClick={(id) => {
                   if (myOrders.some((o) => o.id === id)) setExpandedOrderId(id);
                 }}
+                onAccept={handleAccept}
+                onReject={handleReject}
+                acceptingId={acceptingId}
+                rejectingId={rejectingId}
               />
             )}
           </>
@@ -325,8 +332,8 @@ const DriverDashboard = () => {
         open={!!activeOffer}
         offer={activeOffer}
         distanceKm={null}
-        accepting={accepting}
-        rejecting={rejecting}
+        accepting={!!acceptingId && acceptingId === activeOffer?.id}
+        rejecting={!!rejectingId && rejectingId === activeOffer?.id}
         onAccept={handleAcceptOffer}
         onReject={handleRejectOffer}
       />
