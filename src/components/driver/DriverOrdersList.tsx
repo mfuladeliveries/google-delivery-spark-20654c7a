@@ -187,6 +187,10 @@ const DriverOrdersList = ({
   isOnline,
   driverLocation,
   onCardClick,
+  onAccept,
+  onReject,
+  acceptingId,
+  rejectingId,
 }: DriverOrdersListProps) => {
   const [distances, setDistances] = useState<Record<string, number | null>>({});
 
