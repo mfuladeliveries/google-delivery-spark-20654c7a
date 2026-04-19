@@ -277,6 +277,11 @@ const DriverOrdersList = ({
                 order={o}
                 distance={distances[o.id] ?? null}
                 onClick={() => onCardClick?.(o.id)}
+                onAccept={onAccept ? () => onAccept(o.id) : undefined}
+                onReject={onReject ? () => onReject(o.id) : undefined}
+                accepting={acceptingId === o.id}
+                rejecting={rejectingId === o.id}
+                disableActions={!isOnline}
               />
             ))}
           </div>
