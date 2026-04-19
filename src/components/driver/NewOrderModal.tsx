@@ -94,7 +94,7 @@ const NewOrderModal = ({ open, offer, distanceKm, accepting, rejecting, onAccept
         </div>
 
         {/* Actions */}
-        <div className="grid grid-cols-2 gap-2 p-4 bg-secondary/30 border-t border-border">
+        <div className="grid grid-cols-2 gap-2 p-4 bg-secondary/30 border-t border-border shrink-0">
           <button
             onClick={onReject}
             disabled={accepting || rejecting}
