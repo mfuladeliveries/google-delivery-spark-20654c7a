@@ -7,6 +7,7 @@ import { storeInfo } from "@/data/menu";
 import BottomNav from "@/components/BottomNav";
 import { useCustomerCredits } from "@/hooks/useCustomerCredits";
 import WalletHistory from "@/components/WalletHistory";
+import AppSwitcher from "@/components/AppSwitcher";
 
 interface Profile {
   full_name: string;
@@ -118,6 +119,9 @@ const Profile = () => {
             <span className="mt-1 inline-block rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-bold text-primary capitalize">{role}</span>
           </div>
         </div>
+
+        {/* App Switcher (only renders for users with 2+ roles) */}
+        <AppSwitcher />
 
         {/* Wallet balance */}
         <div className="rounded-2xl border border-primary/20 bg-gradient-to-br from-primary/10 to-primary/5 p-4 shadow-card">
