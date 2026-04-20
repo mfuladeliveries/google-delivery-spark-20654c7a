@@ -219,7 +219,7 @@ const RestaurantDashboard = () => {
 
     // When restaurant marks an order ready, start the targeted dispatch chain
     if (status === "ready" && oldStatus !== "ready") {
-      supabase.rpc("dispatch_assign_next", { p_order_id: orderId }).catch(() => {});
+      void supabase.rpc("dispatch_assign_next", { p_order_id: orderId }).then(() => {}, () => {});
     }
 
     // Send push notification (customer-facing status update)

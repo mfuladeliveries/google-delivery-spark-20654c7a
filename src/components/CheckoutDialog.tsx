@@ -171,7 +171,7 @@ const CheckoutDialog = ({
 
       // Orders auto-accept to "ready" — start the targeted dispatch chain
       if (orderId) {
-        supabase.rpc("dispatch_assign_next", { p_order_id: orderId }).catch(() => {});
+        void supabase.rpc("dispatch_assign_next", { p_order_id: orderId }).then(() => {}, () => {});
       }
 
       toast.success("Your order has been placed successfully! 🎉", {
