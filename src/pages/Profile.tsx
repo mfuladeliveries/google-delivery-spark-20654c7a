@@ -6,6 +6,7 @@ import { ArrowLeft, User, Phone, MapPin, Save, LogOut, Package, ChevronRight, Wa
 import { storeInfo } from "@/data/menu";
 import BottomNav from "@/components/BottomNav";
 import { useCustomerCredits } from "@/hooks/useCustomerCredits";
+import WalletHistory from "@/components/WalletHistory";
 
 interface Profile {
   full_name: string;
@@ -135,6 +136,9 @@ const Profile = () => {
             Credits from cancelled orders apply automatically at checkout.
           </p>
         </div>
+
+        {/* Wallet history */}
+        <WalletHistory />
 
         {/* Profile Form */}
         <div className="rounded-2xl border border-border bg-card p-4 shadow-card space-y-3">
