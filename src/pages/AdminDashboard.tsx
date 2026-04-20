@@ -620,6 +620,9 @@ const RestaurantsTab = ({
       } else {
         toast.success(`${name} added successfully!`);
       }
+      if (location.trim() && !coords) {
+        toast.warning("Could not auto-locate this address. Dispatch will fall back to most-recently-active driver until coordinates are set.");
+      }
 
       setShowForm(false);
       setName(""); setCuisine(""); setLocation(""); setDescription(""); setMinOrder("0");
