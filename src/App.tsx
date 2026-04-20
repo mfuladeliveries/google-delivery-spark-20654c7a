@@ -49,6 +49,7 @@ const App = () => (
             <Route path="/profile" element={<Profile />} />
             <Route path="/search" element={<Search />} />
             <Route path="/install" element={<Install />} />
+            <Route path="/install/:variant" element={<Install />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
