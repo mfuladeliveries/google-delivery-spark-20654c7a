@@ -41,6 +41,25 @@ const DriverEarnings = ({ driverProfile, completedOrders }: DriverEarningsProps)
   const { user } = useAuth();
   const [showAll, setShowAll] = useState(false);
   const [earnings, setEarnings] = useState<EarningRow[]>([]);
+  const [generatingStatement, setGeneratingStatement] = useState(false);
+
+  // Month options: current + 11 previous months
+  const monthOptions = useMemo(() => {
+    const out: { key: string; label: string; start: Date; end: Date }[] = [];
+    const base = new Date();
+    for (let i = 0; i < 12; i++) {
+      const start = new Date(base.getFullYear(), base.getMonth() - i, 1);
+      const end = new Date(base.getFullYear(), base.getMonth() - i + 1, 1);
+      out.push({
+        key: `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, "0")}`,
+        label: start.toLocaleDateString("en-ZA", { month: "long", year: "numeric" }),
+        start,
+        end,
+      });
+    }
+    return out;
+  }, []);
+  const [selectedMonth, setSelectedMonth] = useState(monthOptions[0].key);
 
   useEffect(() => {
     if (!user) return;
