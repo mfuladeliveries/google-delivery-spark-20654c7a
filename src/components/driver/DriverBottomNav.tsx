@@ -1,7 +1,6 @@
-import { Briefcase, Navigation, DollarSign, UserCircle } from "lucide-react";
-import { Link, useLocation } from "react-router-dom";
+import { Briefcase, DollarSign, UserCircle, Wallet } from "lucide-react";
 
-type DriverTab = "orders" | "earnings" | "profile";
+type DriverTab = "orders" | "earnings" | "withdraw" | "profile";
 
 interface DriverBottomNavProps {
   activeTab: DriverTab;
@@ -13,6 +12,7 @@ interface DriverBottomNavProps {
 const tabs = [
   { id: "orders" as DriverTab, icon: Briefcase, label: "Orders" },
   { id: "earnings" as DriverTab, icon: DollarSign, label: "Earnings" },
+  { id: "withdraw" as DriverTab, icon: Wallet, label: "Withdraw" },
   { id: "profile" as DriverTab, icon: UserCircle, label: "Profile" },
 ];
 
