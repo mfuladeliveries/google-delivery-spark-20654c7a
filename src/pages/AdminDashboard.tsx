@@ -818,17 +818,49 @@ const RestaurantsTab = ({
   const [ownerPassword, setOwnerPassword] = useState("");
   const [ownerName, setOwnerName] = useState("");
   const [ownerContact, setOwnerContact] = useState("");
+  const [manualLat, setManualLat] = useState("");
+  const [manualLng, setManualLng] = useState("");
+  const [autoLocating, setAutoLocating] = useState(false);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState<string | null>(null);
+
+  const handleAutoLocate = async () => {
+    if (!location.trim()) {
+      toast.error("Enter a location first, then auto-locate");
+      return;
+    }
+    setAutoLocating(true);
+    try {
+      const coords = await geocodeAddress(location.trim());
+      if (!coords) {
+        toast.error(`Could not locate "${location}". Try a more specific address or enter coordinates manually.`);
+        return;
+      }
+      setManualLat(coords.lat.toFixed(6));
+      setManualLng(coords.lng.toFixed(6));
+      toast.success(`📍 Located: ${coords.lat.toFixed(4)}, ${coords.lng.toFixed(4)}`);
+    } finally {
+      setAutoLocating(false);
+    }
+  };
 
   const handleAddRestaurant = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) { toast.error("Restaurant name is required"); return; }
     setSaving(true);
     try {
-      // Geocode location text → lat/lng (best-effort; falls back to null on miss)
+      // Determine coordinates: manual entry wins, otherwise auto-geocode the location text
       let coords: { lat: number; lng: number } | null = null;
-      if (location.trim()) {
+      const mLat = parseFloat(manualLat);
+      const mLng = parseFloat(manualLng);
+      if (!Number.isNaN(mLat) && !Number.isNaN(mLng)) {
+        if (mLat < -90 || mLat > 90 || mLng < -180 || mLng > 180) {
+          toast.error("Coordinates out of range (lat -90..90, lng -180..180)");
+          setSaving(false);
+          return;
+        }
+        coords = { lat: mLat, lng: mLng };
+      } else if (location.trim()) {
         coords = await geocodeAddress(location.trim());
       }
 
@@ -867,6 +899,7 @@ const RestaurantsTab = ({
       setShowForm(false);
       setName(""); setCuisine(""); setLocation(""); setDescription(""); setMinOrder("0");
       setOwnerEmail(""); setOwnerPassword(""); setOwnerName(""); setOwnerContact("");
+      setManualLat(""); setManualLng("");
       onRestaurantChanged();
     } catch (err: any) {
       toast.error(err.message || "Failed to add restaurant");
@@ -931,6 +964,34 @@ const RestaurantsTab = ({
               <label className="block text-xs font-semibold text-muted-foreground mb-1">Description</label>
               <input value={description} onChange={e => setDescription(e.target.value)} placeholder="Short description"
                 className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20" />
+            </div>
+          </div>
+
+          <div className="border-t border-border pt-3 mt-1">
+            <div className="flex items-center justify-between mb-2">
+              <h4 className="font-bold text-xs text-foreground">📍 Coordinates (Optional)</h4>
+              <button type="button" onClick={handleAutoLocate} disabled={autoLocating || !location.trim()}
+                className="flex items-center gap-1 rounded-lg bg-primary/10 px-2 py-1 text-[10px] font-bold text-primary hover:bg-primary/20 disabled:opacity-50">
+                {autoLocating ? (
+                  <div className="h-3 w-3 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                ) : (
+                  <MapPin className="h-3 w-3" />
+                )}
+                Auto-locate from location
+              </button>
+            </div>
+            <p className="text-[10px] text-muted-foreground mb-2">Leave blank to auto-geocode the location text on save, or paste exact coordinates from Google Maps.</p>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-semibold text-muted-foreground mb-1">Latitude</label>
+                <input type="number" step="any" value={manualLat} onChange={e => setManualLat(e.target.value)} placeholder="-29.0852"
+                  className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20" />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-muted-foreground mb-1">Longitude</label>
+                <input type="number" step="any" value={manualLng} onChange={e => setManualLng(e.target.value)} placeholder="26.1596"
+                  className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20" />
+              </div>
             </div>
           </div>
 
@@ -1006,6 +1067,32 @@ const RestaurantCard = ({
   const [ownerInfo, setOwnerInfo] = useState<{ email: string; full_name: string; contact_number: string } | null>(null);
   const [loadingOwner, setLoadingOwner] = useState(false);
   const [geocoding, setGeocoding] = useState(false);
+  const [coordLat, setCoordLat] = useState("");
+  const [coordLng, setCoordLng] = useState("");
+  const [savingCoords, setSavingCoords] = useState(false);
+
+  const handleSaveCoords = async () => {
+    const lat = parseFloat(coordLat);
+    const lng = parseFloat(coordLng);
+    if (Number.isNaN(lat) || Number.isNaN(lng)) {
+      toast.error("Enter valid numeric coordinates");
+      return;
+    }
+    if (lat < -90 || lat > 90 || lng < -180 || lng > 180) {
+      toast.error("Out of range (lat -90..90, lng -180..180)");
+      return;
+    }
+    setSavingCoords(true);
+    try {
+      const { error } = await supabase.from("restaurants").update({ lat, lng }).eq("id", r.id);
+      if (error) throw error;
+      toast.success(`📍 ${r.name} coordinates saved`);
+      onRestaurantChanged();
+    } catch (err: any) {
+      toast.error(err.message || "Failed to save coordinates");
+    }
+    setSavingCoords(false);
+  };
 
   const hasCoords = r.lat !== null && r.lng !== null;
 
@@ -1055,6 +1142,8 @@ const RestaurantCard = ({
       setEditing(true);
       setEditEmail("");
       setEditPassword("");
+      setCoordLat(r.lat != null ? String(r.lat) : "");
+      setCoordLng(r.lng != null ? String(r.lng) : "");
       await loadOwnerInfo();
       return;
     }
@@ -1152,50 +1241,93 @@ const RestaurantCard = ({
       </div>
 
       {editing && (
-        <div className="border-t border-border bg-secondary/30 p-4 space-y-3">
-          {loadingOwner ? (
-            <div className="flex justify-center py-2">
-              <div className="h-5 w-5 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-            </div>
-          ) : !r.owner_user_id ? (
-            <p className="text-xs text-muted-foreground text-center py-2">
-              No login account linked. Add one when creating the restaurant or assign an owner first.
-            </p>
-          ) : (
-            <>
-              <h4 className="font-bold text-xs text-foreground">Edit Login Credentials</h4>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-semibold text-muted-foreground mb-1">Owner Name</label>
-                  <input value={editName} onChange={e => setEditName(e.target.value)}
-                    className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20" />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-muted-foreground mb-1">Contact</label>
-                  <input value={editContact} onChange={e => setEditContact(e.target.value)}
-                    className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20" />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-muted-foreground mb-1">New Email (leave blank to keep)</label>
-                  <input type="email" value={editEmail} onChange={e => setEditEmail(e.target.value)} placeholder="new@email.com"
-                    className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20" />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-muted-foreground mb-1">New Password (leave blank to keep)</label>
-                  <input type="password" value={editPassword} onChange={e => setEditPassword(e.target.value)} placeholder="••••••" minLength={6}
-                    className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20" />
-                </div>
-              </div>
+        <div className="border-t border-border bg-secondary/30 p-4 space-y-4">
+          {/* Coordinates editor — always available */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <h4 className="font-bold text-xs text-foreground">📍 Coordinates</h4>
               <button
-                onClick={handleSaveEdit}
-                disabled={savingEdit}
-                className="flex items-center justify-center gap-1.5 w-full rounded-xl bg-primary py-2.5 text-sm font-bold text-primary-foreground disabled:opacity-50 hover:opacity-90 transition-opacity"
+                type="button"
+                onClick={handleGeocode}
+                disabled={geocoding || !r.location?.trim()}
+                className="flex items-center gap-1 rounded-lg bg-primary/10 px-2 py-1 text-[10px] font-bold text-primary hover:bg-primary/20 disabled:opacity-50"
               >
-                <Save className="h-3.5 w-3.5" />
-                {savingEdit ? "Saving..." : "Save Changes"}
+                {geocoding ? (
+                  <div className="h-3 w-3 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                ) : (
+                  <MapPin className="h-3 w-3" />
+                )}
+                Auto-locate from "{r.location || "—"}"
               </button>
-            </>
-          )}
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-semibold text-muted-foreground mb-1">Latitude</label>
+                <input type="number" step="any" value={coordLat} onChange={e => setCoordLat(e.target.value)} placeholder="-29.0852"
+                  className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20" />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-muted-foreground mb-1">Longitude</label>
+                <input type="number" step="any" value={coordLng} onChange={e => setCoordLng(e.target.value)} placeholder="26.1596"
+                  className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20" />
+              </div>
+            </div>
+            <button
+              onClick={handleSaveCoords}
+              disabled={savingCoords}
+              className="flex items-center justify-center gap-1.5 w-full rounded-xl bg-primary py-2 text-xs font-bold text-primary-foreground disabled:opacity-50 hover:opacity-90 transition-opacity"
+            >
+              <Save className="h-3 w-3" />
+              {savingCoords ? "Saving..." : "Save Coordinates"}
+            </button>
+          </div>
+
+          {/* Owner credentials editor */}
+          <div className="border-t border-border pt-3">
+            {loadingOwner ? (
+              <div className="flex justify-center py-2">
+                <div className="h-5 w-5 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+              </div>
+            ) : !r.owner_user_id ? (
+              <p className="text-xs text-muted-foreground text-center py-2">
+                No login account linked. Add one when creating the restaurant or assign an owner first.
+              </p>
+            ) : (
+              <>
+                <h4 className="font-bold text-xs text-foreground mb-2">🔐 Edit Login Credentials</h4>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-semibold text-muted-foreground mb-1">Owner Name</label>
+                    <input value={editName} onChange={e => setEditName(e.target.value)}
+                      className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-muted-foreground mb-1">Contact</label>
+                    <input value={editContact} onChange={e => setEditContact(e.target.value)}
+                      className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-muted-foreground mb-1">New Email (leave blank to keep)</label>
+                    <input type="email" value={editEmail} onChange={e => setEditEmail(e.target.value)} placeholder="new@email.com"
+                      className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-muted-foreground mb-1">New Password (leave blank to keep)</label>
+                    <input type="password" value={editPassword} onChange={e => setEditPassword(e.target.value)} placeholder="••••••" minLength={6}
+                      className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20" />
+                  </div>
+                </div>
+                <button
+                  onClick={handleSaveEdit}
+                  disabled={savingEdit}
+                  className="mt-3 flex items-center justify-center gap-1.5 w-full rounded-xl bg-primary py-2.5 text-sm font-bold text-primary-foreground disabled:opacity-50 hover:opacity-90 transition-opacity"
+                >
+                  <Save className="h-3.5 w-3.5" />
+                  {savingEdit ? "Saving..." : "Save Credentials"}
+                </button>
+              </>
+            )}
+          </div>
         </div>
       )}
     </div>
