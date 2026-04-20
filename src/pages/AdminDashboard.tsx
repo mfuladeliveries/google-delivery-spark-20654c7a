@@ -114,6 +114,10 @@ const AdminDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
+  const [cancelTarget, setCancelTarget] = useState<{ id: string; orderNumber: number } | null>(null);
+  const [cancelReasonChoice, setCancelReasonChoice] = useState("Restaurant closed");
+  const [cancelReasonOther, setCancelReasonOther] = useState("");
+  const [cancelSubmitting, setCancelSubmitting] = useState(false);
 
   useEffect(() => {
     if (!authLoading && (!user || role !== 'admin')) {
