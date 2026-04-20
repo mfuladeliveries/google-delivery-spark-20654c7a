@@ -1142,6 +1142,8 @@ const RestaurantCard = ({
       setEditing(true);
       setEditEmail("");
       setEditPassword("");
+      setCoordLat(r.lat != null ? String(r.lat) : "");
+      setCoordLng(r.lng != null ? String(r.lng) : "");
       await loadOwnerInfo();
       return;
     }
