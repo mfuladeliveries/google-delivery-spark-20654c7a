@@ -250,7 +250,7 @@ const AdminDashboard = () => {
   };
 
   const fetchDrivers = async () => {
-    const { data: driverProfiles } = await supabase.from("driver_profiles").select("user_id, is_online, total_earnings, total_deliveries");
+    const { data: driverProfiles } = await supabase.from("driver_profiles").select("user_id, is_online, total_earnings, total_deliveries, vehicle_type, license_plate");
     if (driverProfiles) {
       const userIds = driverProfiles.map(d => d.user_id);
       const { data: profiles } = await supabase.from("profiles").select("user_id, full_name, contact_number").in("user_id", userIds);
