@@ -940,55 +940,94 @@ const OrdersTable = ({ orders }: { orders: RecentOrder[] }) => (
               <td colSpan={9} className="px-4 py-8 text-center text-muted-foreground text-xs">No orders</td>
             </tr>
           ) : (
-            orders.map((order, i) => (
-              <tr key={order.id} className={`border-b border-border ${i % 2 === 0 ? '' : 'bg-secondary/30'}`}>
-                <td className="px-3 py-2.5 font-bold text-foreground">#{order.order_number}</td>
-                <td className="px-3 py-2.5 text-foreground text-xs">{order.customer_name || "—"}</td>
-                <td className="px-3 py-2.5 text-muted-foreground text-xs">{order.restaurant || "—"}</td>
-                <td className="px-3 py-2.5 text-xs">
-                  {order.driver_id ? (
-                    <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-bold text-primary">Assigned</span>
-                  ) : (
-                    <span className="text-muted-foreground">—</span>
-                  )}
-                </td>
-                <td className="px-3 py-2.5 font-semibold text-primary">R{order.total}</td>
-                <td className="px-3 py-2.5">
-                  <span className={`rounded-full px-1.5 py-0.5 text-[9px] font-bold ${
-                    order.payment_method === 'online' ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700'
-                  }`}>
-                    {order.payment_method === 'online' ? '💳' : '💵'} {order.payment_method || 'cash'}
-                  </span>
-                </td>
-                <td className="px-3 py-2.5">
-                  <div className="flex flex-col items-start gap-1">
-                    <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold capitalize ${statusColors[order.status] || "bg-muted text-muted-foreground"}`}>
-                      {order.status.replace(/_/g, " ")}
-                    </span>
-                    {(() => {
-                      const delay = getDelayInfo(order);
-                      return delay ? (
-                        <span className={`rounded-full px-1.5 py-0.5 text-[9px] font-bold ${delay.className}`}>
-                          ⏰ {delay.label}
+            orders.map((order, i) => {
+              const showDispatch = !order.driver_id && order.dispatch_phase != null;
+              const phaseStyles: Record<string, string> = {
+                offer_a: "bg-blue-100 text-blue-700",
+                offer_b: "bg-indigo-100 text-indigo-700",
+                waiting: "bg-amber-100 text-amber-700",
+                broadcast: "bg-fuchsia-100 text-fuchsia-700",
+              };
+              const phaseLabels: Record<string, string> = {
+                offer_a: "Offer 1/2",
+                offer_b: "Offer 2/2",
+                waiting: "Waiting (5min)",
+                broadcast: "Broadcast",
+              };
+              return (
+                <>
+                  <tr key={order.id} className={`border-b border-border ${i % 2 === 0 ? '' : 'bg-secondary/30'} ${showDispatch ? '!border-b-0' : ''}`}>
+                    <td className="px-3 py-2.5 font-bold text-foreground">#{order.order_number}</td>
+                    <td className="px-3 py-2.5 text-foreground text-xs">{order.customer_name || "—"}</td>
+                    <td className="px-3 py-2.5 text-muted-foreground text-xs">{order.restaurant || "—"}</td>
+                    <td className="px-3 py-2.5 text-xs">
+                      {order.driver_id ? (
+                        <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-bold text-primary">Assigned</span>
+                      ) : (
+                        <span className="text-muted-foreground">—</span>
+                      )}
+                    </td>
+                    <td className="px-3 py-2.5 font-semibold text-primary">R{order.total}</td>
+                    <td className="px-3 py-2.5">
+                      <span className={`rounded-full px-1.5 py-0.5 text-[9px] font-bold ${
+                        order.payment_method === 'online' ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700'
+                      }`}>
+                        {order.payment_method === 'online' ? '💳' : '💵'} {order.payment_method || 'cash'}
+                      </span>
+                    </td>
+                    <td className="px-3 py-2.5">
+                      <div className="flex flex-col items-start gap-1">
+                        <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold capitalize ${statusColors[order.status] || "bg-muted text-muted-foreground"}`}>
+                          {order.status.replace(/_/g, " ")}
                         </span>
-                      ) : null;
-                    })()}
-                  </div>
-                </td>
-                <td className="px-3 py-2.5 text-xs text-muted-foreground whitespace-nowrap">
-                  {new Date(order.created_at).toLocaleString("en-ZA", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}
-                </td>
-                <td className="px-3 py-2.5 text-xs whitespace-nowrap">
-                  {order.delivered_at ? (
-                    <span className="text-emerald-600 font-medium">
-                      {new Date(order.delivered_at).toLocaleString("en-ZA", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}
-                    </span>
-                  ) : (
-                    <span className="text-muted-foreground">—</span>
+                        {(() => {
+                          const delay = getDelayInfo(order);
+                          return delay ? (
+                            <span className={`rounded-full px-1.5 py-0.5 text-[9px] font-bold ${delay.className}`}>
+                              ⏰ {delay.label}
+                            </span>
+                          ) : null;
+                        })()}
+                      </div>
+                    </td>
+                    <td className="px-3 py-2.5 text-xs text-muted-foreground whitespace-nowrap">
+                      {new Date(order.created_at).toLocaleString("en-ZA", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}
+                    </td>
+                    <td className="px-3 py-2.5 text-xs whitespace-nowrap">
+                      {order.delivered_at ? (
+                        <span className="text-emerald-600 font-medium">
+                          {new Date(order.delivered_at).toLocaleString("en-ZA", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}
+                        </span>
+                      ) : (
+                        <span className="text-muted-foreground">—</span>
+                      )}
+                    </td>
+                  </tr>
+                  {showDispatch && (
+                    <tr key={`${order.id}-dispatch`} className={`border-b border-border ${i % 2 === 0 ? '' : 'bg-secondary/30'}`}>
+                      <td colSpan={9} className="px-3 pb-2 pt-0">
+                        <div className="flex flex-wrap items-center gap-2 text-[10px]">
+                          <span className="font-semibold text-muted-foreground uppercase tracking-wide">Dispatch:</span>
+                          <span className={`rounded-full px-2 py-0.5 font-bold ${phaseStyles[order.dispatch_phase!] || "bg-muted text-muted-foreground"}`}>
+                            {phaseLabels[order.dispatch_phase!] || order.dispatch_phase}
+                          </span>
+                          {order.offered_to_driver_id && (
+                            <span className="text-muted-foreground">
+                              → <span className="font-semibold text-foreground">{order.offered_to_name || "Driver"}</span>
+                            </span>
+                          )}
+                          {order.missed_count > 0 && (
+                            <span className="rounded-full bg-red-100 px-2 py-0.5 font-bold text-red-700">
+                              {order.missed_count} missed
+                            </span>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
                   )}
-                </td>
-              </tr>
-            ))
+                </>
+              );
+            })
           )}
         </tbody>
       </table>
