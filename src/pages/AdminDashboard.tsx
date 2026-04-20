@@ -8,6 +8,7 @@ import AdminEarnings from "@/components/admin/AdminEarnings";
 import AdminWithdrawals from "@/components/admin/AdminWithdrawals";
 import AdminRefunds from "@/components/admin/AdminRefunds";
 import { toast } from "sonner";
+import { geocodeAddress } from "@/lib/geocode";
 
 interface Stats {
   totalOrders: number;
@@ -29,6 +30,10 @@ interface RecentOrder {
   payment_method: string;
   driver_id: string | null;
   delivered_at: string | null;
+  dispatch_phase: string | null;
+  offered_to_driver_id: string | null;
+  offered_to_name?: string | null;
+  missed_count: number;
 }
 
 interface UserRecord {
@@ -140,7 +145,7 @@ const AdminDashboard = () => {
       { data: restaurantList },
       { data: driverRoles },
     ] = await Promise.all([
-      supabase.from("orders").select("total, status, created_at, order_number, customer_name, restaurant, payment_method, id, driver_id, delivered_at")
+      supabase.from("orders").select("total, status, created_at, order_number, customer_name, restaurant, payment_method, id, driver_id, delivered_at, dispatch_phase, offered_to_driver_id, missed_by_driver_ids")
         .order("created_at", { ascending: false }),
       supabase.from("restaurants").select("id", { count: 'exact' }),
       supabase.from("user_roles").select("id").eq("role", "driver"),
@@ -158,8 +163,28 @@ const AdminDashboard = () => {
         deliveredToday,
         totalDrivers: driverRoles?.length || 0,
       });
-      setRecentOrders((orders as RecentOrder[]).slice(0, 10));
-      setAllOrders(orders as RecentOrder[]);
+
+      // Look up offeree names for active dispatch rows
+      const offereeIds = Array.from(new Set(
+        orders.map((o: any) => o.offered_to_driver_id).filter(Boolean)
+      )) as string[];
+      let nameMap = new Map<string, string>();
+      if (offereeIds.length > 0) {
+        const { data: offereeProfiles } = await supabase
+          .from("profiles")
+          .select("user_id, full_name")
+          .in("user_id", offereeIds);
+        nameMap = new Map((offereeProfiles || []).map(p => [p.user_id, p.full_name || ""]));
+      }
+
+      const enriched: RecentOrder[] = (orders as any[]).map(o => ({
+        ...o,
+        offered_to_name: o.offered_to_driver_id ? (nameMap.get(o.offered_to_driver_id) || null) : null,
+        missed_count: Array.isArray(o.missed_by_driver_ids) ? o.missed_by_driver_ids.length : 0,
+      }));
+
+      setRecentOrders(enriched.slice(0, 10));
+      setAllOrders(enriched);
     }
   };
 
