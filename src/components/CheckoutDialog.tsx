@@ -1,9 +1,10 @@
 import { useState, useEffect } from "react";
-import { X, Package, MapPin, Phone, User, StickyNote, Banknote, CreditCard } from "lucide-react";
+import { X, Package, MapPin, Phone, User, StickyNote, Banknote, CreditCard, Wallet } from "lucide-react";
 import { CartItem } from "@/hooks/useCart";
 import { storeInfo } from "@/data/menu";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useCustomerCredits } from "@/hooks/useCustomerCredits";
 import { z } from "zod";
 import { toast } from "sonner";
 
@@ -38,6 +39,8 @@ const CheckoutDialog = ({
   onOrderPlaced,
 }: CheckoutDialogProps) => {
   const { user } = useAuth();
+  const { balance: walletBalance, refresh: refreshWallet } = useCustomerCredits();
+  const [useWallet, setUseWallet] = useState(false);
   const [name, setName] = useState("");
   const [contact, setContact] = useState("");
   const [address, setAddress] = useState("");
@@ -51,7 +54,9 @@ const CheckoutDialog = ({
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
 
   const actualTip = customTip ? parseFloat(customTip) || 0 : tip;
-  const total = subtotal + tax + delivery + actualTip;
+  const grossTotal = subtotal + tax + delivery + actualTip;
+  const creditsToApply = useWallet && walletBalance > 0 ? Math.min(walletBalance, grossTotal) : 0;
+  const total = Math.max(0, grossTotal - creditsToApply);
 
   const restaurants = [...new Set(items.map((ci) => ci.item.category))];
 
@@ -142,6 +147,20 @@ const CheckoutDialog = ({
       const orderResult = order as Record<string, unknown> | null;
       const orderNum = orderResult?.order_number || "N/A";
       const orderId = orderResult?.order_id as string;
+
+      // Apply wallet credits if selected
+      if (orderId && creditsToApply > 0) {
+        const { error: credErr } = await supabase.rpc("spend_customer_credits", {
+          p_amount: creditsToApply,
+          p_order_id: orderId,
+          p_note: `Applied to order #${orderNum}`,
+        });
+        if (credErr) {
+          console.error("Failed to apply credits:", credErr);
+        } else {
+          refreshWallet();
+        }
+      }
 
       // Save delivery PIN to localStorage so customer can view it later
       if (orderId) {

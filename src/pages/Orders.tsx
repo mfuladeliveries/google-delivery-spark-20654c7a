@@ -2,10 +2,11 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate, Link } from "react-router-dom";
-import { ArrowLeft, Clock, Package, CheckCircle, Truck, ChefHat, AlertCircle, ShieldCheck, UserCheck, Store, Bike } from "lucide-react";
+import { ArrowLeft, Clock, Package, CheckCircle, Truck, ChefHat, AlertCircle, ShieldCheck, UserCheck, Store, Bike, Wallet, Banknote } from "lucide-react";
 import { storeInfo } from "@/data/menu";
 import BottomNav from "@/components/BottomNav";
 import OrderTrackingMap from "@/components/OrderTrackingMap";
+import { toast } from "sonner";
 
 interface OrderItem {
   name: string;
@@ -29,6 +30,11 @@ interface Order {
   created_at: string;
   delivery_code: string;
   customer_address: string;
+  payment_method?: string;
+  cancel_reason?: string | null;
+  refund_status?: "pending" | "credited" | "bank_pending" | "bank_paid" | null;
+  refund_method?: "credits" | "bank" | null;
+  refund_amount?: number | null;
 }
 
 const statusSteps = [
@@ -82,14 +88,13 @@ const Orders = () => {
         .order("created_at", { ascending: false });
       if (data) {
         setOrders(
-          data.map((o) => ({
+          data.map((o: any) => ({
             ...o,
             items: (o.items as unknown as OrderItem[]) || [],
             delivery_code: "",
             customer_address: o.customer_address || "",
           }))
         );
-        // Clean up PINs for delivered orders
         const deliveredIds = data.filter(o => o.status === "delivered" || o.status === "cancelled" || o.status === "rejected").map(o => o.id);
         if (deliveredIds.length > 0) {
           const updated = { ...savedPins };
@@ -109,17 +114,35 @@ const Orders = () => {
         schema: 'public',
         table: 'orders',
         filter: `user_id=eq.${user.id}`,
-      }, (payload) => {
-        setOrders(prev => prev.map(o =>
-          o.id === payload.new.id
-            ? { ...o, status: (payload.new as any).status }
-            : o
-        ));
+      }, () => {
+        fetchOrders();
       })
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };
   }, [user]);
+
+  const handleChooseRefund = async (orderId: string, orderNumber: number, method: "credits" | "bank") => {
+    const { data, error } = await supabase.rpc("customer_choose_refund", {
+      p_order_id: orderId,
+      p_method: method,
+    });
+    if (error) {
+      toast.error(error.message || "Failed to process refund choice");
+      return;
+    }
+    const result = data as { status?: string; amount?: number } | null;
+    if (method === "credits") {
+      toast.success(`R${Number(result?.amount || 0).toFixed(2)} added to your wallet 🎉`, {
+        description: "Use it on your next order.",
+      });
+    } else {
+      toast.success("Bank refund requested", {
+        description: `R${Number(result?.amount || 0).toFixed(2)} will be refunded to your bank account within 3–5 business days.`,
+        duration: 8000,
+      });
+    }
+  };
 
   if (authLoading || loading) {
     return (
@@ -247,11 +270,76 @@ const Orders = () => {
                       </p>
                     )}
 
+                    {/* Cancellation reason */}
+                    {isCancelled && order.cancel_reason && (
+                      <p className="mt-2 rounded-xl border border-destructive/20 bg-destructive/5 px-3 py-2 text-xs text-destructive">
+                        ❌ Reason: {order.cancel_reason}
+                      </p>
+                    )}
+
+                    {/* Refund choice card for online-paid cancelled orders */}
+                    {isCancelled && order.payment_method === "online" && order.refund_status === "pending" && (
+                      <div className="mt-3 rounded-xl border border-primary/30 bg-primary/5 p-3">
+                        <p className="text-sm font-bold text-foreground">
+                          💰 Choose how to get your refund
+                        </p>
+                        <p className="mt-0.5 text-xs text-muted-foreground">
+                          Refundable: <span className="font-bold text-primary">{storeInfo.currency}{Number(order.refund_amount || order.total).toFixed(2)}</span>
+                        </p>
+                        <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
+                          <button
+                            onClick={() => handleChooseRefund(order.id, order.order_number, "credits")}
+                            className="flex items-center justify-center gap-1.5 rounded-xl bg-primary px-3 py-2.5 text-xs font-bold text-primary-foreground hover:opacity-90"
+                          >
+                            <Wallet className="h-3.5 w-3.5" />
+                            Add to wallet (instant)
+                          </button>
+                          <button
+                            onClick={() => handleChooseRefund(order.id, order.order_number, "bank")}
+                            className="flex items-center justify-center gap-1.5 rounded-xl border border-border bg-card px-3 py-2.5 text-xs font-bold text-foreground hover:bg-secondary"
+                          >
+                            <Banknote className="h-3.5 w-3.5" />
+                            Refund to bank
+                          </button>
+                        </div>
+                        <p className="mt-2 text-[10px] text-muted-foreground">
+                          ⚠️ Bank refunds take <span className="font-semibold">3–5 business days</span> to reflect. Wallet credits are instant.
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Refund status indicator */}
+                    {isCancelled && order.refund_status === "credited" && (
+                      <div className="mt-3 flex items-center gap-2 rounded-xl border border-green-200 bg-green-50 px-3 py-2 text-xs text-green-700">
+                        <Wallet className="h-4 w-4" />
+                        <span className="font-semibold">
+                          R{Number(order.refund_amount || 0).toFixed(2)} credited to your wallet
+                        </span>
+                      </div>
+                    )}
+                    {isCancelled && order.refund_status === "bank_pending" && (
+                      <div className="mt-3 flex items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700">
+                        <Clock className="h-4 w-4" />
+                        <span className="font-semibold">
+                          Bank refund of R{Number(order.refund_amount || 0).toFixed(2)} pending — 3–5 business days
+                        </span>
+                      </div>
+                    )}
+                    {isCancelled && order.refund_status === "bank_paid" && (
+                      <div className="mt-3 flex items-center gap-2 rounded-xl border border-green-200 bg-green-50 px-3 py-2 text-xs text-green-700">
+                        <CheckCircle className="h-4 w-4" />
+                        <span className="font-semibold">
+                          Bank refund of R{Number(order.refund_amount || 0).toFixed(2)} sent
+                        </span>
+                      </div>
+                    )}
+
                     <div className="mt-3 flex justify-between border-t border-border pt-2 text-sm font-bold text-foreground">
                       <span>Total {order.tip > 0 && `(incl. R${order.tip} tip)`}</span>
                       <span className="text-primary">{storeInfo.currency}{(order.total + 15).toFixed(2)}</span>
                     </div>
                   </div>
+
                 </div>
               );
             })}

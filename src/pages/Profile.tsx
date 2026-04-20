@@ -2,9 +2,10 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate, Link } from "react-router-dom";
-import { ArrowLeft, User, Phone, MapPin, Save, LogOut, Package, ChevronRight } from "lucide-react";
+import { ArrowLeft, User, Phone, MapPin, Save, LogOut, Package, ChevronRight, Wallet } from "lucide-react";
 import { storeInfo } from "@/data/menu";
 import BottomNav from "@/components/BottomNav";
+import { useCustomerCredits } from "@/hooks/useCustomerCredits";
 
 interface Profile {
   full_name: string;
@@ -33,6 +34,7 @@ const statusColors: Record<string, string> = {
 
 const Profile = () => {
   const { user, role, signOut, loading: authLoading } = useAuth();
+  const { balance: walletBalance } = useCustomerCredits();
   const navigate = useNavigate();
   const [profile, setProfile] = useState<Profile>({ full_name: "", contact_number: "", address: "" });
   const [recentOrders, setRecentOrders] = useState<Order[]>([]);
@@ -114,6 +116,24 @@ const Profile = () => {
             <p className="text-sm text-muted-foreground">{user?.email}</p>
             <span className="mt-1 inline-block rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-bold text-primary capitalize">{role}</span>
           </div>
+        </div>
+
+        {/* Wallet balance */}
+        <div className="rounded-2xl border border-primary/20 bg-gradient-to-br from-primary/10 to-primary/5 p-4 shadow-card">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-primary-foreground">
+                <Wallet className="h-5 w-5" />
+              </div>
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Wallet balance</p>
+                <p className="text-2xl font-bold text-foreground">{storeInfo.currency}{walletBalance.toFixed(2)}</p>
+              </div>
+            </div>
+          </div>
+          <p className="mt-2 text-[11px] text-muted-foreground">
+            Credits from cancelled orders apply automatically at checkout.
+          </p>
         </div>
 
         {/* Profile Form */}

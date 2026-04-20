@@ -14,6 +14,60 @@ export type Database = {
   }
   public: {
     Tables: {
+      credit_transactions: {
+        Row: {
+          amount: number
+          created_at: string
+          id: string
+          kind: string
+          note: string | null
+          order_id: string | null
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          id?: string
+          kind: string
+          note?: string | null
+          order_id?: string | null
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          id?: string
+          kind?: string
+          note?: string | null
+          order_id?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      customer_credits: {
+        Row: {
+          balance: number
+          created_at: string
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          balance?: number
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          balance?: number
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       driver_earnings: {
         Row: {
           created_at: string
@@ -182,6 +236,7 @@ export type Database = {
           cancel_reason: string | null
           cancelled_at: string | null
           created_at: string
+          credits_applied: number
           customer_address: string
           customer_contact: string
           customer_id: string | null
@@ -202,6 +257,10 @@ export type Database = {
           picked_up_at: string | null
           picking_up_at: string | null
           pin_attempts: number
+          refund_amount: number | null
+          refund_method: string | null
+          refund_status: string | null
+          refunded_at: string | null
           restaurant: string
           restaurant_id: string | null
           special_notes: string | null
@@ -218,6 +277,7 @@ export type Database = {
           cancel_reason?: string | null
           cancelled_at?: string | null
           created_at?: string
+          credits_applied?: number
           customer_address?: string
           customer_contact?: string
           customer_id?: string | null
@@ -238,6 +298,10 @@ export type Database = {
           picked_up_at?: string | null
           picking_up_at?: string | null
           pin_attempts?: number
+          refund_amount?: number | null
+          refund_method?: string | null
+          refund_status?: string | null
+          refunded_at?: string | null
           restaurant?: string
           restaurant_id?: string | null
           special_notes?: string | null
@@ -254,6 +318,7 @@ export type Database = {
           cancel_reason?: string | null
           cancelled_at?: string | null
           created_at?: string
+          credits_applied?: number
           customer_address?: string
           customer_contact?: string
           customer_id?: string | null
@@ -274,6 +339,10 @@ export type Database = {
           picked_up_at?: string | null
           picking_up_at?: string | null
           pin_attempts?: number
+          refund_amount?: number | null
+          refund_method?: string | null
+          refund_status?: string | null
+          refunded_at?: string | null
           restaurant?: string
           restaurant_id?: string | null
           special_notes?: string | null
@@ -526,6 +595,10 @@ export type Database = {
       }
     }
     Functions: {
+      admin_mark_bank_refund_paid: {
+        Args: { p_order_id: string }
+        Returns: undefined
+      }
       admin_update_withdrawal: {
         Args: {
           p_notes?: string
@@ -565,6 +638,10 @@ export type Database = {
             }
             Returns: Json
           }
+      customer_choose_refund: {
+        Args: { p_method: string; p_order_id: string }
+        Returns: Json
+      }
       driver_cancel_order: {
         Args: { p_order_id: string; p_reason?: string }
         Returns: undefined
@@ -578,6 +655,7 @@ export type Database = {
         }
         Returns: undefined
       }
+      get_customer_balance: { Args: { p_user_id?: string }; Returns: number }
       get_driver_balance: { Args: { p_driver_id: string }; Returns: number }
       has_role: {
         Args: {
@@ -587,6 +665,10 @@ export type Database = {
         Returns: boolean
       }
       request_withdrawal: { Args: { p_amount: number }; Returns: string }
+      spend_customer_credits: {
+        Args: { p_amount: number; p_note?: string; p_order_id: string }
+        Returns: number
+      }
       verify_and_complete_delivery: {
         Args: { p_code: string; p_order_id: string }
         Returns: boolean
