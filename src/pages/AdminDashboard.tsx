@@ -9,6 +9,11 @@ import AdminWithdrawals from "@/components/admin/AdminWithdrawals";
 import AdminRefunds from "@/components/admin/AdminRefunds";
 import { toast } from "sonner";
 import { geocodeAddress } from "@/lib/geocode";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
 
 interface Stats {
   totalOrders: number;
@@ -450,6 +455,58 @@ const AdminDashboard = () => {
         )}
       </main>
       <BottomNav />
+
+      <Dialog open={!!cancelTarget} onOpenChange={(open) => { if (!open) setCancelTarget(null); }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Cancel order #{cancelTarget?.orderNumber}</DialogTitle>
+            <DialogDescription>
+              This will cancel the order and trigger a refund flow for online payments. The customer and any assigned driver will lose access to it.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-1.5">
+              <Label htmlFor="cancel-reason">Reason</Label>
+              <Select value={cancelReasonChoice} onValueChange={setCancelReasonChoice}>
+                <SelectTrigger id="cancel-reason">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Restaurant closed">Restaurant closed</SelectItem>
+                  <SelectItem value="Out of stock">Out of stock</SelectItem>
+                  <SelectItem value="Customer request">Customer request</SelectItem>
+                  <SelectItem value="Other">Other</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            {cancelReasonChoice === "Other" && (
+              <div className="space-y-1.5">
+                <Label htmlFor="cancel-reason-other">Details</Label>
+                <Textarea
+                  id="cancel-reason-other"
+                  value={cancelReasonOther}
+                  onChange={(e) => setCancelReasonOther(e.target.value)}
+                  placeholder="Describe the reason for cancellation..."
+                  rows={3}
+                  maxLength={300}
+                />
+              </div>
+            )}
+          </div>
+          <DialogFooter className="gap-2 sm:gap-2">
+            <Button variant="outline" onClick={() => setCancelTarget(null)} disabled={cancelSubmitting}>
+              Keep order
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={submitCancelOrder}
+              disabled={cancelSubmitting || (cancelReasonChoice === "Other" && cancelReasonOther.trim().length === 0)}
+            >
+              {cancelSubmitting ? "Cancelling..." : "Cancel order"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
