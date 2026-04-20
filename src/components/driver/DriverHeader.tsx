@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { ArrowLeft, Truck, Wifi, WifiOff, User, Bell } from "lucide-react";
+import InstallAppButton from "@/components/InstallAppButton";
 
 interface DriverHeaderProps {
   isOnline: boolean;
@@ -37,6 +38,7 @@ const DriverHeader = ({ isOnline, togglingOnline, onToggleOnline, activeCount = 
         </div>
 
         <div className="flex items-center gap-2">
+          <InstallAppButton variant="driver" compact />
           <button
             onClick={onProfileClick}
             className="flex h-9 w-9 items-center justify-center rounded-xl text-muted-foreground hover:bg-secondary transition-colors"

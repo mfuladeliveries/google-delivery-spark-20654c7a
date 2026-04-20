@@ -14,6 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import InstallAppButton from "@/components/InstallAppButton";
 
 interface Stats {
   totalOrders: number;
@@ -302,6 +303,9 @@ const AdminDashboard = () => {
               <h1 className="font-bold text-sm text-foreground">Admin Panel</h1>
               <p className="text-[10px] text-muted-foreground">Mfula Deliveries</p>
             </div>
+          </div>
+          <div className="ml-auto">
+            <InstallAppButton variant="admin" compact />
           </div>
         </div>
         {/* Tab bar */}
