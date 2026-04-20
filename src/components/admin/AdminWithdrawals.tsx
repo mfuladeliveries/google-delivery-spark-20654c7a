@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Banknote, CheckCircle2, XCircle, Clock, DollarSign } from "lucide-react";
+import { Banknote, CheckCircle2, XCircle, Clock, DollarSign, Download } from "lucide-react";
 import { toast } from "sonner";
+import { generateWithdrawalReceipt } from "@/lib/withdrawalReceipt";
 
 interface WithdrawalRow {
   id: string;
@@ -273,6 +274,29 @@ const AdminWithdrawals = ({ drivers }: AdminWithdrawalsProps) => {
                         Reject
                       </button>
                     </>
+                  )}
+                  {r.status === "paid" && (
+                    <button
+                      onClick={() =>
+                        generateWithdrawalReceipt({
+                          id: r.id,
+                          amount: Number(r.amount),
+                          driver_name: driverNameById.get(r.driver_id) || "Driver",
+                          bank_account_holder: r.bank_account_holder,
+                          bank_name: r.bank_name,
+                          bank_account_number: r.bank_account_number,
+                          bank_branch_code: r.bank_branch_code,
+                          bank_account_type: r.bank_account_type,
+                          requested_at: r.requested_at,
+                          approved_at: r.approved_at,
+                          paid_at: r.paid_at,
+                        })
+                      }
+                      className="flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-border bg-card py-2 text-xs font-bold text-foreground hover:bg-secondary"
+                    >
+                      <Download className="h-3.5 w-3.5" />
+                      Download Receipt
+                    </button>
                   )}
                 </div>
               </div>
