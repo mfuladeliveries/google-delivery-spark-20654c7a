@@ -56,21 +56,32 @@ const DriverDashboard = () => {
   const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
   const locationWatchRef = useRef<number | null>(null);
 
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+
   const playNotificationSound = useCallback(() => {
     try {
-      const ctx = new AudioContext();
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.connect(gain); gain.connect(ctx.destination);
-      osc.frequency.value = 660; osc.type = "triangle"; gain.gain.value = 0.4;
-      osc.start(); osc.stop(ctx.currentTime + 0.2);
-      setTimeout(() => {
-        const o2 = ctx.createOscillator(); const g2 = ctx.createGain();
-        o2.connect(g2); g2.connect(ctx.destination);
-        o2.frequency.value = 880; o2.type = "triangle"; g2.gain.value = 0.4;
-        o2.start(); o2.stop(ctx.currentTime + 0.2);
-      }, 150);
-    } catch {}
+      // Lazy-init the Audio element (one shared instance to avoid overlap)
+      if (!audioRef.current) {
+        audioRef.current = new Audio("/sounds/new-order.mp3");
+        audioRef.current.preload = "auto";
+        audioRef.current.volume = 0.9;
+      }
+      audioRef.current.currentTime = 0;
+      const playPromise = audioRef.current.play();
+      if (playPromise && typeof playPromise.catch === "function") {
+        playPromise.catch(() => {
+          // Autoplay blocked (no user gesture yet) — fall back to a synthesized beep
+          try {
+            const ctx = new AudioContext();
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.connect(gain); gain.connect(ctx.destination);
+            osc.frequency.value = 660; osc.type = "triangle"; gain.gain.value = 0.4;
+            osc.start(); osc.stop(ctx.currentTime + 0.2);
+          } catch { /* ignore */ }
+        });
+      }
+    } catch { /* ignore */ }
   }, []);
 
   // Auth guard

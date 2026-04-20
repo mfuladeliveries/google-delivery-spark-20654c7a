@@ -12,6 +12,7 @@ self.addEventListener("push", (event) => {
         icon: icon || "/pwa-192x192.png",
         badge: badge || "/favicon.ico",
         vibrate: [400, 200, 400, 200, 400, 200, 400],
+        sound: "/sounds/new-order.mp3",
         tag: `order-${notifData?.order_number || "general"}`,
         renotify: true,
         requireInteraction: true,
