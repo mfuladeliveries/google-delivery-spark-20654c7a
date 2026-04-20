@@ -12,6 +12,7 @@ interface HeaderProps {
 
 const Header = ({ cartCount, onCartClick, title }: HeaderProps) => {
   const { user, signOut, role } = useAuth();
+  const { balance: walletBalance } = useCustomerCredits();
   const navigate = useNavigate();
 
   const roleLinks = {
