@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { ArrowLeft, Download, Share, Plus, Check, ShoppingBag, Truck, Shield } from "lucide-react";
+import { ArrowLeft, Download, Share, Plus, Check, ShoppingBag, Truck, Shield, ChefHat } from "lucide-react";
 import { setPwaVariant, type PwaVariant } from "@/lib/pwaVariant";
 import { toast } from "sonner";
 
