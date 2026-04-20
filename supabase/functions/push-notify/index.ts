@@ -45,7 +45,7 @@ Deno.serve(async (req) => {
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
 
-    // Authenticate caller — only signed-in users may trigger push notifications
+    // Authenticate caller — only signed-in users OR the service role (used by other edge functions) may trigger pushes
     const authHeader = req.headers.get("Authorization");
     if (!authHeader?.startsWith("Bearer ")) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
@@ -53,16 +53,20 @@ Deno.serve(async (req) => {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-    const userClient = createClient(supabaseUrl, anonKey, {
-      global: { headers: { Authorization: authHeader } },
-    });
     const token = authHeader.replace("Bearer ", "");
-    const { data: claimsData, error: claimsError } = await userClient.auth.getClaims(token);
-    if (claimsError || !claimsData?.claims?.sub) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+    // Allow service-role calls (from other edge functions like dispatch-tick) to skip user-claim verification
+    const isServiceRole = token === serviceRoleKey;
+    if (!isServiceRole) {
+      const userClient = createClient(supabaseUrl, anonKey, {
+        global: { headers: { Authorization: authHeader } },
       });
+      const { data: claimsData, error: claimsError } = await userClient.auth.getClaims(token);
+      if (claimsError || !claimsData?.claims?.sub) {
+        return new Response(JSON.stringify({ error: "Unauthorized" }), {
+          status: 401,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
     }
 
     const supabase = createClient(supabaseUrl, serviceRoleKey);
@@ -86,18 +90,33 @@ Deno.serve(async (req) => {
     webpush.setVapidDetails("mailto:noreply@mfula.app", publicKey, privateKey);
 
     const event = await req.json();
-    const { order_id, order_number, status, restaurant, total, user_id, driver_id, restaurant_id, old_status, reason, refund_amount } = event;
+    const {
+      order_id,
+      order_number,
+      status,
+      restaurant,
+      total,
+      user_id,
+      driver_id,
+      restaurant_id,
+      old_status,
+      reason,
+      refund_amount,
+      target_user_id, // NEW: explicit recipient for dispatch events
+    } = event;
 
     const emoji = statusEmojis[status] || "📋";
     const label = statusLabels[status] || status;
-    // Special-case: driver-cancelled because item not available
     const isDriverCancelUnavailable = status === "cancelled" && reason === "item_unavailable";
-    // Generic cancel-with-reason
     const isCancelWithReason = status === "cancelled" && reason && !isDriverCancelUnavailable;
-    // Bank refund paid notification
     const isBankRefundPaid = status === "bank_refund_paid";
 
-    // Detect whether this cancellation involves an online refund choice the customer must make
+    // Dispatch events
+    const isOfferPending = status === "offer_pending";
+    const isOfferMissed = status === "offer_missed";
+    const isDispatchBroadcast = status === "dispatch_broadcast";
+
+    // Detect refund-choice cancellations
     let refundChoiceAmount: number | null = null;
     if ((status === "cancelled" || status === "rejected") && order_id) {
       const { data: ord } = await supabase
@@ -111,13 +130,27 @@ Deno.serve(async (req) => {
     }
     const isRefundChoice = refundChoiceAmount !== null;
 
-    // Determine who to notify
     const targetUserIds: string[] = [];
-    let title = "";
-    let body = "";
 
+    // Dispatch: targeted push to a specific driver
+    if ((isOfferPending || isOfferMissed) && target_user_id) {
+      targetUserIds.push(target_user_id);
+    }
+
+    // Dispatch broadcast: all online drivers + all admins
+    if (isDispatchBroadcast) {
+      const [{ data: drivers }, { data: admins }] = await Promise.all([
+        supabase.from("driver_profiles").select("user_id").eq("is_online", true),
+        supabase.from("user_roles").select("user_id").eq("role", "admin"),
+      ]);
+      (drivers || []).forEach((d) => targetUserIds.push(d.user_id));
+      (admins || []).forEach((a) => {
+        if (!targetUserIds.includes(a.user_id)) targetUserIds.push(a.user_id);
+      });
+    }
+
+    // Original flows
     if (status === "pending" && !old_status) {
-      // New order → notify restaurant owner
       if (restaurant_id) {
         const { data: rest } = await supabase
           .from("restaurants")
@@ -126,20 +159,9 @@ Deno.serve(async (req) => {
           .single();
         if (rest?.owner_user_id) targetUserIds.push(rest.owner_user_id);
       }
-      title = "🔔 New Order Received";
-      body = `Order #${order_number} — R${total}`;
-    } else if (status === "ready" && !driver_id) {
-      // Ready for pickup → notify all online drivers
-      const { data: drivers } = await supabase
-        .from("driver_profiles")
-        .select("user_id")
-        .eq("is_online", true);
-      if (drivers) targetUserIds.push(...drivers.map((d) => d.user_id));
-      title = "🚗 New Delivery Available";
-      body = `Order #${order_number} ready at ${restaurant}`;
     }
 
-    // Status updates → notify customer
+    // Customer status updates (excludes new dispatch events)
     if (
       [
         "confirmed",
@@ -159,10 +181,6 @@ Deno.serve(async (req) => {
       if (!targetUserIds.includes(user_id)) {
         targetUserIds.push(user_id);
       }
-      if (!title) {
-        title = `${emoji} Order #${order_number}`;
-        body = label;
-      }
     }
 
     if (targetUserIds.length === 0) {
@@ -171,7 +189,6 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Get push subscriptions for target users
     const { data: subs } = await supabase
       .from("push_subscriptions")
       .select("*")
@@ -183,9 +200,9 @@ Deno.serve(async (req) => {
       });
     }
 
-    // For customer notifications, use the specific title/body
-    // For other targets, we might want a different message
     const reasonSuffix = isCancelWithReason ? ` Reason: ${reason}` : "";
+
+    // Build payloads per audience
     const customerPayload = JSON.stringify({
       title: isBankRefundPaid
         ? `💸 Refund sent for #${order_number}`
@@ -208,7 +225,7 @@ Deno.serve(async (req) => {
       data: { url: "/orders", order_number },
     });
 
-    const driverPayload = JSON.stringify({
+    const driverBroadcastPayload = JSON.stringify({
       title: "🚗 New Delivery Available",
       body: `Order #${order_number} ready at ${restaurant}`,
       icon: "/pwa-192x192.png",
@@ -224,20 +241,37 @@ Deno.serve(async (req) => {
       data: { url: "/restaurant/dashboard", order_number },
     });
 
+    const offerPendingPayload = JSON.stringify({
+      title: "🔔 New Order Offer",
+      body: `Order #${order_number} from ${restaurant} — Tap to accept (20s)`,
+      icon: "/pwa-192x192.png",
+      badge: "/favicon.ico",
+      tag: `offer-${order_number}`,
+      data: { url: "/driver", order_number, kind: "offer" },
+    });
+
+    const offerMissedPayload = JSON.stringify({
+      title: "⏱️ Missed Order",
+      body: `You didn't respond to Order #${order_number} in time. It's been offered to another driver.`,
+      icon: "/pwa-192x192.png",
+      badge: "/favicon.ico",
+      tag: `missed-${order_number}`,
+      data: { url: "/driver", order_number, kind: "missed" },
+    });
+
+    const adminBroadcastPayload = JSON.stringify({
+      title: "🚨 Order Needs a Driver",
+      body: `Order #${order_number} couldn't be assigned — now broadcast to all drivers.`,
+      icon: "/pwa-192x192.png",
+      badge: "/favicon.ico",
+      tag: `escalation-${order_number}`,
+      data: { url: "/admin", order_number, kind: "escalation" },
+    });
+
     let sent = 0;
     const expired: string[] = [];
 
-    // Get driver user IDs for driver-specific payload
-    const driverUserIds = new Set<string>();
-    if (status === "ready" && !driver_id) {
-      const { data: drivers } = await supabase
-        .from("driver_profiles")
-        .select("user_id")
-        .eq("is_online", true);
-      if (drivers) drivers.forEach((d) => driverUserIds.add(d.user_id));
-    }
-
-    // Get restaurant owner ID
+    // Restaurant owner lookup (for "pending" new-order flow)
     let restaurantOwnerId: string | null = null;
     if (status === "pending" && !old_status && restaurant_id) {
       const { data: rest } = await supabase
@@ -248,11 +282,29 @@ Deno.serve(async (req) => {
       restaurantOwnerId = rest?.owner_user_id || null;
     }
 
+    // Admin user IDs (for broadcast escalation)
+    const adminUserIds = new Set<string>();
+    if (isDispatchBroadcast) {
+      const { data: admins } = await supabase
+        .from("user_roles")
+        .select("user_id")
+        .eq("role", "admin");
+      (admins || []).forEach((a) => adminUserIds.add(a.user_id));
+    }
+
     for (const sub of subs) {
       try {
         let payload = customerPayload;
-        if (driverUserIds.has(sub.user_id)) payload = driverPayload;
-        if (sub.user_id === restaurantOwnerId) payload = restaurantPayload;
+
+        if (isOfferPending && sub.user_id === target_user_id) {
+          payload = offerPendingPayload;
+        } else if (isOfferMissed && sub.user_id === target_user_id) {
+          payload = offerMissedPayload;
+        } else if (isDispatchBroadcast) {
+          payload = adminUserIds.has(sub.user_id) ? adminBroadcastPayload : driverBroadcastPayload;
+        } else if (sub.user_id === restaurantOwnerId) {
+          payload = restaurantPayload;
+        }
 
         await webpush.sendNotification(
           {
@@ -269,7 +321,6 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Clean up expired subscriptions
     if (expired.length > 0) {
       await supabase.from("push_subscriptions").delete().in("id", expired);
     }
