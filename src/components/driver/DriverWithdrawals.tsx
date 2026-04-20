@@ -2,8 +2,9 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
-import { Wallet, Clock, CheckCircle2, XCircle, Banknote, AlertCircle } from "lucide-react";
+import { Wallet, Clock, CheckCircle2, XCircle, Banknote, AlertCircle, Download } from "lucide-react";
 import { z } from "zod";
+import { generateWithdrawalReceipt } from "@/lib/withdrawalReceipt";
 
 const MIN_WITHDRAWAL = 100;
 
@@ -25,8 +26,11 @@ interface WithdrawalRequest {
   approved_at: string | null;
   paid_at: string | null;
   rejected_at: string | null;
+  bank_account_holder: string;
   bank_name: string;
   bank_account_number: string;
+  bank_branch_code: string;
+  bank_account_type: string;
 }
 
 const bankSchema = z.object({
@@ -60,6 +64,7 @@ const DriverWithdrawals = () => {
   const [requesting, setRequesting] = useState(false);
   const [requests, setRequests] = useState<WithdrawalRequest[]>([]);
   const [showBankForm, setShowBankForm] = useState(false);
+  const [driverName, setDriverName] = useState("");
 
   const hasBankDetails =
     !!bank.bank_account_holder && !!bank.bank_name && !!bank.bank_account_number && !!bank.bank_branch_code;
@@ -71,7 +76,7 @@ const DriverWithdrawals = () => {
     let active = true;
 
     const load = async () => {
-      const [{ data: profileData }, { data: balanceData }, { data: reqData }] = await Promise.all([
+      const [{ data: profileData }, { data: balanceData }, { data: reqData }, { data: userProfile }] = await Promise.all([
         supabase
           .from("driver_profiles")
           .select("bank_account_holder, bank_name, bank_account_number, bank_branch_code, bank_account_type")
@@ -80,10 +85,12 @@ const DriverWithdrawals = () => {
         supabase.rpc("get_driver_balance", { p_driver_id: user.id }),
         supabase
           .from("withdrawal_requests")
-          .select("id, amount, status, rejection_reason, admin_notes, requested_at, approved_at, paid_at, rejected_at, bank_name, bank_account_number")
+          .select("id, amount, status, rejection_reason, admin_notes, requested_at, approved_at, paid_at, rejected_at, bank_account_holder, bank_name, bank_account_number, bank_branch_code, bank_account_type")
           .eq("driver_id", user.id)
           .order("requested_at", { ascending: false }),
+        supabase.from("profiles").select("full_name").eq("user_id", user.id).maybeSingle(),
       ]);
+      if (userProfile?.full_name) setDriverName(userProfile.full_name);
       if (!active) return;
       if (profileData) {
         setBank({
@@ -406,9 +413,24 @@ const DriverWithdrawals = () => {
                     </p>
                   )}
                   {r.status === "paid" && r.paid_at && (
-                    <p className="mt-1 text-[10px] text-green-600">
-                      Paid {new Date(r.paid_at).toLocaleDateString("en-ZA", { day: "numeric", month: "short" })}
-                    </p>
+                    <div className="mt-2 flex items-center justify-between">
+                      <p className="text-[10px] text-green-600">
+                        Paid {new Date(r.paid_at).toLocaleDateString("en-ZA", { day: "numeric", month: "short" })}
+                      </p>
+                      <button
+                        onClick={() =>
+                          generateWithdrawalReceipt({
+                            ...r,
+                            amount: Number(r.amount),
+                            driver_name: driverName,
+                          })
+                        }
+                        className="flex items-center gap-1 rounded-lg border border-border bg-card px-2.5 py-1 text-[11px] font-semibold text-foreground hover:bg-secondary"
+                      >
+                        <Download className="h-3 w-3" />
+                        Receipt
+                      </button>
+                    </div>
                   )}
                 </div>
               );
