@@ -1,4 +1,7 @@
 project_id = "kdplufybixfqsqhyixxw"
 
-[functions.push-notify]
-verify_jwt = false
+[functions]
+  [functions.auth-email-hook]
+    verify_jwt = false
+  [functions.push-notify]
+    verify_jwt = false
