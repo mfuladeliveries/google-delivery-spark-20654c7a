@@ -14,6 +14,36 @@ export type Database = {
   }
   public: {
     Tables: {
+      driver_earnings: {
+        Row: {
+          created_at: string
+          delivery_fee: number
+          driver_id: string
+          driver_payout: number
+          id: string
+          order_id: string
+          platform_fee: number
+        }
+        Insert: {
+          created_at?: string
+          delivery_fee?: number
+          driver_id: string
+          driver_payout?: number
+          id?: string
+          order_id: string
+          platform_fee?: number
+        }
+        Update: {
+          created_at?: string
+          delivery_fee?: number
+          driver_id?: string
+          driver_payout?: number
+          id?: string
+          order_id?: string
+          platform_fee?: number
+        }
+        Relationships: []
+      }
       driver_profiles: {
         Row: {
           created_at: string
