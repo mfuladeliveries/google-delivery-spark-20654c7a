@@ -6,6 +6,7 @@ import { ArrowLeft, User, Phone, MapPin, Save, LogOut, Package, ChevronRight, Wa
 import { storeInfo } from "@/data/menu";
 import BottomNav from "@/components/BottomNav";
 import { useCustomerCredits } from "@/hooks/useCustomerCredits";
+import WalletHistory from "@/components/WalletHistory";
 
 interface Profile {
   full_name: string;
