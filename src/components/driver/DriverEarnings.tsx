@@ -260,6 +260,38 @@ const DriverEarnings = ({ driverProfile, completedOrders }: DriverEarningsProps)
         </p>
       </div>
 
+      {/* Monthly statement */}
+      <div className="rounded-2xl border border-border bg-card p-4 shadow-card">
+        <h3 className="mb-2 flex items-center gap-2 font-bold text-foreground">
+          <FileDown className="h-4 w-4 text-primary" /> Monthly Statement
+        </h3>
+        <p className="mb-3 text-xs text-muted-foreground">
+          Download a PDF summary of deliveries, withdrawals and running balance for any month.
+        </p>
+        <div className="flex gap-2">
+          <select
+            value={selectedMonth}
+            onChange={(e) => setSelectedMonth(e.target.value)}
+            disabled={generatingStatement}
+            className="flex-1 rounded-xl border border-border bg-background px-3 py-2.5 text-sm font-semibold text-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-50"
+          >
+            {monthOptions.map((m) => (
+              <option key={m.key} value={m.key}>
+                {m.label}
+              </option>
+            ))}
+          </select>
+          <button
+            onClick={handleGenerateStatement}
+            disabled={generatingStatement}
+            className="flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2.5 text-sm font-bold text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-50"
+          >
+            <FileDown className="h-4 w-4" />
+            {generatingStatement ? "Generating..." : "Download"}
+          </button>
+        </div>
+      </div>
+
       {/* Delivery history */}
       <div>
         <h3 className="mb-3 flex items-center gap-2 font-bold text-foreground">
