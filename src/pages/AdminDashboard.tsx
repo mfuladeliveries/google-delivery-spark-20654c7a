@@ -49,6 +49,9 @@ interface RestaurantRecord {
   is_active: boolean;
   owner_user_id: string | null;
   rating: number;
+  location: string;
+  lat: number | null;
+  lng: number | null;
 }
 
 interface DriverRecord {
