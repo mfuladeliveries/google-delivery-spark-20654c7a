@@ -10,6 +10,7 @@ import DriverOrdersList from "@/components/driver/DriverOrdersList";
 import NewOrderModal from "@/components/driver/NewOrderModal";
 import DriverActiveDelivery from "@/components/driver/DriverActiveDelivery";
 import DriverEarnings from "@/components/driver/DriverEarnings";
+import DriverWithdrawals from "@/components/driver/DriverWithdrawals";
 import DriverProfileTab from "@/components/driver/DriverProfile";
 
 interface Order {
@@ -32,7 +33,7 @@ interface DriverProfile {
   total_deliveries: number;
 }
 
-type DriverTab = "orders" | "earnings" | "profile";
+type DriverTab = "orders" | "earnings" | "withdraw" | "profile";
 
 const DriverDashboard = () => {
   const { user, roles, loading: authLoading } = useAuth();
@@ -317,6 +318,8 @@ const DriverDashboard = () => {
         {tab === "earnings" && (
           <DriverEarnings driverProfile={driverProfile} completedOrders={completedOrders} />
         )}
+
+        {tab === "withdraw" && <DriverWithdrawals />}
 
         {tab === "profile" && <DriverProfileTab />}
       </main>
