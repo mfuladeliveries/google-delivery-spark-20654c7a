@@ -137,8 +137,7 @@ const DriverDashboard = () => {
             body: `Order #${activeOffer.order_number} from ${activeOffer.restaurant} — R${activeOffer.delivery_fee} delivery fee`,
             icon: "/pwa-driver-192.png",
             tag: `repeat-offer-${activeOffer.id}`,
-            renotify: true,
-          });
+          } as NotificationOptions);
         } catch { /* ignore */ }
       }
     }, REPEAT_MS);
