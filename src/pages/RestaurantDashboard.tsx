@@ -14,6 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import FoodImageUpload from "@/components/FoodImageUpload";
+import InstallAppButton from "@/components/InstallAppButton";
 
 interface Order {
   id: string;
@@ -435,7 +436,8 @@ const RestaurantDashboard = () => {
               </div>
             </div>
           </div>
-          <div className="flex gap-1">
+          <div className="flex items-center gap-2">
+            <InstallAppButton variant="restaurant" compact />
             {(["orders", "menu"] as const).map(t => (
               <button
                 key={t}
