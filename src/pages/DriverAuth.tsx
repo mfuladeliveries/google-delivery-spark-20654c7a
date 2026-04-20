@@ -448,6 +448,8 @@ const DriverAuth = () => {
               ← Back to Mfula Deliveries
             </button>
           </div>
+          </>
+          )}
         </div>
       </div>
     </div>
