@@ -91,7 +91,7 @@ const Orders = () => {
           data.map((o: any) => ({
             ...o,
             items: (o.items as unknown as OrderItem[]) || [],
-            delivery_code: "",
+            delivery_code: o.delivery_code || "",
             customer_address: o.customer_address || "",
           }))
         );
@@ -238,11 +238,11 @@ const Orders = () => {
                     </div>
 
                     {/* Delivery PIN shown directly under order number until delivered */}
-                    {deliveryPins[order.id] && order.status !== "delivered" && !isCancelled && (
+                    {(deliveryPins[order.id] || order.delivery_code) && order.status !== "delivered" && !isCancelled && (
                       <div className="mb-3 flex items-center gap-2 rounded-lg border border-primary/20 bg-primary/5 px-3 py-1.5">
                         <ShieldCheck className="h-4 w-4 text-primary shrink-0" />
                         <span className="text-xs text-muted-foreground">Delivery PIN:</span>
-                        <span className="text-base font-bold tracking-[0.3em] text-primary">{deliveryPins[order.id]}</span>
+                        <span className="text-base font-bold tracking-[0.3em] text-primary">{deliveryPins[order.id] || order.delivery_code}</span>
                         <span className="ml-auto text-[9px] text-muted-foreground">Share with driver</span>
                       </div>
                     )}
