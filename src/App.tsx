@@ -18,6 +18,7 @@ import AdminDashboard from "./pages/AdminDashboard";
 import Profile from "./pages/Profile";
 import Search from "./pages/Search";
 import Install from "./pages/Install";
+import RouteAwareInstallPrompt from "@/components/RouteAwareInstallPrompt";
 
 const queryClient = new QueryClient();
 
@@ -29,6 +30,7 @@ const App = () => (
         <Sonner />
         <OrderNotifications />
         <BrowserRouter>
+          <RouteAwareInstallPrompt />
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/auth" element={<Auth />} />
