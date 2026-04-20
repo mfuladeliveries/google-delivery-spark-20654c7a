@@ -28,7 +28,6 @@ const BottomNav = () => {
 
   const adminLinks = [
     { to: "/admin", icon: Shield, label: "Admin" },
-    { to: "/", icon: Home, label: "Home" },
     { to: user ? "/profile" : "/auth", icon: User, label: "Profile" },
   ];
 
