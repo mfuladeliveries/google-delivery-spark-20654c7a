@@ -1241,50 +1241,93 @@ const RestaurantCard = ({
       </div>
 
       {editing && (
-        <div className="border-t border-border bg-secondary/30 p-4 space-y-3">
-          {loadingOwner ? (
-            <div className="flex justify-center py-2">
-              <div className="h-5 w-5 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-            </div>
-          ) : !r.owner_user_id ? (
-            <p className="text-xs text-muted-foreground text-center py-2">
-              No login account linked. Add one when creating the restaurant or assign an owner first.
-            </p>
-          ) : (
-            <>
-              <h4 className="font-bold text-xs text-foreground">Edit Login Credentials</h4>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-semibold text-muted-foreground mb-1">Owner Name</label>
-                  <input value={editName} onChange={e => setEditName(e.target.value)}
-                    className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20" />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-muted-foreground mb-1">Contact</label>
-                  <input value={editContact} onChange={e => setEditContact(e.target.value)}
-                    className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20" />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-muted-foreground mb-1">New Email (leave blank to keep)</label>
-                  <input type="email" value={editEmail} onChange={e => setEditEmail(e.target.value)} placeholder="new@email.com"
-                    className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20" />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-muted-foreground mb-1">New Password (leave blank to keep)</label>
-                  <input type="password" value={editPassword} onChange={e => setEditPassword(e.target.value)} placeholder="••••••" minLength={6}
-                    className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20" />
-                </div>
-              </div>
+        <div className="border-t border-border bg-secondary/30 p-4 space-y-4">
+          {/* Coordinates editor — always available */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <h4 className="font-bold text-xs text-foreground">📍 Coordinates</h4>
               <button
-                onClick={handleSaveEdit}
-                disabled={savingEdit}
-                className="flex items-center justify-center gap-1.5 w-full rounded-xl bg-primary py-2.5 text-sm font-bold text-primary-foreground disabled:opacity-50 hover:opacity-90 transition-opacity"
+                type="button"
+                onClick={handleGeocode}
+                disabled={geocoding || !r.location?.trim()}
+                className="flex items-center gap-1 rounded-lg bg-primary/10 px-2 py-1 text-[10px] font-bold text-primary hover:bg-primary/20 disabled:opacity-50"
               >
-                <Save className="h-3.5 w-3.5" />
-                {savingEdit ? "Saving..." : "Save Changes"}
+                {geocoding ? (
+                  <div className="h-3 w-3 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                ) : (
+                  <MapPin className="h-3 w-3" />
+                )}
+                Auto-locate from "{r.location || "—"}"
               </button>
-            </>
-          )}
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-semibold text-muted-foreground mb-1">Latitude</label>
+                <input type="number" step="any" value={coordLat} onChange={e => setCoordLat(e.target.value)} placeholder="-29.0852"
+                  className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20" />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-muted-foreground mb-1">Longitude</label>
+                <input type="number" step="any" value={coordLng} onChange={e => setCoordLng(e.target.value)} placeholder="26.1596"
+                  className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20" />
+              </div>
+            </div>
+            <button
+              onClick={handleSaveCoords}
+              disabled={savingCoords}
+              className="flex items-center justify-center gap-1.5 w-full rounded-xl bg-primary py-2 text-xs font-bold text-primary-foreground disabled:opacity-50 hover:opacity-90 transition-opacity"
+            >
+              <Save className="h-3 w-3" />
+              {savingCoords ? "Saving..." : "Save Coordinates"}
+            </button>
+          </div>
+
+          {/* Owner credentials editor */}
+          <div className="border-t border-border pt-3">
+            {loadingOwner ? (
+              <div className="flex justify-center py-2">
+                <div className="h-5 w-5 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+              </div>
+            ) : !r.owner_user_id ? (
+              <p className="text-xs text-muted-foreground text-center py-2">
+                No login account linked. Add one when creating the restaurant or assign an owner first.
+              </p>
+            ) : (
+              <>
+                <h4 className="font-bold text-xs text-foreground mb-2">🔐 Edit Login Credentials</h4>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-semibold text-muted-foreground mb-1">Owner Name</label>
+                    <input value={editName} onChange={e => setEditName(e.target.value)}
+                      className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-muted-foreground mb-1">Contact</label>
+                    <input value={editContact} onChange={e => setEditContact(e.target.value)}
+                      className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-muted-foreground mb-1">New Email (leave blank to keep)</label>
+                    <input type="email" value={editEmail} onChange={e => setEditEmail(e.target.value)} placeholder="new@email.com"
+                      className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-muted-foreground mb-1">New Password (leave blank to keep)</label>
+                    <input type="password" value={editPassword} onChange={e => setEditPassword(e.target.value)} placeholder="••••••" minLength={6}
+                      className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20" />
+                  </div>
+                </div>
+                <button
+                  onClick={handleSaveEdit}
+                  disabled={savingEdit}
+                  className="mt-3 flex items-center justify-center gap-1.5 w-full rounded-xl bg-primary py-2.5 text-sm font-bold text-primary-foreground disabled:opacity-50 hover:opacity-90 transition-opacity"
+                >
+                  <Save className="h-3.5 w-3.5" />
+                  {savingEdit ? "Saving..." : "Save Credentials"}
+                </button>
+              </>
+            )}
+          </div>
         </div>
       )}
     </div>
