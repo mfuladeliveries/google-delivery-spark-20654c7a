@@ -57,27 +57,58 @@ const DriverDashboard = () => {
   const locationWatchRef = useRef<number | null>(null);
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const fallbackBeepRef = useRef<{ ctx: AudioContext; osc: OscillatorNode; lfo: OscillatorNode } | null>(null);
 
-  const playNotificationSound = useCallback(() => {
+  const stopNotificationSound = useCallback(() => {
     try {
-      // Lazy-init the Audio element (one shared instance to avoid overlap)
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.currentTime = 0;
+        audioRef.current.loop = false;
+      }
+    } catch { /* ignore */ }
+    try {
+      if (fallbackBeepRef.current) {
+        fallbackBeepRef.current.osc.stop();
+        fallbackBeepRef.current.lfo.stop();
+        fallbackBeepRef.current.ctx.close();
+        fallbackBeepRef.current = null;
+      }
+    } catch { /* ignore */ }
+  }, []);
+
+  const startNotificationSound = useCallback(() => {
+    try {
       if (!audioRef.current) {
         audioRef.current = new Audio("/sounds/new-order.mp3");
         audioRef.current.preload = "auto";
-        audioRef.current.volume = 0.9;
       }
+      audioRef.current.loop = true;
+      audioRef.current.volume = 1.0;
       audioRef.current.currentTime = 0;
       const playPromise = audioRef.current.play();
       if (playPromise && typeof playPromise.catch === "function") {
         playPromise.catch(() => {
-          // Autoplay blocked (no user gesture yet) — fall back to a synthesized beep
+          // Autoplay blocked (no user gesture yet) — fall back to a continuous synthesized ringtone
           try {
+            if (fallbackBeepRef.current) return;
             const ctx = new AudioContext();
             const osc = ctx.createOscillator();
             const gain = ctx.createGain();
             osc.connect(gain); gain.connect(ctx.destination);
-            osc.frequency.value = 660; osc.type = "triangle"; gain.gain.value = 0.4;
-            osc.start(); osc.stop(ctx.currentTime + 0.2);
+            osc.type = "triangle";
+            osc.frequency.value = 880;
+            gain.gain.value = 0.5;
+            // Pulse so it feels like a ringtone, not a flat hum
+            const lfo = ctx.createOscillator();
+            const lfoGain = ctx.createGain();
+            lfo.frequency.value = 3; // 3 Hz pulse
+            lfoGain.gain.value = 0.5;
+            lfo.connect(lfoGain);
+            lfoGain.connect(gain.gain);
+            osc.start();
+            lfo.start();
+            fallbackBeepRef.current = { ctx, osc, lfo };
           } catch { /* ignore */ }
         });
       }
