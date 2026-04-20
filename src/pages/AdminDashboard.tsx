@@ -955,8 +955,8 @@ const OrdersTable = ({ orders }: { orders: RecentOrder[] }) => (
                 broadcast: "Broadcast",
               };
               return (
-                <>
-                  <tr key={order.id} className={`border-b border-border ${i % 2 === 0 ? '' : 'bg-secondary/30'} ${showDispatch ? '!border-b-0' : ''}`}>
+                <Fragment key={order.id}>
+                  <tr className={`border-b border-border ${i % 2 === 0 ? '' : 'bg-secondary/30'} ${showDispatch ? '!border-b-0' : ''}`}>
                     <td className="px-3 py-2.5 font-bold text-foreground">#{order.order_number}</td>
                     <td className="px-3 py-2.5 text-foreground text-xs">{order.customer_name || "—"}</td>
                     <td className="px-3 py-2.5 text-muted-foreground text-xs">{order.restaurant || "—"}</td>
