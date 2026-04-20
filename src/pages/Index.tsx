@@ -11,6 +11,7 @@ import { useCart } from "@/hooks/useCart";
 import { useAuth } from "@/hooks/useAuth";
 import { menuItems, storeInfo } from "@/data/menu";
 import mfulaLogo from "@/assets/mfula-logo.png";
+import InstallNudgeBanner from "@/components/InstallNudgeBanner";
 
 interface Restaurant {
   id: string;
@@ -296,6 +297,7 @@ const Index = () => {
         onOrderPlaced={cart.clearCart} />
 
       <Footer />
+      <InstallNudgeBanner />
       <BottomNav />
     </div>);
 
