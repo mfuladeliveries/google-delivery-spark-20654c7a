@@ -137,6 +137,9 @@ const Profile = () => {
           </p>
         </div>
 
+        {/* Wallet history */}
+        <WalletHistory />
+
         {/* Profile Form */}
         <div className="rounded-2xl border border-border bg-card p-4 shadow-card space-y-3">
           <h2 className="font-bold text-sm text-foreground">Personal Details</h2>
