@@ -295,9 +295,9 @@ const DriverDashboard = () => {
     toast.success("Delivery completed! 🎉");
   };
 
-  // Available = pending minus rejected
+  // Available list = only broadcast-phase orders (targeted offers go through the modal)
   const availableOrders = useMemo(
-    () => pendingOrders.filter((o) => !rejectedIds.has(o.id)),
+    () => pendingOrders.filter((o) => o.dispatch_phase === "broadcast" && !rejectedIds.has(o.id)),
     [pendingOrders, rejectedIds]
   );
 
