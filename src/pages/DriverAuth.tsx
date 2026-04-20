@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { Truck, Mail, Lock, ArrowLeft, Eye, EyeOff } from "lucide-react";
+import { shouldNudgeInstall, markInstallNudged } from "@/lib/installRedirect";
 
 type View = "login" | "signup" | "otp" | "forgot";
 
