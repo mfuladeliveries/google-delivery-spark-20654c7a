@@ -461,6 +461,8 @@ export type Database = {
           description: string
           id: string
           is_active: boolean
+          lat: number | null
+          lng: number | null
           location: string
           logo: string
           min_order: number
@@ -475,6 +477,8 @@ export type Database = {
           description?: string
           id?: string
           is_active?: boolean
+          lat?: number | null
+          lng?: number | null
           location?: string
           logo?: string
           min_order?: number
@@ -489,6 +493,8 @@ export type Database = {
           description?: string
           id?: string
           is_active?: boolean
+          lat?: number | null
+          lng?: number | null
           location?: string
           logo?: string
           min_order?: number
