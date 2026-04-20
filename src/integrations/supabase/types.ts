@@ -245,12 +245,17 @@ export type Database = {
           delivery_code: string | null
           delivery_code_hash: string | null
           delivery_fee: number
+          dispatch_phase: string | null
+          dispatch_started_at: string | null
           driver_id: string | null
           driver_lat: number | null
           driver_lng: number | null
           driver_location_updated_at: string | null
           id: string
           items: Json
+          missed_by_driver_ids: string[] | null
+          offer_expires_at: string | null
+          offered_to_driver_id: string | null
           order_number: number
           payment_method: string
           payment_status: string
@@ -286,12 +291,17 @@ export type Database = {
           delivery_code?: string | null
           delivery_code_hash?: string | null
           delivery_fee?: number
+          dispatch_phase?: string | null
+          dispatch_started_at?: string | null
           driver_id?: string | null
           driver_lat?: number | null
           driver_lng?: number | null
           driver_location_updated_at?: string | null
           id?: string
           items?: Json
+          missed_by_driver_ids?: string[] | null
+          offer_expires_at?: string | null
+          offered_to_driver_id?: string | null
           order_number?: number
           payment_method?: string
           payment_status?: string
@@ -327,12 +337,17 @@ export type Database = {
           delivery_code?: string | null
           delivery_code_hash?: string | null
           delivery_fee?: number
+          dispatch_phase?: string | null
+          dispatch_started_at?: string | null
           driver_id?: string | null
           driver_lat?: number | null
           driver_lng?: number | null
           driver_location_updated_at?: string | null
           id?: string
           items?: Json
+          missed_by_driver_ids?: string[] | null
+          offer_expires_at?: string | null
+          offered_to_driver_id?: string | null
           order_number?: number
           payment_method?: string
           payment_status?: string
@@ -642,10 +657,14 @@ export type Database = {
         Args: { p_method: string; p_order_id: string }
         Returns: Json
       }
+      dispatch_assign_next: { Args: { p_order_id: string }; Returns: Json }
+      dispatch_tick: { Args: never; Returns: Json }
+      driver_accept_offer: { Args: { p_order_id: string }; Returns: boolean }
       driver_cancel_order: {
         Args: { p_order_id: string; p_reason?: string }
         Returns: undefined
       }
+      driver_decline_offer: { Args: { p_order_id: string }; Returns: undefined }
       driver_update_order: {
         Args: {
           p_lat?: number
