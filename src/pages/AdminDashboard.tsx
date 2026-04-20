@@ -968,6 +968,34 @@ const RestaurantsTab = ({
           </div>
 
           <div className="border-t border-border pt-3 mt-1">
+            <div className="flex items-center justify-between mb-2">
+              <h4 className="font-bold text-xs text-foreground">📍 Coordinates (Optional)</h4>
+              <button type="button" onClick={handleAutoLocate} disabled={autoLocating || !location.trim()}
+                className="flex items-center gap-1 rounded-lg bg-primary/10 px-2 py-1 text-[10px] font-bold text-primary hover:bg-primary/20 disabled:opacity-50">
+                {autoLocating ? (
+                  <div className="h-3 w-3 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                ) : (
+                  <MapPin className="h-3 w-3" />
+                )}
+                Auto-locate from location
+              </button>
+            </div>
+            <p className="text-[10px] text-muted-foreground mb-2">Leave blank to auto-geocode the location text on save, or paste exact coordinates from Google Maps.</p>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-semibold text-muted-foreground mb-1">Latitude</label>
+                <input type="number" step="any" value={manualLat} onChange={e => setManualLat(e.target.value)} placeholder="-29.0852"
+                  className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20" />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-muted-foreground mb-1">Longitude</label>
+                <input type="number" step="any" value={manualLng} onChange={e => setManualLng(e.target.value)} placeholder="26.1596"
+                  className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20" />
+              </div>
+            </div>
+          </div>
+
+          <div className="border-t border-border pt-3 mt-1">
             <h4 className="font-bold text-xs text-foreground mb-2">🔐 Restaurant Login (Optional)</h4>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
