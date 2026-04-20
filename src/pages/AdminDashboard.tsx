@@ -5,6 +5,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { Shield, TrendingUp, Users, ShoppingBag, Store, ArrowLeft, DollarSign, Truck, UserCheck, Search, UserPlus, Plus, Trash2, Pencil, X, Save } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
 import AdminEarnings from "@/components/admin/AdminEarnings";
+import AdminWithdrawals from "@/components/admin/AdminWithdrawals";
 import { toast } from "sonner";
 
 interface Stats {
@@ -90,7 +91,7 @@ const getDelayInfo = (order: { status: string; created_at: string }) => {
 const AdminDashboard = () => {
   const { user, role, loading: authLoading } = useAuth();
   const navigate = useNavigate();
-  const [tab, setTab] = useState<"overview" | "orders" | "earnings" | "users" | "restaurants" | "drivers">("overview");
+  const [tab, setTab] = useState<"overview" | "orders" | "earnings" | "withdrawals" | "users" | "restaurants" | "drivers">("overview");
   const [stats, setStats] = useState<Stats>({
     totalOrders: 0, totalRevenue: 0, totalRestaurants: 0,
     pendingOrders: 0, deliveredToday: 0, totalDrivers: 0,
@@ -219,7 +220,7 @@ const AdminDashboard = () => {
     { label: "Today", value: stats.deliveredToday, icon: UserCheck, color: "bg-primary/10 text-primary" },
   ];
 
-  const tabs = ["overview", "orders", "earnings", "users", "restaurants", "drivers"] as const;
+  const tabs = ["overview", "orders", "earnings", "withdrawals", "users", "restaurants", "drivers"] as const;
 
   return (
     <div className="min-h-screen bg-background">
@@ -316,6 +317,9 @@ const AdminDashboard = () => {
 
         {/* Earnings Tab */}
         {tab === "earnings" && <AdminEarnings drivers={drivers} />}
+
+        {/* Withdrawals Tab */}
+        {tab === "withdrawals" && <AdminWithdrawals drivers={drivers} />}
 
         {/* Users Tab */}
         {tab === "users" && (
