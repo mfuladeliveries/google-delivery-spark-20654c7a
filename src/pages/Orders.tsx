@@ -270,11 +270,76 @@ const Orders = () => {
                       </p>
                     )}
 
+                    {/* Cancellation reason */}
+                    {isCancelled && order.cancel_reason && (
+                      <p className="mt-2 rounded-xl border border-destructive/20 bg-destructive/5 px-3 py-2 text-xs text-destructive">
+                        ❌ Reason: {order.cancel_reason}
+                      </p>
+                    )}
+
+                    {/* Refund choice card for online-paid cancelled orders */}
+                    {isCancelled && order.payment_method === "online" && order.refund_status === "pending" && (
+                      <div className="mt-3 rounded-xl border border-primary/30 bg-primary/5 p-3">
+                        <p className="text-sm font-bold text-foreground">
+                          💰 Choose how to get your refund
+                        </p>
+                        <p className="mt-0.5 text-xs text-muted-foreground">
+                          Refundable: <span className="font-bold text-primary">{storeInfo.currency}{Number(order.refund_amount || order.total).toFixed(2)}</span>
+                        </p>
+                        <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
+                          <button
+                            onClick={() => handleChooseRefund(order.id, order.order_number, "credits")}
+                            className="flex items-center justify-center gap-1.5 rounded-xl bg-primary px-3 py-2.5 text-xs font-bold text-primary-foreground hover:opacity-90"
+                          >
+                            <Wallet className="h-3.5 w-3.5" />
+                            Add to wallet (instant)
+                          </button>
+                          <button
+                            onClick={() => handleChooseRefund(order.id, order.order_number, "bank")}
+                            className="flex items-center justify-center gap-1.5 rounded-xl border border-border bg-card px-3 py-2.5 text-xs font-bold text-foreground hover:bg-secondary"
+                          >
+                            <Banknote className="h-3.5 w-3.5" />
+                            Refund to bank
+                          </button>
+                        </div>
+                        <p className="mt-2 text-[10px] text-muted-foreground">
+                          ⚠️ Bank refunds take <span className="font-semibold">3–5 business days</span> to reflect. Wallet credits are instant.
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Refund status indicator */}
+                    {isCancelled && order.refund_status === "credited" && (
+                      <div className="mt-3 flex items-center gap-2 rounded-xl border border-green-200 bg-green-50 px-3 py-2 text-xs text-green-700">
+                        <Wallet className="h-4 w-4" />
+                        <span className="font-semibold">
+                          R{Number(order.refund_amount || 0).toFixed(2)} credited to your wallet
+                        </span>
+                      </div>
+                    )}
+                    {isCancelled && order.refund_status === "bank_pending" && (
+                      <div className="mt-3 flex items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700">
+                        <Clock className="h-4 w-4" />
+                        <span className="font-semibold">
+                          Bank refund of R{Number(order.refund_amount || 0).toFixed(2)} pending — 3–5 business days
+                        </span>
+                      </div>
+                    )}
+                    {isCancelled && order.refund_status === "bank_paid" && (
+                      <div className="mt-3 flex items-center gap-2 rounded-xl border border-green-200 bg-green-50 px-3 py-2 text-xs text-green-700">
+                        <CheckCircle className="h-4 w-4" />
+                        <span className="font-semibold">
+                          Bank refund of R{Number(order.refund_amount || 0).toFixed(2)} sent
+                        </span>
+                      </div>
+                    )}
+
                     <div className="mt-3 flex justify-between border-t border-border pt-2 text-sm font-bold text-foreground">
                       <span>Total {order.tip > 0 && `(incl. R${order.tip} tip)`}</span>
                       <span className="text-primary">{storeInfo.currency}{(order.total + 15).toFixed(2)}</span>
                     </div>
                   </div>
+
                 </div>
               );
             })}
