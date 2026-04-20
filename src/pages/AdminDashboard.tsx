@@ -1025,7 +1025,7 @@ const OrdersTable = ({ orders }: { orders: RecentOrder[] }) => (
                       </td>
                     </tr>
                   )}
-                </>
+                </Fragment>
               );
             })
           )}
