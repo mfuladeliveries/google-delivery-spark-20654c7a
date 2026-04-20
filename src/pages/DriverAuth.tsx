@@ -29,6 +29,12 @@ const DriverAuth = () => {
 
     const hasAccess = roles.includes("driver") || roles.includes("admin");
     if (hasAccess) {
+      const installPath = shouldNudgeInstall(roles);
+      if (installPath) {
+        markInstallNudged();
+        navigate(installPath, { replace: true });
+        return;
+      }
       navigate("/driver", { replace: true });
     } else {
       navigate("/", { replace: true });
