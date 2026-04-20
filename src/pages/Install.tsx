@@ -1,24 +1,64 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { ArrowLeft, Download, Share, Plus } from "lucide-react";
-import { storeInfo } from "@/data/menu";
+import { ArrowLeft, Download, Share, Plus, Check, ShoppingBag, Truck, Shield } from "lucide-react";
+import { setPwaVariant, type PwaVariant } from "@/lib/pwaVariant";
+import { toast } from "sonner";
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
   userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
 }
 
+interface RoleApp {
+  variant: PwaVariant;
+  name: string;
+  tagline: string;
+  icon: typeof ShoppingBag;
+  iconImg: string;
+  bgClass: string;
+  ringClass: string;
+}
+
+const APPS: RoleApp[] = [
+  {
+    variant: "customer",
+    name: "Mfula Customer",
+    tagline: "Order food, track delivery",
+    icon: ShoppingBag,
+    iconImg: "/pwa-customer-512.png",
+    bgClass: "bg-primary/10",
+    ringClass: "ring-primary/30",
+  },
+  {
+    variant: "driver",
+    name: "Mfula Driver",
+    tagline: "Accept & deliver orders",
+    icon: Truck,
+    iconImg: "/pwa-driver-512.png",
+    bgClass: "bg-primary/10",
+    ringClass: "ring-primary/30",
+  },
+  {
+    variant: "admin",
+    name: "Mfula Admin",
+    tagline: "Manage orders, users, drivers",
+    icon: Shield,
+    iconImg: "/pwa-admin-512.png",
+    bgClass: "bg-foreground/5",
+    ringClass: "ring-foreground/20",
+  },
+];
+
 const Install = () => {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [isInstalled, setIsInstalled] = useState(false);
   const [isIOS, setIsIOS] = useState(false);
+  const [installingVariant, setInstallingVariant] = useState<PwaVariant | null>(null);
 
   useEffect(() => {
-    // Detect iOS
     const ua = navigator.userAgent;
     setIsIOS(/iPad|iPhone|iPod/.test(ua) && !(window as any).MSStream);
 
-    // Check if already installed
     if (window.matchMedia("(display-mode: standalone)").matches) {
       setIsInstalled(true);
     }
@@ -29,15 +69,37 @@ const Install = () => {
     };
     window.addEventListener("beforeinstallprompt", handler);
 
-    return () => window.removeEventListener("beforeinstallprompt", handler);
+    const installedHandler = () => {
+      setIsInstalled(true);
+      toast.success("App installed to your home screen!");
+    };
+    window.addEventListener("appinstalled", installedHandler);
+
+    return () => {
+      window.removeEventListener("beforeinstallprompt", handler);
+      window.removeEventListener("appinstalled", installedHandler);
+    };
   }, []);
 
-  const handleInstall = async () => {
-    if (!deferredPrompt) return;
-    deferredPrompt.prompt();
-    const { outcome } = await deferredPrompt.userChoice;
-    if (outcome === "accepted") setIsInstalled(true);
-    setDeferredPrompt(null);
+  const handleInstall = async (variant: PwaVariant) => {
+    setInstallingVariant(variant);
+    setPwaVariant(variant);
+
+    if (!deferredPrompt) {
+      toast.info("Use your browser menu → 'Add to Home Screen' to install");
+      setInstallingVariant(null);
+      return;
+    }
+
+    try {
+      await deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      if (outcome === "accepted") setIsInstalled(true);
+      setDeferredPrompt(null);
+    } catch {
+      // user dismissed
+    }
+    setInstallingVariant(null);
   };
 
   return (
@@ -47,150 +109,130 @@ const Install = () => {
           <Link to="/" className="rounded-lg p-2 text-muted-foreground hover:bg-secondary">
             <ArrowLeft className="h-5 w-5" />
           </Link>
-          <h1 className="font-bold text-base text-foreground">Install App</h1>
+          <h1 className="font-bold text-base text-foreground">Install Mfula App</h1>
         </div>
       </header>
 
-      <main className="mx-auto max-w-md px-4 py-8">
-        <div className="text-center mb-8">
-          <img
-            src={storeInfo.logo}
-            alt={storeInfo.name}
-            className="mx-auto h-20 w-20 rounded-2xl object-cover ring-2 ring-primary/30 shadow-orange"
-          />
-          <h2 className="mt-4 font-display text-2xl font-bold text-foreground">{storeInfo.name}</h2>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Install our app for faster ordering & notifications
+      <main className="mx-auto max-w-md px-4 py-6">
+        <div className="text-center mb-6">
+          <h2 className="font-display text-xl font-bold text-foreground">Choose your app</h2>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Mfula has three apps. Pick the one for your role.
           </p>
         </div>
 
-        {isInstalled ? (
-          <div className="rounded-2xl border border-border bg-card p-6 text-center">
-            <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
-              <Download className="h-6 w-6 text-primary" />
-            </div>
-            <h3 className="font-bold text-foreground">Already Installed!</h3>
-            <p className="mt-1 text-sm text-muted-foreground">
-              You're all set. Open the app from your home screen.
-            </p>
-          </div>
-        ) : deferredPrompt ? (
-          <div className="space-y-4">
-            <button
-              onClick={handleInstall}
-              className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary py-3.5 font-display font-bold text-primary-foreground transition-transform hover:scale-[1.02] active:scale-[0.98]"
-            >
-              <Download className="h-5 w-5" />
-              Install App
-            </button>
-            <p className="text-center text-xs text-muted-foreground">
-              Installs instantly. No app store needed.
-            </p>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {isIOS ? (
-              <div className="rounded-2xl border border-border bg-card p-5 space-y-4">
-                <h3 className="font-bold text-foreground text-center">Install on iPhone</h3>
-                <div className="space-y-3">
-                  <div className="flex items-start gap-3">
-                    <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">1</div>
-                    <p className="text-sm text-muted-foreground">
-                      Tap the <Share className="inline h-4 w-4 text-primary" /> <strong>Share</strong> button in Safari's toolbar
-                    </p>
-                  </div>
-                  <div className="flex items-start gap-3">
-                    <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">2</div>
-                    <p className="text-sm text-muted-foreground">
-                      Scroll down and tap <Plus className="inline h-4 w-4 text-primary" /> <strong>Add to Home Screen</strong>
-                    </p>
-                  </div>
-                  <div className="flex items-start gap-3">
-                    <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">3</div>
-                    <p className="text-sm text-muted-foreground">
-                      Tap <strong>Add</strong> to confirm
-                    </p>
+        {/* Three role apps */}
+        <div className="space-y-3">
+          {APPS.map((app) => {
+            const isInstalling = installingVariant === app.variant;
+            return (
+              <div
+                key={app.variant}
+                className="rounded-2xl border border-border bg-card p-4 shadow-card"
+              >
+                <div className="flex items-center gap-3">
+                  <img
+                    src={app.iconImg}
+                    alt={app.name}
+                    width={64}
+                    height={64}
+                    loading="lazy"
+                    className={`h-16 w-16 shrink-0 rounded-2xl object-cover ring-2 ${app.ringClass}`}
+                  />
+                  <div className="min-w-0 flex-1">
+                    <h3 className="font-bold text-foreground text-sm truncate">{app.name}</h3>
+                    <p className="text-xs text-muted-foreground truncate">{app.tagline}</p>
                   </div>
                 </div>
+
+                <button
+                  onClick={() => handleInstall(app.variant)}
+                  disabled={isInstalling || (isInstalled && !deferredPrompt)}
+                  className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-primary py-2.5 font-display text-sm font-bold text-primary-foreground transition-transform hover:scale-[1.01] active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed"
+                >
+                  {isInstalled && !deferredPrompt ? (
+                    <>
+                      <Check className="h-4 w-4" /> Already Installed
+                    </>
+                  ) : (
+                    <>
+                      <Download className="h-4 w-4" />
+                      {isInstalling ? "Installing…" : `Install ${app.name.split(" ")[1]}`}
+                    </>
+                  )}
+                </button>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Manual install instructions for iOS / when prompt unavailable */}
+        {(!deferredPrompt || isIOS) && !isInstalled && (
+          <div className="mt-6 rounded-2xl border border-border bg-card p-4 space-y-3">
+            <h3 className="font-bold text-sm text-foreground text-center">
+              {isIOS ? "Install on iPhone" : "Manual install"}
+            </h3>
+            {isIOS ? (
+              <div className="space-y-2.5">
+                <div className="flex items-start gap-3">
+                  <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/10 text-[11px] font-bold text-primary">1</div>
+                  <p className="text-xs text-muted-foreground">
+                    Tap the <Share className="inline h-3.5 w-3.5 text-primary" /> <strong>Share</strong> button in Safari
+                  </p>
+                </div>
+                <div className="flex items-start gap-3">
+                  <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/10 text-[11px] font-bold text-primary">2</div>
+                  <p className="text-xs text-muted-foreground">
+                    Scroll down and tap <Plus className="inline h-3.5 w-3.5 text-primary" /> <strong>Add to Home Screen</strong>
+                  </p>
+                </div>
+                <div className="flex items-start gap-3">
+                  <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/10 text-[11px] font-bold text-primary">3</div>
+                  <p className="text-xs text-muted-foreground">
+                    Tap <strong>Add</strong> to confirm. Tap your app variant above first to brand the icon.
+                  </p>
+                </div>
+                <p className="mt-2 text-[10px] text-muted-foreground italic">
+                  iOS doesn't show our install button. Use Safari's Share menu after picking your app variant above.
+                </p>
               </div>
             ) : (
-              <div className="rounded-2xl border border-border bg-card p-5 space-y-4">
-                <h3 className="font-bold text-foreground text-center">Install on Android</h3>
-                <div className="space-y-3">
-                  <div className="flex items-start gap-3">
-                    <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">1</div>
-                    <p className="text-sm text-muted-foreground">
-                      Tap the <strong>⋮ menu</strong> in your browser
-                    </p>
-                  </div>
-                  <div className="flex items-start gap-3">
-                    <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">2</div>
-                    <p className="text-sm text-muted-foreground">
-                      Tap <strong>Add to Home Screen</strong> or <strong>Install App</strong>
-                    </p>
-                  </div>
-                  <div className="flex items-start gap-3">
-                    <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">3</div>
-                    <p className="text-sm text-muted-foreground">
-                      Tap <strong>Install</strong> to confirm
-                    </p>
-                  </div>
+              <div className="space-y-2.5">
+                <div className="flex items-start gap-3">
+                  <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/10 text-[11px] font-bold text-primary">1</div>
+                  <p className="text-xs text-muted-foreground">Tap the <strong>⋮ menu</strong> in Chrome</p>
+                </div>
+                <div className="flex items-start gap-3">
+                  <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/10 text-[11px] font-bold text-primary">2</div>
+                  <p className="text-xs text-muted-foreground">Tap <strong>Install app</strong> or <strong>Add to Home Screen</strong></p>
                 </div>
               </div>
             )}
           </div>
         )}
 
-        <div className="mt-8 space-y-3">
-          <h3 className="font-bold text-sm text-foreground text-center">Why install?</h3>
-          <div className="grid grid-cols-2 gap-3">
+        {/* Why install */}
+        <div className="mt-6 space-y-3">
+          <h3 className="font-bold text-xs text-foreground text-center uppercase tracking-wide">Why install?</h3>
+          <div className="grid grid-cols-2 gap-2.5">
             {[
               { emoji: "⚡", title: "Faster", desc: "Loads instantly" },
               { emoji: "📱", title: "Home Screen", desc: "One-tap access" },
-              { emoji: "🔔", title: "Notifications", desc: "Order updates" },
-              { emoji: "📶", title: "Offline", desc: "Browse menu offline" },
+              { emoji: "🔔", title: "Notifications", desc: "Order alerts" },
+              { emoji: "📶", title: "Offline", desc: "Works offline" },
             ].map((item) => (
-              <div key={item.title} className="rounded-xl border border-border bg-card p-3 text-center">
-                <span className="text-2xl">{item.emoji}</span>
-                <p className="mt-1 text-xs font-bold text-foreground">{item.title}</p>
+              <div key={item.title} className="rounded-xl border border-border bg-card p-2.5 text-center">
+                <span className="text-xl">{item.emoji}</span>
+                <p className="mt-0.5 text-[11px] font-bold text-foreground">{item.title}</p>
                 <p className="text-[10px] text-muted-foreground">{item.desc}</p>
               </div>
             ))}
           </div>
         </div>
 
-        <div className="mt-8 space-y-3">
-          <h3 className="font-bold text-sm text-foreground text-center">Install for your role</h3>
-          <div className="space-y-3">
-            <Link
-              to="/driver"
-              className="flex items-center gap-3 rounded-2xl border border-border bg-card p-4 transition-colors hover:bg-secondary"
-            >
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10">
-                <span className="text-xl">🚗</span>
-              </div>
-              <div>
-                <p className="font-bold text-sm text-foreground">Driver App</p>
-                <p className="text-xs text-muted-foreground">Accept & deliver orders from customers</p>
-              </div>
-            </Link>
-            <Link
-              to="/restaurant/dashboard"
-              className="flex items-center gap-3 rounded-2xl border border-border bg-card p-4 transition-colors hover:bg-secondary"
-            >
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10">
-                <span className="text-xl">🍽️</span>
-              </div>
-              <div>
-                <p className="font-bold text-sm text-foreground">Restaurant App</p>
-                <p className="text-xs text-muted-foreground">Manage orders & menu from your kitchen</p>
-              </div>
-            </Link>
-          </div>
-          <p className="text-center text-[10px] text-muted-foreground">
-            Install the app first, then tap your role above to go to your dashboard.
-          </p>
-        </div>
+        <p className="mt-6 text-center text-[10px] text-muted-foreground px-4">
+          Each app installs separately. After installing the Driver or Admin app, it will open on your dashboard. The Customer app opens on the food menu.
+        </p>
       </main>
     </div>
   );
