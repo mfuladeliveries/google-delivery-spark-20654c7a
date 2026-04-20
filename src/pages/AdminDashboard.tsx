@@ -67,6 +67,8 @@ interface DriverRecord {
   is_online: boolean;
   total_earnings: number;
   total_deliveries: number;
+  vehicle_type?: string;
+  license_plate?: string;
   profile?: { full_name: string; contact_number: string };
 }
 
