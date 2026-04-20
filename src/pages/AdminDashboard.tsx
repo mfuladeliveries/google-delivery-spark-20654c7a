@@ -768,6 +768,31 @@ const RestaurantCard = ({
   const [savingEdit, setSavingEdit] = useState(false);
   const [ownerInfo, setOwnerInfo] = useState<{ email: string; full_name: string; contact_number: string } | null>(null);
   const [loadingOwner, setLoadingOwner] = useState(false);
+  const [geocoding, setGeocoding] = useState(false);
+
+  const hasCoords = r.lat !== null && r.lng !== null;
+
+  const handleGeocode = async () => {
+    if (!r.location?.trim()) {
+      toast.error("This restaurant has no location text. Edit and add a location first.");
+      return;
+    }
+    setGeocoding(true);
+    try {
+      const coords = await geocodeAddress(r.location.trim());
+      if (!coords) {
+        toast.error(`Could not locate "${r.location}". Try a more specific address.`);
+        return;
+      }
+      const { error } = await supabase.from("restaurants").update({ lat: coords.lat, lng: coords.lng }).eq("id", r.id);
+      if (error) throw error;
+      toast.success(`📍 ${r.name} located: ${coords.lat.toFixed(4)}, ${coords.lng.toFixed(4)}`);
+      onRestaurantChanged();
+    } catch (err: any) {
+      toast.error(err.message || "Failed to geocode");
+    }
+    setGeocoding(false);
+  };
 
   const loadOwnerInfo = async () => {
     if (!r.owner_user_id) {
