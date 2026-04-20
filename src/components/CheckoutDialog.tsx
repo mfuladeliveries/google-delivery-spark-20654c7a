@@ -413,6 +413,12 @@ const CheckoutDialog = ({
                 <span>{storeInfo.currency}{actualTip.toFixed(2)}</span>
               </div>
             )}
+            {creditsToApply > 0 && (
+              <div className="flex justify-between text-primary">
+                <span>Wallet credit</span>
+                <span>−{storeInfo.currency}{creditsToApply.toFixed(2)}</span>
+              </div>
+            )}
             <div className="flex justify-between border-t border-border pt-2 text-lg font-bold text-foreground">
               <span>Total</span>
               <span className="text-primary">{storeInfo.currency}{total.toFixed(2)}</span>
