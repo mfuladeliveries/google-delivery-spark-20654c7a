@@ -1067,6 +1067,32 @@ const RestaurantCard = ({
   const [ownerInfo, setOwnerInfo] = useState<{ email: string; full_name: string; contact_number: string } | null>(null);
   const [loadingOwner, setLoadingOwner] = useState(false);
   const [geocoding, setGeocoding] = useState(false);
+  const [coordLat, setCoordLat] = useState("");
+  const [coordLng, setCoordLng] = useState("");
+  const [savingCoords, setSavingCoords] = useState(false);
+
+  const handleSaveCoords = async () => {
+    const lat = parseFloat(coordLat);
+    const lng = parseFloat(coordLng);
+    if (Number.isNaN(lat) || Number.isNaN(lng)) {
+      toast.error("Enter valid numeric coordinates");
+      return;
+    }
+    if (lat < -90 || lat > 90 || lng < -180 || lng > 180) {
+      toast.error("Out of range (lat -90..90, lng -180..180)");
+      return;
+    }
+    setSavingCoords(true);
+    try {
+      const { error } = await supabase.from("restaurants").update({ lat, lng }).eq("id", r.id);
+      if (error) throw error;
+      toast.success(`📍 ${r.name} coordinates saved`);
+      onRestaurantChanged();
+    } catch (err: any) {
+      toast.error(err.message || "Failed to save coordinates");
+    }
+    setSavingCoords(false);
+  };
 
   const hasCoords = r.lat !== null && r.lng !== null;
 
