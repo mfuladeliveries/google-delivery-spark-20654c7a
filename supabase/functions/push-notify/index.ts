@@ -86,7 +86,7 @@ Deno.serve(async (req) => {
     webpush.setVapidDetails("mailto:noreply@mfula.app", publicKey, privateKey);
 
     const event = await req.json();
-    const { order_number, status, restaurant, total, user_id, driver_id, restaurant_id, old_status, reason } = event;
+    const { order_number, status, restaurant, total, user_id, driver_id, restaurant_id, old_status, reason, refund_amount } = event;
 
     const emoji = statusEmojis[status] || "📋";
     const label = statusLabels[status] || status;
@@ -94,6 +94,8 @@ Deno.serve(async (req) => {
     const isDriverCancelUnavailable = status === "cancelled" && reason === "item_unavailable";
     // Generic cancel-with-reason
     const isCancelWithReason = status === "cancelled" && reason && !isDriverCancelUnavailable;
+    // Bank refund paid notification
+    const isBankRefundPaid = status === "bank_refund_paid";
 
     // Determine who to notify
     const targetUserIds: string[] = [];
