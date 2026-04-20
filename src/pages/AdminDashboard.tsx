@@ -586,6 +586,12 @@ const RestaurantsTab = ({
     if (!name.trim()) { toast.error("Restaurant name is required"); return; }
     setSaving(true);
     try {
+      // Geocode location text → lat/lng (best-effort; falls back to null on miss)
+      let coords: { lat: number; lng: number } | null = null;
+      if (location.trim()) {
+        coords = await geocodeAddress(location.trim());
+      }
+
       // Create restaurant first
       const { data: newRestaurant, error } = await supabase.from("restaurants").insert({
         name: name.trim(),
@@ -594,6 +600,8 @@ const RestaurantsTab = ({
         description: description.trim(),
         min_order: Number(minOrder) || 0,
         owner_user_id: null,
+        lat: coords?.lat ?? null,
+        lng: coords?.lng ?? null,
       }).select("id").single();
       if (error) throw error;
 
