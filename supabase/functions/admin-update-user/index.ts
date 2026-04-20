@@ -28,7 +28,12 @@ Deno.serve(async (req) => {
     const { data: isAdmin } = await adminClient.rpc("has_role", { _user_id: caller.id, _role: "admin" });
     if (!isAdmin) throw new Error("Not authorized");
 
-    const { user_id, email, password, full_name, contact_number } = await req.json();
+    const {
+      user_id, email, password, full_name, contact_number,
+      vehicle_type, license_plate,
+      bank_name, bank_account_holder, bank_account_number,
+      bank_branch_code, bank_account_type,
+    } = await req.json();
 
     if (!user_id) throw new Error("Missing user_id");
 
@@ -49,6 +54,27 @@ Deno.serve(async (req) => {
 
     if (Object.keys(profileUpdate).length > 0) {
       await adminClient.from("profiles").update(profileUpdate).eq("user_id", user_id);
+    }
+
+    // Update driver_profiles if any driver field provided
+    const driverUpdate: Record<string, any> = {};
+    if (vehicle_type !== undefined) driverUpdate.vehicle_type = vehicle_type;
+    if (license_plate !== undefined) driverUpdate.license_plate = license_plate;
+    if (bank_name !== undefined) driverUpdate.bank_name = bank_name;
+    if (bank_account_holder !== undefined) driverUpdate.bank_account_holder = bank_account_holder;
+    if (bank_account_number !== undefined) driverUpdate.bank_account_number = bank_account_number;
+    if (bank_branch_code !== undefined) driverUpdate.bank_branch_code = bank_branch_code;
+    if (bank_account_type !== undefined) driverUpdate.bank_account_type = bank_account_type;
+
+    if (Object.keys(driverUpdate).length > 0) {
+      // Ensure user is a driver before touching driver_profiles
+      const { data: isDriver } = await adminClient.rpc("has_role", { _user_id: user_id, _role: "driver" });
+      if (isDriver) {
+        await adminClient.from("driver_profiles").upsert(
+          { user_id, ...driverUpdate },
+          { onConflict: "user_id" }
+        );
+      }
     }
 
     return new Response(JSON.stringify({ success: true }), {
