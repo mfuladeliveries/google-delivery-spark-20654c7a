@@ -216,8 +216,13 @@ const RestaurantDashboard = () => {
     const oldStatus = order?.status;
     await supabase.from("orders").update({ status }).eq("id", orderId);
     setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status } : o));
-    
-    // Send push notification
+
+    // When restaurant marks an order ready, start the targeted dispatch chain
+    if (status === "ready" && oldStatus !== "ready") {
+      void supabase.rpc("dispatch_assign_next", { p_order_id: orderId }).then(() => {}, () => {});
+    }
+
+    // Send push notification (customer-facing status update)
     if (order) {
       sendPushNotification({
         order_id: orderId,

@@ -169,20 +169,10 @@ const CheckoutDialog = ({
         localStorage.setItem("delivery_pins", JSON.stringify(pins));
       }
 
-      // Orders auto-accept to "ready" — notify online drivers immediately
-      supabase.functions.invoke("push-notify", {
-        body: {
-          order_id: orderId,
-          order_number: orderNum,
-          status: "ready",
-          restaurant: restaurants[0] || "",
-          total: orderResult?.total,
-          user_id: user.id,
-          driver_id: null,
-          restaurant_id: null,
-          old_status: "pending",
-        },
-      }).catch(() => {}); // fire and forget
+      // Orders auto-accept to "ready" — start the targeted dispatch chain
+      if (orderId) {
+        void supabase.rpc("dispatch_assign_next", { p_order_id: orderId }).then(() => {}, () => {});
+      }
 
       toast.success("Your order has been placed successfully! 🎉", {
         description: `Order #${orderNum} • Delivery PIN: ${deliveryCode}. We'll notify you as your order progresses.`,

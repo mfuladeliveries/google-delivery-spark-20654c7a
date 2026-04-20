@@ -25,6 +25,9 @@ interface Order {
   restaurant: string;
   created_at: string;
   delivery_fee: number;
+  offer_expires_at?: string | null;
+  offered_to_driver_id?: string | null;
+  dispatch_phase?: string | null;
 }
 
 interface DriverProfile {
@@ -93,16 +96,30 @@ const DriverDashboard = () => {
     return () => { supabase.removeChannel(channel); };
   }, [user]);
 
-  // Pop modal when a new pending order appears (not rejected, no active offer, and driver is online)
+  // Pop modal ONLY for orders explicitly offered to this driver
   useEffect(() => {
-    if (!driverProfile?.is_online) return;
+    if (!driverProfile?.is_online || !user) return;
     if (activeOffer) return;
-    const next = pendingOrders.find((o) => !rejectedIds.has(o.id));
-    if (next) {
-      setActiveOffer(next);
+    const targeted = pendingOrders.find(
+      (o) => o.offered_to_driver_id === user.id && o.offer_expires_at && new Date(o.offer_expires_at).getTime() > Date.now()
+    );
+    if (targeted) {
+      setActiveOffer(targeted);
       playNotificationSound();
+      try {
+        if ("vibrate" in navigator) navigator.vibrate([400, 100, 400, 100, 400]);
+      } catch { /* ignore */ }
     }
-  }, [pendingOrders, rejectedIds, driverProfile?.is_online, activeOffer, playNotificationSound]);
+  }, [pendingOrders, driverProfile?.is_online, activeOffer, playNotificationSound, user]);
+
+  // Auto-dismiss the modal once the offer expires (so the chain can advance)
+  useEffect(() => {
+    if (!activeOffer?.offer_expires_at) return;
+    const remaining = new Date(activeOffer.offer_expires_at).getTime() - Date.now();
+    if (remaining <= 0) { setActiveOffer(null); return; }
+    const timer = setTimeout(() => setActiveOffer(null), remaining);
+    return () => clearTimeout(timer);
+  }, [activeOffer?.offer_expires_at, activeOffer?.id]);
 
   // GPS tracking when online
   useEffect(() => {
@@ -155,7 +172,14 @@ const DriverDashboard = () => {
     // Hide anything older than 12 hours — auto-expired
     const cutoff = new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString();
     const [{ data: pending }, { data: mine }] = await Promise.all([
-      supabase.from("driver_job_board" as any).select("id, order_number, restaurant, customer_address, total, delivery_fee, created_at, items").gte("created_at", cutoff).order("created_at"),
+      // Pull orders visible to me (RLS: targeted offer to me OR broadcast phase)
+      supabase
+        .from("orders")
+        .select("id, order_number, restaurant, customer_address, total, delivery_fee, created_at, items, offer_expires_at, offered_to_driver_id, dispatch_phase")
+        .eq("status", "ready")
+        .is("driver_id", null)
+        .gte("created_at", cutoff)
+        .order("created_at"),
       supabase.from("orders").select("*").eq("driver_id", user!.id).in("status", ["driver_assigned", "picking_up", "arrived_at_restaurant", "out_for_delivery"]).gte("created_at", cutoff).order("created_at"),
     ]);
     if (pending) setPendingOrders((pending as any[]).map((o: any) => ({ ...o, items: (o.items as any[]) || [], customer_name: "", customer_contact: "", status: "ready" })));
@@ -196,14 +220,18 @@ const DriverDashboard = () => {
       pendingOrders.find((o) => o.id === orderId);
     if (!order) return;
     setAcceptingId(orderId);
-    const { data, error } = await supabase.rpc("claim_order", { p_order_id: orderId });
+
+    // Decide which RPC: targeted offer to me → driver_accept_offer, broadcast → claim_order
+    const isTargetedToMe = order.offered_to_driver_id === user!.id;
+    const rpcName = isTargetedToMe ? "driver_accept_offer" : "claim_order";
+    const { data, error } = await supabase.rpc(rpcName, { p_order_id: orderId });
     if (error) {
       toast.error(error.message || "Failed to accept");
       setAcceptingId(null);
       return;
     }
     if (data === false) {
-      toast.error("Order already taken by another driver");
+      toast.error(isTargetedToMe ? "Offer expired — too late!" : "Order already taken by another driver");
       if (activeOffer?.id === orderId) setActiveOffer(null);
       await fetchOrders();
       setAcceptingId(null);
@@ -228,15 +256,30 @@ const DriverDashboard = () => {
 
   const handleReject = async (orderId: string) => {
     setRejectingId(orderId);
-    const { error } = await supabase
-      .from("driver_rejected_orders")
-      .insert({ driver_id: user!.id, order_id: orderId });
-    if (error && !error.message.includes("duplicate")) {
-      toast.error("Failed to reject");
-      setRejectingId(null);
-      return;
+    const order = activeOffer?.id === orderId ? activeOffer : pendingOrders.find((o) => o.id === orderId);
+    const isTargetedToMe = order?.offered_to_driver_id === user!.id;
+
+    if (isTargetedToMe) {
+      // Targeted decline: advances chain immediately to next driver
+      const { error } = await supabase.rpc("driver_decline_offer", { p_order_id: orderId });
+      if (error) {
+        toast.error(error.message || "Failed to decline");
+        setRejectingId(null);
+        return;
+      }
+      toast.info("Offer declined — passed to next driver");
+    } else {
+      // Broadcast decline: hide locally only (don't affect other drivers)
+      const { error } = await supabase
+        .from("driver_rejected_orders")
+        .insert({ driver_id: user!.id, order_id: orderId });
+      if (error && !error.message.includes("duplicate")) {
+        toast.error("Failed to decline");
+        setRejectingId(null);
+        return;
+      }
+      setRejectedIds((prev) => new Set(prev).add(orderId));
     }
-    setRejectedIds((prev) => new Set(prev).add(orderId));
     if (activeOffer?.id === orderId) setActiveOffer(null);
     setRejectingId(null);
   };
@@ -252,9 +295,9 @@ const DriverDashboard = () => {
     toast.success("Delivery completed! 🎉");
   };
 
-  // Available = pending minus rejected
+  // Available list = only broadcast-phase orders (targeted offers go through the modal)
   const availableOrders = useMemo(
-    () => pendingOrders.filter((o) => !rejectedIds.has(o.id)),
+    () => pendingOrders.filter((o) => o.dispatch_phase === "broadcast" && !rejectedIds.has(o.id)),
     [pendingOrders, rejectedIds]
   );
 
