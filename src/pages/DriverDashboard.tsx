@@ -155,7 +155,7 @@ const DriverDashboard = () => {
     const cutoff = new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString();
     const [{ data: pending }, { data: mine }] = await Promise.all([
       supabase.from("driver_job_board" as any).select("id, order_number, restaurant, customer_address, total, delivery_fee, created_at, items").gte("created_at", cutoff).order("created_at"),
-      supabase.from("orders").select("*").eq("driver_id", user!.id).in("status", ["driver_assigned", "picking_up", "out_for_delivery"]).gte("created_at", cutoff).order("created_at"),
+      supabase.from("orders").select("*").eq("driver_id", user!.id).in("status", ["driver_assigned", "picking_up", "arrived_at_restaurant", "out_for_delivery"]).gte("created_at", cutoff).order("created_at"),
     ]);
     if (pending) setPendingOrders((pending as any[]).map((o: any) => ({ ...o, items: (o.items as any[]) || [], customer_name: "", customer_contact: "", status: "ready" })));
     if (mine) setMyOrders(mine.map((o) => ({ ...o, items: (o.items as any[]) || [] })));
