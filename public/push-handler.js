@@ -11,9 +11,11 @@ self.addEventListener("push", (event) => {
         body: body || "",
         icon: icon || "/pwa-192x192.png",
         badge: badge || "/favicon.ico",
-        vibrate: [200, 100, 200],
+        vibrate: [400, 200, 400, 200, 400, 200, 400],
         tag: `order-${notifData?.order_number || "general"}`,
         renotify: true,
+        requireInteraction: true,
+        silent: false,
         data: notifData,
       })
     );

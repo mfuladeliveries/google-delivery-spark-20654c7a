@@ -121,6 +121,29 @@ const DriverDashboard = () => {
     return () => clearTimeout(timer);
   }, [activeOffer?.offer_expires_at, activeOffer?.id]);
 
+  // Repeat sound + vibration every 3 minutes while an offer is active and unaccepted
+  useEffect(() => {
+    if (!activeOffer) return;
+    const REPEAT_MS = 3 * 60 * 1000; // 3 minutes
+    const interval = setInterval(() => {
+      playNotificationSound();
+      try {
+        if ("vibrate" in navigator) navigator.vibrate([400, 200, 400, 200, 400, 200, 400]);
+      } catch { /* ignore */ }
+      // Also show a browser notification if the app is in the background
+      if (document.hidden && "Notification" in window && Notification.permission === "granted") {
+        try {
+          new Notification("🚗 Order still waiting!", {
+            body: `Order #${activeOffer.order_number} from ${activeOffer.restaurant} — R${activeOffer.delivery_fee} delivery fee`,
+            icon: "/pwa-driver-192.png",
+            tag: `repeat-offer-${activeOffer.id}`,
+          } as NotificationOptions);
+        } catch { /* ignore */ }
+      }
+    }, REPEAT_MS);
+    return () => clearInterval(interval);
+  }, [activeOffer?.id, activeOffer, playNotificationSound]);
+
   // GPS tracking when online
   useEffect(() => {
     if (!user || !driverProfile?.is_online) {
