@@ -68,6 +68,42 @@ export type Database = {
         }
         Relationships: []
       }
+      driver_access_requests: {
+        Row: {
+          admin_notes: string | null
+          created_at: string
+          id: string
+          message: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          admin_notes?: string | null
+          created_at?: string
+          id?: string
+          message?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          admin_notes?: string | null
+          created_at?: string
+          id?: string
+          message?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       driver_earnings: {
         Row: {
           created_at: string
@@ -619,12 +655,20 @@ export type Database = {
       }
     }
     Functions: {
+      admin_approve_driver_request: {
+        Args: { p_notes?: string; p_request_id: string }
+        Returns: undefined
+      }
       admin_cancel_order: {
         Args: { p_order_id: string; p_reason?: string }
         Returns: undefined
       }
       admin_mark_bank_refund_paid: {
         Args: { p_order_id: string }
+        Returns: undefined
+      }
+      admin_reject_driver_request: {
+        Args: { p_notes?: string; p_request_id: string }
         Returns: undefined
       }
       admin_update_withdrawal: {

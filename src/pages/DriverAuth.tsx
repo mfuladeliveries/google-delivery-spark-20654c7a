@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { Truck, Mail, Lock, ArrowLeft, Eye, EyeOff } from "lucide-react";
 import { shouldNudgeInstall, markInstallNudged } from "@/lib/installRedirect";
+import RequestDriverAccess from "@/components/RequestDriverAccess";
 
 type View = "login" | "signup" | "otp" | "forgot";
 
@@ -133,10 +134,15 @@ const DriverAuth = () => {
           </div>
           <h1 className="text-2xl font-bold text-white">Driver Portal</h1>
           <p className="mt-1 text-sm text-white/70">
-            {view === "login" && "Sign in to start delivering"}
-            {view === "signup" && "Create your driver account"}
-            {view === "otp" && "Verify your email"}
-            {view === "forgot" && "Reset your password"}
+            {user
+              ? "Request access to start delivering"
+              : view === "login"
+              ? "Sign in to start delivering"
+              : view === "signup"
+              ? "Create your driver account"
+              : view === "otp"
+              ? "Verify your email"
+              : "Reset your password"}
           </p>
         </div>
 
@@ -148,6 +154,21 @@ const DriverAuth = () => {
       {/* Form area */}
       <div className="flex flex-1 flex-col px-6 pt-8">
         <div className="mx-auto w-full max-w-sm">
+          {/* Logged-in non-driver: show request-access flow instead of login/signup */}
+          {user && roles.length > 0 && !roles.includes("driver") && !roles.includes("admin") ? (
+            <>
+              <RequestDriverAccess userEmail={user.email || ""} />
+              <div className="mt-8 text-center">
+                <button
+                  onClick={() => navigate("/")}
+                  className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  ← Back to Mfula Deliveries
+                </button>
+              </div>
+            </>
+          ) : (
+          <>
           {/* OTP View */}
           {view === "otp" && (
             <form onSubmit={handleVerifyOtp} className="space-y-4">
@@ -426,6 +447,8 @@ const DriverAuth = () => {
               ← Back to Mfula Deliveries
             </button>
           </div>
+          </>
+          )}
         </div>
       </div>
     </div>
