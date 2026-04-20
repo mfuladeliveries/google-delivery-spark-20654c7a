@@ -413,9 +413,24 @@ const DriverWithdrawals = () => {
                     </p>
                   )}
                   {r.status === "paid" && r.paid_at && (
-                    <p className="mt-1 text-[10px] text-green-600">
-                      Paid {new Date(r.paid_at).toLocaleDateString("en-ZA", { day: "numeric", month: "short" })}
-                    </p>
+                    <div className="mt-2 flex items-center justify-between">
+                      <p className="text-[10px] text-green-600">
+                        Paid {new Date(r.paid_at).toLocaleDateString("en-ZA", { day: "numeric", month: "short" })}
+                      </p>
+                      <button
+                        onClick={() =>
+                          generateWithdrawalReceipt({
+                            ...r,
+                            amount: Number(r.amount),
+                            driver_name: driverName,
+                          })
+                        }
+                        className="flex items-center gap-1 rounded-lg border border-border bg-card px-2.5 py-1 text-[11px] font-semibold text-foreground hover:bg-secondary"
+                      >
+                        <Download className="h-3 w-3" />
+                        Receipt
+                      </button>
+                    </div>
                   )}
                 </div>
               );
