@@ -48,9 +48,12 @@ const NewOrderModal = ({ open, offer, distanceKm, accepting, rejecting, onAccept
   if (!offer) return null;
   const minutesAgo = Math.max(0, Math.floor((Date.now() - new Date(offer.created_at).getTime()) / 60000));
 
-  // Countdown ring math (20s default)
-  const totalSeconds = 20;
+  // Countdown ring math (5 min = 300s default)
+  const totalSeconds = 300;
   const progress = secondsLeft !== null ? Math.max(0, Math.min(1, secondsLeft / totalSeconds)) : 1;
+  const mm = secondsLeft !== null ? Math.floor(secondsLeft / 60) : 0;
+  const ss = secondsLeft !== null ? secondsLeft % 60 : 0;
+  const countdownLabel = secondsLeft !== null ? `${mm}:${ss.toString().padStart(2, "0")}` : "";
   const radius = 18;
   const circumference = 2 * Math.PI * radius;
   const dashOffset = circumference * (1 - progress);
@@ -88,8 +91,8 @@ const NewOrderModal = ({ open, offer, distanceKm, accepting, rejecting, onAccept
                   style={{ transition: "stroke-dashoffset 250ms linear" }}
                 />
               </svg>
-              <div className="absolute inset-0 flex items-center justify-center text-sm font-bold tabular-nums">
-                {secondsLeft}s
+              <div className="absolute inset-0 flex items-center justify-center text-[11px] font-bold tabular-nums">
+                {countdownLabel}
               </div>
             </div>
           )}
