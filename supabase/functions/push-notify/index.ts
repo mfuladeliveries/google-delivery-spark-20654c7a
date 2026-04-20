@@ -86,7 +86,7 @@ Deno.serve(async (req) => {
     webpush.setVapidDetails("mailto:noreply@mfula.app", publicKey, privateKey);
 
     const event = await req.json();
-    const { order_number, status, restaurant, total, user_id, driver_id, restaurant_id, old_status, reason, refund_amount } = event;
+    const { order_id, order_number, status, restaurant, total, user_id, driver_id, restaurant_id, old_status, reason, refund_amount } = event;
 
     const emoji = statusEmojis[status] || "📋";
     const label = statusLabels[status] || status;
@@ -96,6 +96,20 @@ Deno.serve(async (req) => {
     const isCancelWithReason = status === "cancelled" && reason && !isDriverCancelUnavailable;
     // Bank refund paid notification
     const isBankRefundPaid = status === "bank_refund_paid";
+
+    // Detect whether this cancellation involves an online refund choice the customer must make
+    let refundChoiceAmount: number | null = null;
+    if ((status === "cancelled" || status === "rejected") && order_id) {
+      const { data: ord } = await supabase
+        .from("orders")
+        .select("payment_method, refund_status, refund_amount")
+        .eq("id", order_id)
+        .maybeSingle();
+      if (ord?.payment_method === "online" && ord?.refund_status === "pending") {
+        refundChoiceAmount = Number(ord.refund_amount) || 0;
+      }
+    }
+    const isRefundChoice = refundChoiceAmount !== null;
 
     // Determine who to notify
     const targetUserIds: string[] = [];
@@ -171,19 +185,24 @@ Deno.serve(async (req) => {
 
     // For customer notifications, use the specific title/body
     // For other targets, we might want a different message
+    const reasonSuffix = isCancelWithReason ? ` Reason: ${reason}` : "";
     const customerPayload = JSON.stringify({
       title: isBankRefundPaid
         ? `💸 Refund sent for #${order_number}`
-        : isDriverCancelUnavailable || isCancelWithReason
-          ? `❌ Order #${order_number} Cancelled`
-          : `${emoji} Order #${order_number}`,
+        : isRefundChoice
+          ? `💰 Choose your refund for #${order_number}`
+          : isDriverCancelUnavailable || isCancelWithReason
+            ? `❌ Order #${order_number} Cancelled`
+            : `${emoji} Order #${order_number}`,
       body: isBankRefundPaid
         ? `Your refund${refund_amount ? ` of R${Number(refund_amount).toFixed(2)}` : ""} has been sent. It may take 3–5 business days to reflect in your bank account.`
-        : isDriverCancelUnavailable
-          ? `Sorry, your order was cancelled because the item is not available at ${restaurant || "the restaurant"}. You won't be charged.`
-          : isCancelWithReason
-            ? `Your order was cancelled. Reason: ${reason}`
-            : label,
+        : isRefundChoice
+          ? `Your order was cancelled.${reasonSuffix} Tap to choose: instant wallet credit (R${refundChoiceAmount!.toFixed(2)}) or bank refund in 3–5 days.`
+          : isDriverCancelUnavailable
+            ? `Sorry, your order was cancelled because the item is not available at ${restaurant || "the restaurant"}. You won't be charged.`
+            : isCancelWithReason
+              ? `Your order was cancelled. Reason: ${reason}`
+              : label,
       icon: "/pwa-192x192.png",
       badge: "/favicon.ico",
       data: { url: "/orders", order_number },
