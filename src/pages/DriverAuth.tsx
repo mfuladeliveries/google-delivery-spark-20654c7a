@@ -169,7 +169,6 @@ const DriverAuth = () => {
             </>
           ) : (
           <>
-          {/* eslint-disable-next-line react/jsx-no-useless-fragment */}
           {/* OTP View */}
           {view === "otp" && (
             <form onSubmit={handleVerifyOtp} className="space-y-4">
