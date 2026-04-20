@@ -25,6 +25,9 @@ interface Order {
   restaurant: string;
   created_at: string;
   delivery_fee: number;
+  offer_expires_at?: string | null;
+  offered_to_driver_id?: string | null;
+  dispatch_phase?: string | null;
 }
 
 interface DriverProfile {
