@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate, Link } from "react-router-dom";
-import { ArrowLeft, Clock, Package, CheckCircle, Truck, ChefHat, AlertCircle, ShieldCheck, UserCheck, Store } from "lucide-react";
+import { ArrowLeft, Clock, Package, CheckCircle, Truck, ChefHat, AlertCircle, ShieldCheck, UserCheck, Store, Bike } from "lucide-react";
 import { storeInfo } from "@/data/menu";
 import BottomNav from "@/components/BottomNav";
 import OrderTrackingMap from "@/components/OrderTrackingMap";
@@ -33,11 +33,13 @@ interface Order {
 
 const statusSteps = [
   { key: "pending", label: "Order Placed", icon: Clock, color: "text-amber-600", bg: "bg-amber-100" },
-  { key: "confirmed", label: "Accepted by Restaurant", icon: Store, color: "text-blue-600", bg: "bg-blue-100" },
+  { key: "confirmed", label: "Accepted", icon: Store, color: "text-blue-600", bg: "bg-blue-100" },
   { key: "preparing", label: "Preparing", icon: ChefHat, color: "text-purple-600", bg: "bg-purple-100" },
-  { key: "ready", label: "Ready for Pickup", icon: Package, color: "text-cyan-600", bg: "bg-cyan-100" },
+  { key: "ready", label: "Ready", icon: Package, color: "text-cyan-600", bg: "bg-cyan-100" },
   { key: "driver_assigned", label: "Driver Assigned", icon: UserCheck, color: "text-indigo-600", bg: "bg-indigo-100" },
-  { key: "out_for_delivery", label: "Out for Delivery", icon: Truck, color: "text-primary", bg: "bg-primary/10" },
+  { key: "picking_up", label: "Heading to Restaurant", icon: Bike, color: "text-indigo-600", bg: "bg-indigo-100" },
+  { key: "arrived_at_restaurant", label: "At Restaurant", icon: Store, color: "text-orange-600", bg: "bg-orange-100" },
+  { key: "out_for_delivery", label: "On the Way", icon: Truck, color: "text-primary", bg: "bg-primary/10" },
   { key: "delivered", label: "Delivered", icon: CheckCircle, color: "text-green-600", bg: "bg-green-100" },
 ];
 

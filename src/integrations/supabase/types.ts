@@ -132,6 +132,10 @@ export type Database = {
       }
       orders: {
         Row: {
+          accepted_at: string | null
+          arrived_at: string | null
+          cancel_reason: string | null
+          cancelled_at: string | null
           created_at: string
           customer_address: string
           customer_contact: string
@@ -150,6 +154,8 @@ export type Database = {
           order_number: number
           payment_method: string
           payment_status: string
+          picked_up_at: string | null
+          picking_up_at: string | null
           pin_attempts: number
           restaurant: string
           restaurant_id: string | null
@@ -162,6 +168,10 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          accepted_at?: string | null
+          arrived_at?: string | null
+          cancel_reason?: string | null
+          cancelled_at?: string | null
           created_at?: string
           customer_address?: string
           customer_contact?: string
@@ -180,6 +190,8 @@ export type Database = {
           order_number?: number
           payment_method?: string
           payment_status?: string
+          picked_up_at?: string | null
+          picking_up_at?: string | null
           pin_attempts?: number
           restaurant?: string
           restaurant_id?: string | null
@@ -192,6 +204,10 @@ export type Database = {
           user_id: string
         }
         Update: {
+          accepted_at?: string | null
+          arrived_at?: string | null
+          cancel_reason?: string | null
+          cancelled_at?: string | null
           created_at?: string
           customer_address?: string
           customer_contact?: string
@@ -210,6 +226,8 @@ export type Database = {
           order_number?: number
           payment_method?: string
           payment_status?: string
+          picked_up_at?: string | null
+          picking_up_at?: string | null
           pin_attempts?: number
           restaurant?: string
           restaurant_id?: string | null

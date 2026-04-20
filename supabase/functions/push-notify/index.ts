@@ -12,10 +12,11 @@ const statusLabels: Record<string, string> = {
   confirmed: "Accepted by Restaurant",
   preparing: "Being Prepared",
   ready: "Ready for Pickup",
-  driver_assigned: "Driver Assigned",
-  picking_up: "Driver at Restaurant",
-  out_for_delivery: "Out for Delivery",
-  delivered: "Delivered",
+  driver_assigned: "Driver accepted your order",
+  picking_up: "Driver is heading to the restaurant",
+  arrived_at_restaurant: "Driver has arrived at the restaurant",
+  out_for_delivery: "Your food is on the way",
+  delivered: "Your order has arrived",
   cancelled: "Order Cancelled",
   rejected: "Order Rejected",
 };
@@ -26,8 +27,9 @@ const statusEmojis: Record<string, string> = {
   preparing: "👨‍🍳",
   ready: "📦",
   driver_assigned: "🧑‍✈️",
-  picking_up: "🏪",
-  out_for_delivery: "🚗",
+  picking_up: "🚗",
+  arrived_at_restaurant: "🏪",
+  out_for_delivery: "🍔",
   delivered: "🎉",
   cancelled: "❌",
   rejected: "🚫",
@@ -90,6 +92,8 @@ Deno.serve(async (req) => {
     const label = statusLabels[status] || status;
     // Special-case: driver-cancelled because item not available
     const isDriverCancelUnavailable = status === "cancelled" && reason === "item_unavailable";
+    // Generic cancel-with-reason
+    const isCancelWithReason = status === "cancelled" && reason && !isDriverCancelUnavailable;
 
     // Determine who to notify
     const targetUserIds: string[] = [];
@@ -127,6 +131,7 @@ Deno.serve(async (req) => {
         "ready",
         "driver_assigned",
         "picking_up",
+        "arrived_at_restaurant",
         "out_for_delivery",
         "delivered",
         "cancelled",
@@ -164,12 +169,14 @@ Deno.serve(async (req) => {
     // For customer notifications, use the specific title/body
     // For other targets, we might want a different message
     const customerPayload = JSON.stringify({
-      title: isDriverCancelUnavailable
+      title: isDriverCancelUnavailable || isCancelWithReason
         ? `❌ Order #${order_number} Cancelled`
         : `${emoji} Order #${order_number}`,
       body: isDriverCancelUnavailable
         ? `Sorry, your order was cancelled because the item is not available at ${restaurant || "the restaurant"}. You won't be charged.`
-        : label,
+        : isCancelWithReason
+          ? `Your order was cancelled. Reason: ${reason}`
+          : label,
       icon: "/pwa-192x192.png",
       badge: "/favicon.ico",
       data: { url: "/orders", order_number },

@@ -57,10 +57,33 @@ const statusColors: Record<string, string> = {
   preparing: "bg-purple-100 text-purple-700",
   ready: "bg-cyan-100 text-cyan-700",
   driver_assigned: "bg-indigo-100 text-indigo-700",
+  picking_up: "bg-indigo-100 text-indigo-700",
+  arrived_at_restaurant: "bg-orange-100 text-orange-700",
   out_for_delivery: "bg-orange-100 text-orange-700",
   delivered: "bg-green-100 text-green-700",
   cancelled: "bg-red-100 text-red-700",
   rejected: "bg-red-100 text-red-700",
+};
+
+const STATUS_FILTERS = ["all", "pending", "in_progress", "delivered", "cancelled"] as const;
+type StatusFilter = (typeof STATUS_FILTERS)[number];
+
+const matchesStatusFilter = (status: string, filter: StatusFilter) => {
+  if (filter === "all") return true;
+  if (filter === "pending") return status === "pending";
+  if (filter === "delivered") return status === "delivered";
+  if (filter === "cancelled") return status === "cancelled" || status === "rejected";
+  // in_progress
+  return ["confirmed", "preparing", "ready", "driver_assigned", "picking_up", "arrived_at_restaurant", "out_for_delivery"].includes(status);
+};
+
+const getDelayInfo = (order: { status: string; created_at: string }) => {
+  if (order.status === "delivered" || order.status === "cancelled" || order.status === "rejected") return null;
+  const ageMs = Date.now() - new Date(order.created_at).getTime();
+  const ageMin = ageMs / 60000;
+  if (ageMin >= 120) return { label: "Delayed >2h", className: "bg-red-100 text-red-700" };
+  if (ageMin >= 60) return { label: "Delayed >1h", className: "bg-amber-100 text-amber-700" };
+  return null;
 };
 
 const AdminDashboard = () => {
@@ -78,6 +101,7 @@ const AdminDashboard = () => {
   const [drivers, setDrivers] = useState<DriverRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
 
   useEffect(() => {
     if (!authLoading && (!user || role !== 'admin')) {
@@ -258,7 +282,7 @@ const AdminDashboard = () => {
         {/* Orders Tab */}
         {tab === "orders" && (
           <>
-            <div className="mb-4 relative">
+            <div className="mb-3 relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <input
                 value={searchQuery}
@@ -267,7 +291,21 @@ const AdminDashboard = () => {
                 className="w-full rounded-xl border border-border bg-card py-2.5 pl-10 pr-4 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
               />
             </div>
+            <div className="mb-4 flex gap-1.5 overflow-x-auto scrollbar-hide">
+              {STATUS_FILTERS.map(f => (
+                <button
+                  key={f}
+                  onClick={() => setStatusFilter(f)}
+                  className={`flex-shrink-0 rounded-xl px-3 py-1.5 text-xs font-bold capitalize transition-colors ${
+                    statusFilter === f ? "bg-primary text-primary-foreground" : "bg-card border border-border text-muted-foreground hover:bg-secondary"
+                  }`}
+                >
+                  {f.replace("_", " ")}
+                </button>
+              ))}
+            </div>
             <OrdersTable orders={allOrders.filter(o => {
+              if (!matchesStatusFilter(o.status, statusFilter)) return false;
               if (!searchQuery) return true;
               const q = searchQuery.toLowerCase();
               return o.customer_name?.toLowerCase().includes(q) || String(o.order_number).includes(q);
@@ -875,9 +913,19 @@ const OrdersTable = ({ orders }: { orders: RecentOrder[] }) => (
                   </span>
                 </td>
                 <td className="px-3 py-2.5">
-                  <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold capitalize ${statusColors[order.status] || "bg-muted text-muted-foreground"}`}>
-                    {order.status.replace(/_/g, " ")}
-                  </span>
+                  <div className="flex flex-col items-start gap-1">
+                    <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold capitalize ${statusColors[order.status] || "bg-muted text-muted-foreground"}`}>
+                      {order.status.replace(/_/g, " ")}
+                    </span>
+                    {(() => {
+                      const delay = getDelayInfo(order);
+                      return delay ? (
+                        <span className={`rounded-full px-1.5 py-0.5 text-[9px] font-bold ${delay.className}`}>
+                          ⏰ {delay.label}
+                        </span>
+                      ) : null;
+                    })()}
+                  </div>
                 </td>
                 <td className="px-3 py-2.5 text-xs text-muted-foreground whitespace-nowrap">
                   {new Date(order.created_at).toLocaleString("en-ZA", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}

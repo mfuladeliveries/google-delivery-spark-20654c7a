@@ -1,5 +1,5 @@
 import { useState, Component, ReactNode, lazy, Suspense } from "react";
-import { Navigation, Phone, ExternalLink, MapPin, CheckCircle2, Truck, Package, ShieldCheck, XCircle } from "lucide-react";
+import { Navigation, Phone, ExternalLink, MapPin, CheckCircle2, Truck, Package, ShieldCheck, XCircle, Store, Bike } from "lucide-react";
 import DeliveryVerification from "@/components/DeliveryVerification";
 import {
   AlertDialog,
@@ -56,15 +56,17 @@ const openGoogleMaps = (address: string) => {
 // Progress steps based on status
 const STEPS = [
   { key: "driver_assigned", label: "Assigned", icon: Package },
-  { key: "picking_up", label: "Picking Up", icon: Truck },
+  { key: "picking_up", label: "To Restaurant", icon: Bike },
+  { key: "arrived_at_restaurant", label: "At Restaurant", icon: Store },
   { key: "out_for_delivery", label: "On the Way", icon: Navigation },
   { key: "delivered", label: "Delivered", icon: CheckCircle2 },
 ];
 
 const getStepIndex = (status: string) => {
-  if (status === "out_for_delivery") return 2;
+  if (status === "delivered") return 4;
+  if (status === "out_for_delivery") return 3;
+  if (status === "arrived_at_restaurant") return 2;
   if (status === "picking_up") return 1;
-  if (status === "delivered") return 3;
   return 0; // driver_assigned or default
 };
 
@@ -106,19 +108,19 @@ const DriverActiveDelivery = ({ orders, driverLocation, onDeliveryComplete, onSt
     setCancelOrderId(null);
   };
 
-  const handleConfirmArrival = async (orderId: string) => {
+  const advanceStatus = async (orderId: string, newStatus: "picking_up" | "arrived_at_restaurant" | "out_for_delivery", successMsg: string) => {
     setUpdatingStatus(orderId);
     const order = orders.find(o => o.id === orderId);
-    const { error } = await supabase.rpc("driver_update_order", { p_order_id: orderId, p_status: "picking_up" });
+    const { error } = await supabase.rpc("driver_update_order", { p_order_id: orderId, p_status: newStatus });
     if (error) {
       toast.error(error.message || "Failed to update status");
     } else {
-      toast.success("Arrival confirmed! Pick up the order.");
+      toast.success(successMsg);
       if (order) {
         sendPushNotification({
           order_id: orderId,
           order_number: order.order_number,
-          status: "picking_up",
+          status: newStatus,
           restaurant: order.restaurant,
           total: order.total,
           user_id: (order as any).user_id,
@@ -132,31 +134,9 @@ const DriverActiveDelivery = ({ orders, driverLocation, onDeliveryComplete, onSt
     setUpdatingStatus(null);
   };
 
-  const handleConfirmPickup = async (orderId: string) => {
-    setUpdatingStatus(orderId);
-    const order = orders.find(o => o.id === orderId);
-    const { error } = await supabase.rpc("driver_update_order", { p_order_id: orderId, p_status: "out_for_delivery" });
-    if (error) {
-      toast.error(error.message || "Failed to update status");
-    } else {
-      toast.success("Pickup confirmed! Heading to customer.");
-      if (order) {
-        sendPushNotification({
-          order_id: orderId,
-          order_number: order.order_number,
-          status: "out_for_delivery",
-          restaurant: order.restaurant,
-          total: order.total,
-          user_id: (order as any).user_id,
-          driver_id: (order as any).driver_id || null,
-          restaurant_id: (order as any).restaurant_id || null,
-          old_status: order.status,
-        });
-      }
-    }
-    onStatusChange?.();
-    setUpdatingStatus(null);
-  };
+  const handleGoToRestaurant = (orderId: string) => advanceStatus(orderId, "picking_up", "On your way to the restaurant 🚗");
+  const handleArrived = (orderId: string) => advanceStatus(orderId, "arrived_at_restaurant", "Arrived — pick up the order 🏪");
+  const handlePickedUp = (orderId: string) => advanceStatus(orderId, "out_for_delivery", "Pickup confirmed! Heading to customer.");
 
   if (orders.length === 0) {
     return (
@@ -245,35 +225,46 @@ const DriverActiveDelivery = ({ orders, driverLocation, onDeliveryComplete, onSt
                 </div>
               </div>
 
-              {/* Action buttons based on status */}
+              {/* Dynamic action buttons by status */}
               {(order.status === "driver_assigned" || order.status === "ready") && (
                 <button
-                  onClick={() => handleConfirmArrival(order.id)}
+                  onClick={() => handleGoToRestaurant(order.id)}
                   disabled={updatingStatus === order.id}
-                  className="w-full rounded-xl bg-[hsl(var(--driver-info))] py-3.5 text-sm font-bold text-white disabled:opacity-50 transition-all hover:scale-[1.01] active:scale-[0.99] flex items-center justify-center gap-2"
+                  className="w-full min-h-12 rounded-xl bg-[hsl(var(--driver-info))] py-3.5 text-sm font-bold text-white disabled:opacity-50 transition-all hover:scale-[1.01] active:scale-[0.99] flex items-center justify-center gap-2"
                 >
-                  <MapPin className="h-4 w-4" />
-                  {updatingStatus === order.id ? "Updating..." : "Confirm Arrival at Restaurant"}
+                  <Bike className="h-4 w-4" />
+                  {updatingStatus === order.id ? "Updating…" : "Go to Restaurant"}
                 </button>
               )}
 
               {order.status === "picking_up" && (
                 <button
-                  onClick={() => handleConfirmPickup(order.id)}
+                  onClick={() => handleArrived(order.id)}
                   disabled={updatingStatus === order.id}
-                  className="w-full rounded-xl bg-[hsl(var(--driver-warning))] py-3.5 text-sm font-bold text-white disabled:opacity-50 transition-all hover:scale-[1.01] active:scale-[0.99] flex items-center justify-center gap-2"
+                  className="w-full min-h-12 rounded-xl bg-[hsl(var(--driver-warning))] py-3.5 text-sm font-bold text-white disabled:opacity-50 transition-all hover:scale-[1.01] active:scale-[0.99] flex items-center justify-center gap-2"
                 >
-                  <Truck className="h-4 w-4" />
-                  {updatingStatus === order.id ? "Updating..." : "Confirm Pickup — Head to Customer"}
+                  <Store className="h-4 w-4" />
+                  {updatingStatus === order.id ? "Updating…" : "Arrived at Restaurant"}
+                </button>
+              )}
+
+              {order.status === "arrived_at_restaurant" && (
+                <button
+                  onClick={() => handlePickedUp(order.id)}
+                  disabled={updatingStatus === order.id}
+                  className="w-full min-h-12 rounded-xl bg-primary py-3.5 text-sm font-bold text-primary-foreground disabled:opacity-50 transition-all hover:scale-[1.01] active:scale-[0.99] flex items-center justify-center gap-2"
+                >
+                  <Package className="h-4 w-4" />
+                  {updatingStatus === order.id ? "Updating…" : "Picked Up Order"}
                 </button>
               )}
 
               {/* Cancel — item not available (only before pickup) */}
-              {(order.status === "driver_assigned" || order.status === "picking_up") && (
+              {(order.status === "driver_assigned" || order.status === "picking_up" || order.status === "arrived_at_restaurant") && (
                 <button
                   onClick={() => setCancelOrderId(order.id)}
                   disabled={cancelling || updatingStatus === order.id}
-                  className="w-full rounded-xl border-2 border-destructive/30 bg-destructive/5 py-3 text-sm font-bold text-destructive disabled:opacity-50 transition-all hover:bg-destructive/10 active:scale-[0.99] flex items-center justify-center gap-2"
+                  className="w-full min-h-12 rounded-xl border-2 border-destructive/30 bg-destructive/5 py-3 text-sm font-bold text-destructive disabled:opacity-50 transition-all hover:bg-destructive/10 active:scale-[0.99] flex items-center justify-center gap-2"
                 >
                   <XCircle className="h-4 w-4" />
                   Cancel — Item Not Available
