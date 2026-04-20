@@ -220,14 +220,18 @@ const DriverDashboard = () => {
       pendingOrders.find((o) => o.id === orderId);
     if (!order) return;
     setAcceptingId(orderId);
-    const { data, error } = await supabase.rpc("claim_order", { p_order_id: orderId });
+
+    // Decide which RPC: targeted offer to me → driver_accept_offer, broadcast → claim_order
+    const isTargetedToMe = order.offered_to_driver_id === user!.id;
+    const rpcName = isTargetedToMe ? "driver_accept_offer" : "claim_order";
+    const { data, error } = await supabase.rpc(rpcName, { p_order_id: orderId });
     if (error) {
       toast.error(error.message || "Failed to accept");
       setAcceptingId(null);
       return;
     }
     if (data === false) {
-      toast.error("Order already taken by another driver");
+      toast.error(isTargetedToMe ? "Offer expired — too late!" : "Order already taken by another driver");
       if (activeOffer?.id === orderId) setActiveOffer(null);
       await fetchOrders();
       setAcceptingId(null);
@@ -252,15 +256,30 @@ const DriverDashboard = () => {
 
   const handleReject = async (orderId: string) => {
     setRejectingId(orderId);
-    const { error } = await supabase
-      .from("driver_rejected_orders")
-      .insert({ driver_id: user!.id, order_id: orderId });
-    if (error && !error.message.includes("duplicate")) {
-      toast.error("Failed to reject");
-      setRejectingId(null);
-      return;
+    const order = activeOffer?.id === orderId ? activeOffer : pendingOrders.find((o) => o.id === orderId);
+    const isTargetedToMe = order?.offered_to_driver_id === user!.id;
+
+    if (isTargetedToMe) {
+      // Targeted decline: advances chain immediately to next driver
+      const { error } = await supabase.rpc("driver_decline_offer", { p_order_id: orderId });
+      if (error) {
+        toast.error(error.message || "Failed to decline");
+        setRejectingId(null);
+        return;
+      }
+      toast.info("Offer declined — passed to next driver");
+    } else {
+      // Broadcast decline: hide locally only (don't affect other drivers)
+      const { error } = await supabase
+        .from("driver_rejected_orders")
+        .insert({ driver_id: user!.id, order_id: orderId });
+      if (error && !error.message.includes("duplicate")) {
+        toast.error("Failed to decline");
+        setRejectingId(null);
+        return;
+      }
+      setRejectedIds((prev) => new Set(prev).add(orderId));
     }
-    setRejectedIds((prev) => new Set(prev).add(orderId));
     if (activeOffer?.id === orderId) setActiveOffer(null);
     setRejectingId(null);
   };
