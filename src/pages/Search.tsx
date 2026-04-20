@@ -4,6 +4,8 @@ import { Search as SearchIcon, ArrowLeft, Star, Clock, UtensilsCrossed } from "l
 import { supabase } from "@/integrations/supabase/client";
 import BottomNav from "@/components/BottomNav";
 import { storeInfo } from "@/data/menu";
+import { useAuth } from "@/hooks/useAuth";
+import { getHomeRouteForRoles } from "@/lib/homeRoute";
 
 interface Restaurant {
   id: string;
@@ -43,6 +45,8 @@ const restaurantImages: Record<string, string> = {
 
 const Search = () => {
   const navigate = useNavigate();
+  const { roles } = useAuth();
+  const homeRoute = getHomeRouteForRoles(roles);
   const [query, setQuery] = useState("");
   const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
   const [menuItems, setMenuItems] = useState<MenuItemResult[]>([]);
@@ -95,7 +99,7 @@ const Search = () => {
     <div className="min-h-screen bg-background">
       <header className="sticky top-0 z-50 border-b border-border bg-card/95 backdrop-blur-xl shadow-card">
         <div className="mx-auto flex max-w-2xl items-center gap-3 px-4 py-3">
-          <Link to="/" className="rounded-lg p-1.5 text-muted-foreground hover:bg-secondary">
+          <Link to={homeRoute} className="rounded-lg p-1.5 text-muted-foreground hover:bg-secondary">
             <ArrowLeft className="h-5 w-5" />
           </Link>
           <div className="relative flex-1">

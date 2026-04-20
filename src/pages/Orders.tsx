@@ -7,6 +7,7 @@ import { storeInfo } from "@/data/menu";
 import BottomNav from "@/components/BottomNav";
 import OrderTrackingMap from "@/components/OrderTrackingMap";
 import { toast } from "sonner";
+import { getHomeRouteForRoles } from "@/lib/homeRoute";
 
 interface OrderItem {
   name: string;
@@ -64,8 +65,9 @@ const getStepIndex = (status: string) => {
 };
 
 const Orders = () => {
-  const { user, loading: authLoading } = useAuth();
+  const { user, roles, loading: authLoading } = useAuth();
   const navigate = useNavigate();
+  const homeRoute = getHomeRouteForRoles(roles);
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [deliveryPins, setDeliveryPins] = useState<Record<string, string>>({});
@@ -156,7 +158,7 @@ const Orders = () => {
     <div className="min-h-screen bg-background">
       <header className="sticky top-0 z-50 border-b border-border bg-card/95 backdrop-blur-xl shadow-card">
         <div className="mx-auto flex max-w-3xl items-center gap-3 px-4 py-3">
-          <Link to="/" className="rounded-lg p-2 text-muted-foreground hover:bg-secondary">
+          <Link to={homeRoute} className="rounded-lg p-2 text-muted-foreground hover:bg-secondary">
             <ArrowLeft className="h-5 w-5" />
           </Link>
           <h1 className="font-bold text-base text-foreground">My Orders</h1>
@@ -168,7 +170,7 @@ const Orders = () => {
           <div className="py-20 text-center text-muted-foreground">
             <Package className="mx-auto h-12 w-12 opacity-40" />
             <p className="mt-3 font-semibold text-base">No orders yet</p>
-            <Link to="/" className="mt-2 inline-block text-sm text-primary hover:underline">
+            <Link to={homeRoute} className="mt-2 inline-block text-sm text-primary hover:underline">
               Start ordering →
             </Link>
           </div>
