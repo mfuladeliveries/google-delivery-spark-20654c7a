@@ -94,7 +94,7 @@ const RestaurantDashboard = () => {
 
   useEffect(() => {
     if (!authLoading && (!user || (role !== 'restaurant' && role !== 'admin'))) {
-      navigate("/");
+      navigate("/auth");
     }
   }, [user, role, authLoading, navigate]);
 
@@ -411,9 +411,6 @@ const RestaurantDashboard = () => {
       <header className="sticky top-0 z-50 border-b border-border bg-card/95 backdrop-blur-xl shadow-card">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
           <div className="flex items-center gap-2">
-            <Link to="/" className="rounded-lg p-1.5 text-muted-foreground hover:bg-secondary">
-              <ArrowLeft className="h-5 w-5" />
-            </Link>
             <div className="flex items-center gap-2">
               <div className="flex h-9 w-9 items-center justify-center rounded-xl gradient-orange shadow-orange">
                 <ChefHat className="h-5 w-5 text-primary-foreground" />
