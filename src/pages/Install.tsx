@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { ArrowLeft, Download, Share, Plus, Check, ShoppingBag, Truck, Shield } from "lucide-react";
+import { ArrowLeft, Download, Share, Plus, Check, ShoppingBag, Truck, Shield, ChefHat } from "lucide-react";
 import { setPwaVariant, type PwaVariant } from "@/lib/pwaVariant";
 import { toast } from "sonner";
 
@@ -35,6 +35,15 @@ const APPS: RoleApp[] = [
     tagline: "Accept & deliver orders",
     icon: Truck,
     iconImg: "/pwa-driver-512.png",
+    bgClass: "bg-primary/10",
+    ringClass: "ring-primary/30",
+  },
+  {
+    variant: "restaurant",
+    name: "Mfula Restaurant",
+    tagline: "Manage orders & menu",
+    icon: ChefHat,
+    iconImg: "/pwa-restaurant-512.png",
     bgClass: "bg-primary/10",
     ringClass: "ring-primary/30",
   },
