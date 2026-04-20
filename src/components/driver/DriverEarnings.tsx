@@ -1,8 +1,9 @@
-import { DollarSign, Package, TrendingUp, Calendar, MapPin, Clock, ChevronDown, ChevronUp, Wallet, Lock } from "lucide-react";
-import { useEffect, useState } from "react";
+import { DollarSign, Package, TrendingUp, Calendar, MapPin, Clock, ChevronDown, ChevronUp, Wallet, Lock, FileDown } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
+import { generateMonthlyStatement } from "@/lib/monthlyStatement";
 
 interface Order {
   id: string;
