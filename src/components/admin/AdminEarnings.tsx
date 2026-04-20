@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { DollarSign, TrendingUp, Truck, Trophy } from "lucide-react";
+import { DollarSign, TrendingUp, Truck, Trophy, FileDown, X } from "lucide-react";
+import { toast } from "sonner";
+import { generateMonthlyStatement } from "@/lib/monthlyStatement";
 
 type Range = "today" | "week" | "month" | "all";
 
@@ -20,6 +22,26 @@ const AdminEarnings = ({ drivers }: AdminEarningsProps) => {
   const [rows, setRows] = useState<EarningRow[]>([]);
   const [range, setRange] = useState<Range>("month");
   const [loading, setLoading] = useState(true);
+  const [statementDriver, setStatementDriver] = useState<{ id: string; name: string } | null>(null);
+  const [generating, setGenerating] = useState(false);
+
+  // Build 12-month options
+  const monthOptions = useMemo(() => {
+    const out: { key: string; label: string; start: Date; end: Date }[] = [];
+    const base = new Date();
+    for (let i = 0; i < 12; i++) {
+      const start = new Date(base.getFullYear(), base.getMonth() - i, 1);
+      const end = new Date(base.getFullYear(), base.getMonth() - i + 1, 1);
+      out.push({
+        key: `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, "0")}`,
+        label: start.toLocaleDateString("en-ZA", { month: "long", year: "numeric" }),
+        start,
+        end,
+      });
+    }
+    return out;
+  }, []);
+  const [selectedMonth, setSelectedMonth] = useState(monthOptions[0].key);
 
   useEffect(() => {
     let active = true;
@@ -93,6 +115,84 @@ const AdminEarnings = ({ drivers }: AdminEarningsProps) => {
     { id: "all", label: "All Time" },
   ];
 
+  const handleGenerate = async () => {
+    if (!statementDriver) return;
+    const opt = monthOptions.find((m) => m.key === selectedMonth);
+    if (!opt) return;
+    setGenerating(true);
+    try {
+      const [{ data: periodEarnings }, { data: priorEarnings }, { data: allWithdrawals }] =
+        await Promise.all([
+          supabase
+            .from("driver_earnings")
+            .select("order_id, driver_payout, created_at")
+            .eq("driver_id", statementDriver.id)
+            .gte("created_at", opt.start.toISOString())
+            .lt("created_at", opt.end.toISOString())
+            .order("created_at", { ascending: true }),
+          supabase
+            .from("driver_earnings")
+            .select("driver_payout")
+            .eq("driver_id", statementDriver.id)
+            .lt("created_at", opt.start.toISOString()),
+          supabase
+            .from("withdrawal_requests")
+            .select("id, amount, status, requested_at, paid_at, bank_name, bank_account_number")
+            .eq("driver_id", statementDriver.id)
+            .order("requested_at", { ascending: true }),
+        ]);
+
+      const orderIds = (periodEarnings || []).map((e: any) => e.order_id);
+      const { data: orderRows } = orderIds.length
+        ? await supabase
+            .from("orders")
+            .select("id, order_number, restaurant, customer_address, delivered_at")
+            .in("id", orderIds)
+        : { data: [] as any[] };
+      const orderById = new Map((orderRows || []).map((o: any) => [o.id, o]));
+
+      const deliveries = (periodEarnings || []).map((e: any) => {
+        const o = orderById.get(e.order_id);
+        return {
+          order_id: e.order_id,
+          order_number: o?.order_number ?? null,
+          restaurant: o?.restaurant ?? "—",
+          customer_address: o?.customer_address ?? "—",
+          delivered_at: o?.delivered_at || e.created_at,
+          driver_payout: Number(e.driver_payout),
+        };
+      });
+
+      const priorEarned = (priorEarnings || []).reduce((s: number, r: any) => s + Number(r.driver_payout), 0);
+      const priorLocked = (allWithdrawals || [])
+        .filter((w: any) => new Date(w.requested_at) < opt.start && w.status !== "rejected")
+        .reduce((s: number, w: any) => s + Number(w.amount), 0);
+      const opening_balance = Math.max(0, priorEarned - priorLocked);
+
+      const periodWithdrawals = (allWithdrawals || []).filter(
+        (w: any) =>
+          new Date(w.requested_at) >= opt.start && new Date(w.requested_at) < opt.end
+      );
+
+      generateMonthlyStatement({
+        driver_name: statementDriver.name,
+        period_label: opt.label,
+        period_start: opt.start,
+        period_end: new Date(opt.end.getTime() - 1),
+        opening_balance,
+        deliveries,
+        withdrawals: periodWithdrawals as any,
+      });
+      toast.success(`${opt.label} statement downloaded`);
+      setStatementDriver(null);
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to generate statement");
+    } finally {
+      setGenerating(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center py-12">
@@ -100,6 +200,12 @@ const AdminEarnings = ({ drivers }: AdminEarningsProps) => {
       </div>
     );
   }
+
+  // Full driver list (including those with zero earnings in period) for statement dialog
+  const allDriversList = drivers.map((d) => ({
+    id: d.user_id,
+    name: d.profile?.full_name || "Unknown driver",
+  }));
 
   return (
     <>
@@ -157,6 +263,52 @@ const AdminEarnings = ({ drivers }: AdminEarningsProps) => {
         </div>
       </div>
 
+      {/* Monthly statement generator */}
+      <div className="mb-4 rounded-2xl border border-border bg-card p-4 shadow-card">
+        <h3 className="mb-2 flex items-center gap-2 font-bold text-foreground">
+          <FileDown className="h-4 w-4 text-primary" /> Driver Monthly Statement
+        </h3>
+        <p className="mb-3 text-xs text-muted-foreground">
+          Generate a detailed PDF statement for any driver — useful for dispute resolution and support.
+        </p>
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-[1fr_1fr_auto]">
+          <select
+            value={statementDriver?.id || ""}
+            onChange={(e) => {
+              const d = allDriversList.find((x) => x.id === e.target.value);
+              setStatementDriver(d || null);
+            }}
+            className="rounded-xl border border-border bg-background px-3 py-2.5 text-sm font-semibold text-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+          >
+            <option value="">Select driver…</option>
+            {allDriversList.map((d) => (
+              <option key={d.id} value={d.id}>
+                {d.name}
+              </option>
+            ))}
+          </select>
+          <select
+            value={selectedMonth}
+            onChange={(e) => setSelectedMonth(e.target.value)}
+            className="rounded-xl border border-border bg-background px-3 py-2.5 text-sm font-semibold text-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+          >
+            {monthOptions.map((m) => (
+              <option key={m.key} value={m.key}>
+                {m.label}
+              </option>
+            ))}
+          </select>
+          <button
+            onClick={handleGenerate}
+            disabled={!statementDriver || generating}
+            className="flex items-center justify-center gap-1.5 rounded-xl bg-primary px-4 py-2.5 text-sm font-bold text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-50"
+          >
+            <FileDown className="h-4 w-4" />
+            {generating ? "Generating…" : "Download"}
+          </button>
+        </div>
+      </div>
+
       {/* Per-driver leaderboard */}
       <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-card">
         <div className="flex items-center gap-2 border-b border-border bg-secondary px-4 py-2.5">
@@ -171,12 +323,13 @@ const AdminEarnings = ({ drivers }: AdminEarningsProps) => {
                 <th className="px-4 py-2.5 text-left text-xs font-semibold text-muted-foreground">Driver</th>
                 <th className="px-4 py-2.5 text-right text-xs font-semibold text-muted-foreground">Deliveries</th>
                 <th className="px-4 py-2.5 text-right text-xs font-semibold text-muted-foreground">Earnings</th>
+                <th className="px-4 py-2.5 text-right text-xs font-semibold text-muted-foreground">Statement</th>
               </tr>
             </thead>
             <tbody>
               {perDriver.length === 0 ? (
                 <tr>
-                  <td colSpan={4} className="px-4 py-8 text-center text-xs text-muted-foreground">
+                  <td colSpan={5} className="px-4 py-8 text-center text-xs text-muted-foreground">
                     No earnings in this period
                   </td>
                 </tr>
@@ -190,6 +343,14 @@ const AdminEarnings = ({ drivers }: AdminEarningsProps) => {
                     <td className="px-4 py-2.5 text-right text-xs text-muted-foreground">{d.deliveries}</td>
                     <td className="px-4 py-2.5 text-right text-xs font-bold text-green-600">
                       R{d.payout.toFixed(2)}
+                    </td>
+                    <td className="px-4 py-2.5 text-right">
+                      <button
+                        onClick={() => setStatementDriver({ id: d.id, name: d.name })}
+                        className="inline-flex items-center gap-1 rounded-lg border border-border bg-card px-2 py-1 text-[10px] font-bold text-foreground hover:bg-secondary"
+                      >
+                        <FileDown className="h-3 w-3" /> PDF
+                      </button>
                     </td>
                   </tr>
                 ))
