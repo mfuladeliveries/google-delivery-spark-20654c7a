@@ -88,14 +88,13 @@ const Orders = () => {
         .order("created_at", { ascending: false });
       if (data) {
         setOrders(
-          data.map((o) => ({
+          data.map((o: any) => ({
             ...o,
             items: (o.items as unknown as OrderItem[]) || [],
             delivery_code: "",
             customer_address: o.customer_address || "",
           }))
         );
-        // Clean up PINs for delivered orders
         const deliveredIds = data.filter(o => o.status === "delivered" || o.status === "cancelled" || o.status === "rejected").map(o => o.id);
         if (deliveredIds.length > 0) {
           const updated = { ...savedPins };
@@ -107,6 +106,43 @@ const Orders = () => {
       setLoading(false);
     };
     fetchOrders();
+
+    const channel = supabase
+      .channel('customer-orders')
+      .on('postgres_changes', {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'orders',
+        filter: `user_id=eq.${user.id}`,
+      }, () => {
+        fetchOrders();
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [user]);
+
+  const handleChooseRefund = async (orderId: string, orderNumber: number, method: "credits" | "bank") => {
+    const { data, error } = await supabase.rpc("customer_choose_refund", {
+      p_order_id: orderId,
+      p_method: method,
+    });
+    if (error) {
+      toast.error(error.message || "Failed to process refund choice");
+      return;
+    }
+    const result = data as { status?: string; amount?: number } | null;
+    if (method === "credits") {
+      toast.success(`R${Number(result?.amount || 0).toFixed(2)} added to your wallet 🎉`, {
+        description: "Use it on your next order.",
+      });
+    } else {
+      toast.success("Bank refund requested", {
+        description: `R${Number(result?.amount || 0).toFixed(2)} will be refunded to your bank account within 3–5 business days.`,
+        duration: 8000,
+      });
+    }
+  };
 
     const channel = supabase
       .channel('customer-orders')
