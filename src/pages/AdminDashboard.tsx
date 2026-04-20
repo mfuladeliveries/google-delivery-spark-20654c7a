@@ -818,17 +818,49 @@ const RestaurantsTab = ({
   const [ownerPassword, setOwnerPassword] = useState("");
   const [ownerName, setOwnerName] = useState("");
   const [ownerContact, setOwnerContact] = useState("");
+  const [manualLat, setManualLat] = useState("");
+  const [manualLng, setManualLng] = useState("");
+  const [autoLocating, setAutoLocating] = useState(false);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState<string | null>(null);
+
+  const handleAutoLocate = async () => {
+    if (!location.trim()) {
+      toast.error("Enter a location first, then auto-locate");
+      return;
+    }
+    setAutoLocating(true);
+    try {
+      const coords = await geocodeAddress(location.trim());
+      if (!coords) {
+        toast.error(`Could not locate "${location}". Try a more specific address or enter coordinates manually.`);
+        return;
+      }
+      setManualLat(coords.lat.toFixed(6));
+      setManualLng(coords.lng.toFixed(6));
+      toast.success(`📍 Located: ${coords.lat.toFixed(4)}, ${coords.lng.toFixed(4)}`);
+    } finally {
+      setAutoLocating(false);
+    }
+  };
 
   const handleAddRestaurant = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) { toast.error("Restaurant name is required"); return; }
     setSaving(true);
     try {
-      // Geocode location text → lat/lng (best-effort; falls back to null on miss)
+      // Determine coordinates: manual entry wins, otherwise auto-geocode the location text
       let coords: { lat: number; lng: number } | null = null;
-      if (location.trim()) {
+      const mLat = parseFloat(manualLat);
+      const mLng = parseFloat(manualLng);
+      if (!Number.isNaN(mLat) && !Number.isNaN(mLng)) {
+        if (mLat < -90 || mLat > 90 || mLng < -180 || mLng > 180) {
+          toast.error("Coordinates out of range (lat -90..90, lng -180..180)");
+          setSaving(false);
+          return;
+        }
+        coords = { lat: mLat, lng: mLng };
+      } else if (location.trim()) {
         coords = await geocodeAddress(location.trim());
       }
 
