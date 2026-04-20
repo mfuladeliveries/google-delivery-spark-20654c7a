@@ -34,6 +34,7 @@ interface RecentOrder {
   offered_to_driver_id: string | null;
   offered_to_name?: string | null;
   missed_count: number;
+  admin_delivery_code: string | null;
 }
 
 interface UserRecord {
