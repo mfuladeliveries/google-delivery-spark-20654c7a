@@ -192,6 +192,21 @@ const AdminDashboard = () => {
     }
   };
 
+  const handleCancelOrder = async (orderId: string, orderNumber: number) => {
+    const reason = window.prompt(`Cancel order #${orderNumber}? Enter a reason:`, "Cancelled by admin");
+    if (reason === null) return;
+    const { error } = await supabase.rpc("admin_cancel_order", {
+      p_order_id: orderId,
+      p_reason: reason || "Cancelled by admin",
+    });
+    if (error) {
+      toast.error(error.message || "Failed to cancel order");
+      return;
+    }
+    toast.success(`Order #${orderNumber} cancelled`);
+    fetchStats();
+  };
+
   const fetchUsers = async () => {
     const { data: roles } = await supabase.from("user_roles").select("user_id, role");
     if (roles) {
