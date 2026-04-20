@@ -321,7 +321,7 @@ const AdminDashboard = () => {
 
             <section>
               <h2 className="font-bold text-foreground mb-3">🕐 Recent Orders</h2>
-              <OrdersTable orders={recentOrders} />
+              <OrdersTable orders={recentOrders} onCancel={handleCancelOrder} />
             </section>
           </>
         )}
@@ -356,7 +356,7 @@ const AdminDashboard = () => {
               if (!searchQuery) return true;
               const q = searchQuery.toLowerCase();
               return o.customer_name?.toLowerCase().includes(q) || String(o.order_number).includes(q);
-            })} />
+            })} onCancel={handleCancelOrder} />
           </>
         )}
 
