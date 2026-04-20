@@ -86,7 +86,7 @@ Deno.serve(async (req) => {
     webpush.setVapidDetails("mailto:noreply@mfula.app", publicKey, privateKey);
 
     const event = await req.json();
-    const { order_number, status, restaurant, total, user_id, driver_id, restaurant_id, old_status, reason, refund_amount } = event;
+    const { order_id, order_number, status, restaurant, total, user_id, driver_id, restaurant_id, old_status, reason, refund_amount } = event;
 
     const emoji = statusEmojis[status] || "📋";
     const label = statusLabels[status] || status;
@@ -96,6 +96,20 @@ Deno.serve(async (req) => {
     const isCancelWithReason = status === "cancelled" && reason && !isDriverCancelUnavailable;
     // Bank refund paid notification
     const isBankRefundPaid = status === "bank_refund_paid";
+
+    // Detect whether this cancellation involves an online refund choice the customer must make
+    let refundChoiceAmount: number | null = null;
+    if ((status === "cancelled" || status === "rejected") && order_id) {
+      const { data: ord } = await supabase
+        .from("orders")
+        .select("payment_method, refund_status, refund_amount")
+        .eq("id", order_id)
+        .maybeSingle();
+      if (ord?.payment_method === "online" && ord?.refund_status === "pending") {
+        refundChoiceAmount = Number(ord.refund_amount) || 0;
+      }
+    }
+    const isRefundChoice = refundChoiceAmount !== null;
 
     // Determine who to notify
     const targetUserIds: string[] = [];
