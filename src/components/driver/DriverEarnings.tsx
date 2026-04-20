@@ -121,6 +121,85 @@ const DriverEarnings = ({ driverProfile, completedOrders }: DriverEarningsProps)
     toast.info("Withdrawals coming soon — payouts are processed weekly for now.");
   };
 
+  const handleGenerateStatement = async () => {
+    if (!user) return;
+    const opt = monthOptions.find((m) => m.key === selectedMonth);
+    if (!opt) return;
+
+    setGeneratingStatement(true);
+    try {
+      const [{ data: profileData }, { data: periodEarnings }, { data: priorEarnings }, { data: allWithdrawals }] =
+        await Promise.all([
+          supabase.from("profiles").select("full_name").eq("user_id", user.id).maybeSingle(),
+          supabase
+            .from("driver_earnings")
+            .select("order_id, driver_payout, created_at")
+            .eq("driver_id", user.id)
+            .gte("created_at", opt.start.toISOString())
+            .lt("created_at", opt.end.toISOString())
+            .order("created_at", { ascending: true }),
+          supabase
+            .from("driver_earnings")
+            .select("driver_payout")
+            .eq("driver_id", user.id)
+            .lt("created_at", opt.start.toISOString()),
+          supabase
+            .from("withdrawal_requests")
+            .select("id, amount, status, requested_at, paid_at, bank_name, bank_account_number")
+            .eq("driver_id", user.id)
+            .order("requested_at", { ascending: true }),
+        ]);
+
+      const orderIds = (periodEarnings || []).map((e: any) => e.order_id);
+      const { data: orderRows } = orderIds.length
+        ? await supabase
+            .from("orders")
+            .select("id, order_number, restaurant, customer_address, delivered_at")
+            .in("id", orderIds)
+        : { data: [] as any[] };
+      const orderById = new Map((orderRows || []).map((o: any) => [o.id, o]));
+
+      const deliveries = (periodEarnings || []).map((e: any) => {
+        const o = orderById.get(e.order_id);
+        return {
+          order_id: e.order_id,
+          order_number: o?.order_number ?? null,
+          restaurant: o?.restaurant ?? "—",
+          customer_address: o?.customer_address ?? "—",
+          delivered_at: o?.delivered_at || e.created_at,
+          driver_payout: Number(e.driver_payout),
+        };
+      });
+
+      const priorEarned = (priorEarnings || []).reduce((s: number, r: any) => s + Number(r.driver_payout), 0);
+      const priorLocked = (allWithdrawals || [])
+        .filter((w: any) => new Date(w.requested_at) < opt.start && w.status !== "rejected")
+        .reduce((s: number, w: any) => s + Number(w.amount), 0);
+      const opening_balance = Math.max(0, priorEarned - priorLocked);
+
+      const periodWithdrawals = (allWithdrawals || []).filter(
+        (w: any) =>
+          new Date(w.requested_at) >= opt.start && new Date(w.requested_at) < opt.end
+      );
+
+      generateMonthlyStatement({
+        driver_name: profileData?.full_name || "Driver",
+        period_label: opt.label,
+        period_start: opt.start,
+        period_end: new Date(opt.end.getTime() - 1),
+        opening_balance,
+        deliveries,
+        withdrawals: periodWithdrawals as any,
+      });
+      toast.success(`${opt.label} statement downloaded`);
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to generate statement");
+    } finally {
+      setGeneratingStatement(false);
+    }
+  };
+
   return (
     <div className="space-y-4">
       {/* Hero balance card */}
