@@ -34,6 +34,7 @@ interface RecentOrder {
   offered_to_driver_id: string | null;
   offered_to_name?: string | null;
   missed_count: number;
+  admin_delivery_code: string | null;
 }
 
 interface UserRecord {
@@ -148,7 +149,7 @@ const AdminDashboard = () => {
       { data: restaurantList },
       { data: driverRoles },
     ] = await Promise.all([
-      supabase.from("orders").select("total, status, created_at, order_number, customer_name, restaurant, payment_method, id, driver_id, delivered_at, dispatch_phase, offered_to_driver_id, missed_by_driver_ids")
+      supabase.from("orders").select("total, status, created_at, order_number, customer_name, restaurant, payment_method, id, driver_id, delivered_at, dispatch_phase, offered_to_driver_id, missed_by_driver_ids, admin_delivery_code")
         .order("created_at", { ascending: false }),
       supabase.from("restaurants").select("id", { count: 'exact' }),
       supabase.from("user_roles").select("id").eq("role", "driver"),
@@ -189,6 +190,21 @@ const AdminDashboard = () => {
       setRecentOrders(enriched.slice(0, 10));
       setAllOrders(enriched);
     }
+  };
+
+  const handleCancelOrder = async (orderId: string, orderNumber: number) => {
+    const reason = window.prompt(`Cancel order #${orderNumber}? Enter a reason:`, "Cancelled by admin");
+    if (reason === null) return;
+    const { error } = await supabase.rpc("admin_cancel_order", {
+      p_order_id: orderId,
+      p_reason: reason || "Cancelled by admin",
+    });
+    if (error) {
+      toast.error(error.message || "Failed to cancel order");
+      return;
+    }
+    toast.success(`Order #${orderNumber} cancelled`);
+    fetchStats();
   };
 
   const fetchUsers = async () => {
@@ -305,7 +321,7 @@ const AdminDashboard = () => {
 
             <section>
               <h2 className="font-bold text-foreground mb-3">🕐 Recent Orders</h2>
-              <OrdersTable orders={recentOrders} />
+              <OrdersTable orders={recentOrders} onCancel={handleCancelOrder} />
             </section>
           </>
         )}
@@ -340,7 +356,7 @@ const AdminDashboard = () => {
               if (!searchQuery) return true;
               const q = searchQuery.toLowerCase();
               return o.customer_name?.toLowerCase().includes(q) || String(o.order_number).includes(q);
-            })} />
+            })} onCancel={handleCancelOrder} />
           </>
         )}
 
@@ -966,7 +982,10 @@ const RestaurantCard = ({
 };
 
 // Extracted orders table component
-const OrdersTable = ({ orders }: { orders: RecentOrder[] }) => (
+const OrdersTable = ({ orders, onCancel }: { orders: RecentOrder[]; onCancel?: (orderId: string, orderNumber: number) => void }) => {
+  const COL_COUNT = 11;
+  const cancellable = (status: string) => !["delivered", "cancelled", "rejected"].includes(status);
+  return (
   <div className="rounded-2xl border border-border bg-card overflow-hidden shadow-card">
     <div className="overflow-x-auto">
       <table className="w-full text-sm">
@@ -976,17 +995,19 @@ const OrdersTable = ({ orders }: { orders: RecentOrder[] }) => (
             <th className="px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground">Customer</th>
             <th className="px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground">Restaurant</th>
             <th className="px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground">Driver</th>
+            <th className="px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground">PIN</th>
             <th className="px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground">Total</th>
             <th className="px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground">Payment</th>
             <th className="px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground">Status</th>
             <th className="px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground">Ordered</th>
             <th className="px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground">Delivered</th>
+            <th className="px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground">Actions</th>
           </tr>
         </thead>
         <tbody>
           {orders.length === 0 ? (
             <tr>
-              <td colSpan={9} className="px-4 py-8 text-center text-muted-foreground text-xs">No orders</td>
+              <td colSpan={COL_COUNT} className="px-4 py-8 text-center text-muted-foreground text-xs">No orders</td>
             </tr>
           ) : (
             orders.map((order, i) => {
@@ -1014,6 +1035,15 @@ const OrdersTable = ({ orders }: { orders: RecentOrder[] }) => (
                         <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-bold text-primary">Assigned</span>
                       ) : (
                         <span className="text-muted-foreground">—</span>
+                      )}
+                    </td>
+                    <td className="px-3 py-2.5">
+                      {order.admin_delivery_code && cancellable(order.status) ? (
+                        <span className="rounded-md bg-primary/10 px-2 py-0.5 text-xs font-bold tracking-[0.2em] text-primary">
+                          {order.admin_delivery_code}
+                        </span>
+                      ) : (
+                        <span className="text-muted-foreground text-xs">—</span>
                       )}
                     </td>
                     <td className="px-3 py-2.5 font-semibold text-primary">R{order.total}</td>
@@ -1051,10 +1081,22 @@ const OrdersTable = ({ orders }: { orders: RecentOrder[] }) => (
                         <span className="text-muted-foreground">—</span>
                       )}
                     </td>
+                    <td className="px-3 py-2.5 text-xs whitespace-nowrap">
+                      {cancellable(order.status) && onCancel ? (
+                        <button
+                          onClick={() => onCancel(order.id, order.order_number)}
+                          className="rounded-md border border-destructive/30 bg-destructive/5 px-2 py-1 text-[10px] font-bold text-destructive hover:bg-destructive/10"
+                        >
+                          Cancel
+                        </button>
+                      ) : (
+                        <span className="text-muted-foreground">—</span>
+                      )}
+                    </td>
                   </tr>
                   {showDispatch && (
                     <tr key={`${order.id}-dispatch`} className={`border-b border-border ${i % 2 === 0 ? '' : 'bg-secondary/30'}`}>
-                      <td colSpan={9} className="px-3 pb-2 pt-0">
+                      <td colSpan={COL_COUNT} className="px-3 pb-2 pt-0">
                         <div className="flex flex-wrap items-center gap-2 text-[10px]">
                           <span className="font-semibold text-muted-foreground uppercase tracking-wide">Dispatch:</span>
                           <span className={`rounded-full px-2 py-0.5 font-bold ${phaseStyles[order.dispatch_phase!] || "bg-muted text-muted-foreground"}`}>
@@ -1082,6 +1124,7 @@ const OrdersTable = ({ orders }: { orders: RecentOrder[] }) => (
       </table>
     </div>
   </div>
-);
+  );
+};
 
 export default AdminDashboard;

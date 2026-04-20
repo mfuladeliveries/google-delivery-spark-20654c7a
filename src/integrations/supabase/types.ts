@@ -232,6 +232,7 @@ export type Database = {
       orders: {
         Row: {
           accepted_at: string | null
+          admin_delivery_code: string | null
           arrived_at: string | null
           cancel_reason: string | null
           cancelled_at: string | null
@@ -278,6 +279,7 @@ export type Database = {
         }
         Insert: {
           accepted_at?: string | null
+          admin_delivery_code?: string | null
           arrived_at?: string | null
           cancel_reason?: string | null
           cancelled_at?: string | null
@@ -324,6 +326,7 @@ export type Database = {
         }
         Update: {
           accepted_at?: string | null
+          admin_delivery_code?: string | null
           arrived_at?: string | null
           cancel_reason?: string | null
           cancelled_at?: string | null
@@ -616,6 +619,10 @@ export type Database = {
       }
     }
     Functions: {
+      admin_cancel_order: {
+        Args: { p_order_id: string; p_reason?: string }
+        Returns: undefined
+      }
       admin_mark_bank_refund_paid: {
         Args: { p_order_id: string }
         Returns: undefined
