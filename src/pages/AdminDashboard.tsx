@@ -2,7 +2,7 @@ import { useState, useEffect, Fragment } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { Shield, TrendingUp, Users, ShoppingBag, Store, ArrowLeft, DollarSign, Truck, UserCheck, Search, UserPlus, Plus, Trash2, Pencil, X, Save } from "lucide-react";
+import { Shield, TrendingUp, Users, ShoppingBag, Store, ArrowLeft, DollarSign, Truck, UserCheck, Search, UserPlus, Plus, Trash2, Pencil, X, Save, MapPin } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
 import AdminEarnings from "@/components/admin/AdminEarnings";
 import AdminWithdrawals from "@/components/admin/AdminWithdrawals";
@@ -49,6 +49,9 @@ interface RestaurantRecord {
   is_active: boolean;
   owner_user_id: string | null;
   rating: number;
+  location: string;
+  lat: number | null;
+  lng: number | null;
 }
 
 interface DriverRecord {
@@ -202,7 +205,7 @@ const AdminDashboard = () => {
   };
 
   const fetchRestaurants = async () => {
-    const { data } = await supabase.from("restaurants").select("id, name, cuisine, is_active, owner_user_id, rating").order("name");
+    const { data } = await supabase.from("restaurants").select("id, name, cuisine, is_active, owner_user_id, rating, location, lat, lng").order("name");
     if (data) setRestaurants(data);
   };
 
@@ -765,6 +768,31 @@ const RestaurantCard = ({
   const [savingEdit, setSavingEdit] = useState(false);
   const [ownerInfo, setOwnerInfo] = useState<{ email: string; full_name: string; contact_number: string } | null>(null);
   const [loadingOwner, setLoadingOwner] = useState(false);
+  const [geocoding, setGeocoding] = useState(false);
+
+  const hasCoords = r.lat !== null && r.lng !== null;
+
+  const handleGeocode = async () => {
+    if (!r.location?.trim()) {
+      toast.error("This restaurant has no location text. Edit and add a location first.");
+      return;
+    }
+    setGeocoding(true);
+    try {
+      const coords = await geocodeAddress(r.location.trim());
+      if (!coords) {
+        toast.error(`Could not locate "${r.location}". Try a more specific address.`);
+        return;
+      }
+      const { error } = await supabase.from("restaurants").update({ lat: coords.lat, lng: coords.lng }).eq("id", r.id);
+      if (error) throw error;
+      toast.success(`📍 ${r.name} located: ${coords.lat.toFixed(4)}, ${coords.lng.toFixed(4)}`);
+      onRestaurantChanged();
+    } catch (err: any) {
+      toast.error(err.message || "Failed to geocode");
+    }
+    setGeocoding(false);
+  };
 
   const loadOwnerInfo = async () => {
     if (!r.owner_user_id) {
@@ -827,14 +855,35 @@ const RestaurantCard = ({
   return (
     <div className="rounded-2xl border border-border bg-card shadow-card overflow-hidden">
       <div className="flex items-center justify-between p-4">
-        <div>
+        <div className="min-w-0 flex-1">
           <h3 className="font-bold text-sm text-foreground">{r.name}</h3>
           <p className="text-xs text-muted-foreground">{r.cuisine} · ⭐ {r.rating}</p>
-          {r.owner_user_id && (
-            <p className="text-[10px] text-primary mt-0.5">🔐 Has login</p>
-          )}
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 mt-0.5">
+            {r.owner_user_id && (
+              <p className="text-[10px] text-primary">🔐 Has login</p>
+            )}
+            {hasCoords ? (
+              <p className="text-[10px] text-green-600 font-semibold">📍 Located ({r.lat!.toFixed(3)}, {r.lng!.toFixed(3)})</p>
+            ) : (
+              <p className="text-[10px] text-amber-600 font-semibold">⚠️ No coordinates</p>
+            )}
+          </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 shrink-0">
+          <button
+            onClick={handleGeocode}
+            disabled={geocoding}
+            className={`rounded-xl p-1.5 transition-colors disabled:opacity-50 ${
+              hasCoords ? "text-muted-foreground hover:bg-secondary" : "bg-amber-100 text-amber-700 hover:bg-amber-200"
+            }`}
+            title={hasCoords ? "Re-geocode location" : "Geocode location (backfill coordinates)"}
+          >
+            {geocoding ? (
+              <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+            ) : (
+              <MapPin className="h-4 w-4" />
+            )}
+          </button>
           <button
             onClick={handleEdit}
             className={`rounded-xl p-1.5 transition-colors ${
