@@ -1,6 +1,7 @@
-import { ShoppingCart, MapPin, User, LogOut, ClipboardList, ChefHat, Truck, Shield, Menu } from "lucide-react";
+import { ShoppingCart, MapPin, User, LogOut, ClipboardList, ChefHat, Truck, Shield, Menu, Wallet } from "lucide-react";
 import { storeInfo } from "@/data/menu";
 import { useAuth } from "@/hooks/useAuth";
+import { useCustomerCredits } from "@/hooks/useCustomerCredits";
 import { Link, useNavigate } from "react-router-dom";
 
 interface HeaderProps {
