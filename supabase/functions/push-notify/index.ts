@@ -138,6 +138,7 @@ Deno.serve(async (req) => {
         "delivered",
         "cancelled",
         "rejected",
+        "bank_refund_paid",
       ].includes(status) &&
       user_id
     ) {
