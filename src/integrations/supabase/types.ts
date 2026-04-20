@@ -46,6 +46,11 @@ export type Database = {
       }
       driver_profiles: {
         Row: {
+          bank_account_holder: string
+          bank_account_number: string
+          bank_account_type: string
+          bank_branch_code: string
+          bank_name: string
           created_at: string
           current_lat: number | null
           current_lng: number | null
@@ -62,6 +67,11 @@ export type Database = {
           vehicle_type: string
         }
         Insert: {
+          bank_account_holder?: string
+          bank_account_number?: string
+          bank_account_type?: string
+          bank_branch_code?: string
+          bank_name?: string
           created_at?: string
           current_lat?: number | null
           current_lng?: number | null
@@ -78,6 +88,11 @@ export type Database = {
           vehicle_type?: string
         }
         Update: {
+          bank_account_holder?: string
+          bank_account_number?: string
+          bank_account_type?: string
+          bank_branch_code?: string
+          bank_name?: string
           created_at?: string
           current_lat?: number | null
           current_lng?: number | null
@@ -417,6 +432,63 @@ export type Database = {
         }
         Relationships: []
       }
+      withdrawal_requests: {
+        Row: {
+          admin_notes: string | null
+          amount: number
+          approved_at: string | null
+          bank_account_holder: string
+          bank_account_number: string
+          bank_account_type: string
+          bank_branch_code: string
+          bank_name: string
+          created_at: string
+          driver_id: string
+          id: string
+          paid_at: string | null
+          rejected_at: string | null
+          rejection_reason: string | null
+          requested_at: string
+          status: string
+        }
+        Insert: {
+          admin_notes?: string | null
+          amount: number
+          approved_at?: string | null
+          bank_account_holder: string
+          bank_account_number: string
+          bank_account_type: string
+          bank_branch_code: string
+          bank_name: string
+          created_at?: string
+          driver_id: string
+          id?: string
+          paid_at?: string | null
+          rejected_at?: string | null
+          rejection_reason?: string | null
+          requested_at?: string
+          status?: string
+        }
+        Update: {
+          admin_notes?: string | null
+          amount?: number
+          approved_at?: string | null
+          bank_account_holder?: string
+          bank_account_number?: string
+          bank_account_type?: string
+          bank_branch_code?: string
+          bank_name?: string
+          created_at?: string
+          driver_id?: string
+          id?: string
+          paid_at?: string | null
+          rejected_at?: string | null
+          rejection_reason?: string | null
+          requested_at?: string
+          status?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       driver_job_board: {
@@ -454,6 +526,15 @@ export type Database = {
       }
     }
     Functions: {
+      admin_update_withdrawal: {
+        Args: {
+          p_notes?: string
+          p_rejection_reason?: string
+          p_request_id: string
+          p_status: string
+        }
+        Returns: undefined
+      }
       auto_cancel_stale_orders: { Args: never; Returns: number }
       claim_order: { Args: { p_order_id: string }; Returns: boolean }
       create_verified_order:
@@ -497,6 +578,7 @@ export type Database = {
         }
         Returns: undefined
       }
+      get_driver_balance: { Args: { p_driver_id: string }; Returns: number }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -504,6 +586,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      request_withdrawal: { Args: { p_amount: number }; Returns: string }
       verify_and_complete_delivery: {
         Args: { p_code: string; p_order_id: string }
         Returns: boolean
