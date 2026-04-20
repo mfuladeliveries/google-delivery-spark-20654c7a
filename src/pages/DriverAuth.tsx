@@ -21,24 +21,25 @@ const DriverAuth = () => {
   const { user, roles, loading: authLoading } = useAuth();
 
   useEffect(() => {
-    // Wait for auth AND roles to be loaded before deciding where to redirect.
-    // Without this, a freshly-logged-in user with empty roles[] would be sent to "/".
+    // Only auto-redirect users who already have driver/admin access into the
+    // driver dashboard. Users without access (e.g. restaurant owners or
+    // not-yet-driver customers) should stay on this page so they can read
+    // the info and sign up — otherwise clicking "Become a Driver" silently
+    // bounces them back to whatever role-home they came from.
     if (authLoading) return;
     if (!user) return;
     if (roles.length === 0) return;
 
     const hasAccess = roles.includes("driver") || roles.includes("admin");
-    if (hasAccess) {
-      const installPath = shouldNudgeInstall(roles);
-      if (installPath) {
-        markInstallNudged();
-        navigate(installPath, { replace: true });
-        return;
-      }
-      navigate("/driver", { replace: true });
-    } else {
-      navigate("/", { replace: true });
+    if (!hasAccess) return;
+
+    const installPath = shouldNudgeInstall(roles);
+    if (installPath) {
+      markInstallNudged();
+      navigate(installPath, { replace: true });
+      return;
     }
+    navigate("/driver", { replace: true });
   }, [user, roles, authLoading, navigate]);
 
   const resetState = () => {
