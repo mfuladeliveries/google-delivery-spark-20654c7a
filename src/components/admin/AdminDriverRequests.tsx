@@ -81,11 +81,18 @@ const AdminDriverRequests = () => {
       p_request_id: req.id,
       p_notes: note?.trim() || null,
     });
-    setBusyId(null);
     if (error) {
+      setBusyId(null);
       toast.error(error.message);
       return;
     }
+    // Best-effort push notification to the applicant
+    supabase.functions
+      .invoke("notify-driver-request-decision", {
+        body: { request_id: req.id, decision: "approved", notes: note?.trim() || null },
+      })
+      .catch(() => {});
+    setBusyId(null);
     toast.success("Driver access granted");
     fetchRequests();
   };
@@ -98,11 +105,17 @@ const AdminDriverRequests = () => {
       p_request_id: req.id,
       p_notes: note.trim() || null,
     });
-    setBusyId(null);
     if (error) {
+      setBusyId(null);
       toast.error(error.message);
       return;
     }
+    supabase.functions
+      .invoke("notify-driver-request-decision", {
+        body: { request_id: req.id, decision: "rejected", notes: note.trim() || null },
+      })
+      .catch(() => {});
+    setBusyId(null);
     toast.success("Request rejected");
     fetchRequests();
   };
