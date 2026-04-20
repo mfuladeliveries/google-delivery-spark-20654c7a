@@ -5,6 +5,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { storeInfo } from "@/data/menu";
 import { getHomeRouteForRoles } from "@/lib/homeRoute";
+import { shouldNudgeInstall, markInstallNudged } from "@/lib/installRedirect";
 
 const Auth = () => {
   const [isLogin, setIsLogin] = useState(true);
@@ -22,6 +23,12 @@ const Auth = () => {
   // go straight to their dashboard (no flicker through customer home).
   useEffect(() => {
     if (authLoading || !user || roles.length === 0) return;
+    const installPath = shouldNudgeInstall(roles);
+    if (installPath) {
+      markInstallNudged();
+      navigate(installPath, { replace: true });
+      return;
+    }
     navigate(getHomeRouteForRoles(roles), { replace: true });
   }, [user, roles, authLoading, navigate]);
 

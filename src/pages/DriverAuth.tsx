@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { Truck, Mail, Lock, ArrowLeft, Eye, EyeOff } from "lucide-react";
+import { shouldNudgeInstall, markInstallNudged } from "@/lib/installRedirect";
 
 type View = "login" | "signup" | "otp" | "forgot";
 
@@ -28,6 +29,12 @@ const DriverAuth = () => {
 
     const hasAccess = roles.includes("driver") || roles.includes("admin");
     if (hasAccess) {
+      const installPath = shouldNudgeInstall(roles);
+      if (installPath) {
+        markInstallNudged();
+        navigate(installPath, { replace: true });
+        return;
+      }
       navigate("/driver", { replace: true });
     } else {
       navigate("/", { replace: true });
