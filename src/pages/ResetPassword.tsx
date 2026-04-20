@@ -2,6 +2,8 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { storeInfo } from "@/data/menu";
+import { useAuth } from "@/hooks/useAuth";
+import { getHomeRouteForRoles } from "@/lib/homeRoute";
 
 const ResetPassword = () => {
   const [password, setPassword] = useState("");
@@ -11,6 +13,7 @@ const ResetPassword = () => {
   const [loading, setLoading] = useState(false);
   const [ready, setReady] = useState(false);
   const navigate = useNavigate();
+  const { roles } = useAuth();
 
   useEffect(() => {
     const hash = window.location.hash;
@@ -40,7 +43,7 @@ const ResetPassword = () => {
     if (error) setError(error.message);
     else {
       setConfirmed(true);
-      setTimeout(() => navigate("/"), 2000);
+      setTimeout(() => navigate(getHomeRouteForRoles(roles)), 2000);
     }
     setLoading(false);
   };
