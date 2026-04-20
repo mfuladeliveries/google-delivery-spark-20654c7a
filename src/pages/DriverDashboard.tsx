@@ -57,27 +57,58 @@ const DriverDashboard = () => {
   const locationWatchRef = useRef<number | null>(null);
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const fallbackBeepRef = useRef<{ ctx: AudioContext; osc: OscillatorNode; lfo: OscillatorNode } | null>(null);
 
-  const playNotificationSound = useCallback(() => {
+  const stopNotificationSound = useCallback(() => {
     try {
-      // Lazy-init the Audio element (one shared instance to avoid overlap)
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.currentTime = 0;
+        audioRef.current.loop = false;
+      }
+    } catch { /* ignore */ }
+    try {
+      if (fallbackBeepRef.current) {
+        fallbackBeepRef.current.osc.stop();
+        fallbackBeepRef.current.lfo.stop();
+        fallbackBeepRef.current.ctx.close();
+        fallbackBeepRef.current = null;
+      }
+    } catch { /* ignore */ }
+  }, []);
+
+  const startNotificationSound = useCallback(() => {
+    try {
       if (!audioRef.current) {
         audioRef.current = new Audio("/sounds/new-order.mp3");
         audioRef.current.preload = "auto";
-        audioRef.current.volume = 0.9;
       }
+      audioRef.current.loop = true;
+      audioRef.current.volume = 1.0;
       audioRef.current.currentTime = 0;
       const playPromise = audioRef.current.play();
       if (playPromise && typeof playPromise.catch === "function") {
         playPromise.catch(() => {
-          // Autoplay blocked (no user gesture yet) — fall back to a synthesized beep
+          // Autoplay blocked (no user gesture yet) — fall back to a continuous synthesized ringtone
           try {
+            if (fallbackBeepRef.current) return;
             const ctx = new AudioContext();
             const osc = ctx.createOscillator();
             const gain = ctx.createGain();
             osc.connect(gain); gain.connect(ctx.destination);
-            osc.frequency.value = 660; osc.type = "triangle"; gain.gain.value = 0.4;
-            osc.start(); osc.stop(ctx.currentTime + 0.2);
+            osc.type = "triangle";
+            osc.frequency.value = 880;
+            gain.gain.value = 0.5;
+            // Pulse so it feels like a ringtone, not a flat hum
+            const lfo = ctx.createOscillator();
+            const lfoGain = ctx.createGain();
+            lfo.frequency.value = 3; // 3 Hz pulse
+            lfoGain.gain.value = 0.5;
+            lfo.connect(lfoGain);
+            lfoGain.connect(gain.gain);
+            osc.start();
+            lfo.start();
+            fallbackBeepRef.current = { ctx, osc, lfo };
           } catch { /* ignore */ }
         });
       }
@@ -116,12 +147,8 @@ const DriverDashboard = () => {
     );
     if (targeted) {
       setActiveOffer(targeted);
-      playNotificationSound();
-      try {
-        if ("vibrate" in navigator) navigator.vibrate([400, 100, 400, 100, 400]);
-      } catch { /* ignore */ }
     }
-  }, [pendingOrders, driverProfile?.is_online, activeOffer, playNotificationSound, user]);
+  }, [pendingOrders, driverProfile?.is_online, activeOffer, user]);
 
   // Auto-dismiss the modal once the offer expires (so the chain can advance)
   useEffect(() => {
@@ -132,28 +159,42 @@ const DriverDashboard = () => {
     return () => clearTimeout(timer);
   }, [activeOffer?.offer_expires_at, activeOffer?.id]);
 
-  // Repeat sound + vibration every 3 minutes while an offer is active and unaccepted
+  // Continuous loud ringtone + repeating vibration while an offer is on-screen.
+  // Stops automatically when the offer is accepted, rejected, or expires (modal closes).
   useEffect(() => {
-    if (!activeOffer) return;
-    const REPEAT_MS = 3 * 60 * 1000; // 3 minutes
-    const interval = setInterval(() => {
-      playNotificationSound();
+    if (!activeOffer) {
+      stopNotificationSound();
+      return;
+    }
+
+    startNotificationSound();
+
+    // Vibrate immediately, then keep pulsing every 2s for the whole window
+    const doVibrate = () => {
       try {
-        if ("vibrate" in navigator) navigator.vibrate([400, 200, 400, 200, 400, 200, 400]);
+        if ("vibrate" in navigator) navigator.vibrate([500, 200, 500, 200, 500]);
       } catch { /* ignore */ }
-      // Also show a browser notification if the app is in the background
-      if (document.hidden && "Notification" in window && Notification.permission === "granted") {
-        try {
-          new Notification("🚗 Order still waiting!", {
-            body: `Order #${activeOffer.order_number} from ${activeOffer.restaurant} — R${activeOffer.delivery_fee} delivery fee`,
-            icon: "/pwa-driver-192.png",
-            tag: `repeat-offer-${activeOffer.id}`,
-          } as NotificationOptions);
-        } catch { /* ignore */ }
-      }
-    }, REPEAT_MS);
-    return () => clearInterval(interval);
-  }, [activeOffer?.id, activeOffer, playNotificationSound]);
+    };
+    doVibrate();
+    const vibrateInterval = setInterval(doVibrate, 2000);
+
+    // Background browser notification (one-shot, lets OS surface it if tab is hidden)
+    if (document.hidden && "Notification" in window && Notification.permission === "granted") {
+      try {
+        new Notification("🚗 New delivery waiting!", {
+          body: `Order #${activeOffer.order_number} from ${activeOffer.restaurant} — R${activeOffer.delivery_fee} delivery fee`,
+          icon: "/pwa-driver-192.png",
+          tag: `offer-${activeOffer.id}`,
+        } as NotificationOptions);
+      } catch { /* ignore */ }
+    }
+
+    return () => {
+      clearInterval(vibrateInterval);
+      stopNotificationSound();
+      try { if ("vibrate" in navigator) navigator.vibrate(0); } catch { /* ignore */ }
+    };
+  }, [activeOffer?.id, activeOffer, startNotificationSound, stopNotificationSound]);
 
   // GPS tracking when online
   useEffect(() => {
