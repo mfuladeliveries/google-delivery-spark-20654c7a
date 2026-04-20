@@ -137,8 +137,8 @@ export const generateMonthlyStatement = (s: MonthlyStatementData) => {
   };
   lineRow("Opening balance", fmtMoney(s.opening_balance));
   lineRow(`Earnings (${s.deliveries.length} deliveries)`, `+ ${fmtMoney(totalEarned)}`);
-  lineRow("Paid withdrawals", `− ${fmtMoney(paidWithdrawals)}`);
-  lineRow("Pending / approved (locked)", `− ${fmtMoney(pendingWithdrawals)}`);
+  lineRow("Paid withdrawals", `- ${fmtMoney(paidWithdrawals)}`);
+  lineRow("Pending / approved (locked)", `- ${fmtMoney(pendingWithdrawals)}`);
   doc.setDrawColor(200, 200, 200);
   doc.setLineWidth(1);
   doc.line(margin, y, pageW - margin, y);
@@ -294,7 +294,7 @@ export const generateMonthlyStatement = (s: MonthlyStatementData) => {
       doc.text(`${w.bank_name} ••••${last4}`, wcol.bank, y + 4);
       doc.setFont("helvetica", "bold");
       doc.setTextColor(w.status === "paid" ? 34 : 60, w.status === "paid" ? 139 : 60, w.status === "paid" ? 34 : 60);
-      doc.text(`− ${fmtMoney(Number(w.amount))}`, wcol.amount - 4, y + 4, { align: "right" });
+      doc.text(`- ${fmtMoney(Number(w.amount))}`, wcol.amount - 4, y + 4, { align: "right" });
       doc.setFont("helvetica", "normal");
       doc.setTextColor(60, 60, 60);
       y += 16;
