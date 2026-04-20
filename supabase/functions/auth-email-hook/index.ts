@@ -36,7 +36,7 @@ const EMAIL_TEMPLATES: Record<string, React.ComponentType<any>> = {
 }
 
 // Configuration
-const SITE_NAME = "google-delivery-spark"
+const SITE_NAME = "Mfula Deliveries"
 const SENDER_DOMAIN = "notify.gmail.com"
 const ROOT_DOMAIN = "gmail.com"
 const FROM_DOMAIN = "notify.gmail.com" // Domain shown in From address (may be root or sender subdomain)
@@ -53,7 +53,7 @@ const SAMPLE_DATA: Record<string, object> = {
     siteName: SITE_NAME,
     siteUrl: SAMPLE_PROJECT_URL,
     recipient: SAMPLE_EMAIL,
-    confirmationUrl: SAMPLE_PROJECT_URL,
+    token: '123456',
   },
   magiclink: {
     siteName: SITE_NAME,

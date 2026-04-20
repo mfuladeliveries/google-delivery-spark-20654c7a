@@ -4,12 +4,10 @@ import * as React from 'npm:react@18.3.1'
 
 import {
   Body,
-  Button,
   Container,
   Head,
   Heading,
   Html,
-  Link,
   Preview,
   Text,
 } from 'npm:@react-email/components@0.0.22'
@@ -18,40 +16,29 @@ interface SignupEmailProps {
   siteName: string
   siteUrl: string
   recipient: string
-  confirmationUrl: string
+  token: string
 }
 
 export const SignupEmail = ({
   siteName,
-  siteUrl,
   recipient,
-  confirmationUrl,
+  token,
 }: SignupEmailProps) => (
   <Html lang="en" dir="ltr">
     <Head />
-    <Preview>Confirm your email for {siteName}</Preview>
+    <Preview>Your {siteName} verification code is {token}</Preview>
     <Body style={main}>
       <Container style={container}>
-        <Heading style={h1}>Confirm your email</Heading>
+        <Heading style={h1}>Welcome to {siteName}</Heading>
         <Text style={text}>
-          Thanks for signing up for{' '}
-          <Link href={siteUrl} style={link}>
-            <strong>{siteName}</strong>
-          </Link>
-          !
+          Hi {recipient}, use the code below to verify your email and finish
+          setting up your account.
         </Text>
-        <Text style={text}>
-          Please confirm your email address (
-          <Link href={`mailto:${recipient}`} style={link}>
-            {recipient}
-          </Link>
-          ) by clicking the button below:
-        </Text>
-        <Button style={button} href={confirmationUrl}>
-          Verify Email
-        </Button>
+        <Text style={codeStyle}>{token}</Text>
+        <Text style={hint}>This code expires in 1 hour.</Text>
         <Text style={footer}>
-          If you didn't create an account, you can safely ignore this email.
+          If you didn't sign up for {siteName}, you can safely ignore this
+          email.
         </Text>
       </Container>
     </Body>
@@ -60,27 +47,45 @@ export const SignupEmail = ({
 
 export default SignupEmail
 
-const main = { backgroundColor: '#ffffff', fontFamily: 'Arial, sans-serif' }
-const container = { padding: '20px 25px' }
+const main = {
+  backgroundColor: '#ffffff',
+  fontFamily: "'Inter', Arial, sans-serif",
+}
+const container = { padding: '32px 28px', maxWidth: '480px' }
 const h1 = {
-  fontSize: '22px',
+  fontSize: '24px',
   fontWeight: 'bold' as const,
-  color: '#000000',
+  color: 'hsl(0, 0%, 10%)',
   margin: '0 0 20px',
 }
 const text = {
-  fontSize: '14px',
-  color: '#55575d',
+  fontSize: '15px',
+  color: 'hsl(0, 0%, 30%)',
   lineHeight: '1.5',
-  margin: '0 0 25px',
+  margin: '0 0 24px',
 }
-const link = { color: 'inherit', textDecoration: 'underline' }
-const button = {
-  backgroundColor: '#000000',
-  color: '#ffffff',
-  fontSize: '14px',
-  borderRadius: '8px',
-  padding: '12px 20px',
-  textDecoration: 'none',
+const codeStyle = {
+  fontFamily: "'Courier New', Courier, monospace",
+  fontSize: '36px',
+  fontWeight: 'bold' as const,
+  color: 'hsl(21, 100%, 50%)',
+  letterSpacing: '0.4em',
+  textAlign: 'center' as const,
+  background: 'hsl(21, 100%, 96%)',
+  padding: '20px',
+  borderRadius: '12px',
+  margin: '0 0 16px',
 }
-const footer = { fontSize: '12px', color: '#999999', margin: '30px 0 0' }
+const hint = {
+  fontSize: '13px',
+  color: 'hsl(0, 0%, 50%)',
+  textAlign: 'center' as const,
+  margin: '0 0 32px',
+}
+const footer = {
+  fontSize: '12px',
+  color: 'hsl(0, 0%, 55%)',
+  margin: '32px 0 0',
+  borderTop: '1px solid hsl(0, 0%, 90%)',
+  paddingTop: '16px',
+}
