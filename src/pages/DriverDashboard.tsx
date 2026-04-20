@@ -147,12 +147,8 @@ const DriverDashboard = () => {
     );
     if (targeted) {
       setActiveOffer(targeted);
-      playNotificationSound();
-      try {
-        if ("vibrate" in navigator) navigator.vibrate([400, 100, 400, 100, 400]);
-      } catch { /* ignore */ }
     }
-  }, [pendingOrders, driverProfile?.is_online, activeOffer, playNotificationSound, user]);
+  }, [pendingOrders, driverProfile?.is_online, activeOffer, user]);
 
   // Auto-dismiss the modal once the offer expires (so the chain can advance)
   useEffect(() => {
@@ -163,28 +159,42 @@ const DriverDashboard = () => {
     return () => clearTimeout(timer);
   }, [activeOffer?.offer_expires_at, activeOffer?.id]);
 
-  // Repeat sound + vibration every 3 minutes while an offer is active and unaccepted
+  // Continuous loud ringtone + repeating vibration while an offer is on-screen.
+  // Stops automatically when the offer is accepted, rejected, or expires (modal closes).
   useEffect(() => {
-    if (!activeOffer) return;
-    const REPEAT_MS = 3 * 60 * 1000; // 3 minutes
-    const interval = setInterval(() => {
-      playNotificationSound();
+    if (!activeOffer) {
+      stopNotificationSound();
+      return;
+    }
+
+    startNotificationSound();
+
+    // Vibrate immediately, then keep pulsing every 2s for the whole window
+    const doVibrate = () => {
       try {
-        if ("vibrate" in navigator) navigator.vibrate([400, 200, 400, 200, 400, 200, 400]);
+        if ("vibrate" in navigator) navigator.vibrate([500, 200, 500, 200, 500]);
       } catch { /* ignore */ }
-      // Also show a browser notification if the app is in the background
-      if (document.hidden && "Notification" in window && Notification.permission === "granted") {
-        try {
-          new Notification("🚗 Order still waiting!", {
-            body: `Order #${activeOffer.order_number} from ${activeOffer.restaurant} — R${activeOffer.delivery_fee} delivery fee`,
-            icon: "/pwa-driver-192.png",
-            tag: `repeat-offer-${activeOffer.id}`,
-          } as NotificationOptions);
-        } catch { /* ignore */ }
-      }
-    }, REPEAT_MS);
-    return () => clearInterval(interval);
-  }, [activeOffer?.id, activeOffer, playNotificationSound]);
+    };
+    doVibrate();
+    const vibrateInterval = setInterval(doVibrate, 2000);
+
+    // Background browser notification (one-shot, lets OS surface it if tab is hidden)
+    if (document.hidden && "Notification" in window && Notification.permission === "granted") {
+      try {
+        new Notification("🚗 New delivery waiting!", {
+          body: `Order #${activeOffer.order_number} from ${activeOffer.restaurant} — R${activeOffer.delivery_fee} delivery fee`,
+          icon: "/pwa-driver-192.png",
+          tag: `offer-${activeOffer.id}`,
+        } as NotificationOptions);
+      } catch { /* ignore */ }
+    }
+
+    return () => {
+      clearInterval(vibrateInterval);
+      stopNotificationSound();
+      try { if ("vibrate" in navigator) navigator.vibrate(0); } catch { /* ignore */ }
+    };
+  }, [activeOffer?.id, activeOffer, startNotificationSound, stopNotificationSound]);
 
   // GPS tracking when online
   useEffect(() => {
