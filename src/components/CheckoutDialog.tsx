@@ -294,6 +294,34 @@ const CheckoutDialog = ({
             {validationErrors.notes && <p className="mt-1 text-xs text-destructive">{validationErrors.notes}</p>}
           </div>
 
+          {/* Wallet Credits */}
+          {walletBalance > 0 && (
+            <div className="rounded-2xl border-2 border-primary/30 bg-primary/5 p-4">
+              <label className="flex items-center justify-between gap-3 cursor-pointer">
+                <div className="flex items-center gap-2.5">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10">
+                    <Wallet className="h-4.5 w-4.5 text-primary" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-bold text-foreground">Use Wallet Credits</p>
+                    <p className="text-[11px] text-muted-foreground">
+                      Balance: {storeInfo.currency}{walletBalance.toFixed(2)}
+                      {useWallet && creditsToApply > 0 && (
+                        <> · Applying {storeInfo.currency}{creditsToApply.toFixed(2)}</>
+                      )}
+                    </p>
+                  </div>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={useWallet}
+                  onChange={(e) => setUseWallet(e.target.checked)}
+                  className="h-5 w-5 rounded border-border accent-primary cursor-pointer"
+                />
+              </label>
+            </div>
+          )}
+
           {/* Payment Method */}
           <div>
             <label className="mb-2 block text-sm font-semibold text-foreground">💳 Payment Method</label>
