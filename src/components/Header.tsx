@@ -83,6 +83,17 @@ const Header = ({ cartCount, onCartClick, title }: HeaderProps) => {
             )}
           </div>
 
+          {user && walletBalance > 0 && (
+            <Link
+              to="/profile"
+              className="flex items-center gap-1 rounded-xl border border-primary/30 bg-primary/10 px-2.5 py-2 text-xs font-bold text-primary transition-transform hover:scale-105 active:scale-95"
+              title="Wallet balance"
+            >
+              <Wallet className="h-4 w-4" />
+              <span>{storeInfo.currency}{walletBalance.toFixed(0)}</span>
+            </Link>
+          )}
+
           {onCartClick !== undefined && (
             <button
               onClick={onCartClick}
