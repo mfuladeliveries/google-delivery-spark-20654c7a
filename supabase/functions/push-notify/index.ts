@@ -172,14 +172,18 @@ Deno.serve(async (req) => {
     // For customer notifications, use the specific title/body
     // For other targets, we might want a different message
     const customerPayload = JSON.stringify({
-      title: isDriverCancelUnavailable || isCancelWithReason
-        ? `❌ Order #${order_number} Cancelled`
-        : `${emoji} Order #${order_number}`,
-      body: isDriverCancelUnavailable
-        ? `Sorry, your order was cancelled because the item is not available at ${restaurant || "the restaurant"}. You won't be charged.`
-        : isCancelWithReason
-          ? `Your order was cancelled. Reason: ${reason}`
-          : label,
+      title: isBankRefundPaid
+        ? `💸 Refund sent for #${order_number}`
+        : isDriverCancelUnavailable || isCancelWithReason
+          ? `❌ Order #${order_number} Cancelled`
+          : `${emoji} Order #${order_number}`,
+      body: isBankRefundPaid
+        ? `Your refund${refund_amount ? ` of R${Number(refund_amount).toFixed(2)}` : ""} has been sent. It may take 3–5 business days to reflect in your bank account.`
+        : isDriverCancelUnavailable
+          ? `Sorry, your order was cancelled because the item is not available at ${restaurant || "the restaurant"}. You won't be charged.`
+          : isCancelWithReason
+            ? `Your order was cancelled. Reason: ${reason}`
+            : label,
       icon: "/pwa-192x192.png",
       badge: "/favicon.ico",
       data: { url: "/orders", order_number },
