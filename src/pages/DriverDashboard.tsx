@@ -96,16 +96,30 @@ const DriverDashboard = () => {
     return () => { supabase.removeChannel(channel); };
   }, [user]);
 
-  // Pop modal when a new pending order appears (not rejected, no active offer, and driver is online)
+  // Pop modal ONLY for orders explicitly offered to this driver
   useEffect(() => {
-    if (!driverProfile?.is_online) return;
+    if (!driverProfile?.is_online || !user) return;
     if (activeOffer) return;
-    const next = pendingOrders.find((o) => !rejectedIds.has(o.id));
-    if (next) {
-      setActiveOffer(next);
+    const targeted = pendingOrders.find(
+      (o) => o.offered_to_driver_id === user.id && o.offer_expires_at && new Date(o.offer_expires_at).getTime() > Date.now()
+    );
+    if (targeted) {
+      setActiveOffer(targeted);
       playNotificationSound();
+      try {
+        if ("vibrate" in navigator) navigator.vibrate([400, 100, 400, 100, 400]);
+      } catch { /* ignore */ }
     }
-  }, [pendingOrders, rejectedIds, driverProfile?.is_online, activeOffer, playNotificationSound]);
+  }, [pendingOrders, driverProfile?.is_online, activeOffer, playNotificationSound, user]);
+
+  // Auto-dismiss the modal once the offer expires (so the chain can advance)
+  useEffect(() => {
+    if (!activeOffer?.offer_expires_at) return;
+    const remaining = new Date(activeOffer.offer_expires_at).getTime() - Date.now();
+    if (remaining <= 0) { setActiveOffer(null); return; }
+    const timer = setTimeout(() => setActiveOffer(null), remaining);
+    return () => clearTimeout(timer);
+  }, [activeOffer?.offer_expires_at, activeOffer?.id]);
 
   // GPS tracking when online
   useEffect(() => {
