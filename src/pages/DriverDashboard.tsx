@@ -172,7 +172,14 @@ const DriverDashboard = () => {
     // Hide anything older than 12 hours — auto-expired
     const cutoff = new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString();
     const [{ data: pending }, { data: mine }] = await Promise.all([
-      supabase.from("driver_job_board" as any).select("id, order_number, restaurant, customer_address, total, delivery_fee, created_at, items").gte("created_at", cutoff).order("created_at"),
+      // Pull orders visible to me (RLS: targeted offer to me OR broadcast phase)
+      supabase
+        .from("orders")
+        .select("id, order_number, restaurant, customer_address, total, delivery_fee, created_at, items, offer_expires_at, offered_to_driver_id, dispatch_phase")
+        .eq("status", "ready")
+        .is("driver_id", null)
+        .gte("created_at", cutoff)
+        .order("created_at"),
       supabase.from("orders").select("*").eq("driver_id", user!.id).in("status", ["driver_assigned", "picking_up", "arrived_at_restaurant", "out_for_delivery"]).gte("created_at", cutoff).order("created_at"),
     ]);
     if (pending) setPendingOrders((pending as any[]).map((o: any) => ({ ...o, items: (o.items as any[]) || [], customer_name: "", customer_contact: "", status: "ready" })));
