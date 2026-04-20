@@ -899,6 +899,7 @@ const RestaurantsTab = ({
       setShowForm(false);
       setName(""); setCuisine(""); setLocation(""); setDescription(""); setMinOrder("0");
       setOwnerEmail(""); setOwnerPassword(""); setOwnerName(""); setOwnerContact("");
+      setManualLat(""); setManualLng("");
       onRestaurantChanged();
     } catch (err: any) {
       toast.error(err.message || "Failed to add restaurant");
