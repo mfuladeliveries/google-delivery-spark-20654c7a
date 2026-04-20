@@ -91,7 +91,7 @@ const Orders = () => {
           data.map((o: any) => ({
             ...o,
             items: (o.items as unknown as OrderItem[]) || [],
-            delivery_code: "",
+            delivery_code: o.delivery_code || "",
             customer_address: o.customer_address || "",
           }))
         );
