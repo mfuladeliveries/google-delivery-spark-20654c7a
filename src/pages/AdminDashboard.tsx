@@ -540,6 +540,7 @@ const DriversTab = ({ drivers, onDriverAdded }: { drivers: DriverRecord[]; onDri
   const [vehicleType, setVehicleType] = useState("car");
   const [licensePlate, setLicensePlate] = useState("");
   const [registering, setRegistering] = useState(false);
+  const [editing, setEditing] = useState<DriverRecord | null>(null);
 
   const handleRegisterDriver = async (e: React.FormEvent) => {
     e.preventDefault();
