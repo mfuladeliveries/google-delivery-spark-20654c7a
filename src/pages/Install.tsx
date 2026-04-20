@@ -39,6 +39,15 @@ const APPS: RoleApp[] = [
     ringClass: "ring-primary/30",
   },
   {
+    variant: "restaurant",
+    name: "Mfula Restaurant",
+    tagline: "Manage orders & menu",
+    icon: ChefHat,
+    iconImg: "/pwa-restaurant-512.png",
+    bgClass: "bg-primary/10",
+    ringClass: "ring-primary/30",
+  },
+  {
     variant: "admin",
     name: "Mfula Admin",
     tagline: "Manage orders, users, drivers",
