@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { useState, useEffect, useMemo } from "react";
+import { Link, useParams } from "react-router-dom";
 import { ArrowLeft, Download, Share, Plus, Check, ShoppingBag, Truck, Shield, ChefHat } from "lucide-react";
 import { setPwaVariant, type PwaVariant } from "@/lib/pwaVariant";
 import { toast } from "sonner";
@@ -12,61 +12,78 @@ interface BeforeInstallPromptEvent extends Event {
 interface RoleApp {
   variant: PwaVariant;
   name: string;
+  shortName: string;
   tagline: string;
   icon: typeof ShoppingBag;
   iconImg: string;
-  bgClass: string;
   ringClass: string;
+  installPath: string;
 }
 
 const APPS: RoleApp[] = [
   {
     variant: "customer",
     name: "Mfula Customer",
+    shortName: "Customer",
     tagline: "Order food, track delivery",
     icon: ShoppingBag,
     iconImg: "/pwa-customer-512.png",
-    bgClass: "bg-primary/10",
     ringClass: "ring-primary/30",
+    installPath: "/install/customer",
   },
   {
     variant: "driver",
     name: "Mfula Driver",
+    shortName: "Driver",
     tagline: "Accept & deliver orders",
     icon: Truck,
     iconImg: "/pwa-driver-512.png",
-    bgClass: "bg-primary/10",
     ringClass: "ring-primary/30",
+    installPath: "/install/driver",
   },
   {
     variant: "restaurant",
     name: "Mfula Restaurant",
+    shortName: "Restaurant",
     tagline: "Manage orders & menu",
     icon: ChefHat,
     iconImg: "/pwa-restaurant-512.png",
-    bgClass: "bg-primary/10",
     ringClass: "ring-primary/30",
+    installPath: "/install/restaurant",
   },
   {
     variant: "admin",
     name: "Mfula Admin",
+    shortName: "Admin",
     tagline: "Manage orders, users, drivers",
     icon: Shield,
     iconImg: "/pwa-admin-512.png",
-    bgClass: "bg-foreground/5",
     ringClass: "ring-foreground/20",
+    installPath: "/install/admin",
   },
 ];
 
 const Install = () => {
+  const { variant: variantParam } = useParams<{ variant?: string }>();
+  const focusedApp = useMemo(
+    () => APPS.find((a) => a.variant === variantParam) ?? null,
+    [variantParam]
+  );
+  const visibleApps = focusedApp ? [focusedApp] : APPS;
+
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [isInstalled, setIsInstalled] = useState(false);
   const [isIOS, setIsIOS] = useState(false);
   const [installingVariant, setInstallingVariant] = useState<PwaVariant | null>(null);
 
+  // Apply the variant manifest immediately when landing on a focused install URL
+  useEffect(() => {
+    if (focusedApp) setPwaVariant(focusedApp.variant);
+  }, [focusedApp]);
+
   useEffect(() => {
     const ua = navigator.userAgent;
-    setIsIOS(/iPad|iPhone|iPod/.test(ua) && !(window as any).MSStream);
+    setIsIOS(/iPad|iPhone|iPod/.test(ua) && !(window as { MSStream?: unknown }).MSStream);
 
     if (window.matchMedia("(display-mode: standalone)").matches) {
       setIsInstalled(true);
@@ -111,6 +128,8 @@ const Install = () => {
     setInstallingVariant(null);
   };
 
+  const headerTitle = focusedApp ? `Install ${focusedApp.name}` : "Install Mfula App";
+
   return (
     <div className="min-h-screen bg-background">
       <header className="sticky top-0 z-50 border-b border-border bg-card/95 backdrop-blur-xl shadow-card">
@@ -118,21 +137,25 @@ const Install = () => {
           <Link to="/" className="rounded-lg p-2 text-muted-foreground hover:bg-secondary">
             <ArrowLeft className="h-5 w-5" />
           </Link>
-          <h1 className="font-bold text-base text-foreground">Install Mfula App</h1>
+          <h1 className="font-bold text-base text-foreground">{headerTitle}</h1>
         </div>
       </header>
 
       <main className="mx-auto max-w-md px-4 py-6">
         <div className="text-center mb-6">
-          <h2 className="font-display text-xl font-bold text-foreground">Choose your app</h2>
+          <h2 className="font-display text-xl font-bold text-foreground">
+            {focusedApp ? `Install ${focusedApp.shortName}` : "Choose your app"}
+          </h2>
           <p className="mt-1 text-xs text-muted-foreground">
-            Mfula has three apps. Pick the one for your role.
+            {focusedApp
+              ? `Install the ${focusedApp.name} app on your device.`
+              : "Mfula has four apps. Pick the one for your role — each installs separately."}
           </p>
         </div>
 
-        {/* Three role apps */}
+        {/* Role apps */}
         <div className="space-y-3">
-          {APPS.map((app) => {
+          {visibleApps.map((app) => {
             const isInstalling = installingVariant === app.variant;
             return (
               <div
@@ -151,6 +174,9 @@ const Install = () => {
                   <div className="min-w-0 flex-1">
                     <h3 className="font-bold text-foreground text-sm truncate">{app.name}</h3>
                     <p className="text-xs text-muted-foreground truncate">{app.tagline}</p>
+                    <p className="mt-1 text-[10px] text-muted-foreground/80 truncate">
+                      {window.location.origin}{app.installPath}
+                    </p>
                   </div>
                 </div>
 
@@ -166,7 +192,7 @@ const Install = () => {
                   ) : (
                     <>
                       <Download className="h-4 w-4" />
-                      {isInstalling ? "Installing…" : `Install ${app.name.split(" ")[1]}`}
+                      {isInstalling ? "Installing…" : `Install ${app.shortName}`}
                     </>
                   )}
                 </button>
@@ -174,6 +200,17 @@ const Install = () => {
             );
           })}
         </div>
+
+        {focusedApp && (
+          <div className="mt-4 text-center">
+            <Link
+              to="/install"
+              className="text-xs font-bold text-primary hover:underline"
+            >
+              ← See all Mfula apps
+            </Link>
+          </div>
+        )}
 
         {/* Manual install instructions for iOS / when prompt unavailable */}
         {(!deferredPrompt || isIOS) && !isInstalled && (
@@ -198,7 +235,8 @@ const Install = () => {
                 <div className="flex items-start gap-3">
                   <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/10 text-[11px] font-bold text-primary">3</div>
                   <p className="text-xs text-muted-foreground">
-                    Tap <strong>Add</strong> to confirm. Tap your app variant above first to brand the icon.
+                    Tap <strong>Add</strong> to confirm.
+                    {!focusedApp && " Tap your app variant above first to brand the icon."}
                   </p>
                 </div>
                 <p className="mt-2 text-[10px] text-muted-foreground italic">
@@ -240,7 +278,7 @@ const Install = () => {
         </div>
 
         <p className="mt-6 text-center text-[10px] text-muted-foreground px-4">
-          Each app installs separately. After installing the Driver or Admin app, it will open on your dashboard. The Customer app opens on the food menu.
+          Each app installs as a separate icon with its own scope. Customer opens on the food menu, Driver opens on the dashboard, Restaurant opens on the orders board, and Admin opens on the admin console.
         </p>
       </main>
     </div>

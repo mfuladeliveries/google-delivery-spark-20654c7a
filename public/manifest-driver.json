@@ -1,12 +1,13 @@
 {
+  "id": "/driver?app=driver",
   "name": "Mfula Driver",
   "short_name": "Driver",
   "description": "Mfula Deliveries Driver App",
-  "start_url": "/driver",
-  "scope": "/",
+  "start_url": "/driver?source=pwa",
+  "scope": "/driver",
   "display": "standalone",
   "orientation": "portrait",
-  "background_color": "#ffffff",
+  "background_color": "#ff6600",
   "theme_color": "#ff6600",
   "icons": [
     { "src": "/pwa-driver-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
