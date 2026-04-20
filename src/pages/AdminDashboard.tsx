@@ -196,18 +196,29 @@ const AdminDashboard = () => {
     }
   };
 
-  const handleCancelOrder = async (orderId: string, orderNumber: number) => {
-    const reason = window.prompt(`Cancel order #${orderNumber}? Enter a reason:`, "Cancelled by admin");
-    if (reason === null) return;
+  const handleCancelOrder = (orderId: string, orderNumber: number) => {
+    setCancelTarget({ id: orderId, orderNumber });
+    setCancelReasonChoice("Restaurant closed");
+    setCancelReasonOther("");
+  };
+
+  const submitCancelOrder = async () => {
+    if (!cancelTarget) return;
+    const finalReason = cancelReasonChoice === "Other"
+      ? (cancelReasonOther.trim() || "Cancelled by admin")
+      : cancelReasonChoice;
+    setCancelSubmitting(true);
     const { error } = await supabase.rpc("admin_cancel_order", {
-      p_order_id: orderId,
-      p_reason: reason || "Cancelled by admin",
+      p_order_id: cancelTarget.id,
+      p_reason: finalReason,
     });
+    setCancelSubmitting(false);
     if (error) {
       toast.error(error.message || "Failed to cancel order");
       return;
     }
-    toast.success(`Order #${orderNumber} cancelled`);
+    toast.success(`Order #${cancelTarget.orderNumber} cancelled`);
+    setCancelTarget(null);
     fetchStats();
   };
 
