@@ -7,6 +7,7 @@ import BottomNav from "@/components/BottomNav";
 import AdminEarnings from "@/components/admin/AdminEarnings";
 import AdminWithdrawals from "@/components/admin/AdminWithdrawals";
 import AdminRefunds from "@/components/admin/AdminRefunds";
+import AdminDriverRequests from "@/components/admin/AdminDriverRequests";
 import { toast } from "sonner";
 import { geocodeAddress } from "@/lib/geocode";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
@@ -107,7 +108,7 @@ const getDelayInfo = (order: { status: string; created_at: string }) => {
 const AdminDashboard = () => {
   const { user, role, loading: authLoading } = useAuth();
   const navigate = useNavigate();
-  const [tab, setTab] = useState<"overview" | "orders" | "earnings" | "withdrawals" | "refunds" | "users" | "restaurants" | "drivers">("overview");
+  const [tab, setTab] = useState<"overview" | "orders" | "earnings" | "withdrawals" | "refunds" | "requests" | "users" | "restaurants" | "drivers">("overview");
   const [stats, setStats] = useState<Stats>({
     totalOrders: 0, totalRevenue: 0, totalRestaurants: 0,
     pendingOrders: 0, deliveredToday: 0, totalDrivers: 0,
@@ -286,7 +287,7 @@ const AdminDashboard = () => {
     { label: "Today", value: stats.deliveredToday, icon: UserCheck, color: "bg-primary/10 text-primary" },
   ];
 
-  const tabs = ["overview", "orders", "earnings", "withdrawals", "refunds", "users", "restaurants", "drivers"] as const;
+  const tabs = ["overview", "orders", "earnings", "withdrawals", "refunds", "requests", "users", "restaurants", "drivers"] as const;
 
   return (
     <div className="min-h-screen bg-background">
@@ -389,6 +390,9 @@ const AdminDashboard = () => {
 
         {/* Refunds Tab */}
         {tab === "refunds" && <AdminRefunds />}
+
+        {/* Driver access requests */}
+        {tab === "requests" && <AdminDriverRequests />}
 
         {/* Users Tab */}
         {tab === "users" && (
