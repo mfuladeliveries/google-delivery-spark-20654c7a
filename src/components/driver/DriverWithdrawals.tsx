@@ -105,7 +105,30 @@ const DriverWithdrawals = () => {
       .channel("driver-withdrawals-live")
       .on(
         "postgres_changes",
-        { event: "*", schema: "public", table: "withdrawal_requests", filter: `driver_id=eq.${user.id}` },
+        { event: "UPDATE", schema: "public", table: "withdrawal_requests", filter: `driver_id=eq.${user.id}` },
+        (payload) => {
+          const next = payload.new as { status: string; amount: number; bank_name: string; bank_account_number: string; rejection_reason: string | null };
+          const prev = payload.old as { status: string };
+          if (next.status !== prev.status) {
+            const amt = `R${Number(next.amount).toFixed(2)}`;
+            if (next.status === "paid") {
+              const last4 = (next.bank_account_number || "").slice(-4);
+              toast.success(`💰 ${amt} paid`, {
+                description: `Sent to ${next.bank_name} ••••${last4}. Check your bank account shortly.`,
+                duration: 8000,
+              });
+            } else if (next.status === "approved") {
+              toast.success(`${amt} approved — payout is being processed.`);
+            } else if (next.status === "rejected") {
+              toast.error(`${amt} rejected${next.rejection_reason ? `: ${next.rejection_reason}` : ""}`);
+            }
+          }
+          load();
+        }
+      )
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "withdrawal_requests", filter: `driver_id=eq.${user.id}` },
         () => load()
       )
       .subscribe();

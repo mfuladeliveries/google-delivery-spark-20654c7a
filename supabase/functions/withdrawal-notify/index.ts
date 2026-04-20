@@ -65,10 +65,10 @@ Deno.serve(async (req) => {
       .eq("user_id", callerId);
     const isAdmin = !!roles?.some((r: any) => r.role === "admin");
 
-    // Fetch request for accurate driver_id
+    // Fetch request for accurate driver_id + bank snapshot
     const { data: reqRow } = await supabase
       .from("withdrawal_requests")
-      .select("id, driver_id, amount, status")
+      .select("id, driver_id, amount, status, bank_name, bank_account_number")
       .eq("id", body.request_id)
       .single();
     if (!reqRow) {
@@ -121,6 +121,10 @@ Deno.serve(async (req) => {
       }
     } else {
       // Notify the driver
+      const last4 = (reqRow.bank_account_number || "").slice(-4);
+      const bankLine = reqRow.bank_name
+        ? ` ${reqRow.bank_name} ••••${last4}.`
+        : "";
       const driverTitles: Record<string, { title: string; body: string }> = {
         approved: {
           title: "✅ Withdrawal Approved",
@@ -128,7 +132,7 @@ Deno.serve(async (req) => {
         },
         paid: {
           title: "💰 Payout Sent",
-          body: `${amountFmt} has been paid to your bank account.`,
+          body: `${amountFmt} paid to${bankLine} Check your bank account shortly.`,
         },
         rejected: {
           title: "❌ Withdrawal Rejected",
