@@ -8,6 +8,7 @@ import BottomNav from "@/components/BottomNav";
 import { useCustomerCredits } from "@/hooks/useCustomerCredits";
 import WalletHistory from "@/components/WalletHistory";
 import AppSwitcher from "@/components/AppSwitcher";
+import { getHomeRouteForRoles } from "@/lib/homeRoute";
 
 interface Profile {
   full_name: string;
@@ -35,7 +36,7 @@ const statusColors: Record<string, string> = {
 };
 
 const Profile = () => {
-  const { user, role, signOut, loading: authLoading } = useAuth();
+  const { user, role, roles, signOut, loading: authLoading } = useAuth();
   const { balance: walletBalance } = useCustomerCredits();
   const navigate = useNavigate();
   const [profile, setProfile] = useState<Profile>({ full_name: "", contact_number: "", address: "" });
@@ -79,8 +80,11 @@ const Profile = () => {
 
   const handleSignOut = async () => {
     await signOut();
-    navigate("/");
+    navigate("/auth");
   };
+
+  // Back arrow goes to the user's own home (driver/restaurant/admin/customer)
+  const homeRoute = getHomeRouteForRoles(roles);
 
   if (authLoading || loading) return (
     <div className="flex min-h-screen items-center justify-center bg-background">
@@ -93,7 +97,7 @@ const Profile = () => {
       <header className="sticky top-0 z-50 border-b border-border bg-card/95 backdrop-blur-xl shadow-card">
         <div className="mx-auto flex max-w-lg items-center justify-between px-4 py-3">
           <div className="flex items-center gap-2">
-            <Link to="/" className="rounded-lg p-1.5 text-muted-foreground hover:bg-secondary">
+            <Link to={homeRoute} className="rounded-lg p-1.5 text-muted-foreground hover:bg-secondary">
               <ArrowLeft className="h-5 w-5" />
             </Link>
             <h1 className="font-bold text-base text-foreground">My Profile</h1>
