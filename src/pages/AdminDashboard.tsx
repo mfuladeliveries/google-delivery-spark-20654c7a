@@ -634,9 +634,9 @@ const DriversTab = ({ drivers, onDriverAdded }: { drivers: DriverRecord[]; onDri
         <div className="space-y-3">
           {drivers.map(d => (
             <div key={d.user_id} className="rounded-2xl border border-border bg-card p-4 shadow-card">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="font-bold text-sm text-foreground">{d.profile?.full_name || "Unknown"}</h3>
+              <div className="flex items-center justify-between gap-2">
+                <div className="min-w-0 flex-1">
+                  <h3 className="font-bold text-sm text-foreground truncate">{d.profile?.full_name || "Unknown"}</h3>
                   <p className="text-xs text-muted-foreground">{d.profile?.contact_number || "—"}</p>
                 </div>
                 <span className={`rounded-full px-2.5 py-1 text-[10px] font-bold ${
@@ -644,16 +644,157 @@ const DriversTab = ({ drivers, onDriverAdded }: { drivers: DriverRecord[]; onDri
                 }`}>
                   {d.is_online ? "🟢 Online" : "🔴 Offline"}
                 </span>
+                <button
+                  onClick={() => setEditing(d)}
+                  className="flex items-center gap-1 rounded-lg border border-border bg-background px-2.5 py-1.5 text-xs font-bold text-foreground hover:bg-secondary transition-colors"
+                >
+                  <Pencil className="h-3 w-3" /> Edit
+                </button>
               </div>
-              <div className="mt-2 flex gap-4 text-xs text-muted-foreground">
+              <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
                 <span>💰 R{d.total_earnings.toFixed(0)} earned</span>
                 <span>📦 {d.total_deliveries} deliveries</span>
+                {d.vehicle_type && <span>🚗 {d.vehicle_type}</span>}
+                {d.license_plate && <span>🔢 {d.license_plate}</span>}
               </div>
             </div>
           ))}
         </div>
       )}
+
+      <EditDriverDialog
+        driver={editing}
+        onClose={() => setEditing(null)}
+        onSaved={() => { setEditing(null); onDriverAdded(); }}
+      />
     </>
+  );
+};
+
+// Edit driver dialog — calls admin-update-user edge function
+const EditDriverDialog = ({
+  driver,
+  onClose,
+  onSaved,
+}: {
+  driver: DriverRecord | null;
+  onClose: () => void;
+  onSaved: () => void;
+}) => {
+  const [fullName, setFullName] = useState("");
+  const [contactNumber, setContactNumber] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [vehicleType, setVehicleType] = useState("car");
+  const [licensePlate, setLicensePlate] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (!driver) return;
+    setFullName(driver.profile?.full_name || "");
+    setContactNumber(driver.profile?.contact_number || "");
+    setVehicleType(driver.vehicle_type || "car");
+    setLicensePlate(driver.license_plate || "");
+    setEmail("");
+    setPassword("");
+  }, [driver]);
+
+  const handleSave = async () => {
+    if (!driver) return;
+    if (!fullName.trim()) {
+      toast.error("Name is required");
+      return;
+    }
+    setSaving(true);
+    try {
+      const payload: Record<string, any> = {
+        user_id: driver.user_id,
+        full_name: fullName.trim(),
+        contact_number: contactNumber.trim(),
+        vehicle_type: vehicleType,
+        license_plate: licensePlate.trim(),
+      };
+      if (email.trim()) payload.email = email.trim();
+      if (password.trim()) {
+        if (password.trim().length < 6) {
+          toast.error("Password must be at least 6 characters");
+          setSaving(false);
+          return;
+        }
+        payload.password = password.trim();
+      }
+      const res = await supabase.functions.invoke("admin-update-user", { body: payload });
+      if (res.error) throw new Error(res.error.message || "Failed to update driver");
+      if (res.data?.error) throw new Error(res.data.error);
+      toast.success("Driver updated");
+      onSaved();
+    } catch (err: any) {
+      toast.error(err.message || "Failed to update driver");
+    }
+    setSaving(false);
+  };
+
+  return (
+    <Dialog open={!!driver} onOpenChange={(open) => { if (!open) onClose(); }}>
+      <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Edit driver</DialogTitle>
+          <DialogDescription>
+            Update profile and vehicle details. Leave email/password blank to keep them unchanged.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-3 py-2">
+          <div className="space-y-1.5">
+            <Label htmlFor="ed-name">Full name *</Label>
+            <input id="ed-name" value={fullName} onChange={e => setFullName(e.target.value)}
+              className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20" />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="ed-contact">Contact number</Label>
+            <input id="ed-contact" value={contactNumber} onChange={e => setContactNumber(e.target.value)}
+              className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20" />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label htmlFor="ed-vehicle">Vehicle type</Label>
+              <select id="ed-vehicle" value={vehicleType} onChange={e => setVehicleType(e.target.value)}
+                className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary">
+                <option value="car">Car</option>
+                <option value="motorcycle">Motorcycle</option>
+                <option value="bicycle">Bicycle</option>
+                <option value="scooter">Scooter</option>
+              </select>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="ed-plate">License plate</Label>
+              <input id="ed-plate" value={licensePlate} onChange={e => setLicensePlate(e.target.value)}
+                className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20" />
+            </div>
+          </div>
+          <div className="rounded-xl border border-dashed border-border p-3 space-y-3">
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Login (optional)</p>
+            <div className="space-y-1.5">
+              <Label htmlFor="ed-email">New email</Label>
+              <input id="ed-email" type="email" value={email} onChange={e => setEmail(e.target.value)}
+                placeholder="Leave blank to keep current"
+                className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20" />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="ed-password">New password</Label>
+              <input id="ed-password" type="password" value={password} onChange={e => setPassword(e.target.value)}
+                placeholder="Leave blank to keep current" minLength={6}
+                className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20" />
+            </div>
+          </div>
+        </div>
+        <DialogFooter className="gap-2 sm:gap-2">
+          <Button variant="outline" onClick={onClose} disabled={saving}>Cancel</Button>
+          <Button onClick={handleSave} disabled={saving}>
+            {saving ? "Saving..." : "Save changes"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 };
 
