@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { DollarSign, TrendingUp, Truck, Trophy, FileDown, X } from "lucide-react";
+import { DollarSign, TrendingUp, Truck, Trophy, FileDown } from "lucide-react";
 import { toast } from "sonner";
 import { generateMonthlyStatement } from "@/lib/monthlyStatement";
 
