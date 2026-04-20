@@ -4,6 +4,7 @@ import { lovable } from "@/integrations/lovable/index";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { storeInfo } from "@/data/menu";
+import { getHomeRouteForRoles } from "@/lib/homeRoute";
 
 const Auth = () => {
   const [isLogin, setIsLogin] = useState(true);
@@ -15,11 +16,14 @@ const Auth = () => {
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, roles, loading: authLoading } = useAuth();
 
+  // Wait for roles to load before redirecting so provider-only users
+  // go straight to their dashboard (no flicker through customer home).
   useEffect(() => {
-    if (user) navigate("/");
-  }, [user, navigate]);
+    if (authLoading || !user || roles.length === 0) return;
+    navigate(getHomeRouteForRoles(roles), { replace: true });
+  }, [user, roles, authLoading, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -30,7 +34,7 @@ const Auth = () => {
     if (isLogin) {
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) setError(error.message);
-      else navigate("/");
+      // Redirect happens via the useEffect above once roles load
     } else {
       const { error } = await supabase.auth.signUp({ email, password });
       if (error) setError(error.message);
@@ -48,7 +52,7 @@ const Auth = () => {
     setLoading(true);
     const { error } = await supabase.auth.verifyOtp({ email, token: otp, type: "signup" });
     if (error) setError(error.message);
-    else navigate("/");
+    // Redirect happens via the useEffect above once roles load
     setLoading(false);
   };
 
