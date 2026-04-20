@@ -19,6 +19,7 @@ import Profile from "./pages/Profile";
 import Search from "./pages/Search";
 import Install from "./pages/Install";
 import RouteAwareInstallPrompt from "@/components/RouteAwareInstallPrompt";
+import SplashScreen from "@/components/SplashScreen";
 
 const queryClient = new QueryClient();
 
@@ -26,6 +27,7 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
       <TooltipProvider>
+        <SplashScreen />
         <Toaster />
         <Sonner />
         <OrderNotifications />
