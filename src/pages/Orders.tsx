@@ -144,25 +144,6 @@ const Orders = () => {
     }
   };
 
-    const channel = supabase
-      .channel('customer-orders')
-      .on('postgres_changes', {
-        event: 'UPDATE',
-        schema: 'public',
-        table: 'orders',
-        filter: `user_id=eq.${user.id}`,
-      }, (payload) => {
-        setOrders(prev => prev.map(o =>
-          o.id === payload.new.id
-            ? { ...o, status: (payload.new as any).status }
-            : o
-        ));
-      })
-      .subscribe();
-
-    return () => { supabase.removeChannel(channel); };
-  }, [user]);
-
   if (authLoading || loading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
