@@ -2,10 +2,11 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate, Link } from "react-router-dom";
-import { ArrowLeft, Clock, Package, CheckCircle, Truck, ChefHat, AlertCircle, ShieldCheck, UserCheck, Store, Bike } from "lucide-react";
+import { ArrowLeft, Clock, Package, CheckCircle, Truck, ChefHat, AlertCircle, ShieldCheck, UserCheck, Store, Bike, Wallet, Banknote } from "lucide-react";
 import { storeInfo } from "@/data/menu";
 import BottomNav from "@/components/BottomNav";
 import OrderTrackingMap from "@/components/OrderTrackingMap";
+import { toast } from "sonner";
 
 interface OrderItem {
   name: string;
@@ -29,6 +30,11 @@ interface Order {
   created_at: string;
   delivery_code: string;
   customer_address: string;
+  payment_method?: string;
+  cancel_reason?: string | null;
+  refund_status?: "pending" | "credited" | "bank_pending" | "bank_paid" | null;
+  refund_method?: "credits" | "bank" | null;
+  refund_amount?: number | null;
 }
 
 const statusSteps = [
