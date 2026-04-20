@@ -72,8 +72,19 @@ const Index = () => {
   const [cartOpen, setCartOpen] = useState(false);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
   const cart = useCart();
-  const { user } = useAuth();
+  const { user, roles, loading: authLoading } = useAuth();
   const navigate = useNavigate();
+
+  // Lock providers (driver / restaurant) into their own dashboards.
+  // A user with ONLY a provider role should not be able to browse the customer app.
+  useEffect(() => {
+    if (authLoading || !user || roles.length === 0) return;
+    const hasCustomer = roles.includes("customer");
+    const hasAdmin = roles.includes("admin");
+    if (hasCustomer || hasAdmin) return; // customers and admins can browse freely
+    if (roles.includes("driver")) navigate("/driver", { replace: true });
+    else if (roles.includes("restaurant")) navigate("/restaurant/dashboard", { replace: true });
+  }, [user, roles, authLoading, navigate]);
 
   useEffect(() => {
     const fetchRestaurants = async () => {

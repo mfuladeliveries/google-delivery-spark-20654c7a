@@ -1,5 +1,4 @@
-import { Link } from "react-router-dom";
-import { ArrowLeft, Truck, Wifi, WifiOff, User, Bell } from "lucide-react";
+import { Truck, Wifi, WifiOff, User } from "lucide-react";
 import InstallAppButton from "@/components/InstallAppButton";
 
 interface DriverHeaderProps {
@@ -15,9 +14,6 @@ const DriverHeader = ({ isOnline, togglingOnline, onToggleOnline, activeCount = 
     <header className="sticky top-0 z-50 border-b border-border bg-card/95 backdrop-blur-xl shadow-card">
       <div className="mx-auto flex max-w-2xl items-center justify-between px-4 py-3">
         <div className="flex items-center gap-3">
-          <Link to="/" className="rounded-xl p-2 text-muted-foreground hover:bg-secondary transition-colors">
-            <ArrowLeft className="h-5 w-5" />
-          </Link>
           <div className="flex items-center gap-2.5">
             <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-primary/10">
               <Truck className="h-5 w-5 text-primary" />
