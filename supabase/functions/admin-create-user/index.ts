@@ -56,10 +56,13 @@ Deno.serve(async (req) => {
 
     // Role-specific setup
     if (role === "driver") {
-      await adminClient.from("driver_profiles").update({
+      // Upsert ensures the driver_profile exists even when the role was UPDATEd
+      // (the auto-create trigger only fires on INSERT into user_roles).
+      await adminClient.from("driver_profiles").upsert({
+        user_id: userId,
         vehicle_type: vehicle_type || "",
         license_plate: license_plate || "",
-      }).eq("user_id", userId);
+      }, { onConflict: "user_id" });
     }
 
     if (role === "restaurant" && restaurant_id) {
