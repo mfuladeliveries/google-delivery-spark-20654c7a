@@ -1,8 +1,9 @@
-import { DollarSign, Package, TrendingUp, Calendar, MapPin, Clock, ChevronDown, ChevronUp, Wallet, Lock } from "lucide-react";
-import { useEffect, useState } from "react";
+import { DollarSign, Package, TrendingUp, Calendar, MapPin, Clock, ChevronDown, ChevronUp, Wallet, Lock, FileDown } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
+import { generateMonthlyStatement } from "@/lib/monthlyStatement";
 
 interface Order {
   id: string;
@@ -40,6 +41,25 @@ const DriverEarnings = ({ driverProfile, completedOrders }: DriverEarningsProps)
   const { user } = useAuth();
   const [showAll, setShowAll] = useState(false);
   const [earnings, setEarnings] = useState<EarningRow[]>([]);
+  const [generatingStatement, setGeneratingStatement] = useState(false);
+
+  // Month options: current + 11 previous months
+  const monthOptions = useMemo(() => {
+    const out: { key: string; label: string; start: Date; end: Date }[] = [];
+    const base = new Date();
+    for (let i = 0; i < 12; i++) {
+      const start = new Date(base.getFullYear(), base.getMonth() - i, 1);
+      const end = new Date(base.getFullYear(), base.getMonth() - i + 1, 1);
+      out.push({
+        key: `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, "0")}`,
+        label: start.toLocaleDateString("en-ZA", { month: "long", year: "numeric" }),
+        start,
+        end,
+      });
+    }
+    return out;
+  }, []);
+  const [selectedMonth, setSelectedMonth] = useState(monthOptions[0].key);
 
   useEffect(() => {
     if (!user) return;
@@ -101,6 +121,85 @@ const DriverEarnings = ({ driverProfile, completedOrders }: DriverEarningsProps)
     toast.info("Withdrawals coming soon — payouts are processed weekly for now.");
   };
 
+  const handleGenerateStatement = async () => {
+    if (!user) return;
+    const opt = monthOptions.find((m) => m.key === selectedMonth);
+    if (!opt) return;
+
+    setGeneratingStatement(true);
+    try {
+      const [{ data: profileData }, { data: periodEarnings }, { data: priorEarnings }, { data: allWithdrawals }] =
+        await Promise.all([
+          supabase.from("profiles").select("full_name").eq("user_id", user.id).maybeSingle(),
+          supabase
+            .from("driver_earnings")
+            .select("order_id, driver_payout, created_at")
+            .eq("driver_id", user.id)
+            .gte("created_at", opt.start.toISOString())
+            .lt("created_at", opt.end.toISOString())
+            .order("created_at", { ascending: true }),
+          supabase
+            .from("driver_earnings")
+            .select("driver_payout")
+            .eq("driver_id", user.id)
+            .lt("created_at", opt.start.toISOString()),
+          supabase
+            .from("withdrawal_requests")
+            .select("id, amount, status, requested_at, paid_at, bank_name, bank_account_number")
+            .eq("driver_id", user.id)
+            .order("requested_at", { ascending: true }),
+        ]);
+
+      const orderIds = (periodEarnings || []).map((e: any) => e.order_id);
+      const { data: orderRows } = orderIds.length
+        ? await supabase
+            .from("orders")
+            .select("id, order_number, restaurant, customer_address, delivered_at")
+            .in("id", orderIds)
+        : { data: [] as any[] };
+      const orderById = new Map((orderRows || []).map((o: any) => [o.id, o]));
+
+      const deliveries = (periodEarnings || []).map((e: any) => {
+        const o = orderById.get(e.order_id);
+        return {
+          order_id: e.order_id,
+          order_number: o?.order_number ?? null,
+          restaurant: o?.restaurant ?? "—",
+          customer_address: o?.customer_address ?? "—",
+          delivered_at: o?.delivered_at || e.created_at,
+          driver_payout: Number(e.driver_payout),
+        };
+      });
+
+      const priorEarned = (priorEarnings || []).reduce((s: number, r: any) => s + Number(r.driver_payout), 0);
+      const priorLocked = (allWithdrawals || [])
+        .filter((w: any) => new Date(w.requested_at) < opt.start && w.status !== "rejected")
+        .reduce((s: number, w: any) => s + Number(w.amount), 0);
+      const opening_balance = Math.max(0, priorEarned - priorLocked);
+
+      const periodWithdrawals = (allWithdrawals || []).filter(
+        (w: any) =>
+          new Date(w.requested_at) >= opt.start && new Date(w.requested_at) < opt.end
+      );
+
+      generateMonthlyStatement({
+        driver_name: profileData?.full_name || "Driver",
+        period_label: opt.label,
+        period_start: opt.start,
+        period_end: new Date(opt.end.getTime() - 1),
+        opening_balance,
+        deliveries,
+        withdrawals: periodWithdrawals as any,
+      });
+      toast.success(`${opt.label} statement downloaded`);
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to generate statement");
+    } finally {
+      setGeneratingStatement(false);
+    }
+  };
+
   return (
     <div className="space-y-4">
       {/* Hero balance card */}
@@ -159,6 +258,38 @@ const DriverEarnings = ({ driverProfile, completedOrders }: DriverEarningsProps)
         <p className="text-xs text-muted-foreground">
           💡 <span className="font-semibold text-foreground">How it works:</span> You earn 70% of the R55 delivery fee (R38.50) per completed order. Platform retains 30%.
         </p>
+      </div>
+
+      {/* Monthly statement */}
+      <div className="rounded-2xl border border-border bg-card p-4 shadow-card">
+        <h3 className="mb-2 flex items-center gap-2 font-bold text-foreground">
+          <FileDown className="h-4 w-4 text-primary" /> Monthly Statement
+        </h3>
+        <p className="mb-3 text-xs text-muted-foreground">
+          Download a PDF summary of deliveries, withdrawals and running balance for any month.
+        </p>
+        <div className="flex gap-2">
+          <select
+            value={selectedMonth}
+            onChange={(e) => setSelectedMonth(e.target.value)}
+            disabled={generatingStatement}
+            className="flex-1 rounded-xl border border-border bg-background px-3 py-2.5 text-sm font-semibold text-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-50"
+          >
+            {monthOptions.map((m) => (
+              <option key={m.key} value={m.key}>
+                {m.label}
+              </option>
+            ))}
+          </select>
+          <button
+            onClick={handleGenerateStatement}
+            disabled={generatingStatement}
+            className="flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2.5 text-sm font-bold text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-50"
+          >
+            <FileDown className="h-4 w-4" />
+            {generatingStatement ? "Generating..." : "Download"}
+          </button>
+        </div>
       </div>
 
       {/* Delivery history */}
