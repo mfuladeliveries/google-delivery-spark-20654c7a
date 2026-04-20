@@ -88,9 +88,9 @@ const AdminRefunds = () => {
         body: {
           order_id: r.id,
           order_number: r.order_number,
-          status: "cancelled",
+          status: "bank_refund_paid",
           user_id: r.user_id,
-          reason: `Your bank refund of R${Number(r.refund_amount).toFixed(2)} has been sent and should reflect within 3–5 business days.`,
+          refund_amount: r.refund_amount,
         },
       })
       .catch(() => {});
