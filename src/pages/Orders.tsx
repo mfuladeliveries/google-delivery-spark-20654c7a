@@ -2,12 +2,14 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate, Link } from "react-router-dom";
-import { ArrowLeft, Clock, Package, CheckCircle, Truck, ChefHat, AlertCircle, ShieldCheck, UserCheck, Store, Bike, Wallet, Banknote, BellRing } from "lucide-react";
+import { ArrowLeft, Clock, Package, CheckCircle, Truck, ChefHat, AlertCircle, ShieldCheck, UserCheck, Store, Bike, Wallet, Banknote, BellRing, Bell } from "lucide-react";
 import { storeInfo } from "@/data/menu";
 import BottomNav from "@/components/BottomNav";
 import OrderTrackingMap from "@/components/OrderTrackingMap";
 import { toast } from "sonner";
 import { getHomeRouteForRoles } from "@/lib/homeRoute";
+import { useNotificationPrefs } from "@/hooks/useNotificationPrefs";
+import { Switch } from "@/components/ui/switch";
 
 interface OrderItem {
   name: string;
@@ -72,6 +74,7 @@ const Orders = () => {
   const [loading, setLoading] = useState(true);
   const [deliveryPins, setDeliveryPins] = useState<Record<string, string>>({});
   const [notificationLog, setNotificationLog] = useState<Record<string, Set<string>>>({});
+  const { prefs, update: updatePrefs } = useNotificationPrefs();
 
   useEffect(() => {
     if (!authLoading && !user) navigate("/auth");
@@ -199,6 +202,41 @@ const Orders = () => {
       </header>
 
       <main className="mx-auto max-w-3xl px-4 py-4 pb-nav md:pb-8">
+        {/* Notification preferences */}
+        <div className="mb-4 rounded-2xl border border-border bg-card p-4 shadow-card">
+          <div className="mb-2 flex items-center gap-2">
+            <Bell className="h-4 w-4 text-primary" />
+            <h2 className="text-sm font-bold text-foreground">Notification preferences</h2>
+          </div>
+          <p className="mb-3 text-xs text-muted-foreground">
+            Choose which one-shot order alerts you receive (each is sent only once per order).
+          </p>
+          <div className="space-y-2.5">
+            <label className="flex items-center justify-between gap-3 rounded-lg bg-secondary/50 px-3 py-2">
+              <div className="flex items-center gap-2">
+                <Truck className="h-4 w-4 text-primary" />
+                <span className="text-sm font-medium text-foreground">"On the way" alert</span>
+              </div>
+              <Switch
+                checked={prefs.out_for_delivery}
+                onCheckedChange={(v) => updatePrefs({ out_for_delivery: v })}
+                aria-label="Toggle on-the-way notifications"
+              />
+            </label>
+            <label className="flex items-center justify-between gap-3 rounded-lg bg-secondary/50 px-3 py-2">
+              <div className="flex items-center gap-2">
+                <AlertCircle className="h-4 w-4 text-destructive" />
+                <span className="text-sm font-medium text-foreground">"Cancelled" alert</span>
+              </div>
+              <Switch
+                checked={prefs.cancelled}
+                onCheckedChange={(v) => updatePrefs({ cancelled: v })}
+                aria-label="Toggle cancellation notifications"
+              />
+            </label>
+          </div>
+        </div>
+
         {orders.length === 0 ? (
           <div className="py-20 text-center text-muted-foreground">
             <Package className="mx-auto h-12 w-12 opacity-40" />

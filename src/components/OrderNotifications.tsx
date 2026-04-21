@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
+import { getNotificationPrefs } from "@/hooks/useNotificationPrefs";
 import { toast } from "sonner";
 
 const statusLabels: Record<string, string> = {
@@ -83,6 +84,11 @@ const OrderNotifications = () => {
           if ((newStatus === "cancelled" || newStatus === "rejected" || newStatus === "out_for_delivery") && shownNotifications.has(dedupeKey)) {
             return;
           }
+
+          // Respect user notification preferences for one-shot alerts
+          const prefs = getNotificationPrefs();
+          if (newStatus === "out_for_delivery" && !prefs.out_for_delivery) return;
+          if ((newStatus === "cancelled" || newStatus === "rejected") && !prefs.cancelled) return;
 
           const emoji = statusEmojis[newStatus] || "📋";
           const label = statusLabels[newStatus] || newStatus;
