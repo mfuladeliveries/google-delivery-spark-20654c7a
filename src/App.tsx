@@ -20,6 +20,7 @@ import Search from "./pages/Search";
 import Install from "./pages/Install";
 import RouteAwareInstallPrompt from "@/components/RouteAwareInstallPrompt";
 import SplashScreen from "@/components/SplashScreen";
+import ActiveOrderBanner from "@/components/ActiveOrderBanner";
 
 const queryClient = new QueryClient();
 
@@ -33,6 +34,7 @@ const App = () => (
         <OrderNotifications />
         <BrowserRouter>
           <RouteAwareInstallPrompt />
+          <ActiveOrderBanner />
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/auth" element={<Auth />} />

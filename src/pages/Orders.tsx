@@ -180,6 +180,8 @@ const Orders = () => {
               const sc = getStatusConfig(order.status);
               const StatusIcon = sc.icon;
               const currentStep = getStepIndex(order.status);
+              // Once driver accepts, collapse tracking — banner takes over on home screen
+              const driverAccepted = ["driver_assigned", "picking_up", "arrived_at_restaurant", "out_for_delivery"].includes(order.status);
               const isActive = order.status === "out_for_delivery" || order.status === "driver_assigned";
               const isCancelled = order.status === "cancelled" || order.status === "rejected";
 
