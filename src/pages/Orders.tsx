@@ -74,6 +74,7 @@ const Orders = () => {
   const [loading, setLoading] = useState(true);
   const [deliveryPins, setDeliveryPins] = useState<Record<string, string>>({});
   const [notificationLog, setNotificationLog] = useState<Record<string, Set<string>>>({});
+  const { prefs, update: updatePrefs } = useNotificationPrefs();
 
   useEffect(() => {
     if (!authLoading && !user) navigate("/auth");
