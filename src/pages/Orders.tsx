@@ -274,6 +274,24 @@ const Orders = () => {
                       <span className="text-sm text-muted-foreground">🍽️ {order.restaurant}</span>
                     </div>
 
+                    {/* Notification delivery indicators (one-shot dedupe alerts) */}
+                    {(notificationLog[order.id]?.has("customer_cancelled") || notificationLog[order.id]?.has("customer_out_for_delivery")) && (
+                      <div className="mb-2 flex flex-wrap gap-1.5">
+                        {notificationLog[order.id]?.has("customer_out_for_delivery") && (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-semibold text-primary">
+                            <BellRing className="h-2.5 w-2.5" />
+                            "On the way" sent
+                          </span>
+                        )}
+                        {notificationLog[order.id]?.has("customer_cancelled") && (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-destructive/10 px-2 py-0.5 text-[10px] font-semibold text-destructive">
+                            <BellRing className="h-2.5 w-2.5" />
+                            "Cancelled" sent
+                          </span>
+                        )}
+                      </div>
+                    )}
+
                     {/* Delivery PIN shown directly under order number until delivered */}
                     {(deliveryPins[order.id] || order.delivery_code) && order.status !== "delivered" && !isCancelled && (
                       <div className="mb-3 flex items-center gap-2 rounded-lg border border-primary/20 bg-primary/5 px-3 py-1.5">
