@@ -301,6 +301,27 @@ Deno.serve(async (req) => {
           ? "customer_out_for_delivery"
           : null;
 
+    // Driver-facing notification kinds — logged against the order's customer so the
+    // customer's Orders page can render a "driver was notified" status log.
+    const driverKind: string | null = isOfferPending
+      ? "driver_offer_pending"
+      : isOfferMissed
+        ? "driver_offer_missed"
+        : isDispatchBroadcast
+          ? "driver_dispatch_broadcast"
+          : null;
+
+    // Resolve the customer user_id for driver-kind logging (when we only got order_id)
+    let customerUserId: string | null = user_id || null;
+    if (driverKind && !customerUserId && order_id) {
+      const { data: ord } = await supabase
+        .from("orders")
+        .select("user_id")
+        .eq("id", order_id)
+        .maybeSingle();
+      customerUserId = ord?.user_id || null;
+    }
+
     for (const sub of subs) {
       try {
         let payload = customerPayload;
@@ -347,6 +368,19 @@ Deno.serve(async (req) => {
           expired.push(sub.id);
         }
       }
+    }
+
+    // Log driver-facing dispatch events once per (order, kind) against the customer
+    // so the Orders page can render a per-order driver-notification status log.
+    if (driverKind && order_id && customerUserId && sent > 0) {
+      await supabase
+        .from("order_notification_log")
+        .insert({
+          order_id,
+          user_id: customerUserId,
+          notification_kind: driverKind,
+        })
+        .then(() => {}, () => {}); // ignore unique-violation duplicates
     }
 
     if (expired.length > 0) {

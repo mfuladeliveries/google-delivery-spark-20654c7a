@@ -330,6 +330,41 @@ const Orders = () => {
                       </div>
                     )}
 
+                    {/* Driver notification status log — verifies each push type was sent */}
+                    {(notificationLog[order.id]?.has("driver_offer_pending") ||
+                      notificationLog[order.id]?.has("driver_offer_missed") ||
+                      notificationLog[order.id]?.has("driver_dispatch_broadcast")) && (
+                      <div className="mb-3 rounded-lg border border-border bg-secondary/40 px-3 py-2">
+                        <div className="mb-1.5 flex items-center gap-1.5">
+                          <Bike className="h-3 w-3 text-primary" />
+                          <span className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
+                            Driver notifications
+                          </span>
+                        </div>
+                        <div className="flex flex-wrap gap-1.5">
+                          {notificationLog[order.id]?.has("driver_offer_pending") && (
+                            <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-semibold text-primary">
+                              <CheckCircle className="h-2.5 w-2.5" />
+                              Offer push sent
+                            </span>
+                          )}
+                          {notificationLog[order.id]?.has("driver_offer_missed") && (
+                            <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-[10px] font-semibold text-muted-foreground">
+                              <AlertCircle className="h-2.5 w-2.5" />
+                              Missed-offer push sent
+                            </span>
+                          )}
+                          {notificationLog[order.id]?.has("driver_dispatch_broadcast") && (
+                            <span className="inline-flex items-center gap-1 rounded-full bg-accent px-2 py-0.5 text-[10px] font-semibold text-accent-foreground">
+                              <BellRing className="h-2.5 w-2.5" />
+                              Broadcast push sent
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+
                     {/* Delivery PIN shown directly under order number until delivered */}
                     {(deliveryPins[order.id] || order.delivery_code) && order.status !== "delivered" && !isCancelled && (
                       <div className="mb-3 flex items-center gap-2 rounded-lg border border-primary/20 bg-primary/5 px-3 py-1.5">
