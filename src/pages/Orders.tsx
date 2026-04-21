@@ -71,6 +71,7 @@ const Orders = () => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [deliveryPins, setDeliveryPins] = useState<Record<string, string>>({});
+  const [notificationLog, setNotificationLog] = useState<Record<string, Set<string>>>({});
 
   useEffect(() => {
     if (!authLoading && !user) navigate("/auth");
@@ -81,6 +82,21 @@ const Orders = () => {
     // Load saved delivery PINs from localStorage
     const savedPins = JSON.parse(localStorage.getItem("delivery_pins") || "{}");
     setDeliveryPins(savedPins);
+
+    const fetchNotificationLog = async () => {
+      const { data } = await supabase
+        .from("order_notification_log")
+        .select("order_id, notification_kind")
+        .eq("user_id", user.id);
+      if (data) {
+        const map: Record<string, Set<string>> = {};
+        data.forEach((row: any) => {
+          if (!map[row.order_id]) map[row.order_id] = new Set();
+          map[row.order_id].add(row.notification_kind);
+        });
+        setNotificationLog(map);
+      }
+    };
 
     const fetchOrders = async () => {
       const { data } = await supabase
@@ -108,6 +124,7 @@ const Orders = () => {
       setLoading(false);
     };
     fetchOrders();
+    fetchNotificationLog();
 
     const channel = supabase
       .channel('customer-orders')
@@ -118,10 +135,26 @@ const Orders = () => {
         filter: `user_id=eq.${user.id}`,
       }, () => {
         fetchOrders();
+        fetchNotificationLog();
       })
       .subscribe();
 
-    return () => { supabase.removeChannel(channel); };
+    const logChannel = supabase
+      .channel('customer-notification-log')
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'order_notification_log',
+        filter: `user_id=eq.${user.id}`,
+      }, () => {
+        fetchNotificationLog();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+      supabase.removeChannel(logChannel);
+    };
   }, [user]);
 
   const handleChooseRefund = async (orderId: string, orderNumber: number, method: "credits" | "bank") => {
