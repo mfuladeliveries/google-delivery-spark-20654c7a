@@ -196,8 +196,8 @@ const Orders = () => {
                     </span>
                   </div>
 
-                  {/* 7-stage progress tracker */}
-                  {!isCancelled && (
+                  {/* 7-stage progress tracker — hidden once driver accepts (banner takes over) */}
+                  {!isCancelled && !driverAccepted && (
                     <div className="px-4 pt-3">
                       <div className="flex gap-0.5">
                         {statusSteps.map((step, i) => (
@@ -251,8 +251,8 @@ const Orders = () => {
                       </div>
                     )}
 
-                    {/* Live GPS Map for active deliveries */}
-                    {isActive && (
+                    {/* Live GPS Map — only on this Orders page when out_for_delivery (final leg) */}
+                    {isActive && order.status === "out_for_delivery" && (
                       <div className="mb-3">
                         <p className="text-xs font-medium text-muted-foreground mb-1.5">📍 Live Tracking</p>
                         <OrderTrackingMap orderId={order.id} customerAddress={order.customer_address} />
