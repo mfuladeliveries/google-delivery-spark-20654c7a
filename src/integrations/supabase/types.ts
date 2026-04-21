@@ -265,6 +265,30 @@ export type Database = {
           },
         ]
       }
+      order_notification_log: {
+        Row: {
+          id: string
+          notification_kind: string
+          order_id: string
+          sent_at: string
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          notification_kind: string
+          order_id: string
+          sent_at?: string
+          user_id: string
+        }
+        Update: {
+          id?: string
+          notification_kind?: string
+          order_id?: string
+          sent_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       orders: {
         Row: {
           accepted_at: string | null
