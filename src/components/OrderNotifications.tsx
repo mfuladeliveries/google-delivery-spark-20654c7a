@@ -85,6 +85,11 @@ const OrderNotifications = () => {
             return;
           }
 
+          // Respect user notification preferences for one-shot alerts
+          const prefs = getNotificationPrefs();
+          if (newStatus === "out_for_delivery" && !prefs.out_for_delivery) return;
+          if ((newStatus === "cancelled" || newStatus === "rejected") && !prefs.cancelled) return;
+
           const emoji = statusEmojis[newStatus] || "📋";
           const label = statusLabels[newStatus] || newStatus;
           const title = `${emoji} Order #${orderNumber}`;
