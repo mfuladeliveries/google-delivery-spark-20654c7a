@@ -349,13 +349,13 @@ const Orders = () => {
                             </span>
                           )}
                           {notificationLog[order.id]?.has("driver_offer_missed") && (
-                            <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 px-2 py-0.5 text-[10px] font-semibold text-amber-600 dark:text-amber-400">
+                            <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-[10px] font-semibold text-muted-foreground">
                               <AlertCircle className="h-2.5 w-2.5" />
                               Missed-offer push sent
                             </span>
                           )}
                           {notificationLog[order.id]?.has("driver_dispatch_broadcast") && (
-                            <span className="inline-flex items-center gap-1 rounded-full bg-indigo-500/10 px-2 py-0.5 text-[10px] font-semibold text-indigo-600 dark:text-indigo-400">
+                            <span className="inline-flex items-center gap-1 rounded-full bg-accent px-2 py-0.5 text-[10px] font-semibold text-accent-foreground">
                               <BellRing className="h-2.5 w-2.5" />
                               Broadcast push sent
                             </span>
