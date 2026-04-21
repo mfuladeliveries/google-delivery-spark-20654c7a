@@ -292,9 +292,19 @@ Deno.serve(async (req) => {
       (admins || []).forEach((a) => adminUserIds.add(a.user_id));
     }
 
+    // Dedupe key for one-shot customer notifications (cancel / out_for_delivery)
+    // Maps the event to a stable "kind" string per (order, user).
+    const dedupeKind: string | null =
+      status === "cancelled" || status === "rejected"
+        ? "customer_cancelled"
+        : status === "out_for_delivery"
+          ? "customer_out_for_delivery"
+          : null;
+
     for (const sub of subs) {
       try {
         let payload = customerPayload;
+        let isCustomerOneShot = false;
 
         if (isOfferPending && sub.user_id === target_user_id) {
           payload = offerPendingPayload;
@@ -304,6 +314,24 @@ Deno.serve(async (req) => {
           payload = adminUserIds.has(sub.user_id) ? adminBroadcastPayload : driverBroadcastPayload;
         } else if (sub.user_id === restaurantOwnerId) {
           payload = restaurantPayload;
+        } else if (dedupeKind && order_id && sub.user_id === user_id) {
+          // Only dedupe the customer-facing one-shot events
+          isCustomerOneShot = true;
+        }
+
+        // Skip duplicate one-shot customer notifications
+        if (isCustomerOneShot) {
+          const { error: insertErr } = await supabase
+            .from("order_notification_log")
+            .insert({
+              order_id,
+              user_id: sub.user_id,
+              notification_kind: dedupeKind,
+            });
+          // Unique violation = already sent → skip
+          if (insertErr) {
+            continue;
+          }
         }
 
         await webpush.sendNotification(
