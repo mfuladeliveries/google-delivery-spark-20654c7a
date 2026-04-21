@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate, Link } from "react-router-dom";
-import { ArrowLeft, Clock, Package, CheckCircle, Truck, ChefHat, AlertCircle, ShieldCheck, UserCheck, Store, Bike, Wallet, Banknote } from "lucide-react";
+import { ArrowLeft, Clock, Package, CheckCircle, Truck, ChefHat, AlertCircle, ShieldCheck, UserCheck, Store, Bike, Wallet, Banknote, BellRing } from "lucide-react";
 import { storeInfo } from "@/data/menu";
 import BottomNav from "@/components/BottomNav";
 import OrderTrackingMap from "@/components/OrderTrackingMap";
@@ -71,6 +71,7 @@ const Orders = () => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [deliveryPins, setDeliveryPins] = useState<Record<string, string>>({});
+  const [notificationLog, setNotificationLog] = useState<Record<string, Set<string>>>({});
 
   useEffect(() => {
     if (!authLoading && !user) navigate("/auth");
@@ -81,6 +82,21 @@ const Orders = () => {
     // Load saved delivery PINs from localStorage
     const savedPins = JSON.parse(localStorage.getItem("delivery_pins") || "{}");
     setDeliveryPins(savedPins);
+
+    const fetchNotificationLog = async () => {
+      const { data } = await supabase
+        .from("order_notification_log")
+        .select("order_id, notification_kind")
+        .eq("user_id", user.id);
+      if (data) {
+        const map: Record<string, Set<string>> = {};
+        data.forEach((row: any) => {
+          if (!map[row.order_id]) map[row.order_id] = new Set();
+          map[row.order_id].add(row.notification_kind);
+        });
+        setNotificationLog(map);
+      }
+    };
 
     const fetchOrders = async () => {
       const { data } = await supabase
@@ -108,6 +124,7 @@ const Orders = () => {
       setLoading(false);
     };
     fetchOrders();
+    fetchNotificationLog();
 
     const channel = supabase
       .channel('customer-orders')
@@ -118,10 +135,26 @@ const Orders = () => {
         filter: `user_id=eq.${user.id}`,
       }, () => {
         fetchOrders();
+        fetchNotificationLog();
       })
       .subscribe();
 
-    return () => { supabase.removeChannel(channel); };
+    const logChannel = supabase
+      .channel('customer-notification-log')
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'order_notification_log',
+        filter: `user_id=eq.${user.id}`,
+      }, () => {
+        fetchNotificationLog();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+      supabase.removeChannel(logChannel);
+    };
   }, [user]);
 
   const handleChooseRefund = async (orderId: string, orderNumber: number, method: "credits" | "bank") => {
@@ -240,6 +273,24 @@ const Orders = () => {
                       <span className="font-bold text-foreground text-base">Order #{order.order_number}</span>
                       <span className="text-sm text-muted-foreground">🍽️ {order.restaurant}</span>
                     </div>
+
+                    {/* Notification delivery indicators (one-shot dedupe alerts) */}
+                    {(notificationLog[order.id]?.has("customer_cancelled") || notificationLog[order.id]?.has("customer_out_for_delivery")) && (
+                      <div className="mb-2 flex flex-wrap gap-1.5">
+                        {notificationLog[order.id]?.has("customer_out_for_delivery") && (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-semibold text-primary">
+                            <BellRing className="h-2.5 w-2.5" />
+                            "On the way" sent
+                          </span>
+                        )}
+                        {notificationLog[order.id]?.has("customer_cancelled") && (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-destructive/10 px-2 py-0.5 text-[10px] font-semibold text-destructive">
+                            <BellRing className="h-2.5 w-2.5" />
+                            "Cancelled" sent
+                          </span>
+                        )}
+                      </div>
+                    )}
 
                     {/* Delivery PIN shown directly under order number until delivered */}
                     {(deliveryPins[order.id] || order.delivery_code) && order.status !== "delivered" && !isCancelled && (
