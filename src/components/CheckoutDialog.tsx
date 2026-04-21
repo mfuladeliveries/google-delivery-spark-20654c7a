@@ -7,6 +7,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useCustomerCredits } from "@/hooks/useCustomerCredits";
 import { z } from "zod";
 import { toast } from "sonner";
+import { dispatchAndNotify } from "@/lib/pushNotify";
 
 
 const checkoutSchema = z.object({
@@ -169,9 +170,11 @@ const CheckoutDialog = ({
         localStorage.setItem("delivery_pins", JSON.stringify(pins));
       }
 
-      // Orders auto-accept to "ready" — start the targeted dispatch chain
+      // Orders auto-accept to "ready" — start the targeted dispatch chain and
+      // immediately push the first offered driver (works even if their app is closed).
       if (orderId) {
-        void supabase.rpc("dispatch_assign_next", { p_order_id: orderId }).then(() => {}, () => {});
+        const orderTotal = Number(orderResult?.total) || 0;
+        void dispatchAndNotify(orderId, Number(orderNum) || 0, restaurants[0] || "", orderTotal);
       }
 
       toast.success("Your order has been placed successfully! 🎉", {
