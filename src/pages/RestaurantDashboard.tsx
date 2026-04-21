@@ -8,7 +8,7 @@ import {
 } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
 import { toast } from "sonner";
-import { sendPushNotification } from "@/lib/pushNotify";
+import { sendPushNotification, dispatchAndNotify } from "@/lib/pushNotify";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -219,8 +219,14 @@ const RestaurantDashboard = () => {
     setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status } : o));
 
     // When restaurant marks an order ready, start the targeted dispatch chain
-    if (status === "ready" && oldStatus !== "ready") {
-      void supabase.rpc("dispatch_assign_next", { p_order_id: orderId }).then(() => {}, () => {});
+    // and push the first offered driver immediately (works even if their app is closed).
+    if (status === "ready" && oldStatus !== "ready" && order) {
+      void dispatchAndNotify(
+        orderId,
+        order.order_number,
+        restaurant?.name || "",
+        Number(order.total) || 0
+      );
     }
 
     // Send push notification (customer-facing status update)
