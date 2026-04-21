@@ -2,12 +2,14 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate, Link } from "react-router-dom";
-import { ArrowLeft, Clock, Package, CheckCircle, Truck, ChefHat, AlertCircle, ShieldCheck, UserCheck, Store, Bike, Wallet, Banknote, BellRing } from "lucide-react";
+import { ArrowLeft, Clock, Package, CheckCircle, Truck, ChefHat, AlertCircle, ShieldCheck, UserCheck, Store, Bike, Wallet, Banknote, BellRing, Bell } from "lucide-react";
 import { storeInfo } from "@/data/menu";
 import BottomNav from "@/components/BottomNav";
 import OrderTrackingMap from "@/components/OrderTrackingMap";
 import { toast } from "sonner";
 import { getHomeRouteForRoles } from "@/lib/homeRoute";
+import { useNotificationPrefs } from "@/hooks/useNotificationPrefs";
+import { Switch } from "@/components/ui/switch";
 
 interface OrderItem {
   name: string;
