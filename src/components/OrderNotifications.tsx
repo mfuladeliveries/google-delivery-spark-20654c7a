@@ -28,6 +28,9 @@ const statusEmojis: Record<string, string> = {
   rejected: "🚫",
 };
 
+// Track which notifications have been shown to prevent duplicates
+const shownNotifications = new Set<string>();
+
 const requestNotificationPermission = async () => {
   if (!("Notification" in window)) return false;
   if (Notification.permission === "granted") return true;
@@ -72,7 +75,14 @@ const OrderNotifications = () => {
         }, (payload: any) => {
           const newStatus = payload.new?.status;
           const orderNumber = payload.new?.order_number;
-          if (!newStatus || !orderNumber) return;
+          const orderId = payload.new?.id;
+          if (!newStatus || !orderNumber || !orderId) return;
+
+          // Deduplication: only show cancellation and out_for_delivery once per order
+          const dedupeKey = `${orderId}-${newStatus}`;
+          if ((newStatus === "cancelled" || newStatus === "rejected" || newStatus === "out_for_delivery") && shownNotifications.has(dedupeKey)) {
+            return;
+          }
 
           const emoji = statusEmojis[newStatus] || "📋";
           const label = statusLabels[newStatus] || newStatus;
@@ -81,6 +91,11 @@ const OrderNotifications = () => {
           if (newStatus === "delivered") toast.success(title, { description: label });
           else if (newStatus === "cancelled" || newStatus === "rejected") toast.error(title, { description: label });
           else toast.info(title, { description: label });
+
+          // Mark as shown for dedupe statuses
+          if (newStatus === "cancelled" || newStatus === "rejected" || newStatus === "out_for_delivery") {
+            shownNotifications.add(dedupeKey);
+          }
 
           if (document.hidden) sendBrowserNotification(title, label);
         })
