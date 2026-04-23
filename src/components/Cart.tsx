@@ -1,4 +1,5 @@
-import { X, Plus, Minus, Package, Trash2 } from "lucide-react";
+import { useState } from "react";
+import { X, Plus, Minus, Package, Trash2, StickyNote } from "lucide-react";
 import { CartItem } from "@/hooks/useCart";
 import { storeInfo } from "@/data/menu";
 
@@ -13,7 +14,7 @@ interface CartProps {
   onAdd: (itemId: string) => void;
   onRemove: (itemId: string) => void;
   onClear: () => void;
-  onCheckout: () => void;
+  onCheckout: (foodNote?: string) => void;
 }
 
 const Cart = ({
@@ -29,6 +30,7 @@ const Cart = ({
   onClear,
   onCheckout,
 }: CartProps) => {
+  const [foodNote, setFoodNote] = useState("");
   if (!open) return null;
 
   return (
