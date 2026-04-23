@@ -335,9 +335,79 @@ const CheckoutDialog = ({
             </div>
             {validationErrors.address && <p className="mt-1 text-xs text-destructive">{validationErrors.address}</p>}
           </div>
+
+          {/* Delivery Instructions */}
           <div>
             <label className="mb-1.5 flex items-center gap-1.5 text-sm font-semibold text-foreground">
-              <StickyNote className="h-3.5 w-3.5 text-primary" /> Special Notes
+              <Navigation className="h-3.5 w-3.5 text-primary" /> Delivery Instructions
+            </label>
+            <textarea
+              value={deliveryInstructions}
+              onChange={(e) => setDeliveryInstructions(e.target.value)}
+              placeholder="e.g. Gate code 1234, leave at door, call on arrival, blue house with white gate..."
+              rows={2}
+              maxLength={300}
+              className="w-full rounded-xl border border-border bg-card px-4 py-3 text-sm text-card-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all resize-none"
+            />
+            {validationErrors.deliveryInstructions && <p className="mt-1 text-xs text-destructive">{validationErrors.deliveryInstructions}</p>}
+          </div>
+
+          {/* Delivery Schedule */}
+          <div>
+            <label className="mb-2 flex items-center gap-1.5 text-sm font-semibold text-foreground">
+              <Clock className="h-3.5 w-3.5 text-primary" /> When should we deliver?
+            </label>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => setDeliveryWhen("asap")}
+                className={`rounded-xl border-2 px-3 py-2.5 text-xs font-bold transition-all ${
+                  deliveryWhen === "asap"
+                    ? "border-primary bg-primary/5 text-foreground"
+                    : "border-border bg-card text-muted-foreground"
+                }`}
+              >
+                As soon as possible
+              </button>
+              <button
+                type="button"
+                onClick={() => setDeliveryWhen("schedule")}
+                disabled={isPastClosing}
+                className={`rounded-xl border-2 px-3 py-2.5 text-xs font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed ${
+                  deliveryWhen === "schedule"
+                    ? "border-primary bg-primary/5 text-foreground"
+                    : "border-border bg-card text-muted-foreground"
+                }`}
+              >
+                Schedule for today
+              </button>
+            </div>
+            {deliveryWhen === "schedule" && (
+              <div className="mt-2 rounded-xl border border-border bg-card p-3">
+                <p className="mb-2 text-[11px] text-muted-foreground">
+                  Same day only · between <span className="font-semibold text-foreground">{minTime}</span> and <span className="font-semibold text-foreground">{maxTime}</span> ({todayLabel})
+                </p>
+                <input
+                  type="time"
+                  value={scheduleTime}
+                  min={minTime}
+                  max={maxTime}
+                  onChange={(e) => setScheduleTime(e.target.value)}
+                  className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                />
+              </div>
+            )}
+            {isPastClosing && (
+              <p className="mt-1.5 text-xs text-destructive">
+                Too late to schedule today (we close at {maxTime}). Choose ASAP or order tomorrow.
+              </p>
+            )}
+            {validationErrors.schedule && <p className="mt-1 text-xs text-destructive">{validationErrors.schedule}</p>}
+          </div>
+
+          <div>
+            <label className="mb-1.5 flex items-center gap-1.5 text-sm font-semibold text-foreground">
+              <StickyNote className="h-3.5 w-3.5 text-primary" /> Food Notes
             </label>
             <textarea
               value={notes}
