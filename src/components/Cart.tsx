@@ -1,7 +1,11 @@
 import { useState } from "react";
-import { X, Plus, Minus, Package, Trash2, StickyNote } from "lucide-react";
+import { Link } from "react-router-dom";
+import { X, Plus, Minus, Package, Trash2, StickyNote, AlertTriangle, Truck } from "lucide-react";
 import { CartItem } from "@/hooks/useCart";
 import { storeInfo } from "@/data/menu";
+import { useDeliveryZone } from "@/hooks/useDeliveryZone";
+import { useAuth } from "@/hooks/useAuth";
+import { ALL_DELIVERY_AREAS } from "@/lib/zones";
 
 interface CartProps {
   open: boolean;
