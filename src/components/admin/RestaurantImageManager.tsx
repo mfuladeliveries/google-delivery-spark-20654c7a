@@ -3,8 +3,16 @@ import imageCompression from "browser-image-compression";
 import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Upload, Image as ImageIcon, X, Trash2, Save, Loader2 } from "lucide-react";
+import { Upload, Image as ImageIcon, X, Trash2, Save, Loader2, XCircle } from "lucide-react";
 import { toast } from "sonner";
+
+// Custom error thrown when a user cancels an in-flight upload.
+class UploadCancelledError extends Error {
+  constructor() {
+    super("cancelled");
+    this.name = "UploadCancelledError";
+  }
+}
 
 const ACCEPTED_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
 const MAX_BYTES = 2 * 1024 * 1024; // 2MB original-file cap (pre-compression)
@@ -24,6 +32,7 @@ const COMPRESSION_OPTS: Record<"logo" | "banner" | "gallery", {
 const compressImage = async (
   file: File,
   kind: "logo" | "banner" | "gallery",
+  signal?: AbortSignal,
   onProgress?: (percent: number) => void,
 ): Promise<File> => {
   try {
@@ -33,14 +42,22 @@ const compressImage = async (
       useWebWorker: true,
       initialQuality: 0.82,
       fileType: file.type === "image/png" ? "image/png" : "image/webp",
-      onProgress: (p: number) => onProgress?.(Math.max(0, Math.min(100, p))),
+      signal,
+      onProgress: (p: number) => {
+        if (signal?.aborted) throw new UploadCancelledError();
+        onProgress?.(Math.max(0, Math.min(100, p)));
+      },
     });
+    if (signal?.aborted) throw new UploadCancelledError();
     // Preserve a sensible filename + extension
     const ext = compressed.type === "image/png" ? "png" : "webp";
     const base = file.name.replace(/\.[^.]+$/, "");
     return new File([compressed], `${base}.${ext}`, { type: compressed.type });
-  } catch {
-    // If compression fails for any reason, fall back to the original file.
+  } catch (err: any) {
+    if (signal?.aborted || err?.name === "AbortError" || err instanceof UploadCancelledError) {
+      throw new UploadCancelledError();
+    }
+    // If compression fails for any other reason, fall back to the original file.
     return file;
   }
 };
@@ -60,7 +77,7 @@ interface ImageState {
 }
 
 // One row per in-flight file shown in the progress list.
-type UploadStage = "compressing" | "uploading" | "done" | "error";
+type UploadStage = "compressing" | "uploading" | "done" | "error" | "cancelled";
 interface UploadProgress {
   id: string;
   name: string;
@@ -81,20 +98,35 @@ const uploadToBucket = async (
   file: File,
   restaurantId: string,
   kind: "logo" | "banner" | "gallery",
+  signal: AbortSignal,
   onProgress?: (stage: UploadStage, percent: number) => void,
 ): Promise<string> => {
   // Compression: map library 0-100 → overall 0-70.
-  const compressed = await compressImage(file, kind, (p) => {
+  const compressed = await compressImage(file, kind, signal, (p) => {
     onProgress?.("compressing", Math.round(p * 0.7));
   });
+  if (signal.aborted) throw new UploadCancelledError();
   onProgress?.("uploading", 75);
   const ext = (compressed.name.split(".").pop() || "webp").toLowerCase();
   const path = `restaurant-images/${restaurantId}/${kind}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
-  const { error } = await supabase.storage.from("food-images").upload(path, compressed, {
+
+  // Race the upload against the abort signal so cancellation feels instant
+  // even though supabase-js doesn't natively accept an AbortSignal here.
+  const uploadPromise = supabase.storage.from("food-images").upload(path, compressed, {
     upsert: false,
     contentType: compressed.type,
     cacheControl: "3600",
   });
+  const abortPromise = new Promise<never>((_, reject) => {
+    if (signal.aborted) return reject(new UploadCancelledError());
+    signal.addEventListener("abort", () => reject(new UploadCancelledError()), { once: true });
+  });
+  const { error } = await Promise.race([uploadPromise, abortPromise]);
+  if (signal.aborted) {
+    // Best-effort cleanup if the upload actually completed before we noticed.
+    supabase.storage.from("food-images").remove([path]).catch(() => {});
+    throw new UploadCancelledError();
+  }
   if (error) throw error;
   onProgress?.("done", 100);
   const { data } = supabase.storage.from("food-images").getPublicUrl(path);
@@ -109,9 +141,26 @@ const RestaurantImageManager = ({ open, onClose, restaurantId, restaurantName, o
   const [dragKind, setDragKind] = useState<"logo" | "banner" | "gallery" | null>(null);
   const [progress, setProgress] = useState<UploadProgress[]>([]);
   const galleryRef = useRef<HTMLInputElement>(null);
+  // Map of upload id → AbortController so we can cancel individual files.
+  const controllersRef = useRef<Map<string, AbortController>>(new Map());
 
   const updateProgress = useCallback((id: string, patch: Partial<UploadProgress>) => {
     setProgress((list) => list.map((p) => (p.id === id ? { ...p, ...patch } : p)));
+  }, []);
+
+  const cancelUpload = useCallback((id: string) => {
+    const ctrl = controllersRef.current.get(id);
+    if (!ctrl) return;
+    ctrl.abort();
+    controllersRef.current.delete(id);
+    // Optimistic UI: flip the row to "cancelled" immediately.
+    setProgress((list) =>
+      list.map((p) =>
+        p.id === id && p.stage !== "done" && p.stage !== "error"
+          ? { ...p, stage: "cancelled", error: "Cancelled" }
+          : p,
+      ),
+    );
   }, []);
 
   useEffect(() => {
@@ -155,7 +204,7 @@ const RestaurantImageManager = ({ open, onClose, restaurantId, restaurantName, o
       }
       setUploadingKind(kind);
 
-      // Seed progress entries for every file we are about to process.
+      // Seed progress entries + per-file AbortControllers.
       const entries: UploadProgress[] = arr.map((f) => ({
         id: `${f.name}-${f.size}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
         name: f.name,
@@ -163,38 +212,47 @@ const RestaurantImageManager = ({ open, onClose, restaurantId, restaurantName, o
         stage: "compressing",
         percent: 0,
       }));
+      entries.forEach((e) => controllersRef.current.set(e.id, new AbortController()));
       setProgress((list) => [...list, ...entries]);
+
+      // Upload each file independently so cancelling one doesn't affect the
+      // others. For non-gallery (logo/banner) there's only ever one file.
+      const uploadOne = async (file: File, entry: UploadProgress): Promise<string | null> => {
+        const ctrl = controllersRef.current.get(entry.id);
+        if (!ctrl || ctrl.signal.aborted) return null;
+        try {
+          const url = await uploadToBucket(file, restaurantId, entry.kind, ctrl.signal, (stage, percent) =>
+            updateProgress(entry.id, { stage, percent }),
+          );
+          return url;
+        } catch (err: any) {
+          if (err instanceof UploadCancelledError || ctrl.signal.aborted) {
+            updateProgress(entry.id, { stage: "cancelled", error: "Cancelled" });
+            return null;
+          }
+          updateProgress(entry.id, { stage: "error", error: err?.message || "Upload failed" });
+          toast.error(`${entry.name}: ${err?.message || "Upload failed"}`);
+          return null;
+        } finally {
+          controllersRef.current.delete(entry.id);
+        }
+      };
 
       try {
         if (kind === "gallery") {
-          const urls: string[] = [];
-          for (let i = 0; i < arr.length; i++) {
-            const entry = entries[i];
-            const url = await uploadToBucket(arr[i], restaurantId, "gallery", (stage, percent) =>
-              updateProgress(entry.id, { stage, percent }),
-            );
-            urls.push(url);
+          const results = await Promise.all(arr.map((f, i) => uploadOne(f, entries[i])));
+          const urls = results.filter((u): u is string => Boolean(u));
+          if (urls.length > 0) {
+            setState((s) => ({ ...s, gallery_images: [...s.gallery_images, ...urls] }));
+            toast.success(`${urls.length} gallery image${urls.length > 1 ? "s" : ""} uploaded`);
           }
-          setState((s) => ({ ...s, gallery_images: [...s.gallery_images, ...urls] }));
-          toast.success(`${urls.length} gallery image${urls.length > 1 ? "s" : ""} uploaded`);
         } else {
-          const entry = entries[0];
-          const url = await uploadToBucket(arr[0], restaurantId, kind, (stage, percent) =>
-            updateProgress(entry.id, { stage, percent }),
-          );
-          setState((s) => ({ ...s, [`${kind}_url`]: url }));
-          toast.success(`${kind === "logo" ? "Logo" : "Banner"} uploaded`);
+          const url = await uploadOne(arr[0], entries[0]);
+          if (url) {
+            setState((s) => ({ ...s, [`${kind}_url`]: url }));
+            toast.success(`${kind === "logo" ? "Logo" : "Banner"} uploaded`);
+          }
         }
-      } catch (err: any) {
-        // Mark anything still in flight as errored.
-        setProgress((list) =>
-          list.map((p) =>
-            entries.some((e) => e.id === p.id) && p.stage !== "done"
-              ? { ...p, stage: "error", error: err?.message || "Upload failed" }
-              : p,
-          ),
-        );
-        toast.error(err.message || "Upload failed");
       } finally {
         setUploadingKind(null);
         // Auto-clear successful rows after a short delay so admins see them complete.
@@ -258,9 +316,9 @@ const RestaurantImageManager = ({ open, onClose, restaurantId, restaurantName, o
           <div className="rounded-2xl border border-border bg-muted/40 p-3 space-y-2">
             <div className="flex items-center justify-between">
               <h4 className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
-                Processing ({progress.filter((p) => p.stage !== "done" && p.stage !== "error").length} active)
+                Processing ({progress.filter((p) => p.stage === "compressing" || p.stage === "uploading").length} active)
               </h4>
-              {progress.every((p) => p.stage === "done" || p.stage === "error") && (
+              {progress.every((p) => p.stage === "done" || p.stage === "error" || p.stage === "cancelled") && (
                 <button
                   type="button"
                   onClick={() => setProgress([])}
@@ -272,6 +330,7 @@ const RestaurantImageManager = ({ open, onClose, restaurantId, restaurantName, o
             </div>
             <ul className="space-y-2">
               {progress.map((p) => {
+                const isActive = p.stage === "compressing" || p.stage === "uploading";
                 const stageLabel =
                   p.stage === "compressing"
                     ? "Compressing…"
@@ -279,13 +338,23 @@ const RestaurantImageManager = ({ open, onClose, restaurantId, restaurantName, o
                     ? "Uploading…"
                     : p.stage === "done"
                     ? "Done"
+                    : p.stage === "cancelled"
+                    ? "Cancelled"
                     : "Failed";
                 const barColor =
                   p.stage === "error"
                     ? "bg-destructive"
+                    : p.stage === "cancelled"
+                    ? "bg-muted-foreground"
                     : p.stage === "done"
                     ? "bg-emerald-500"
                     : "bg-primary";
+                const labelColor =
+                  p.stage === "error"
+                    ? "text-destructive"
+                    : p.stage === "cancelled"
+                    ? "text-muted-foreground italic"
+                    : "text-muted-foreground";
                 return (
                   <li key={p.id} className="space-y-1">
                     <div className="flex items-center justify-between gap-2 text-[11px]">
@@ -295,18 +364,29 @@ const RestaurantImageManager = ({ open, onClose, restaurantId, restaurantName, o
                         </span>
                         {p.name}
                       </span>
-                      <span
-                        className={`shrink-0 font-semibold ${
-                          p.stage === "error" ? "text-destructive" : "text-muted-foreground"
-                        }`}
-                      >
-                        {p.stage === "error" ? p.error || stageLabel : `${stageLabel} ${p.percent}%`}
-                      </span>
+                      <div className="flex shrink-0 items-center gap-2">
+                        <span className={`font-semibold ${labelColor}`}>
+                          {p.stage === "error" || p.stage === "cancelled"
+                            ? p.error || stageLabel
+                            : `${stageLabel} ${p.percent}%`}
+                        </span>
+                        {isActive && (
+                          <button
+                            type="button"
+                            onClick={() => cancelUpload(p.id)}
+                            title="Cancel upload"
+                            aria-label={`Cancel upload of ${p.name}`}
+                            className="inline-flex items-center justify-center rounded-full p-0.5 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
+                          >
+                            <XCircle className="h-3.5 w-3.5" />
+                          </button>
+                        )}
+                      </div>
                     </div>
                     <div className="h-1.5 w-full overflow-hidden rounded-full bg-card">
                       <div
                         className={`h-full ${barColor} transition-all duration-200`}
-                        style={{ width: `${p.stage === "error" ? 100 : p.percent}%` }}
+                        style={{ width: `${p.stage === "error" || p.stage === "cancelled" ? 100 : p.percent}%` }}
                       />
                     </div>
                   </li>
