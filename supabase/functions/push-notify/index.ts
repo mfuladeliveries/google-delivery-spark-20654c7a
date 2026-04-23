@@ -242,7 +242,7 @@ Deno.serve(async (req) => {
             : isCancelWithReason
               ? `Your order was cancelled. Reason: ${reason}`
               : label,
-      icon: "/pwa-192x192.png",
+      icon: "/notification-logo.png",
       badge: "/favicon.ico",
       data: { url: "/orders", order_number },
     });
@@ -250,7 +250,7 @@ Deno.serve(async (req) => {
     const driverBroadcastPayload = JSON.stringify({
       title: "🚗 New Delivery Available",
       body: `Order #${order_number} ready at ${restaurant}${zoneSuffix}`,
-      icon: "/pwa-192x192.png",
+      icon: "/notification-logo.png",
       badge: "/favicon.ico",
       data: { url: "/driver", order_number, zone: zoneId, payout: driverPayout },
     });
@@ -258,7 +258,7 @@ Deno.serve(async (req) => {
     const restaurantPayload = JSON.stringify({
       title: "🔔 New Order Received",
       body: `Order #${order_number} — R${total}`,
-      icon: "/pwa-192x192.png",
+      icon: "/notification-logo.png",
       badge: "/favicon.ico",
       data: { url: "/restaurant/dashboard", order_number },
     });
@@ -266,7 +266,7 @@ Deno.serve(async (req) => {
     const offerPendingPayload = JSON.stringify({
       title: "🔔 New Order Offer",
       body: `Order #${order_number} from ${restaurant}${zoneSuffix} — Tap to accept (20s)`,
-      icon: "/pwa-192x192.png",
+      icon: "/notification-logo.png",
       badge: "/favicon.ico",
       tag: `offer-${order_number}`,
       data: { url: "/driver", order_number, kind: "offer", zone: zoneId, payout: driverPayout },
@@ -275,7 +275,7 @@ Deno.serve(async (req) => {
     const offerMissedPayload = JSON.stringify({
       title: "⏱️ Missed Order",
       body: `You didn't respond to Order #${order_number}${zoneSuffix ? ` (${zoneSuffix.replace(/^ · /, "")})` : ""} in time. It's been offered to another driver.`,
-      icon: "/pwa-192x192.png",
+      icon: "/notification-logo.png",
       badge: "/favicon.ico",
       tag: `missed-${order_number}`,
       data: { url: "/driver", order_number, kind: "missed", zone: zoneId, payout: driverPayout },
@@ -284,7 +284,7 @@ Deno.serve(async (req) => {
     const adminBroadcastPayload = JSON.stringify({
       title: "🚨 Order Needs a Driver",
       body: `Order #${order_number} couldn't be assigned — now broadcast to all drivers.`,
-      icon: "/pwa-192x192.png",
+      icon: "/notification-logo.png",
       badge: "/favicon.ico",
       tag: `escalation-${order_number}`,
       data: { url: "/admin", order_number, kind: "escalation" },

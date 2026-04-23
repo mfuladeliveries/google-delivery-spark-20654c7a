@@ -178,7 +178,7 @@ Deno.serve(async (req) => {
           JSON.stringify({
             title: target.title,
             body: target.body,
-            icon: "/pwa-192x192.png",
+            icon: "/notification-logo.png",
             badge: "/favicon.ico",
             data: { url: target.url },
           })

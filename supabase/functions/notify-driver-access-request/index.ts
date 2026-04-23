@@ -89,7 +89,7 @@ Deno.serve(async (req) => {
     const payload = JSON.stringify({
       title: "🚖 New driver access request",
       body: `${userEmail} wants driver access. Tap to review.`,
-      icon: "/pwa-192x192.png",
+      icon: "/notification-logo.png",
       badge: "/favicon.ico",
       tag: `driver-request-${requestId || userId}`,
       data: { url: "/admin", kind: "driver_access_request" },

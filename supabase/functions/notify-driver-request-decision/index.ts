@@ -116,7 +116,7 @@ Deno.serve(async (req) => {
       body: isApproved
         ? `You're now a driver on Mfula Deliveries. Tap to start accepting orders.${noteSuffix}`
         : `Your driver access request was not approved.${noteSuffix}`,
-      icon: "/pwa-192x192.png",
+      icon: "/notification-logo.png",
       badge: "/favicon.ico",
       tag: `driver-decision-${requestId}`,
       data: {
