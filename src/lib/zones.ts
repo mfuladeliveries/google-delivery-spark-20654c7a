@@ -39,6 +39,14 @@ export const driverPayoutForFee = (deliveryFee: number | null | undefined): numb
   return Math.round(fee * 0.7);
 };
 
+/** Map a charged delivery fee back to its zone id (for driver-facing badges). */
+export const zoneIdForFee = (deliveryFee: number | null | undefined): ZoneId | null => {
+  const fee = Number(deliveryFee ?? 0);
+  if (fee >= 75) return 2;
+  if (fee >= 65) return 1;
+  return null;
+};
+
 const ZONE_KEYWORDS: Array<{ id: ZoneId; patterns: RegExp[] }> = [
   {
     id: 1,
