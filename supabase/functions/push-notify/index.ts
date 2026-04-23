@@ -138,6 +138,20 @@ Deno.serve(async (req) => {
     }
     const isRefundChoice = refundChoiceAmount !== null;
 
+    // Look up the order's delivery_fee so we can show the driver the zone + payout
+    let orderDeliveryFee: number | null = null;
+    const isDriverFacingDispatch = isOfferPending || isOfferMissed || isDispatchBroadcast;
+    if (isDriverFacingDispatch && order_id) {
+      const { data: ord } = await supabase
+        .from("orders")
+        .select("delivery_fee")
+        .eq("id", order_id)
+        .maybeSingle();
+      if (ord) orderDeliveryFee = Number(ord.delivery_fee ?? 0);
+    }
+    const { zone: zoneId, payout: driverPayout } = zoneInfoForFee(orderDeliveryFee);
+    const zoneSuffix = zoneId ? ` · Zone ${zoneId} · R${driverPayout} payout` : "";
+
     const targetUserIds: string[] = [];
 
     // Dispatch: targeted push to a specific driver
