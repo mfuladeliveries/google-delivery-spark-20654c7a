@@ -14,6 +14,9 @@ interface Restaurant {
   name: string;
   description: string;
   logo: string;
+  logo_url: string | null;
+  banner_url: string | null;
+  gallery_images: string[];
   rating: number;
   delivery_time: string;
   min_order: number;
@@ -135,7 +138,7 @@ const RestaurantMenu = () => {
 
   if (!restaurant) return null;
 
-  const bannerImg = foodImages[restaurant.name] || 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=800&h=300&fit=crop';
+  const bannerImg = restaurant.banner_url || foodImages[restaurant.name] || 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=800&h=300&fit=crop';
 
   return (
     <div className="min-h-screen bg-background">
