@@ -103,7 +103,7 @@ const NewOrderModal = ({ open, offer, distanceKm, accepting, rejecting, onAccept
           <div className="flex items-center justify-between rounded-xl bg-[hsl(var(--driver-success)/0.08)] border border-[hsl(var(--driver-success)/0.2)] px-4 py-3">
             <div>
               <p className="text-[10px] uppercase font-semibold tracking-wide text-muted-foreground">You'll earn</p>
-              <p className="text-2xl font-bold text-[hsl(var(--driver-success))]">R{offer.delivery_fee}</p>
+              <p className="text-2xl font-bold text-[hsl(var(--driver-success))]">R{driverPayoutForFee(offer.delivery_fee)}</p>
             </div>
             <div className="text-right">
               <p className="text-[10px] uppercase font-semibold tracking-wide text-muted-foreground">Order value</p>
