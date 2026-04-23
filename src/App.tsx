@@ -9,6 +9,7 @@ import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import ResetPassword from "./pages/ResetPassword";
 import Orders from "./pages/Orders";
+import OrderConfirmation from "./pages/OrderConfirmation";
 import NotFound from "./pages/NotFound";
 import RestaurantMenu from "./pages/RestaurantMenu";
 import RestaurantDashboard from "./pages/RestaurantDashboard";
@@ -40,6 +41,7 @@ const App = () => (
             <Route path="/auth" element={<Auth />} />
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/orders" element={<Orders />} />
+            <Route path="/order-confirmation" element={<OrderConfirmation />} />
             <Route path="/restaurant/dashboard" element={<RestaurantDashboard />} />
             <Route path="/restaurant/:id" element={<RestaurantMenu />} />
             <Route path="/restaurant/orders" element={<RestaurantDashboard />} />
