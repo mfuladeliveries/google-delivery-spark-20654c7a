@@ -21,7 +21,11 @@ const COMPRESSION_OPTS: Record<"logo" | "banner" | "gallery", {
   gallery: { maxSizeMB: 0.4,  maxWidthOrHeight: 1400 },
 };
 
-const compressImage = async (file: File, kind: "logo" | "banner" | "gallery"): Promise<File> => {
+const compressImage = async (
+  file: File,
+  kind: "logo" | "banner" | "gallery",
+  onProgress?: (percent: number) => void,
+): Promise<File> => {
   try {
     const opts = COMPRESSION_OPTS[kind];
     const compressed = await imageCompression(file, {
@@ -29,6 +33,7 @@ const compressImage = async (file: File, kind: "logo" | "banner" | "gallery"): P
       useWebWorker: true,
       initialQuality: 0.82,
       fileType: file.type === "image/png" ? "image/png" : "image/webp",
+      onProgress: (p: number) => onProgress?.(Math.max(0, Math.min(100, p))),
     });
     // Preserve a sensible filename + extension
     const ext = compressed.type === "image/png" ? "png" : "webp";
@@ -54,14 +59,35 @@ interface ImageState {
   gallery_images: string[];
 }
 
+// One row per in-flight file shown in the progress list.
+type UploadStage = "compressing" | "uploading" | "done" | "error";
+interface UploadProgress {
+  id: string;
+  name: string;
+  kind: "logo" | "banner" | "gallery";
+  stage: UploadStage;
+  // 0-100 — covers compression (0-70) then upload completion (70-100).
+  percent: number;
+  error?: string;
+}
+
 const validateFile = (file: File): string | null => {
   if (!ACCEPTED_TYPES.includes(file.type)) return "Only JPG, PNG, or WebP images are allowed";
   if (file.size > MAX_BYTES) return `Image must be under 2MB (got ${(file.size / 1024 / 1024).toFixed(1)}MB)`;
   return null;
 };
 
-const uploadToBucket = async (file: File, restaurantId: string, kind: "logo" | "banner" | "gallery"): Promise<string> => {
-  const compressed = await compressImage(file, kind);
+const uploadToBucket = async (
+  file: File,
+  restaurantId: string,
+  kind: "logo" | "banner" | "gallery",
+  onProgress?: (stage: UploadStage, percent: number) => void,
+): Promise<string> => {
+  // Compression: map library 0-100 → overall 0-70.
+  const compressed = await compressImage(file, kind, (p) => {
+    onProgress?.("compressing", Math.round(p * 0.7));
+  });
+  onProgress?.("uploading", 75);
   const ext = (compressed.name.split(".").pop() || "webp").toLowerCase();
   const path = `restaurant-images/${restaurantId}/${kind}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
   const { error } = await supabase.storage.from("food-images").upload(path, compressed, {
@@ -70,6 +96,7 @@ const uploadToBucket = async (file: File, restaurantId: string, kind: "logo" | "
     cacheControl: "3600",
   });
   if (error) throw error;
+  onProgress?.("done", 100);
   const { data } = supabase.storage.from("food-images").getPublicUrl(path);
   return data.publicUrl;
 };
