@@ -35,6 +35,14 @@ const statusEmojis: Record<string, string> = {
   rejected: "🚫",
 };
 
+// Mirror of src/lib/zones.ts — keep in sync.
+const zoneInfoForFee = (deliveryFee: number | null | undefined): { zone: 1 | 2 | null; payout: number } => {
+  const fee = Number(deliveryFee ?? 0);
+  if (fee >= 75) return { zone: 2, payout: 55 };
+  if (fee >= 65) return { zone: 1, payout: 45 };
+  return { zone: null, payout: Math.round(fee * 0.7) };
+};
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -129,6 +137,20 @@ Deno.serve(async (req) => {
       }
     }
     const isRefundChoice = refundChoiceAmount !== null;
+
+    // Look up the order's delivery_fee so we can show the driver the zone + payout
+    let orderDeliveryFee: number | null = null;
+    const isDriverFacingDispatch = isOfferPending || isOfferMissed || isDispatchBroadcast;
+    if (isDriverFacingDispatch && order_id) {
+      const { data: ord } = await supabase
+        .from("orders")
+        .select("delivery_fee")
+        .eq("id", order_id)
+        .maybeSingle();
+      if (ord) orderDeliveryFee = Number(ord.delivery_fee ?? 0);
+    }
+    const { zone: zoneId, payout: driverPayout } = zoneInfoForFee(orderDeliveryFee);
+    const zoneSuffix = zoneId ? ` · Zone ${zoneId} · R${driverPayout} payout` : "";
 
     const targetUserIds: string[] = [];
 
@@ -227,10 +249,10 @@ Deno.serve(async (req) => {
 
     const driverBroadcastPayload = JSON.stringify({
       title: "🚗 New Delivery Available",
-      body: `Order #${order_number} ready at ${restaurant}`,
+      body: `Order #${order_number} ready at ${restaurant}${zoneSuffix}`,
       icon: "/pwa-192x192.png",
       badge: "/favicon.ico",
-      data: { url: "/driver", order_number },
+      data: { url: "/driver", order_number, zone: zoneId, payout: driverPayout },
     });
 
     const restaurantPayload = JSON.stringify({
@@ -243,20 +265,20 @@ Deno.serve(async (req) => {
 
     const offerPendingPayload = JSON.stringify({
       title: "🔔 New Order Offer",
-      body: `Order #${order_number} from ${restaurant} — Tap to accept (20s)`,
+      body: `Order #${order_number} from ${restaurant}${zoneSuffix} — Tap to accept (20s)`,
       icon: "/pwa-192x192.png",
       badge: "/favicon.ico",
       tag: `offer-${order_number}`,
-      data: { url: "/driver", order_number, kind: "offer" },
+      data: { url: "/driver", order_number, kind: "offer", zone: zoneId, payout: driverPayout },
     });
 
     const offerMissedPayload = JSON.stringify({
       title: "⏱️ Missed Order",
-      body: `You didn't respond to Order #${order_number} in time. It's been offered to another driver.`,
+      body: `You didn't respond to Order #${order_number}${zoneSuffix ? ` (${zoneSuffix.replace(/^ · /, "")})` : ""} in time. It's been offered to another driver.`,
       icon: "/pwa-192x192.png",
       badge: "/favicon.ico",
       tag: `missed-${order_number}`,
-      data: { url: "/driver", order_number, kind: "missed" },
+      data: { url: "/driver", order_number, kind: "missed", zone: zoneId, payout: driverPayout },
     });
 
     const adminBroadcastPayload = JSON.stringify({
