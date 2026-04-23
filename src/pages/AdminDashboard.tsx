@@ -2,7 +2,8 @@ import { useState, useEffect, Fragment } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { Shield, TrendingUp, Users, ShoppingBag, Store, ArrowLeft, DollarSign, Truck, UserCheck, Search, UserPlus, Plus, Trash2, Pencil, X, Save, MapPin } from "lucide-react";
+import { Shield, TrendingUp, Users, ShoppingBag, Store, ArrowLeft, DollarSign, Truck, UserCheck, Search, UserPlus, Plus, Trash2, Pencil, X, Save, MapPin, Image as ImageIcon } from "lucide-react";
+import RestaurantImageManager from "@/components/admin/RestaurantImageManager";
 import BottomNav from "@/components/BottomNav";
 import AdminEarnings from "@/components/admin/AdminEarnings";
 import AdminWithdrawals from "@/components/admin/AdminWithdrawals";
@@ -60,6 +61,9 @@ interface RestaurantRecord {
   location: string;
   lat: number | null;
   lng: number | null;
+  logo_url: string | null;
+  banner_url: string | null;
+  gallery_images: string[];
 }
 
 interface DriverRecord {
@@ -245,8 +249,8 @@ const AdminDashboard = () => {
   };
 
   const fetchRestaurants = async () => {
-    const { data } = await supabase.from("restaurants").select("id, name, cuisine, is_active, owner_user_id, rating, location, lat, lng").order("name");
-    if (data) setRestaurants(data);
+    const { data } = await supabase.from("restaurants").select("id, name, cuisine, is_active, owner_user_id, rating, location, lat, lng, logo_url, banner_url, gallery_images").order("name");
+    if (data) setRestaurants(data as RestaurantRecord[]);
   };
 
   const fetchDrivers = async () => {
@@ -1070,6 +1074,7 @@ const RestaurantCard = ({
   const [coordLat, setCoordLat] = useState("");
   const [coordLng, setCoordLng] = useState("");
   const [savingCoords, setSavingCoords] = useState(false);
+  const [imagesOpen, setImagesOpen] = useState(false);
 
   const handleSaveCoords = async () => {
     const lat = parseFloat(coordLat);
@@ -1180,9 +1185,41 @@ const RestaurantCard = ({
 
   return (
     <div className="rounded-2xl border border-border bg-card shadow-card overflow-hidden">
-      <div className="flex items-center justify-between p-4">
+      <div className="flex items-center justify-between gap-3 p-4">
+        {/* Logo + Banner thumbnails */}
+        <div className="flex items-center gap-2 shrink-0">
+          <div className="relative h-12 w-12 overflow-hidden rounded-full border border-border bg-muted">
+            {r.logo_url ? (
+              <img
+                src={r.logo_url}
+                alt={`${r.name} logo`}
+                className="h-full w-full object-cover transition-transform hover:scale-110"
+                onError={(e) => ((e.target as HTMLImageElement).style.display = "none")}
+              />
+            ) : (
+              <div className="flex h-full w-full items-center justify-center text-muted-foreground">
+                <ImageIcon className="h-4 w-4" />
+              </div>
+            )}
+          </div>
+          <div className="relative h-12 w-20 overflow-hidden rounded-lg border border-border bg-muted hidden sm:block">
+            {r.banner_url ? (
+              <img
+                src={r.banner_url}
+                alt={`${r.name} banner`}
+                className="h-full w-full object-cover transition-transform hover:scale-110"
+                onError={(e) => ((e.target as HTMLImageElement).style.display = "none")}
+              />
+            ) : (
+              <div className="flex h-full w-full items-center justify-center text-muted-foreground">
+                <ImageIcon className="h-4 w-4" />
+              </div>
+            )}
+          </div>
+        </div>
+
         <div className="min-w-0 flex-1">
-          <h3 className="font-bold text-sm text-foreground">{r.name}</h3>
+          <h3 className="font-bold text-sm text-foreground truncate">{r.name}</h3>
           <p className="text-xs text-muted-foreground">{r.cuisine} · ⭐ {r.rating}</p>
           <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 mt-0.5">
             {r.owner_user_id && (
@@ -1193,9 +1230,19 @@ const RestaurantCard = ({
             ) : (
               <p className="text-[10px] text-amber-600 font-semibold">⚠️ No coordinates</p>
             )}
+            {r.gallery_images?.length > 0 && (
+              <p className="text-[10px] text-muted-foreground font-medium">🖼️ {r.gallery_images.length} gallery</p>
+            )}
           </div>
         </div>
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex items-center gap-1.5 shrink-0">
+          <button
+            onClick={() => setImagesOpen(true)}
+            className="rounded-xl bg-primary/10 p-1.5 text-primary hover:bg-primary/20 transition-colors"
+            title="Manage images"
+          >
+            <ImageIcon className="h-4 w-4" />
+          </button>
           <button
             onClick={handleGeocode}
             disabled={geocoding}
@@ -1330,6 +1377,14 @@ const RestaurantCard = ({
           </div>
         </div>
       )}
+
+      <RestaurantImageManager
+        open={imagesOpen}
+        onClose={() => setImagesOpen(false)}
+        restaurantId={r.id}
+        restaurantName={r.name}
+        onSaved={onRestaurantChanged}
+      />
     </div>
   );
 };

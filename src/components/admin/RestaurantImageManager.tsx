@@ -1,0 +1,353 @@
+import { useState, useEffect, useRef, useCallback } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Upload, Image as ImageIcon, X, Trash2, Save, Loader2 } from "lucide-react";
+import { toast } from "sonner";
+
+const ACCEPTED_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
+const MAX_BYTES = 2 * 1024 * 1024; // 2MB
+const FALLBACK_IMG = "https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=600&h=300&fit=crop";
+
+interface Props {
+  open: boolean;
+  onClose: () => void;
+  restaurantId: string;
+  restaurantName: string;
+  onSaved: () => void;
+}
+
+interface ImageState {
+  logo_url: string | null;
+  banner_url: string | null;
+  gallery_images: string[];
+}
+
+const validateFile = (file: File): string | null => {
+  if (!ACCEPTED_TYPES.includes(file.type)) return "Only JPG, PNG, or WebP images are allowed";
+  if (file.size > MAX_BYTES) return `Image must be under 2MB (got ${(file.size / 1024 / 1024).toFixed(1)}MB)`;
+  return null;
+};
+
+const uploadToBucket = async (file: File, restaurantId: string, kind: "logo" | "banner" | "gallery"): Promise<string> => {
+  const ext = (file.name.split(".").pop() || "jpg").toLowerCase();
+  const path = `restaurant-images/${restaurantId}/${kind}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+  const { error } = await supabase.storage.from("food-images").upload(path, file, {
+    upsert: false,
+    contentType: file.type,
+    cacheControl: "3600",
+  });
+  if (error) throw error;
+  const { data } = supabase.storage.from("food-images").getPublicUrl(path);
+  return data.publicUrl;
+};
+
+const RestaurantImageManager = ({ open, onClose, restaurantId, restaurantName, onSaved }: Props) => {
+  const [state, setState] = useState<ImageState>({ logo_url: null, banner_url: null, gallery_images: [] });
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [uploadingKind, setUploadingKind] = useState<"logo" | "banner" | "gallery" | null>(null);
+  const [dragKind, setDragKind] = useState<"logo" | "banner" | "gallery" | null>(null);
+  const galleryRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    let cancelled = false;
+    setLoading(true);
+    (async () => {
+      const { data, error } = await supabase
+        .from("restaurants")
+        .select("logo_url, banner_url, gallery_images")
+        .eq("id", restaurantId)
+        .single();
+      if (cancelled) return;
+      if (error) {
+        toast.error("Failed to load images");
+      } else {
+        setState({
+          logo_url: data.logo_url,
+          banner_url: data.banner_url,
+          gallery_images: data.gallery_images || [],
+        });
+      }
+      setLoading(false);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [open, restaurantId]);
+
+  const handleFiles = useCallback(
+    async (files: FileList | File[], kind: "logo" | "banner" | "gallery") => {
+      const arr = Array.from(files);
+      if (arr.length === 0) return;
+      // Validate all first
+      for (const f of arr) {
+        const err = validateFile(f);
+        if (err) {
+          toast.error(`${f.name}: ${err}`);
+          return;
+        }
+      }
+      setUploadingKind(kind);
+      try {
+        if (kind === "gallery") {
+          const urls: string[] = [];
+          for (const f of arr) {
+            urls.push(await uploadToBucket(f, restaurantId, "gallery"));
+          }
+          setState((s) => ({ ...s, gallery_images: [...s.gallery_images, ...urls] }));
+          toast.success(`${urls.length} gallery image${urls.length > 1 ? "s" : ""} uploaded`);
+        } else {
+          const url = await uploadToBucket(arr[0], restaurantId, kind);
+          setState((s) => ({ ...s, [`${kind}_url`]: url }));
+          toast.success(`${kind === "logo" ? "Logo" : "Banner"} uploaded`);
+        }
+      } catch (err: any) {
+        toast.error(err.message || "Upload failed");
+      } finally {
+        setUploadingKind(null);
+      }
+    },
+    [restaurantId]
+  );
+
+  const removeGalleryImage = (url: string) => {
+    setState((s) => ({ ...s, gallery_images: s.gallery_images.filter((u) => u !== url) }));
+  };
+
+  const clearLogo = () => setState((s) => ({ ...s, logo_url: null }));
+  const clearBanner = () => setState((s) => ({ ...s, banner_url: null }));
+
+  const handleSave = async () => {
+    setSaving(true);
+    const { error } = await supabase
+      .from("restaurants")
+      .update({
+        logo_url: state.logo_url,
+        banner_url: state.banner_url,
+        gallery_images: state.gallery_images,
+        // keep legacy `logo` in sync so older code paths still work
+        logo: state.logo_url || "",
+      })
+      .eq("id", restaurantId);
+    setSaving(false);
+    if (error) {
+      toast.error(error.message || "Failed to save");
+      return;
+    }
+    toast.success("Restaurant images updated successfully");
+    onSaved();
+    onClose();
+  };
+
+  const onDrop = (e: React.DragEvent, kind: "logo" | "banner" | "gallery") => {
+    e.preventDefault();
+    setDragKind(null);
+    if (e.dataTransfer.files?.length) {
+      handleFiles(e.dataTransfer.files, kind);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="text-base">🖼️ Manage images — {restaurantName}</DialogTitle>
+          <DialogDescription className="text-xs">
+            JPG, PNG or WebP · max 2MB per image · changes save when you click "Save Changes"
+          </DialogDescription>
+        </DialogHeader>
+
+        {loading ? (
+          <div className="flex items-center justify-center py-12">
+            <Loader2 className="h-6 w-6 animate-spin text-primary" />
+          </div>
+        ) : (
+          <div className="space-y-5">
+            {/* LOGO */}
+            <section>
+              <h3 className="mb-2 text-xs font-bold uppercase tracking-wide text-muted-foreground">Logo</h3>
+              <div
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  setDragKind("logo");
+                }}
+                onDragLeave={() => setDragKind(null)}
+                onDrop={(e) => onDrop(e, "logo")}
+                className={`flex items-center gap-4 rounded-2xl border-2 border-dashed p-4 transition-colors ${
+                  dragKind === "logo" ? "border-primary bg-primary/5" : "border-border bg-card"
+                }`}
+              >
+                <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-full border border-border bg-muted">
+                  {state.logo_url ? (
+                    <img src={state.logo_url} alt="Logo" className="h-full w-full object-cover" onError={(e) => ((e.target as HTMLImageElement).src = FALLBACK_IMG)} />
+                  ) : (
+                    <div className="flex h-full w-full items-center justify-center">
+                      <ImageIcon className="h-6 w-6 text-muted-foreground" />
+                    </div>
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs text-muted-foreground mb-2">Round logo shown on cards. Recommended square image.</p>
+                  <div className="flex flex-wrap gap-2">
+                    <label className="inline-flex cursor-pointer items-center gap-1.5 rounded-xl bg-primary px-3 py-1.5 text-xs font-bold text-primary-foreground hover:opacity-90 disabled:opacity-50">
+                      {uploadingKind === "logo" ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />}
+                      {state.logo_url ? "Replace" : "Upload"} logo
+                      <input
+                        type="file"
+                        accept={ACCEPTED_TYPES.join(",")}
+                        className="hidden"
+                        disabled={uploadingKind !== null}
+                        onChange={(e) => e.target.files && handleFiles(e.target.files, "logo")}
+                      />
+                    </label>
+                    {state.logo_url && (
+                      <button
+                        type="button"
+                        onClick={clearLogo}
+                        className="inline-flex items-center gap-1 rounded-xl border border-border bg-card px-3 py-1.5 text-xs font-medium text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" /> Remove
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            {/* BANNER */}
+            <section>
+              <h3 className="mb-2 text-xs font-bold uppercase tracking-wide text-muted-foreground">Banner</h3>
+              <div
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  setDragKind("banner");
+                }}
+                onDragLeave={() => setDragKind(null)}
+                onDrop={(e) => onDrop(e, "banner")}
+                className={`rounded-2xl border-2 border-dashed p-3 transition-colors ${
+                  dragKind === "banner" ? "border-primary bg-primary/5" : "border-border bg-card"
+                }`}
+              >
+                <div className="relative aspect-[3/1] w-full overflow-hidden rounded-xl bg-muted mb-3">
+                  {state.banner_url ? (
+                    <img src={state.banner_url} alt="Banner" className="h-full w-full object-cover" onError={(e) => ((e.target as HTMLImageElement).src = FALLBACK_IMG)} />
+                  ) : (
+                    <div className="flex h-full w-full flex-col items-center justify-center gap-1 text-muted-foreground">
+                      <ImageIcon className="h-8 w-8" />
+                      <span className="text-xs">No banner uploaded</span>
+                    </div>
+                  )}
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <label className="inline-flex cursor-pointer items-center gap-1.5 rounded-xl bg-primary px-3 py-1.5 text-xs font-bold text-primary-foreground hover:opacity-90 disabled:opacity-50">
+                    {uploadingKind === "banner" ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />}
+                    {state.banner_url ? "Replace" : "Upload"} banner
+                    <input
+                      type="file"
+                      accept={ACCEPTED_TYPES.join(",")}
+                      className="hidden"
+                      disabled={uploadingKind !== null}
+                      onChange={(e) => e.target.files && handleFiles(e.target.files, "banner")}
+                    />
+                  </label>
+                  {state.banner_url && (
+                    <button
+                      type="button"
+                      onClick={clearBanner}
+                      className="inline-flex items-center gap-1 rounded-xl border border-border bg-card px-3 py-1.5 text-xs font-medium text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" /> Remove
+                    </button>
+                  )}
+                  <span className="ml-auto self-center text-[10px] text-muted-foreground">Tip: drag & drop a file here</span>
+                </div>
+              </div>
+            </section>
+
+            {/* GALLERY */}
+            <section>
+              <div className="mb-2 flex items-center justify-between">
+                <h3 className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
+                  Gallery ({state.gallery_images.length})
+                </h3>
+                <label className="inline-flex cursor-pointer items-center gap-1.5 rounded-xl bg-primary px-3 py-1.5 text-xs font-bold text-primary-foreground hover:opacity-90 disabled:opacity-50">
+                  {uploadingKind === "gallery" ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />}
+                  Add images
+                  <input
+                    ref={galleryRef}
+                    type="file"
+                    accept={ACCEPTED_TYPES.join(",")}
+                    multiple
+                    className="hidden"
+                    disabled={uploadingKind !== null}
+                    onChange={(e) => {
+                      if (e.target.files) handleFiles(e.target.files, "gallery");
+                      if (galleryRef.current) galleryRef.current.value = "";
+                    }}
+                  />
+                </label>
+              </div>
+              <div
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  setDragKind("gallery");
+                }}
+                onDragLeave={() => setDragKind(null)}
+                onDrop={(e) => onDrop(e, "gallery")}
+                className={`rounded-2xl border-2 border-dashed p-3 transition-colors ${
+                  dragKind === "gallery" ? "border-primary bg-primary/5" : "border-border bg-card"
+                }`}
+              >
+                {state.gallery_images.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center gap-1 py-8 text-muted-foreground">
+                    <ImageIcon className="h-8 w-8" />
+                    <p className="text-xs font-medium">No gallery images yet</p>
+                    <p className="text-[10px]">Drag & drop or use "Add images"</p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
+                    {state.gallery_images.map((url, idx) => (
+                      <div
+                        key={`${url}-${idx}`}
+                        className="group relative aspect-square overflow-hidden rounded-xl border border-border bg-muted"
+                      >
+                        <img
+                          src={url}
+                          alt={`Gallery ${idx + 1}`}
+                          className="h-full w-full object-cover transition-transform group-hover:scale-105"
+                          onError={(e) => ((e.target as HTMLImageElement).src = FALLBACK_IMG)}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => removeGalleryImage(url)}
+                          className="absolute top-1 right-1 rounded-full bg-card/95 p-1 opacity-0 shadow-card transition-opacity group-hover:opacity-100 hover:bg-destructive/10 hover:text-destructive"
+                          title="Remove"
+                        >
+                          <X className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </section>
+          </div>
+        )}
+
+        <DialogFooter className="gap-2 sm:gap-2">
+          <Button variant="outline" onClick={onClose} disabled={saving}>
+            Cancel
+          </Button>
+          <Button onClick={handleSave} disabled={saving || loading || uploadingKind !== null}>
+            {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+            {saving ? "Saving..." : "Save Changes"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
+export default RestaurantImageManager;

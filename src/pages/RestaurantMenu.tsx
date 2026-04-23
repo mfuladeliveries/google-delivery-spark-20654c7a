@@ -14,6 +14,9 @@ interface Restaurant {
   name: string;
   description: string;
   logo: string;
+  logo_url: string | null;
+  banner_url: string | null;
+  gallery_images: string[];
   rating: number;
   delivery_time: string;
   min_order: number;
@@ -135,7 +138,7 @@ const RestaurantMenu = () => {
 
   if (!restaurant) return null;
 
-  const bannerImg = foodImages[restaurant.name] || 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=800&h=300&fit=crop';
+  const bannerImg = restaurant.banner_url || foodImages[restaurant.name] || 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=800&h=300&fit=crop';
 
   return (
     <div className="min-h-screen bg-background">
@@ -176,6 +179,25 @@ const RestaurantMenu = () => {
       </div>
 
       <main className="mx-auto max-w-3xl px-4 pt-4 pb-nav md:pb-8">
+        {/* Gallery */}
+        {restaurant.gallery_images && restaurant.gallery_images.length > 0 && (
+          <section className="mb-4">
+            <h3 className="mb-2 text-xs font-bold uppercase tracking-wide text-muted-foreground">Gallery</h3>
+            <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-1">
+              {restaurant.gallery_images.map((url, i) => (
+                <div key={`${url}-${i}`} className="relative h-24 w-32 shrink-0 overflow-hidden rounded-xl border border-border bg-muted">
+                  <img
+                    src={url}
+                    alt={`${restaurant.name} ${i + 1}`}
+                    className="h-full w-full object-cover transition-transform duration-300 hover:scale-110"
+                    onError={(e) => ((e.target as HTMLImageElement).style.display = 'none')}
+                  />
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+
         {/* Search */}
         <div className="relative mb-4">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
