@@ -22,6 +22,9 @@ interface Restaurant {
   name: string;
   description: string;
   logo: string;
+  logo_url: string | null;
+  banner_url: string | null;
+  gallery_images: string[];
   location: string;
   cuisine: string;
   rating: number;
@@ -200,11 +203,19 @@ const Index = () => {
 
                   <div className="relative h-32 bg-muted">
                     <img
-                  src={restaurantImages[r.name] || `https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=400&h=200&fit=crop`}
+                  src={r.banner_url || restaurantImages[r.name] || `https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=400&h=200&fit=crop`}
                   alt={r.name}
-                  className="h-full w-full object-cover"
+                  className="h-full w-full object-cover transition-transform duration-300 hover:scale-105"
                   onError={(e) => {(e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=400&h=200&fit=crop';}} />
 
+                    {r.logo_url && (
+                      <img
+                        src={r.logo_url}
+                        alt=""
+                        className="absolute bottom-2 left-2 h-10 w-10 rounded-full border-2 border-card object-cover shadow-card"
+                        onError={(e) => {(e.target as HTMLImageElement).style.display = 'none';}}
+                      />
+                    )}
                     <span className="absolute top-2 left-2 rounded-full bg-primary px-2 py-0.5 text-[10px] font-bold text-primary-foreground">
                       {r.cuisine}
                     </span>
@@ -259,11 +270,19 @@ const Index = () => {
 
                   <div className="relative h-40 bg-muted">
                     <img
-                  src={restaurantImages[r.name] || `https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=600&h=300&fit=crop`}
+                  src={r.banner_url || restaurantImages[r.name] || `https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=600&h=300&fit=crop`}
                   alt={r.name}
-                  className="h-full w-full object-cover"
+                  className="h-full w-full object-cover transition-transform duration-300 hover:scale-105"
                   onError={(e) => {(e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=600&h=300&fit=crop';}} />
 
+                    {r.logo_url && (
+                      <img
+                        src={r.logo_url}
+                        alt=""
+                        className="absolute bottom-2 left-2 h-12 w-12 rounded-full border-2 border-card object-cover shadow-card"
+                        onError={(e) => {(e.target as HTMLImageElement).style.display = 'none';}}
+                      />
+                    )}
                     <span className="absolute top-2 right-2 rounded-full bg-card px-2 py-0.5 text-[10px] font-bold text-foreground border border-border">
                       Min R{r.min_order}
                     </span>
