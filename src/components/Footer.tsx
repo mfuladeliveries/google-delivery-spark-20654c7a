@@ -105,7 +105,7 @@ const Footer = () => {
         {/* Bottom bar */}
         <div className="mt-8 pt-6 border-t border-border flex flex-col sm:flex-row items-center justify-between gap-3">
           <p className="text-xs text-muted-foreground">
-            © {currentYear} {storeInfo.name}. All rights reserved.
+            © 2019 {storeInfo.name}. All rights reserved.
           </p>
           <p className="text-xs text-muted-foreground">
             {storeInfo.paymentNote}
