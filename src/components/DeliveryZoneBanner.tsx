@@ -21,9 +21,6 @@ const DeliveryZoneBanner = () => {
             <p className="mt-0.5 text-xs text-muted-foreground">
               <Link to="/auth" className="font-semibold text-primary hover:underline">Sign in</Link> to confirm we deliver to you.
             </p>
-            <p className="mt-2 text-[11px] text-muted-foreground">
-              We deliver to: <span className="font-semibold text-foreground">{ALL_DELIVERY_AREAS}</span>.
-            </p>
           </div>
         </div>
       </div>
