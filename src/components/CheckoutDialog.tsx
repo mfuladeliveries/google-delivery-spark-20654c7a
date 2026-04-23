@@ -526,7 +526,7 @@ const CheckoutDialog = ({
               <span>{storeInfo.currency}{subtotal.toFixed(2)}</span>
             </div>
             <div className="flex justify-between text-muted-foreground">
-              <span>Tax (5%)</span>
+              <span>Service Fee (5%)</span>
               <span>{storeInfo.currency}{tax.toFixed(2)}</span>
             </div>
             <div className="flex justify-between text-muted-foreground">

@@ -51,7 +51,7 @@ export function useCart() {
       ...lines,
       ``,
       `Subtotal: R${subtotal.toFixed(2)}`,
-      `Tax (5%): R${tax.toFixed(2)}`,
+      `Service Fee (5%): R${tax.toFixed(2)}`,
       `Delivery: R${delivery}`,
       `*Total: R${total.toFixed(2)}*`,
       ``,
