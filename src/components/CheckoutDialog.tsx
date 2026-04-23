@@ -31,9 +31,12 @@ interface CheckoutDialogProps {
   tax: number;
   delivery: number;
   onOrderPlaced: () => void;
+  initialFoodNote?: string;
 }
 
 const tipOptions = [0, 5, 10, 15, 20, 30];
+
+const pad = (n: number) => String(n).padStart(2, "0");
 
 const CheckoutDialog = ({
   open,
@@ -43,6 +46,7 @@ const CheckoutDialog = ({
   tax,
   delivery,
   onOrderPlaced,
+  initialFoodNote,
 }: CheckoutDialogProps) => {
   const { user } = useAuth();
   const { balance: walletBalance, refresh: refreshWallet } = useCustomerCredits();
@@ -51,6 +55,9 @@ const CheckoutDialog = ({
   const [contact, setContact] = useState("");
   const [address, setAddress] = useState("");
   const [notes, setNotes] = useState("");
+  const [deliveryInstructions, setDeliveryInstructions] = useState("");
+  const [deliveryWhen, setDeliveryWhen] = useState<"asap" | "schedule">("asap");
+  const [scheduleTime, setScheduleTime] = useState(""); // HH:mm
   const [tip, setTip] = useState(0);
   const [customTip, setCustomTip] = useState("");
   const [paymentMethod, setPaymentMethod] = useState<"cash" | "online">("cash");
@@ -58,6 +65,28 @@ const CheckoutDialog = ({
   const [locating, setLocating] = useState(false);
   const [profileLoaded, setProfileLoaded] = useState(false);
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
+
+  // Sync incoming food note from cart
+  useEffect(() => {
+    if (open && initialFoodNote !== undefined) {
+      setNotes(initialFoodNote);
+    }
+  }, [open, initialFoodNote]);
+
+  // Compute valid schedule range for today
+  const { minTime, maxTime, todayLabel, isPastClosing } = useMemo(() => {
+    const now = new Date();
+    const earliest = new Date(now.getTime() + PREP_LEAD_MINUTES * 60_000);
+    const closing = new Date(now);
+    closing.setHours(CLOSING_HOUR, CLOSING_MINUTE, 0, 0);
+    const past = earliest > closing;
+    return {
+      minTime: `${pad(earliest.getHours())}:${pad(earliest.getMinutes())}`,
+      maxTime: `${pad(CLOSING_HOUR)}:${pad(CLOSING_MINUTE)}`,
+      todayLabel: now.toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short" }),
+      isPastClosing: past,
+    };
+  }, [open]);
 
   const actualTip = customTip ? parseFloat(customTip) || 0 : tip;
   const grossTotal = subtotal + tax + delivery + actualTip;
