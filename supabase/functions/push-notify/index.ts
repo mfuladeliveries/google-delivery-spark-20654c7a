@@ -42,6 +42,8 @@ const zoneInfoForFee = (deliveryFee: number | null | undefined): { zone: 1 | 2 |
   if (fee >= 65) return { zone: 1, payout: 45 };
   return { zone: null, payout: Math.round(fee * 0.7) };
 };
+
+Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
