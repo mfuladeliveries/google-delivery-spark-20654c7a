@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { X, Package, MapPin, Phone, User, StickyNote, Banknote, CreditCard, Wallet } from "lucide-react";
+import { useState, useEffect, useMemo } from "react";
+import { X, Package, MapPin, Phone, User, StickyNote, Banknote, CreditCard, Wallet, Clock, Navigation } from "lucide-react";
 import { CartItem } from "@/hooks/useCart";
 import { storeInfo } from "@/data/menu";
 import { supabase } from "@/integrations/supabase/client";
@@ -9,12 +9,17 @@ import { z } from "zod";
 import { toast } from "sonner";
 import { dispatchAndNotify } from "@/lib/pushNotify";
 
+// Same-day delivery cutoff (last time a scheduled order can be requested for)
+const CLOSING_HOUR = 21; // 21:00
+const CLOSING_MINUTE = 0;
+const PREP_LEAD_MINUTES = 30; // earliest schedule from now
 
 const checkoutSchema = z.object({
   name: z.string().trim().min(2, "Name must be at least 2 characters").max(100, "Name must be less than 100 characters"),
   contact: z.string().trim().min(7, "Contact number is too short").max(20, "Contact number is too long").regex(/^[0-9\s+()-]+$/, "Invalid phone number format"),
   address: z.string().trim().min(5, "Address must be at least 5 characters").max(300, "Address must be less than 300 characters"),
   notes: z.string().max(500, "Notes must be less than 500 characters").optional(),
+  deliveryInstructions: z.string().max(300, "Delivery instructions must be less than 300 characters").optional(),
   tip: z.number().min(0, "Tip cannot be negative").max(10000, "Tip amount is too large"),
 });
 
