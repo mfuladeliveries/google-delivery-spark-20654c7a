@@ -420,6 +420,18 @@ const RestaurantImageManager = ({ open, onClose, restaurantId, restaurantName, o
                             <XCircle className="h-3.5 w-3.5" />
                           </button>
                         )}
+                        {(p.stage === "error" || p.stage === "cancelled") && (
+                          <button
+                            type="button"
+                            onClick={() => retryUpload(p.id)}
+                            title="Retry upload"
+                            aria-label={`Retry upload of ${p.name}`}
+                            className="inline-flex items-center gap-1 rounded-full border border-border bg-card px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-foreground transition-colors hover:border-primary hover:bg-primary/10 hover:text-primary"
+                          >
+                            <RotateCw className="h-3 w-3" />
+                            Retry
+                          </button>
+                        )}
                       </div>
                     </div>
                     <div className="h-1.5 w-full overflow-hidden rounded-full bg-card">
