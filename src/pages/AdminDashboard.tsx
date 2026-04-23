@@ -1235,7 +1235,14 @@ const RestaurantCard = ({
             )}
           </div>
         </div>
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex items-center gap-1.5 shrink-0">
+          <button
+            onClick={() => setImagesOpen(true)}
+            className="rounded-xl bg-primary/10 p-1.5 text-primary hover:bg-primary/20 transition-colors"
+            title="Manage images"
+          >
+            <ImageIcon className="h-4 w-4" />
+          </button>
           <button
             onClick={handleGeocode}
             disabled={geocoding}
