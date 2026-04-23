@@ -9,7 +9,7 @@ self.addEventListener("push", (event) => {
     event.waitUntil(
       self.registration.showNotification(title || "Mfula Deliveries", {
         body: body || "",
-        icon: icon || "/pwa-192x192.png",
+        icon: icon || "/notification-logo.png",
         badge: badge || "/favicon.ico",
         vibrate: [400, 200, 400, 200, 400, 200, 400],
         sound: "/sounds/new-order.mp3",
@@ -25,7 +25,7 @@ self.addEventListener("push", (event) => {
     event.waitUntil(
       self.registration.showNotification("Mfula Deliveries", {
         body: event.data.text(),
-        icon: "/pwa-192x192.png",
+        icon: "/notification-logo.png",
       })
     );
   }
