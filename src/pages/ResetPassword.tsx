@@ -219,12 +219,37 @@ const ResetPassword = () => {
             >
               Open Email App
             </a>
-            <Link
-              to="/forgot-password"
-              className="mt-4 inline-block text-sm font-semibold text-primary hover:underline"
-            >
-              Didn't get an email? Request a new link
-            </Link>
+
+            <div className="mt-6 rounded-xl border border-border bg-card p-4 text-left">
+              <p className="text-sm font-medium text-foreground">Didn't receive it?</p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Confirm your email address and we'll send another link.
+              </p>
+              <input
+                type="email"
+                value={resendEmail}
+                onChange={(e) => { setResendEmail(e.target.value); setResendError(""); setResendMessage(""); }}
+                autoComplete="email"
+                className="mt-3 w-full rounded-xl border border-border bg-background px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                placeholder="you@example.com"
+              />
+              <button
+                type="button"
+                onClick={handleResend}
+                disabled={resendLoading || !resendEmail}
+                className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-primary py-2.5 font-display font-bold text-primary-foreground transition-transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50"
+              >
+                {resendLoading && <Loader2 className="h-4 w-4 animate-spin" />}
+                {resendLoading ? "Sending..." : "Request a new link"}
+              </button>
+              {resendMessage && (
+                <p className="mt-3 text-sm text-primary">{resendMessage}</p>
+              )}
+              {resendError && (
+                <p className="mt-3 text-sm text-destructive">{resendError}</p>
+              )}
+            </div>
+
             <Link
               to="/auth"
               className="mt-6 block text-sm text-muted-foreground hover:text-foreground"
