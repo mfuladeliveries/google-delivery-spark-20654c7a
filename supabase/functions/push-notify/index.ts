@@ -249,10 +249,10 @@ Deno.serve(async (req) => {
 
     const driverBroadcastPayload = JSON.stringify({
       title: "🚗 New Delivery Available",
-      body: `Order #${order_number} ready at ${restaurant}`,
+      body: `Order #${order_number} ready at ${restaurant}${zoneSuffix}`,
       icon: "/pwa-192x192.png",
       badge: "/favicon.ico",
-      data: { url: "/driver", order_number },
+      data: { url: "/driver", order_number, zone: zoneId, payout: driverPayout },
     });
 
     const restaurantPayload = JSON.stringify({
@@ -265,20 +265,20 @@ Deno.serve(async (req) => {
 
     const offerPendingPayload = JSON.stringify({
       title: "🔔 New Order Offer",
-      body: `Order #${order_number} from ${restaurant} — Tap to accept (20s)`,
+      body: `Order #${order_number} from ${restaurant}${zoneSuffix} — Tap to accept (20s)`,
       icon: "/pwa-192x192.png",
       badge: "/favicon.ico",
       tag: `offer-${order_number}`,
-      data: { url: "/driver", order_number, kind: "offer" },
+      data: { url: "/driver", order_number, kind: "offer", zone: zoneId, payout: driverPayout },
     });
 
     const offerMissedPayload = JSON.stringify({
       title: "⏱️ Missed Order",
-      body: `You didn't respond to Order #${order_number} in time. It's been offered to another driver.`,
+      body: `You didn't respond to Order #${order_number}${zoneSuffix ? ` (${zoneSuffix.replace(/^ · /, "")})` : ""} in time. It's been offered to another driver.`,
       icon: "/pwa-192x192.png",
       badge: "/favicon.ico",
       tag: `missed-${order_number}`,
-      data: { url: "/driver", order_number, kind: "missed" },
+      data: { url: "/driver", order_number, kind: "missed", zone: zoneId, payout: driverPayout },
     });
 
     const adminBroadcastPayload = JSON.stringify({
