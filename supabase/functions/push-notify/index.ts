@@ -35,7 +35,13 @@ const statusEmojis: Record<string, string> = {
   rejected: "🚫",
 };
 
-Deno.serve(async (req) => {
+// Mirror of src/lib/zones.ts — keep in sync.
+const zoneInfoForFee = (deliveryFee: number | null | undefined): { zone: 1 | 2 | null; payout: number } => {
+  const fee = Number(deliveryFee ?? 0);
+  if (fee >= 75) return { zone: 2, payout: 55 };
+  if (fee >= 65) return { zone: 1, payout: 45 };
+  return { zone: null, payout: Math.round(fee * 0.7) };
+};
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
