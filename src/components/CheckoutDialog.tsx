@@ -369,6 +369,24 @@ const CheckoutDialog = ({
               </button>
             </div>
             {validationErrors.address && <p className="mt-1 text-xs text-destructive">{validationErrors.address}</p>}
+            {/* Live zone feedback based on what they've typed */}
+            {(() => {
+              const z = detectZone(address);
+              if (!address.trim()) return null;
+              if (z) {
+                return (
+                  <p className="mt-1.5 flex items-center gap-1.5 text-xs font-semibold text-primary">
+                    <Truck className="h-3.5 w-3.5" /> {z.name} · R{z.fee} delivery
+                  </p>
+                );
+              }
+              return (
+                <p className="mt-1.5 flex items-start gap-1.5 text-xs text-destructive">
+                  <AlertTriangle className="h-3.5 w-3.5 flex-shrink-0 mt-0.5" />
+                  <span>Address is outside our delivery area. We deliver to: {ALL_DELIVERY_AREAS}.</span>
+                </p>
+              );
+            })()}
           </div>
 
           {/* Delivery Instructions */}
