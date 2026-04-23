@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { Eye, EyeOff, CheckCircle2, AlertTriangle, Loader2 } from "lucide-react";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { Eye, EyeOff, CheckCircle2, AlertTriangle, Loader2, Mail } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { storeInfo } from "@/data/menu";
 
@@ -16,8 +16,11 @@ const evaluateStrength = (pw: string): Strength => {
 
 const ResetPassword = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [ready, setReady] = useState(false);
   const [linkInvalid, setLinkInvalid] = useState(false);
+  const [awaitingEmail, setAwaitingEmail] = useState(false);
+  const [errorDescription, setErrorDescription] = useState("");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [showPw, setShowPw] = useState(false);
@@ -27,30 +30,38 @@ const ResetPassword = () => {
   const [success, setSuccess] = useState(false);
   const [countdown, setCountdown] = useState(5);
 
-  // Detect recovery session
+  // Parse Supabase params from BOTH hash and query string
   useEffect(() => {
-    const hash = window.location.hash || "";
-    const hasRecovery = hash.includes("type=recovery");
-    const hasError = hash.includes("error=") || hash.includes("error_code=");
+    const hashParams = new URLSearchParams(
+      (window.location.hash || "").replace(/^#/, "")
+    );
 
-    if (hasError) {
+    const errorCode = hashParams.get("error_code") || hashParams.get("error") || searchParams.get("error_code") || searchParams.get("error");
+    const errorDesc = hashParams.get("error_description") || searchParams.get("error_description");
+    const type = hashParams.get("type") || searchParams.get("type");
+    const hasAccessToken = !!hashParams.get("access_token");
+    const hasCode = !!searchParams.get("code"); // PKCE recovery
+
+    if (errorCode) {
+      setErrorDescription(errorDesc ? decodeURIComponent(errorDesc.replace(/\+/g, " ")) : "");
       setLinkInvalid(true);
       return;
     }
 
-    if (hasRecovery) {
+    if (type === "recovery" || hasAccessToken || hasCode) {
       setReady(true);
       return;
     }
 
+    // Listen for Supabase to surface the recovery event
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
       if (event === "PASSWORD_RECOVERY") setReady(true);
     });
 
-    // If no recovery indicator after a moment, treat as invalid
+    // If nothing arrives shortly, show the "check your email" screen
     const t = window.setTimeout(() => {
       setReady((r) => {
-        if (!r) setLinkInvalid(true);
+        if (!r) setAwaitingEmail(true);
         return r;
       });
     }, 1500);
@@ -59,7 +70,7 @@ const ResetPassword = () => {
       subscription.unsubscribe();
       window.clearTimeout(t);
     };
-  }, []);
+  }, [searchParams]);
 
   // Countdown after success
   useEffect(() => {
@@ -142,11 +153,42 @@ const ResetPassword = () => {
             <p className="mt-3 text-sm text-muted-foreground">
               This password reset link has expired or already been used.
             </p>
+            {errorDescription && (
+              <p className="mt-2 text-xs text-muted-foreground">{errorDescription}</p>
+            )}
             <Link
               to="/forgot-password"
               className="mt-6 inline-flex w-full items-center justify-center rounded-xl bg-primary py-2.5 font-display font-bold text-primary-foreground transition-transform hover:scale-[1.02] active:scale-[0.98]"
             >
               Request New Link
+            </Link>
+          </div>
+        ) : awaitingEmail ? (
+          <div className="text-center">
+            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
+              <Mail className="h-8 w-8 text-primary" />
+            </div>
+            <h2 className="mt-5 font-display text-xl font-bold text-foreground">Check your email</h2>
+            <p className="mt-3 text-sm text-muted-foreground">
+              We've sent you a password reset link. Open it on this device to continue resetting your password. The link expires in 1 hour.
+            </p>
+            <a
+              href="mailto:"
+              className="mt-6 inline-flex w-full items-center justify-center rounded-xl bg-primary py-2.5 font-display font-bold text-primary-foreground transition-transform hover:scale-[1.02] active:scale-[0.98]"
+            >
+              Open Email App
+            </a>
+            <Link
+              to="/forgot-password"
+              className="mt-4 inline-block text-sm font-semibold text-primary hover:underline"
+            >
+              Didn't get an email? Request a new link
+            </Link>
+            <Link
+              to="/auth"
+              className="mt-6 block text-sm text-muted-foreground hover:text-foreground"
+            >
+              ← Back to Sign In
             </Link>
           </div>
         ) : !ready ? (
