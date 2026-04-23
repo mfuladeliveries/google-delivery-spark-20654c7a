@@ -8,7 +8,7 @@ const DeliveryZoneBanner = () => {
   const { user } = useAuth();
   const { loading, address, zone, outsideZone, needsAddress } = useDeliveryZone();
 
-  // Logged-out: show a generic banner with both zones
+  // Logged-out: show a generic banner with both zones (no pricing)
   if (!user) {
     return (
       <div className="mb-4 rounded-2xl border border-border bg-card p-4 shadow-card">
@@ -17,17 +17,13 @@ const DeliveryZoneBanner = () => {
             <Truck className="h-5 w-5 text-primary" />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-bold text-foreground">Delivery zones</p>
+            <p className="text-sm font-bold text-foreground">Delivery areas</p>
             <p className="mt-0.5 text-xs text-muted-foreground">
-              <Link to="/auth" className="font-semibold text-primary hover:underline">Sign in</Link> to see your zone & fee.
+              <Link to="/auth" className="font-semibold text-primary hover:underline">Sign in</Link> to confirm we deliver to you.
             </p>
-            <ul className="mt-2 space-y-1 text-[11px] text-muted-foreground">
-              {DELIVERY_ZONES.map((z) => (
-                <li key={z.id}>
-                  <span className="font-bold text-foreground">R{z.fee}</span> · {z.areas.join(", ")}
-                </li>
-              ))}
-            </ul>
+            <p className="mt-2 text-[11px] text-muted-foreground">
+              We deliver to: <span className="font-semibold text-foreground">{ALL_DELIVERY_AREAS}</span>.
+            </p>
           </div>
         </div>
       </div>
