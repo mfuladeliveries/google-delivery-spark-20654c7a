@@ -203,9 +203,17 @@ const CheckoutDialog = ({
 
       if (orderError) {
         console.error("Order placement failed:", orderError.message, orderError.details, orderError.hint);
-        toast.error("Failed to place your order, try again.", {
-          description: orderError.message,
-        });
+        const isRateLimited =
+          orderError.code === "42901" ||
+          /too many orders/i.test(orderError.message || "");
+        toast.error(
+          isRateLimited ? "You're placing orders too quickly" : "Failed to place your order, try again.",
+          {
+            description: isRateLimited
+              ? "Please wait about a minute before placing another order."
+              : orderError.message,
+          },
+        );
         setLoading(false);
         return;
       }

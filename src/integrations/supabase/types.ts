@@ -516,6 +516,36 @@ export type Database = {
         }
         Relationships: []
       }
+      rate_limits: {
+        Row: {
+          action: string
+          created_at: string
+          id: string
+          identifier: string
+          request_count: number
+          updated_at: string
+          window_started_at: string
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          id?: string
+          identifier: string
+          request_count?: number
+          updated_at?: string
+          window_started_at?: string
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          id?: string
+          identifier?: string
+          request_count?: number
+          updated_at?: string
+          window_started_at?: string
+        }
+        Relationships: []
+      }
       restaurants: {
         Row: {
           created_at: string
@@ -705,6 +735,15 @@ export type Database = {
         Returns: undefined
       }
       auto_cancel_stale_orders: { Args: never; Returns: number }
+      check_rate_limit: {
+        Args: {
+          p_action: string
+          p_identifier: string
+          p_max_requests: number
+          p_window_seconds: number
+        }
+        Returns: boolean
+      }
       claim_order: { Args: { p_order_id: string }; Returns: boolean }
       create_verified_order:
         | {
