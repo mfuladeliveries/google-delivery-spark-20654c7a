@@ -30,7 +30,7 @@ export const storeInfo: StoreInfo = {
   deliveryCharge: 55,
   tax: 0.05,
   minimumOrder: 40,
-  paymentNote: "Capitec Transfer (068 2819 391)-Mr Leteba / Capitec: 1419180949 or Cash",
+  paymentNote: "Pay securely online or with cash on delivery",
   areas: "Mfuleni, Bluedowns, Bosasa, Eesteriver, Summerville",
 };
 
