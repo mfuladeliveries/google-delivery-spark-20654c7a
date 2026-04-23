@@ -35,6 +35,9 @@ const Cart = ({
   onCheckout,
 }: CartProps) => {
   const [foodNote, setFoodNote] = useState("");
+  const { user } = useAuth();
+  const { zone, outsideZone, needsAddress } = useDeliveryZone();
+  const canCheckout = !!user && !!zone && !outsideZone && !needsAddress;
   if (!open) return null;
 
   return (
