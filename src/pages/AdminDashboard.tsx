@@ -2,7 +2,8 @@ import { useState, useEffect, Fragment } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { Shield, TrendingUp, Users, ShoppingBag, Store, ArrowLeft, DollarSign, Truck, UserCheck, Search, UserPlus, Plus, Trash2, Pencil, X, Save, MapPin } from "lucide-react";
+import { Shield, TrendingUp, Users, ShoppingBag, Store, ArrowLeft, DollarSign, Truck, UserCheck, Search, UserPlus, Plus, Trash2, Pencil, X, Save, MapPin, Image as ImageIcon } from "lucide-react";
+import RestaurantImageManager from "@/components/admin/RestaurantImageManager";
 import BottomNav from "@/components/BottomNav";
 import AdminEarnings from "@/components/admin/AdminEarnings";
 import AdminWithdrawals from "@/components/admin/AdminWithdrawals";
@@ -60,6 +61,9 @@ interface RestaurantRecord {
   location: string;
   lat: number | null;
   lng: number | null;
+  logo_url: string | null;
+  banner_url: string | null;
+  gallery_images: string[];
 }
 
 interface DriverRecord {
@@ -245,8 +249,8 @@ const AdminDashboard = () => {
   };
 
   const fetchRestaurants = async () => {
-    const { data } = await supabase.from("restaurants").select("id, name, cuisine, is_active, owner_user_id, rating, location, lat, lng").order("name");
-    if (data) setRestaurants(data);
+    const { data } = await supabase.from("restaurants").select("id, name, cuisine, is_active, owner_user_id, rating, location, lat, lng, logo_url, banner_url, gallery_images").order("name");
+    if (data) setRestaurants(data as RestaurantRecord[]);
   };
 
   const fetchDrivers = async () => {
