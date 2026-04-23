@@ -141,9 +141,26 @@ const RestaurantImageManager = ({ open, onClose, restaurantId, restaurantName, o
   const [dragKind, setDragKind] = useState<"logo" | "banner" | "gallery" | null>(null);
   const [progress, setProgress] = useState<UploadProgress[]>([]);
   const galleryRef = useRef<HTMLInputElement>(null);
+  // Map of upload id → AbortController so we can cancel individual files.
+  const controllersRef = useRef<Map<string, AbortController>>(new Map());
 
   const updateProgress = useCallback((id: string, patch: Partial<UploadProgress>) => {
     setProgress((list) => list.map((p) => (p.id === id ? { ...p, ...patch } : p)));
+  }, []);
+
+  const cancelUpload = useCallback((id: string) => {
+    const ctrl = controllersRef.current.get(id);
+    if (!ctrl) return;
+    ctrl.abort();
+    controllersRef.current.delete(id);
+    // Optimistic UI: flip the row to "cancelled" immediately.
+    setProgress((list) =>
+      list.map((p) =>
+        p.id === id && p.stage !== "done" && p.stage !== "error"
+          ? { ...p, stage: "cancelled", error: "Cancelled" }
+          : p,
+      ),
+    );
   }, []);
 
   useEffect(() => {
@@ -187,7 +204,7 @@ const RestaurantImageManager = ({ open, onClose, restaurantId, restaurantName, o
       }
       setUploadingKind(kind);
 
-      // Seed progress entries for every file we are about to process.
+      // Seed progress entries + per-file AbortControllers.
       const entries: UploadProgress[] = arr.map((f) => ({
         id: `${f.name}-${f.size}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
         name: f.name,
@@ -195,38 +212,47 @@ const RestaurantImageManager = ({ open, onClose, restaurantId, restaurantName, o
         stage: "compressing",
         percent: 0,
       }));
+      entries.forEach((e) => controllersRef.current.set(e.id, new AbortController()));
       setProgress((list) => [...list, ...entries]);
+
+      // Upload each file independently so cancelling one doesn't affect the
+      // others. For non-gallery (logo/banner) there's only ever one file.
+      const uploadOne = async (file: File, entry: UploadProgress): Promise<string | null> => {
+        const ctrl = controllersRef.current.get(entry.id);
+        if (!ctrl || ctrl.signal.aborted) return null;
+        try {
+          const url = await uploadToBucket(file, restaurantId, entry.kind, ctrl.signal, (stage, percent) =>
+            updateProgress(entry.id, { stage, percent }),
+          );
+          return url;
+        } catch (err: any) {
+          if (err instanceof UploadCancelledError || ctrl.signal.aborted) {
+            updateProgress(entry.id, { stage: "cancelled", error: "Cancelled" });
+            return null;
+          }
+          updateProgress(entry.id, { stage: "error", error: err?.message || "Upload failed" });
+          toast.error(`${entry.name}: ${err?.message || "Upload failed"}`);
+          return null;
+        } finally {
+          controllersRef.current.delete(entry.id);
+        }
+      };
 
       try {
         if (kind === "gallery") {
-          const urls: string[] = [];
-          for (let i = 0; i < arr.length; i++) {
-            const entry = entries[i];
-            const url = await uploadToBucket(arr[i], restaurantId, "gallery", (stage, percent) =>
-              updateProgress(entry.id, { stage, percent }),
-            );
-            urls.push(url);
+          const results = await Promise.all(arr.map((f, i) => uploadOne(f, entries[i])));
+          const urls = results.filter((u): u is string => Boolean(u));
+          if (urls.length > 0) {
+            setState((s) => ({ ...s, gallery_images: [...s.gallery_images, ...urls] }));
+            toast.success(`${urls.length} gallery image${urls.length > 1 ? "s" : ""} uploaded`);
           }
-          setState((s) => ({ ...s, gallery_images: [...s.gallery_images, ...urls] }));
-          toast.success(`${urls.length} gallery image${urls.length > 1 ? "s" : ""} uploaded`);
         } else {
-          const entry = entries[0];
-          const url = await uploadToBucket(arr[0], restaurantId, kind, (stage, percent) =>
-            updateProgress(entry.id, { stage, percent }),
-          );
-          setState((s) => ({ ...s, [`${kind}_url`]: url }));
-          toast.success(`${kind === "logo" ? "Logo" : "Banner"} uploaded`);
+          const url = await uploadOne(arr[0], entries[0]);
+          if (url) {
+            setState((s) => ({ ...s, [`${kind}_url`]: url }));
+            toast.success(`${kind === "logo" ? "Logo" : "Banner"} uploaded`);
+          }
         }
-      } catch (err: any) {
-        // Mark anything still in flight as errored.
-        setProgress((list) =>
-          list.map((p) =>
-            entries.some((e) => e.id === p.id) && p.stage !== "done"
-              ? { ...p, stage: "error", error: err?.message || "Upload failed" }
-              : p,
-          ),
-        );
-        toast.error(err.message || "Upload failed");
       } finally {
         setUploadingKind(null);
         // Auto-clear successful rows after a short delay so admins see them complete.
