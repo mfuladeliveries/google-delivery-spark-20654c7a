@@ -137,7 +137,10 @@ const Cart = ({
                 <span>{storeInfo.currency}{tax.toFixed(2)}</span>
               </div>
               <div className="flex justify-between text-muted-foreground">
-                <span>Delivery</span>
+                <span className="flex items-center gap-1">
+                  <Truck className="h-3.5 w-3.5" />
+                  Delivery {zone ? `(${zone.name})` : ""}
+                </span>
                 <span>{storeInfo.currency}{delivery}</span>
               </div>
               <div className="flex justify-between border-t border-border pt-2 text-lg font-bold text-foreground">
@@ -150,6 +153,29 @@ const Cart = ({
               <p className="mt-2 text-xs text-destructive">
                 Minimum order is {storeInfo.currency}{storeInfo.minimumOrder}
               </p>
+            )}
+
+            {/* Zone gating messages */}
+            {!user && (
+              <div className="mt-3 rounded-xl border border-primary/30 bg-primary/5 p-3 text-xs text-foreground">
+                <Link to="/auth" className="font-bold text-primary hover:underline">Sign in</Link> to confirm your delivery zone & place this order.
+              </div>
+            )}
+            {user && needsAddress && (
+              <div className="mt-3 rounded-xl border-2 border-primary/40 bg-primary/5 p-3 text-xs text-foreground">
+                <p className="font-bold">Add your delivery address first</p>
+                <Link to="/profile" className="text-primary hover:underline">Update profile →</Link>
+              </div>
+            )}
+            {user && outsideZone && (
+              <div className="mt-3 flex items-start gap-2 rounded-xl border-2 border-destructive/40 bg-destructive/5 p-3 text-xs text-foreground">
+                <AlertTriangle className="mt-0.5 h-4 w-4 flex-shrink-0 text-destructive" />
+                <div>
+                  <p className="font-bold">Outside our delivery area</p>
+                  <p className="mt-0.5 text-muted-foreground">We deliver to: {ALL_DELIVERY_AREAS}.</p>
+                  <Link to="/profile" className="mt-1 inline-block font-bold text-primary hover:underline">Update address →</Link>
+                </div>
+              </div>
             )}
 
             {/* Special note for food */}
@@ -169,7 +195,7 @@ const Cart = ({
 
             <button
               onClick={() => onCheckout(foodNote.trim() || undefined)}
-              disabled={subtotal < storeInfo.minimumOrder}
+              disabled={subtotal < storeInfo.minimumOrder || (!!user && !canCheckout)}
               className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-primary py-3 font-display font-bold text-primary-foreground transition-transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:hover:scale-100 shadow-orange"
             >
               <Package className="h-5 w-5" />
