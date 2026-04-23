@@ -157,16 +157,7 @@ const Auth = () => {
               {isLogin && (
                 <button
                   type="button"
-                  onClick={async () => {
-                    if (!email) { setError("Enter your email first"); return; }
-                    setLoading(true); setError(""); setMessage("");
-                    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-                      redirectTo: `${window.location.origin}/reset-password`,
-                    });
-                    if (error) setError(error.message);
-                    else setMessage("Check your email for a password reset link!");
-                    setLoading(false);
-                  }}
+                  onClick={() => navigate("/forgot-password")}
                   className="text-sm text-primary hover:underline"
                 >
                   Forgot password?
