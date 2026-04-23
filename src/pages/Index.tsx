@@ -106,8 +106,10 @@ const Index = () => {
 
   const featured = restaurants.filter((r) => r.rating >= 4.5).slice(0, 4);
 
-  const handleCheckout = () => {
+  const [foodNote, setFoodNote] = useState<string | undefined>(undefined);
+  const handleCheckout = (note?: string) => {
     if (!user) {navigate("/auth");return;}
+    setFoodNote(note);
     setCartOpen(false);
     setCheckoutOpen(true);
   };
@@ -304,6 +306,7 @@ const Index = () => {
         subtotal={cart.subtotal}
         tax={cart.tax}
         delivery={cart.delivery}
+        initialFoodNote={foodNote}
         onOrderPlaced={cart.clearCart} />
 
       <Footer />

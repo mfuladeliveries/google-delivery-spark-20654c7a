@@ -53,6 +53,7 @@ const RestaurantMenu = () => {
   const [search, setSearch] = useState("");
   const [cartOpen, setCartOpen] = useState(false);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
+  const [foodNote, setFoodNote] = useState<string | undefined>(undefined);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -119,8 +120,9 @@ const RestaurantMenu = () => {
     });
   };
 
-  const handleCheckout = () => {
+  const handleCheckout = (note?: string) => {
     if (!user) { navigate("/auth"); return; }
+    setFoodNote(note);
     setCartOpen(false);
     setCheckoutOpen(true);
   };
@@ -312,6 +314,7 @@ const RestaurantMenu = () => {
         subtotal={cart.subtotal}
         tax={cart.tax}
         delivery={cart.delivery}
+        initialFoodNote={foodNote}
         onOrderPlaced={cart.clearCart}
       />
       <BottomNav />

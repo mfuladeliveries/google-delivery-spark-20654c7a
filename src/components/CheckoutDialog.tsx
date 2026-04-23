@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { X, Package, MapPin, Phone, User, StickyNote, Banknote, CreditCard, Wallet } from "lucide-react";
+import { useState, useEffect, useMemo } from "react";
+import { X, Package, MapPin, Phone, User, StickyNote, Banknote, CreditCard, Wallet, Clock, Navigation } from "lucide-react";
 import { CartItem } from "@/hooks/useCart";
 import { storeInfo } from "@/data/menu";
 import { supabase } from "@/integrations/supabase/client";
@@ -9,12 +9,17 @@ import { z } from "zod";
 import { toast } from "sonner";
 import { dispatchAndNotify } from "@/lib/pushNotify";
 
+// Same-day delivery cutoff (last time a scheduled order can be requested for)
+const CLOSING_HOUR = 21; // 21:00
+const CLOSING_MINUTE = 0;
+const PREP_LEAD_MINUTES = 30; // earliest schedule from now
 
 const checkoutSchema = z.object({
   name: z.string().trim().min(2, "Name must be at least 2 characters").max(100, "Name must be less than 100 characters"),
   contact: z.string().trim().min(7, "Contact number is too short").max(20, "Contact number is too long").regex(/^[0-9\s+()-]+$/, "Invalid phone number format"),
   address: z.string().trim().min(5, "Address must be at least 5 characters").max(300, "Address must be less than 300 characters"),
   notes: z.string().max(500, "Notes must be less than 500 characters").optional(),
+  deliveryInstructions: z.string().max(300, "Delivery instructions must be less than 300 characters").optional(),
   tip: z.number().min(0, "Tip cannot be negative").max(10000, "Tip amount is too large"),
 });
 
@@ -26,9 +31,12 @@ interface CheckoutDialogProps {
   tax: number;
   delivery: number;
   onOrderPlaced: () => void;
+  initialFoodNote?: string;
 }
 
 const tipOptions = [0, 5, 10, 15, 20, 30];
+
+const pad = (n: number) => String(n).padStart(2, "0");
 
 const CheckoutDialog = ({
   open,
@@ -38,6 +46,7 @@ const CheckoutDialog = ({
   tax,
   delivery,
   onOrderPlaced,
+  initialFoodNote,
 }: CheckoutDialogProps) => {
   const { user } = useAuth();
   const { balance: walletBalance, refresh: refreshWallet } = useCustomerCredits();
@@ -46,6 +55,9 @@ const CheckoutDialog = ({
   const [contact, setContact] = useState("");
   const [address, setAddress] = useState("");
   const [notes, setNotes] = useState("");
+  const [deliveryInstructions, setDeliveryInstructions] = useState("");
+  const [deliveryWhen, setDeliveryWhen] = useState<"asap" | "schedule">("asap");
+  const [scheduleTime, setScheduleTime] = useState(""); // HH:mm
   const [tip, setTip] = useState(0);
   const [customTip, setCustomTip] = useState("");
   const [paymentMethod, setPaymentMethod] = useState<"cash" | "online">("cash");
@@ -53,6 +65,28 @@ const CheckoutDialog = ({
   const [locating, setLocating] = useState(false);
   const [profileLoaded, setProfileLoaded] = useState(false);
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
+
+  // Sync incoming food note from cart
+  useEffect(() => {
+    if (open && initialFoodNote !== undefined) {
+      setNotes(initialFoodNote);
+    }
+  }, [open, initialFoodNote]);
+
+  // Compute valid schedule range for today
+  const { minTime, maxTime, todayLabel, isPastClosing } = useMemo(() => {
+    const now = new Date();
+    const earliest = new Date(now.getTime() + PREP_LEAD_MINUTES * 60_000);
+    const closing = new Date(now);
+    closing.setHours(CLOSING_HOUR, CLOSING_MINUTE, 0, 0);
+    const past = earliest > closing;
+    return {
+      minTime: `${pad(earliest.getHours())}:${pad(earliest.getMinutes())}`,
+      maxTime: `${pad(CLOSING_HOUR)}:${pad(CLOSING_MINUTE)}`,
+      todayLabel: now.toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short" }),
+      isPastClosing: past,
+    };
+  }, [open]);
 
   const actualTip = customTip ? parseFloat(customTip) || 0 : tip;
   const grossTotal = subtotal + tax + delivery + actualTip;
@@ -91,7 +125,7 @@ const CheckoutDialog = ({
     }
 
     const result = checkoutSchema.safeParse({
-      name, contact, address, notes, tip: actualTip,
+      name, contact, address, notes, deliveryInstructions, tip: actualTip,
     });
 
     if (!result.success) {
@@ -104,6 +138,28 @@ const CheckoutDialog = ({
       toast.error("Please fix the highlighted fields.");
       return;
     }
+
+    // Validate scheduled delivery time (same day, before closing, after lead time)
+    let scheduledLabel = "";
+    if (deliveryWhen === "schedule") {
+      if (!scheduleTime) {
+        setValidationErrors({ schedule: "Please pick a delivery time." });
+        toast.error("Please pick a delivery time.");
+        return;
+      }
+      if (isPastClosing) {
+        setValidationErrors({ schedule: `Too late to schedule today. We close at ${maxTime}.` });
+        toast.error(`Too late to schedule today. We close at ${maxTime}.`);
+        return;
+      }
+      if (scheduleTime < minTime || scheduleTime > maxTime) {
+        setValidationErrors({ schedule: `Pick a time between ${minTime} and ${maxTime} today.` });
+        toast.error(`Pick a time between ${minTime} and ${maxTime} today.`);
+        return;
+      }
+      scheduledLabel = `${todayLabel} at ${scheduleTime}`;
+    }
+
     setValidationErrors({});
     setLoading(true);
 
@@ -124,13 +180,20 @@ const CheckoutDialog = ({
         quantity: ci.quantity,
       }));
 
+      // Combine food note, delivery instructions, and scheduled time into special_notes
+      const combinedNotes = [
+        notes.trim() ? `Food note: ${notes.trim()}` : "",
+        deliveryInstructions.trim() ? `Delivery instructions: ${deliveryInstructions.trim()}` : "",
+        scheduledLabel ? `Scheduled for: ${scheduledLabel}` : "Deliver ASAP",
+      ].filter(Boolean).join(" | ");
+
       const { data: order, error: orderError } = await supabase.rpc("create_verified_order", {
         p_items: orderItems,
         p_restaurant_name: restaurants[0] || "",
         p_customer_name: name.trim(),
         p_customer_contact: contact.trim(),
         p_customer_address: address.trim(),
-        p_special_notes: notes.trim(),
+        p_special_notes: combinedNotes,
         p_tip: actualTip,
         p_delivery_code: deliveryCode,
         p_payment_method: paymentMethod,
@@ -272,9 +335,79 @@ const CheckoutDialog = ({
             </div>
             {validationErrors.address && <p className="mt-1 text-xs text-destructive">{validationErrors.address}</p>}
           </div>
+
+          {/* Delivery Instructions */}
           <div>
             <label className="mb-1.5 flex items-center gap-1.5 text-sm font-semibold text-foreground">
-              <StickyNote className="h-3.5 w-3.5 text-primary" /> Special Notes
+              <Navigation className="h-3.5 w-3.5 text-primary" /> Delivery Instructions
+            </label>
+            <textarea
+              value={deliveryInstructions}
+              onChange={(e) => setDeliveryInstructions(e.target.value)}
+              placeholder="e.g. Gate code 1234, leave at door, call on arrival, blue house with white gate..."
+              rows={2}
+              maxLength={300}
+              className="w-full rounded-xl border border-border bg-card px-4 py-3 text-sm text-card-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all resize-none"
+            />
+            {validationErrors.deliveryInstructions && <p className="mt-1 text-xs text-destructive">{validationErrors.deliveryInstructions}</p>}
+          </div>
+
+          {/* Delivery Schedule */}
+          <div>
+            <label className="mb-2 flex items-center gap-1.5 text-sm font-semibold text-foreground">
+              <Clock className="h-3.5 w-3.5 text-primary" /> When should we deliver?
+            </label>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => setDeliveryWhen("asap")}
+                className={`rounded-xl border-2 px-3 py-2.5 text-xs font-bold transition-all ${
+                  deliveryWhen === "asap"
+                    ? "border-primary bg-primary/5 text-foreground"
+                    : "border-border bg-card text-muted-foreground"
+                }`}
+              >
+                As soon as possible
+              </button>
+              <button
+                type="button"
+                onClick={() => setDeliveryWhen("schedule")}
+                disabled={isPastClosing}
+                className={`rounded-xl border-2 px-3 py-2.5 text-xs font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed ${
+                  deliveryWhen === "schedule"
+                    ? "border-primary bg-primary/5 text-foreground"
+                    : "border-border bg-card text-muted-foreground"
+                }`}
+              >
+                Schedule for today
+              </button>
+            </div>
+            {deliveryWhen === "schedule" && (
+              <div className="mt-2 rounded-xl border border-border bg-card p-3">
+                <p className="mb-2 text-[11px] text-muted-foreground">
+                  Same day only · between <span className="font-semibold text-foreground">{minTime}</span> and <span className="font-semibold text-foreground">{maxTime}</span> ({todayLabel})
+                </p>
+                <input
+                  type="time"
+                  value={scheduleTime}
+                  min={minTime}
+                  max={maxTime}
+                  onChange={(e) => setScheduleTime(e.target.value)}
+                  className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                />
+              </div>
+            )}
+            {isPastClosing && (
+              <p className="mt-1.5 text-xs text-destructive">
+                Too late to schedule today (we close at {maxTime}). Choose ASAP or order tomorrow.
+              </p>
+            )}
+            {validationErrors.schedule && <p className="mt-1 text-xs text-destructive">{validationErrors.schedule}</p>}
+          </div>
+
+          <div>
+            <label className="mb-1.5 flex items-center gap-1.5 text-sm font-semibold text-foreground">
+              <StickyNote className="h-3.5 w-3.5 text-primary" /> Food Notes
             </label>
             <textarea
               value={notes}
@@ -393,7 +526,7 @@ const CheckoutDialog = ({
               <span>{storeInfo.currency}{subtotal.toFixed(2)}</span>
             </div>
             <div className="flex justify-between text-muted-foreground">
-              <span>Tax (5%)</span>
+              <span>Service Fee (5%)</span>
               <span>{storeInfo.currency}{tax.toFixed(2)}</span>
             </div>
             <div className="flex justify-between text-muted-foreground">
