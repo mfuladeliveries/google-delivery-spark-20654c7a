@@ -3,7 +3,7 @@ import imageCompression from "browser-image-compression";
 import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Upload, Image as ImageIcon, X, Trash2, Save, Loader2, XCircle } from "lucide-react";
+import { Upload, Image as ImageIcon, X, Trash2, Save, Loader2, XCircle, RotateCw } from "lucide-react";
 import { toast } from "sonner";
 
 // Custom error thrown when a user cancels an in-flight upload.
@@ -86,6 +86,8 @@ interface UploadProgress {
   // 0-100 — covers compression (0-70) then upload completion (70-100).
   percent: number;
   error?: string;
+  // Original File kept so failed/cancelled rows can be retried in-place.
+  file: File;
 }
 
 const validateFile = (file: File): string | null => {
@@ -190,6 +192,44 @@ const RestaurantImageManager = ({ open, onClose, restaurantId, restaurantName, o
     };
   }, [open, restaurantId]);
 
+  // Single-file upload helper used by both initial uploads and retries.
+  // Resolves with the public URL on success, or null on cancel/error
+  // (the row's stage is already updated in either case).
+  const runUpload = useCallback(
+    async (entry: UploadProgress): Promise<string | null> => {
+      const ctrl = controllersRef.current.get(entry.id);
+      if (!ctrl || ctrl.signal.aborted) return null;
+      try {
+        const url = await uploadToBucket(entry.file, restaurantId, entry.kind, ctrl.signal, (stage, percent) =>
+          updateProgress(entry.id, { stage, percent }),
+        );
+        return url;
+      } catch (err: any) {
+        if (err instanceof UploadCancelledError || ctrl.signal.aborted) {
+          updateProgress(entry.id, { stage: "cancelled", error: "Cancelled" });
+          return null;
+        }
+        updateProgress(entry.id, { stage: "error", error: err?.message || "Upload failed" });
+        toast.error(`${entry.name}: ${err?.message || "Upload failed"}`);
+        return null;
+      } finally {
+        controllersRef.current.delete(entry.id);
+      }
+    },
+    [restaurantId, updateProgress],
+  );
+
+  // Apply the resulting URL to the right slot in component state and toast.
+  const applyUploadedUrl = useCallback((kind: "logo" | "banner" | "gallery", url: string) => {
+    if (kind === "gallery") {
+      setState((s) => ({ ...s, gallery_images: [...s.gallery_images, url] }));
+      toast.success("Gallery image uploaded");
+    } else {
+      setState((s) => ({ ...s, [`${kind}_url`]: url }));
+      toast.success(`${kind === "logo" ? "Logo" : "Banner"} uploaded`);
+    }
+  }, []);
+
   const handleFiles = useCallback(
     async (files: FileList | File[], kind: "logo" | "banner" | "gallery") => {
       const arr = Array.from(files);
@@ -211,47 +251,23 @@ const RestaurantImageManager = ({ open, onClose, restaurantId, restaurantName, o
         kind,
         stage: "compressing",
         percent: 0,
+        file: f,
       }));
       entries.forEach((e) => controllersRef.current.set(e.id, new AbortController()));
       setProgress((list) => [...list, ...entries]);
 
-      // Upload each file independently so cancelling one doesn't affect the
-      // others. For non-gallery (logo/banner) there's only ever one file.
-      const uploadOne = async (file: File, entry: UploadProgress): Promise<string | null> => {
-        const ctrl = controllersRef.current.get(entry.id);
-        if (!ctrl || ctrl.signal.aborted) return null;
-        try {
-          const url = await uploadToBucket(file, restaurantId, entry.kind, ctrl.signal, (stage, percent) =>
-            updateProgress(entry.id, { stage, percent }),
-          );
-          return url;
-        } catch (err: any) {
-          if (err instanceof UploadCancelledError || ctrl.signal.aborted) {
-            updateProgress(entry.id, { stage: "cancelled", error: "Cancelled" });
-            return null;
-          }
-          updateProgress(entry.id, { stage: "error", error: err?.message || "Upload failed" });
-          toast.error(`${entry.name}: ${err?.message || "Upload failed"}`);
-          return null;
-        } finally {
-          controllersRef.current.delete(entry.id);
-        }
-      };
-
       try {
+        // Upload all in parallel — one failure won't block the others.
+        const results = await Promise.all(entries.map((e) => runUpload(e)));
+        const urls = results.filter((u): u is string => Boolean(u));
         if (kind === "gallery") {
-          const results = await Promise.all(arr.map((f, i) => uploadOne(f, entries[i])));
-          const urls = results.filter((u): u is string => Boolean(u));
           if (urls.length > 0) {
             setState((s) => ({ ...s, gallery_images: [...s.gallery_images, ...urls] }));
             toast.success(`${urls.length} gallery image${urls.length > 1 ? "s" : ""} uploaded`);
           }
-        } else {
-          const url = await uploadOne(arr[0], entries[0]);
-          if (url) {
-            setState((s) => ({ ...s, [`${kind}_url`]: url }));
-            toast.success(`${kind === "logo" ? "Logo" : "Banner"} uploaded`);
-          }
+        } else if (urls[0]) {
+          setState((s) => ({ ...s, [`${kind}_url`]: urls[0] }));
+          toast.success(`${kind === "logo" ? "Logo" : "Banner"} uploaded`);
         }
       } finally {
         setUploadingKind(null);
@@ -262,7 +278,30 @@ const RestaurantImageManager = ({ open, onClose, restaurantId, restaurantName, o
         }, 1500);
       }
     },
-    [restaurantId, updateProgress]
+    [restaurantId, runUpload],
+  );
+
+  // Retry a single failed/cancelled row using its original File.
+  const retryUpload = useCallback(
+    async (id: string) => {
+      const target = progress.find((p) => p.id === id);
+      if (!target || (target.stage !== "error" && target.stage !== "cancelled")) return;
+      // Reset row state and give it a fresh AbortController.
+      controllersRef.current.set(id, new AbortController());
+      updateProgress(id, { stage: "compressing", percent: 0, error: undefined });
+      setUploadingKind(target.kind);
+      try {
+        const url = await runUpload(target);
+        if (url) applyUploadedUrl(target.kind, url);
+      } finally {
+        setUploadingKind(null);
+        // Auto-clear if this row finished cleanly.
+        setTimeout(() => {
+          setProgress((list) => list.filter((p) => !(p.id === id && p.stage === "done")));
+        }, 1500);
+      }
+    },
+    [progress, runUpload, updateProgress, applyUploadedUrl],
   );
 
   const removeGalleryImage = (url: string) => {
