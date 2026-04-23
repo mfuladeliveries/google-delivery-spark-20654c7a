@@ -77,7 +77,9 @@ const Index = () => {
   const [checkoutOpen, setCheckoutOpen] = useState(false);
   const cart = useCart();
   const { user, roles, loading: authLoading } = useAuth();
+  const { zone, outsideZone, needsAddress } = useDeliveryZone();
   const navigate = useNavigate();
+  const canOrder = !!user && !!zone && !outsideZone && !needsAddress;
 
   // Lock providers (admin / driver / restaurant) into their own dashboards.
   // A user with ONLY a provider role should not be able to browse the customer app.
