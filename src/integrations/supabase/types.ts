@@ -777,6 +777,7 @@ export type Database = {
         Args: { p_method: string; p_order_id: string }
         Returns: Json
       }
+      detect_delivery_zone: { Args: { p_address: string }; Returns: number }
       dispatch_assign_next: { Args: { p_order_id: string }; Returns: Json }
       dispatch_tick: { Args: never; Returns: Json }
       driver_accept_offer: { Args: { p_order_id: string }; Returns: boolean }
