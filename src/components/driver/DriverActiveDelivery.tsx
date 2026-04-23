@@ -160,6 +160,8 @@ const DriverActiveDelivery = ({ orders, driverLocation, onDeliveryComplete, onSt
 
       {orders.map(order => {
         const currentStep = getStepIndex(order.status);
+        const zoneId = zoneIdForFee(order.delivery_fee);
+        const payout = driverPayoutForFee(order.delivery_fee);
 
         return (
           <div key={order.id} className="rounded-2xl border-2 border-primary bg-card shadow-orange overflow-hidden">
@@ -182,14 +184,21 @@ const DriverActiveDelivery = ({ orders, driverLocation, onDeliveryComplete, onSt
 
             <div className="p-4 space-y-4">
               {/* Order info */}
-              <div className="flex items-start justify-between">
-                <div>
-                  <span className="font-bold text-foreground text-lg">Order #{order.order_number}</span>
-                  <span className="ml-2 rounded-full bg-primary/10 px-2.5 py-1 text-xs font-bold text-primary capitalize">
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="font-bold text-foreground text-lg">Order #{order.order_number}</span>
+                    {zoneId && (
+                      <span className="rounded-full bg-[hsl(var(--driver-info)/0.12)] px-2.5 py-1 text-xs font-bold text-[hsl(var(--driver-info))] border border-[hsl(var(--driver-info)/0.25)]">
+                        Zone {zoneId} · R{payout} payout
+                      </span>
+                    )}
+                  </div>
+                  <span className="mt-1 inline-block rounded-full bg-primary/10 px-2.5 py-1 text-xs font-bold text-primary capitalize">
                     {order.status.replace(/_/g, " ")}
                   </span>
                 </div>
-                <span className="font-bold text-primary text-lg">R{order.total}</span>
+                <span className="font-bold text-primary text-lg shrink-0">R{order.total}</span>
               </div>
 
               {/* Progress bar */}
