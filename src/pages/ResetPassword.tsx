@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import { Eye, EyeOff, CheckCircle2, AlertTriangle, Loader2, Mail } from "lucide-react";
+import { Eye, EyeOff, CheckCircle2, AlertTriangle, Loader2, Mail, RefreshCw } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { storeInfo } from "@/data/menu";
 
@@ -192,16 +192,31 @@ const ResetPassword = () => {
             </div>
             <h2 className="mt-5 font-display text-xl font-bold text-foreground">Link Expired</h2>
             <p className="mt-3 text-sm text-muted-foreground">
-              This password reset link has expired or already been used.
+              This password reset link has expired or already been used. Reset links are valid for 1 hour and can only be opened once.
             </p>
+
             {errorDescription && (
-              <p className="mt-2 text-xs text-muted-foreground">{errorDescription}</p>
+              <div className="mt-4 rounded-xl border border-destructive/30 bg-destructive/5 p-3 text-left">
+                <p className="text-[11px] font-semibold uppercase tracking-wide text-destructive">
+                  Details
+                </p>
+                <p className="mt-1 break-words text-xs text-foreground">{errorDescription}</p>
+              </div>
             )}
+
             <Link
               to="/forgot-password"
-              className="mt-6 inline-flex w-full items-center justify-center rounded-xl bg-primary py-2.5 font-display font-bold text-primary-foreground transition-transform hover:scale-[1.02] active:scale-[0.98]"
+              className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-primary py-2.5 font-display font-bold text-primary-foreground transition-transform hover:scale-[1.02] active:scale-[0.98]"
             >
-              Request New Link
+              <RefreshCw className="h-4 w-4" />
+              Request a New Reset Link
+            </Link>
+
+            <Link
+              to="/auth"
+              className="mt-4 inline-block text-sm text-muted-foreground hover:text-foreground"
+            >
+              ← Back to Sign In
             </Link>
           </div>
         ) : awaitingEmail ? (
