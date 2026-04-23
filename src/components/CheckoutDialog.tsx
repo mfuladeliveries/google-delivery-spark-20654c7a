@@ -240,9 +240,23 @@ const CheckoutDialog = ({
         void dispatchAndNotify(orderId, Number(orderNum) || 0, restaurants[0] || "", orderTotal);
       }
 
+      const deliveryLine = scheduledLabel
+        ? `🕒 Scheduled: ${scheduledLabel}`
+        : `🕒 Delivery: ASAP`;
+      const notesLine = [
+        notes.trim() ? `📝 Food: ${notes.trim()}` : "",
+        deliveryInstructions.trim() ? `📍 Instructions: ${deliveryInstructions.trim()}` : "",
+      ].filter(Boolean).join("\n");
+
       toast.success("Your order has been placed successfully! 🎉", {
-        description: `Order #${orderNum} • Delivery PIN: ${deliveryCode}. We'll notify you as your order progresses.`,
-        duration: 8000,
+        description: [
+          `Order #${orderNum} • Delivery PIN: ${deliveryCode}`,
+          deliveryLine,
+          notesLine,
+          `We'll notify you as your order progresses.`,
+        ].filter(Boolean).join("\n"),
+        duration: 10000,
+        style: { whiteSpace: "pre-line" },
       });
       setLoading(false);
       onOrderPlaced();
