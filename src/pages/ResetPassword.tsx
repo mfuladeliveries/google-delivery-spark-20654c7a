@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { Eye, EyeOff, CheckCircle2, AlertTriangle, Loader2 } from "lucide-react";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { Eye, EyeOff, CheckCircle2, AlertTriangle, Loader2, Mail } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { storeInfo } from "@/data/menu";
 
@@ -16,8 +16,11 @@ const evaluateStrength = (pw: string): Strength => {
 
 const ResetPassword = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [ready, setReady] = useState(false);
   const [linkInvalid, setLinkInvalid] = useState(false);
+  const [awaitingEmail, setAwaitingEmail] = useState(false);
+  const [errorDescription, setErrorDescription] = useState("");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [showPw, setShowPw] = useState(false);
@@ -27,30 +30,38 @@ const ResetPassword = () => {
   const [success, setSuccess] = useState(false);
   const [countdown, setCountdown] = useState(5);
 
-  // Detect recovery session
+  // Parse Supabase params from BOTH hash and query string
   useEffect(() => {
-    const hash = window.location.hash || "";
-    const hasRecovery = hash.includes("type=recovery");
-    const hasError = hash.includes("error=") || hash.includes("error_code=");
+    const hashParams = new URLSearchParams(
+      (window.location.hash || "").replace(/^#/, "")
+    );
 
-    if (hasError) {
+    const errorCode = hashParams.get("error_code") || hashParams.get("error") || searchParams.get("error_code") || searchParams.get("error");
+    const errorDesc = hashParams.get("error_description") || searchParams.get("error_description");
+    const type = hashParams.get("type") || searchParams.get("type");
+    const hasAccessToken = !!hashParams.get("access_token");
+    const hasCode = !!searchParams.get("code"); // PKCE recovery
+
+    if (errorCode) {
+      setErrorDescription(errorDesc ? decodeURIComponent(errorDesc.replace(/\+/g, " ")) : "");
       setLinkInvalid(true);
       return;
     }
 
-    if (hasRecovery) {
+    if (type === "recovery" || hasAccessToken || hasCode) {
       setReady(true);
       return;
     }
 
+    // Listen for Supabase to surface the recovery event
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
       if (event === "PASSWORD_RECOVERY") setReady(true);
     });
 
-    // If no recovery indicator after a moment, treat as invalid
+    // If nothing arrives shortly, show the "check your email" screen
     const t = window.setTimeout(() => {
       setReady((r) => {
-        if (!r) setLinkInvalid(true);
+        if (!r) setAwaitingEmail(true);
         return r;
       });
     }, 1500);
@@ -59,7 +70,7 @@ const ResetPassword = () => {
       subscription.unsubscribe();
       window.clearTimeout(t);
     };
-  }, []);
+  }, [searchParams]);
 
   // Countdown after success
   useEffect(() => {
