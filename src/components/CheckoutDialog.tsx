@@ -206,14 +206,20 @@ const CheckoutDialog = ({
         const isRateLimited =
           orderError.code === "42901" ||
           /too many orders/i.test(orderError.message || "");
-        toast.error(
-          isRateLimited ? "You're placing orders too quickly" : "Failed to place your order, try again.",
-          {
-            description: isRateLimited
-              ? "Please wait about a minute before placing another order."
-              : orderError.message,
-          },
-        );
+        const isOutsideZone =
+          orderError.code === "22023" ||
+          /outside our delivery area/i.test(orderError.message || "");
+        const title = isRateLimited
+          ? "You're placing orders too quickly"
+          : isOutsideZone
+          ? "Outside delivery area"
+          : "Failed to place your order, try again.";
+        const description = isRateLimited
+          ? "Please wait about a minute before placing another order."
+          : isOutsideZone
+          ? "Update your delivery address to one of our supported areas."
+          : orderError.message;
+        toast.error(title, { description });
         setLoading(false);
         return;
       }
