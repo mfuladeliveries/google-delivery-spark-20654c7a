@@ -1185,9 +1185,41 @@ const RestaurantCard = ({
 
   return (
     <div className="rounded-2xl border border-border bg-card shadow-card overflow-hidden">
-      <div className="flex items-center justify-between p-4">
+      <div className="flex items-center justify-between gap-3 p-4">
+        {/* Logo + Banner thumbnails */}
+        <div className="flex items-center gap-2 shrink-0">
+          <div className="relative h-12 w-12 overflow-hidden rounded-full border border-border bg-muted">
+            {r.logo_url ? (
+              <img
+                src={r.logo_url}
+                alt={`${r.name} logo`}
+                className="h-full w-full object-cover transition-transform hover:scale-110"
+                onError={(e) => ((e.target as HTMLImageElement).style.display = "none")}
+              />
+            ) : (
+              <div className="flex h-full w-full items-center justify-center text-muted-foreground">
+                <ImageIcon className="h-4 w-4" />
+              </div>
+            )}
+          </div>
+          <div className="relative h-12 w-20 overflow-hidden rounded-lg border border-border bg-muted hidden sm:block">
+            {r.banner_url ? (
+              <img
+                src={r.banner_url}
+                alt={`${r.name} banner`}
+                className="h-full w-full object-cover transition-transform hover:scale-110"
+                onError={(e) => ((e.target as HTMLImageElement).style.display = "none")}
+              />
+            ) : (
+              <div className="flex h-full w-full items-center justify-center text-muted-foreground">
+                <ImageIcon className="h-4 w-4" />
+              </div>
+            )}
+          </div>
+        </div>
+
         <div className="min-w-0 flex-1">
-          <h3 className="font-bold text-sm text-foreground">{r.name}</h3>
+          <h3 className="font-bold text-sm text-foreground truncate">{r.name}</h3>
           <p className="text-xs text-muted-foreground">{r.cuisine} · ⭐ {r.rating}</p>
           <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 mt-0.5">
             {r.owner_user_id && (
@@ -1197,6 +1229,9 @@ const RestaurantCard = ({
               <p className="text-[10px] text-green-600 font-semibold">📍 Located ({r.lat!.toFixed(3)}, {r.lng!.toFixed(3)})</p>
             ) : (
               <p className="text-[10px] text-amber-600 font-semibold">⚠️ No coordinates</p>
+            )}
+            {r.gallery_images?.length > 0 && (
+              <p className="text-[10px] text-muted-foreground font-medium">🖼️ {r.gallery_images.length} gallery</p>
             )}
           </div>
         </div>
