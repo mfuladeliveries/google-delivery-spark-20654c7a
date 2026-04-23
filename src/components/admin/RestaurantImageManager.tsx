@@ -21,7 +21,11 @@ const COMPRESSION_OPTS: Record<"logo" | "banner" | "gallery", {
   gallery: { maxSizeMB: 0.4,  maxWidthOrHeight: 1400 },
 };
 
-const compressImage = async (file: File, kind: "logo" | "banner" | "gallery"): Promise<File> => {
+const compressImage = async (
+  file: File,
+  kind: "logo" | "banner" | "gallery",
+  onProgress?: (percent: number) => void,
+): Promise<File> => {
   try {
     const opts = COMPRESSION_OPTS[kind];
     const compressed = await imageCompression(file, {
@@ -29,6 +33,7 @@ const compressImage = async (file: File, kind: "logo" | "banner" | "gallery"): P
       useWebWorker: true,
       initialQuality: 0.82,
       fileType: file.type === "image/png" ? "image/png" : "image/webp",
+      onProgress: (p: number) => onProgress?.(Math.max(0, Math.min(100, p))),
     });
     // Preserve a sensible filename + extension
     const ext = compressed.type === "image/png" ? "png" : "webp";
@@ -54,14 +59,35 @@ interface ImageState {
   gallery_images: string[];
 }
 
+// One row per in-flight file shown in the progress list.
+type UploadStage = "compressing" | "uploading" | "done" | "error";
+interface UploadProgress {
+  id: string;
+  name: string;
+  kind: "logo" | "banner" | "gallery";
+  stage: UploadStage;
+  // 0-100 — covers compression (0-70) then upload completion (70-100).
+  percent: number;
+  error?: string;
+}
+
 const validateFile = (file: File): string | null => {
   if (!ACCEPTED_TYPES.includes(file.type)) return "Only JPG, PNG, or WebP images are allowed";
   if (file.size > MAX_BYTES) return `Image must be under 2MB (got ${(file.size / 1024 / 1024).toFixed(1)}MB)`;
   return null;
 };
 
-const uploadToBucket = async (file: File, restaurantId: string, kind: "logo" | "banner" | "gallery"): Promise<string> => {
-  const compressed = await compressImage(file, kind);
+const uploadToBucket = async (
+  file: File,
+  restaurantId: string,
+  kind: "logo" | "banner" | "gallery",
+  onProgress?: (stage: UploadStage, percent: number) => void,
+): Promise<string> => {
+  // Compression: map library 0-100 → overall 0-70.
+  const compressed = await compressImage(file, kind, (p) => {
+    onProgress?.("compressing", Math.round(p * 0.7));
+  });
+  onProgress?.("uploading", 75);
   const ext = (compressed.name.split(".").pop() || "webp").toLowerCase();
   const path = `restaurant-images/${restaurantId}/${kind}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
   const { error } = await supabase.storage.from("food-images").upload(path, compressed, {
@@ -70,6 +96,7 @@ const uploadToBucket = async (file: File, restaurantId: string, kind: "logo" | "
     cacheControl: "3600",
   });
   if (error) throw error;
+  onProgress?.("done", 100);
   const { data } = supabase.storage.from("food-images").getPublicUrl(path);
   return data.publicUrl;
 };
@@ -80,7 +107,12 @@ const RestaurantImageManager = ({ open, onClose, restaurantId, restaurantName, o
   const [saving, setSaving] = useState(false);
   const [uploadingKind, setUploadingKind] = useState<"logo" | "banner" | "gallery" | null>(null);
   const [dragKind, setDragKind] = useState<"logo" | "banner" | "gallery" | null>(null);
+  const [progress, setProgress] = useState<UploadProgress[]>([]);
   const galleryRef = useRef<HTMLInputElement>(null);
+
+  const updateProgress = useCallback((id: string, patch: Partial<UploadProgress>) => {
+    setProgress((list) => list.map((p) => (p.id === id ? { ...p, ...patch } : p)));
+  }, []);
 
   useEffect(() => {
     if (!open) return;
@@ -122,26 +154,57 @@ const RestaurantImageManager = ({ open, onClose, restaurantId, restaurantName, o
         }
       }
       setUploadingKind(kind);
+
+      // Seed progress entries for every file we are about to process.
+      const entries: UploadProgress[] = arr.map((f) => ({
+        id: `${f.name}-${f.size}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+        name: f.name,
+        kind,
+        stage: "compressing",
+        percent: 0,
+      }));
+      setProgress((list) => [...list, ...entries]);
+
       try {
         if (kind === "gallery") {
           const urls: string[] = [];
-          for (const f of arr) {
-            urls.push(await uploadToBucket(f, restaurantId, "gallery"));
+          for (let i = 0; i < arr.length; i++) {
+            const entry = entries[i];
+            const url = await uploadToBucket(arr[i], restaurantId, "gallery", (stage, percent) =>
+              updateProgress(entry.id, { stage, percent }),
+            );
+            urls.push(url);
           }
           setState((s) => ({ ...s, gallery_images: [...s.gallery_images, ...urls] }));
           toast.success(`${urls.length} gallery image${urls.length > 1 ? "s" : ""} uploaded`);
         } else {
-          const url = await uploadToBucket(arr[0], restaurantId, kind);
+          const entry = entries[0];
+          const url = await uploadToBucket(arr[0], restaurantId, kind, (stage, percent) =>
+            updateProgress(entry.id, { stage, percent }),
+          );
           setState((s) => ({ ...s, [`${kind}_url`]: url }));
           toast.success(`${kind === "logo" ? "Logo" : "Banner"} uploaded`);
         }
       } catch (err: any) {
+        // Mark anything still in flight as errored.
+        setProgress((list) =>
+          list.map((p) =>
+            entries.some((e) => e.id === p.id) && p.stage !== "done"
+              ? { ...p, stage: "error", error: err?.message || "Upload failed" }
+              : p,
+          ),
+        );
         toast.error(err.message || "Upload failed");
       } finally {
         setUploadingKind(null);
+        // Auto-clear successful rows after a short delay so admins see them complete.
+        const ids = new Set(entries.map((e) => e.id));
+        setTimeout(() => {
+          setProgress((list) => list.filter((p) => !(ids.has(p.id) && p.stage === "done")));
+        }, 1500);
       }
     },
-    [restaurantId]
+    [restaurantId, updateProgress]
   );
 
   const removeGalleryImage = (url: string) => {
@@ -190,6 +253,68 @@ const RestaurantImageManager = ({ open, onClose, restaurantId, restaurantName, o
             JPG, PNG or WebP · max 2MB per image · auto-compressed before upload · changes save when you click "Save Changes"
           </DialogDescription>
         </DialogHeader>
+
+        {progress.length > 0 && (
+          <div className="rounded-2xl border border-border bg-muted/40 p-3 space-y-2">
+            <div className="flex items-center justify-between">
+              <h4 className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
+                Processing ({progress.filter((p) => p.stage !== "done" && p.stage !== "error").length} active)
+              </h4>
+              {progress.every((p) => p.stage === "done" || p.stage === "error") && (
+                <button
+                  type="button"
+                  onClick={() => setProgress([])}
+                  className="text-[10px] font-medium text-muted-foreground hover:text-foreground"
+                >
+                  Clear
+                </button>
+              )}
+            </div>
+            <ul className="space-y-2">
+              {progress.map((p) => {
+                const stageLabel =
+                  p.stage === "compressing"
+                    ? "Compressing…"
+                    : p.stage === "uploading"
+                    ? "Uploading…"
+                    : p.stage === "done"
+                    ? "Done"
+                    : "Failed";
+                const barColor =
+                  p.stage === "error"
+                    ? "bg-destructive"
+                    : p.stage === "done"
+                    ? "bg-emerald-500"
+                    : "bg-primary";
+                return (
+                  <li key={p.id} className="space-y-1">
+                    <div className="flex items-center justify-between gap-2 text-[11px]">
+                      <span className="truncate font-medium text-foreground">
+                        <span className="mr-1 rounded bg-card px-1.5 py-0.5 text-[9px] font-bold uppercase text-muted-foreground">
+                          {p.kind}
+                        </span>
+                        {p.name}
+                      </span>
+                      <span
+                        className={`shrink-0 font-semibold ${
+                          p.stage === "error" ? "text-destructive" : "text-muted-foreground"
+                        }`}
+                      >
+                        {p.stage === "error" ? p.error || stageLabel : `${stageLabel} ${p.percent}%`}
+                      </span>
+                    </div>
+                    <div className="h-1.5 w-full overflow-hidden rounded-full bg-card">
+                      <div
+                        className={`h-full ${barColor} transition-all duration-200`}
+                        style={{ width: `${p.stage === "error" ? 100 : p.percent}%` }}
+                      />
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        )}
 
         {loading ? (
           <div className="flex items-center justify-center py-12">
