@@ -316,9 +316,9 @@ const RestaurantImageManager = ({ open, onClose, restaurantId, restaurantName, o
           <div className="rounded-2xl border border-border bg-muted/40 p-3 space-y-2">
             <div className="flex items-center justify-between">
               <h4 className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
-                Processing ({progress.filter((p) => p.stage !== "done" && p.stage !== "error").length} active)
+                Processing ({progress.filter((p) => p.stage === "compressing" || p.stage === "uploading").length} active)
               </h4>
-              {progress.every((p) => p.stage === "done" || p.stage === "error") && (
+              {progress.every((p) => p.stage === "done" || p.stage === "error" || p.stage === "cancelled") && (
                 <button
                   type="button"
                   onClick={() => setProgress([])}
@@ -330,6 +330,7 @@ const RestaurantImageManager = ({ open, onClose, restaurantId, restaurantName, o
             </div>
             <ul className="space-y-2">
               {progress.map((p) => {
+                const isActive = p.stage === "compressing" || p.stage === "uploading";
                 const stageLabel =
                   p.stage === "compressing"
                     ? "Compressing…"
@@ -337,13 +338,23 @@ const RestaurantImageManager = ({ open, onClose, restaurantId, restaurantName, o
                     ? "Uploading…"
                     : p.stage === "done"
                     ? "Done"
+                    : p.stage === "cancelled"
+                    ? "Cancelled"
                     : "Failed";
                 const barColor =
                   p.stage === "error"
                     ? "bg-destructive"
+                    : p.stage === "cancelled"
+                    ? "bg-muted-foreground"
                     : p.stage === "done"
                     ? "bg-emerald-500"
                     : "bg-primary";
+                const labelColor =
+                  p.stage === "error"
+                    ? "text-destructive"
+                    : p.stage === "cancelled"
+                    ? "text-muted-foreground italic"
+                    : "text-muted-foreground";
                 return (
                   <li key={p.id} className="space-y-1">
                     <div className="flex items-center justify-between gap-2 text-[11px]">
@@ -353,18 +364,29 @@ const RestaurantImageManager = ({ open, onClose, restaurantId, restaurantName, o
                         </span>
                         {p.name}
                       </span>
-                      <span
-                        className={`shrink-0 font-semibold ${
-                          p.stage === "error" ? "text-destructive" : "text-muted-foreground"
-                        }`}
-                      >
-                        {p.stage === "error" ? p.error || stageLabel : `${stageLabel} ${p.percent}%`}
-                      </span>
+                      <div className="flex shrink-0 items-center gap-2">
+                        <span className={`font-semibold ${labelColor}`}>
+                          {p.stage === "error" || p.stage === "cancelled"
+                            ? p.error || stageLabel
+                            : `${stageLabel} ${p.percent}%`}
+                        </span>
+                        {isActive && (
+                          <button
+                            type="button"
+                            onClick={() => cancelUpload(p.id)}
+                            title="Cancel upload"
+                            aria-label={`Cancel upload of ${p.name}`}
+                            className="inline-flex items-center justify-center rounded-full p-0.5 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
+                          >
+                            <XCircle className="h-3.5 w-3.5" />
+                          </button>
+                        )}
+                      </div>
                     </div>
                     <div className="h-1.5 w-full overflow-hidden rounded-full bg-card">
                       <div
                         className={`h-full ${barColor} transition-all duration-200`}
-                        style={{ width: `${p.stage === "error" ? 100 : p.percent}%` }}
+                        style={{ width: `${p.stage === "error" || p.stage === "cancelled" ? 100 : p.percent}%` }}
                       />
                     </div>
                   </li>
