@@ -107,7 +107,12 @@ const RestaurantImageManager = ({ open, onClose, restaurantId, restaurantName, o
   const [saving, setSaving] = useState(false);
   const [uploadingKind, setUploadingKind] = useState<"logo" | "banner" | "gallery" | null>(null);
   const [dragKind, setDragKind] = useState<"logo" | "banner" | "gallery" | null>(null);
+  const [progress, setProgress] = useState<UploadProgress[]>([]);
   const galleryRef = useRef<HTMLInputElement>(null);
+
+  const updateProgress = useCallback((id: string, patch: Partial<UploadProgress>) => {
+    setProgress((list) => list.map((p) => (p.id === id ? { ...p, ...patch } : p)));
+  }, []);
 
   useEffect(() => {
     if (!open) return;
@@ -149,26 +154,57 @@ const RestaurantImageManager = ({ open, onClose, restaurantId, restaurantName, o
         }
       }
       setUploadingKind(kind);
+
+      // Seed progress entries for every file we are about to process.
+      const entries: UploadProgress[] = arr.map((f) => ({
+        id: `${f.name}-${f.size}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+        name: f.name,
+        kind,
+        stage: "compressing",
+        percent: 0,
+      }));
+      setProgress((list) => [...list, ...entries]);
+
       try {
         if (kind === "gallery") {
           const urls: string[] = [];
-          for (const f of arr) {
-            urls.push(await uploadToBucket(f, restaurantId, "gallery"));
+          for (let i = 0; i < arr.length; i++) {
+            const entry = entries[i];
+            const url = await uploadToBucket(arr[i], restaurantId, "gallery", (stage, percent) =>
+              updateProgress(entry.id, { stage, percent }),
+            );
+            urls.push(url);
           }
           setState((s) => ({ ...s, gallery_images: [...s.gallery_images, ...urls] }));
           toast.success(`${urls.length} gallery image${urls.length > 1 ? "s" : ""} uploaded`);
         } else {
-          const url = await uploadToBucket(arr[0], restaurantId, kind);
+          const entry = entries[0];
+          const url = await uploadToBucket(arr[0], restaurantId, kind, (stage, percent) =>
+            updateProgress(entry.id, { stage, percent }),
+          );
           setState((s) => ({ ...s, [`${kind}_url`]: url }));
           toast.success(`${kind === "logo" ? "Logo" : "Banner"} uploaded`);
         }
       } catch (err: any) {
+        // Mark anything still in flight as errored.
+        setProgress((list) =>
+          list.map((p) =>
+            entries.some((e) => e.id === p.id) && p.stage !== "done"
+              ? { ...p, stage: "error", error: err?.message || "Upload failed" }
+              : p,
+          ),
+        );
         toast.error(err.message || "Upload failed");
       } finally {
         setUploadingKind(null);
+        // Auto-clear successful rows after a short delay so admins see them complete.
+        const ids = new Set(entries.map((e) => e.id));
+        setTimeout(() => {
+          setProgress((list) => list.filter((p) => !(ids.has(p.id) && p.stage === "done")));
+        }, 1500);
       }
     },
-    [restaurantId]
+    [restaurantId, updateProgress]
   );
 
   const removeGalleryImage = (url: string) => {
