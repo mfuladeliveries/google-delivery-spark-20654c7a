@@ -125,7 +125,7 @@ const CheckoutDialog = ({
     }
 
     const result = checkoutSchema.safeParse({
-      name, contact, address, notes, tip: actualTip,
+      name, contact, address, notes, deliveryInstructions, tip: actualTip,
     });
 
     if (!result.success) {
@@ -138,6 +138,28 @@ const CheckoutDialog = ({
       toast.error("Please fix the highlighted fields.");
       return;
     }
+
+    // Validate scheduled delivery time (same day, before closing, after lead time)
+    let scheduledLabel = "";
+    if (deliveryWhen === "schedule") {
+      if (!scheduleTime) {
+        setValidationErrors({ schedule: "Please pick a delivery time." });
+        toast.error("Please pick a delivery time.");
+        return;
+      }
+      if (isPastClosing) {
+        setValidationErrors({ schedule: `Too late to schedule today. We close at ${maxTime}.` });
+        toast.error(`Too late to schedule today. We close at ${maxTime}.`);
+        return;
+      }
+      if (scheduleTime < minTime || scheduleTime > maxTime) {
+        setValidationErrors({ schedule: `Pick a time between ${minTime} and ${maxTime} today.` });
+        toast.error(`Pick a time between ${minTime} and ${maxTime} today.`);
+        return;
+      }
+      scheduledLabel = `${todayLabel} at ${scheduleTime}`;
+    }
+
     setValidationErrors({});
     setLoading(true);
 
@@ -158,13 +180,20 @@ const CheckoutDialog = ({
         quantity: ci.quantity,
       }));
 
+      // Combine food note, delivery instructions, and scheduled time into special_notes
+      const combinedNotes = [
+        notes.trim() ? `Food note: ${notes.trim()}` : "",
+        deliveryInstructions.trim() ? `Delivery instructions: ${deliveryInstructions.trim()}` : "",
+        scheduledLabel ? `Scheduled for: ${scheduledLabel}` : "Deliver ASAP",
+      ].filter(Boolean).join(" | ");
+
       const { data: order, error: orderError } = await supabase.rpc("create_verified_order", {
         p_items: orderItems,
         p_restaurant_name: restaurants[0] || "",
         p_customer_name: name.trim(),
         p_customer_contact: contact.trim(),
         p_customer_address: address.trim(),
-        p_special_notes: notes.trim(),
+        p_special_notes: combinedNotes,
         p_tip: actualTip,
         p_delivery_code: deliveryCode,
         p_payment_method: paymentMethod,
