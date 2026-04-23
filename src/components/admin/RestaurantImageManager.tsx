@@ -254,6 +254,68 @@ const RestaurantImageManager = ({ open, onClose, restaurantId, restaurantName, o
           </DialogDescription>
         </DialogHeader>
 
+        {progress.length > 0 && (
+          <div className="rounded-2xl border border-border bg-muted/40 p-3 space-y-2">
+            <div className="flex items-center justify-between">
+              <h4 className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
+                Processing ({progress.filter((p) => p.stage !== "done" && p.stage !== "error").length} active)
+              </h4>
+              {progress.every((p) => p.stage === "done" || p.stage === "error") && (
+                <button
+                  type="button"
+                  onClick={() => setProgress([])}
+                  className="text-[10px] font-medium text-muted-foreground hover:text-foreground"
+                >
+                  Clear
+                </button>
+              )}
+            </div>
+            <ul className="space-y-2">
+              {progress.map((p) => {
+                const stageLabel =
+                  p.stage === "compressing"
+                    ? "Compressing…"
+                    : p.stage === "uploading"
+                    ? "Uploading…"
+                    : p.stage === "done"
+                    ? "Done"
+                    : "Failed";
+                const barColor =
+                  p.stage === "error"
+                    ? "bg-destructive"
+                    : p.stage === "done"
+                    ? "bg-emerald-500"
+                    : "bg-primary";
+                return (
+                  <li key={p.id} className="space-y-1">
+                    <div className="flex items-center justify-between gap-2 text-[11px]">
+                      <span className="truncate font-medium text-foreground">
+                        <span className="mr-1 rounded bg-card px-1.5 py-0.5 text-[9px] font-bold uppercase text-muted-foreground">
+                          {p.kind}
+                        </span>
+                        {p.name}
+                      </span>
+                      <span
+                        className={`shrink-0 font-semibold ${
+                          p.stage === "error" ? "text-destructive" : "text-muted-foreground"
+                        }`}
+                      >
+                        {p.stage === "error" ? p.error || stageLabel : `${stageLabel} ${p.percent}%`}
+                      </span>
+                    </div>
+                    <div className="h-1.5 w-full overflow-hidden rounded-full bg-card">
+                      <div
+                        className={`h-full ${barColor} transition-all duration-200`}
+                        style={{ width: `${p.stage === "error" ? 100 : p.percent}%` }}
+                      />
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        )}
+
         {loading ? (
           <div className="flex items-center justify-center py-12">
             <Loader2 className="h-6 w-6 animate-spin text-primary" />
