@@ -1,7 +1,9 @@
-import { useEffect } from "react";
-import { useLocation, useNavigate, Link } from "react-router-dom";
-import { CheckCircle2, Clock, KeyRound, StickyNote, Navigation, Package, Home, ListOrdered } from "lucide-react";
+import { useEffect, useState } from "react";
+import { useLocation, useNavigate, useSearchParams, Link } from "react-router-dom";
+import { CheckCircle2, Clock, KeyRound, StickyNote, Navigation, Package, Home, ListOrdered, Loader2 } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 
 interface ConfirmationState {
   orderNumber: string | number;
@@ -14,19 +16,140 @@ interface ConfirmationState {
   restaurant?: string;
 }
 
+// Parse our combined special_notes string (created in CheckoutDialog) into parts.
+// Format example:
+//   "Food note: no onions | Delivery instructions: gate code 1234 | Scheduled for: Today 18:30"
+//   "Deliver ASAP"
+const parseSpecialNotes = (raw: string | null | undefined) => {
+  const out: { foodNote?: string; deliveryInstructions?: string; scheduledLabel?: string } = {};
+  if (!raw) return out;
+  const parts = raw.split("|").map((p) => p.trim()).filter(Boolean);
+  for (const part of parts) {
+    const lower = part.toLowerCase();
+    if (lower.startsWith("food note:")) {
+      out.foodNote = part.slice("food note:".length).trim();
+    } else if (lower.startsWith("delivery instructions:")) {
+      out.deliveryInstructions = part.slice("delivery instructions:".length).trim();
+    } else if (lower.startsWith("scheduled for:")) {
+      out.scheduledLabel = part.slice("scheduled for:".length).trim();
+    }
+    // "Deliver ASAP" → leave scheduledLabel undefined
+  }
+  return out;
+};
+
 const OrderConfirmation = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const state = location.state as ConfirmationState | null;
+  const [searchParams] = useSearchParams();
+  const { user, loading: authLoading } = useAuth();
+  const navState = location.state as ConfirmationState | null;
 
-  // If user lands here directly without state, send them to Orders
+  const [data, setData] = useState<ConfirmationState | null>(navState ?? null);
+  const [loading, setLoading] = useState(!navState);
+  const [notFound, setNotFound] = useState(false);
+
+  // Determine which order number to look up: from nav state OR ?order=123 query param
+  const queryOrderNumber = searchParams.get("order");
+  const lookupOrderNumber = navState?.orderNumber ?? queryOrderNumber ?? null;
+
+  // Keep ?order=N in the URL so refresh works
   useEffect(() => {
-    if (!state || !state.orderNumber) {
+    if (navState?.orderNumber && !queryOrderNumber) {
+      const params = new URLSearchParams(searchParams);
+      params.set("order", String(navState.orderNumber));
+      navigate(`/order-confirmation?${params.toString()}`, {
+        replace: true,
+        state: navState,
+      });
+    }
+  }, [navState, queryOrderNumber, navigate, searchParams]);
+
+  // Fetch from DB when we don't already have full state (e.g. after refresh)
+  useEffect(() => {
+    if (data || !lookupOrderNumber) return;
+    if (authLoading) return;
+    if (!user) {
+      // Not signed in — can't fetch their order; bounce to orders page (will redirect to auth if needed)
+      navigate("/orders", { replace: true });
+      return;
+    }
+
+    const orderNumInt = Number(lookupOrderNumber);
+    if (!Number.isFinite(orderNumInt)) {
+      setNotFound(true);
+      setLoading(false);
+      return;
+    }
+
+    let cancelled = false;
+    (async () => {
+      setLoading(true);
+      const { data: order, error } = await supabase
+        .from("orders")
+        .select(
+          "order_number, delivery_code, special_notes, total, payment_method, restaurant, user_id"
+        )
+        .eq("order_number", orderNumInt)
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      if (cancelled) return;
+
+      if (error || !order) {
+        setNotFound(true);
+        setLoading(false);
+        return;
+      }
+
+      const parsed = parseSpecialNotes(order.special_notes);
+      setData({
+        orderNumber: order.order_number,
+        deliveryPin: order.delivery_code || "------",
+        scheduledLabel: parsed.scheduledLabel,
+        foodNote: parsed.foodNote,
+        deliveryInstructions: parsed.deliveryInstructions,
+        total: typeof order.total === "number" ? order.total : Number(order.total),
+        paymentMethod: (order.payment_method as "cash" | "online") || undefined,
+        restaurant: order.restaurant || undefined,
+      });
+      setLoading(false);
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [data, lookupOrderNumber, user, authLoading, navigate]);
+
+  // If there's nothing to look up at all, send to Orders
+  useEffect(() => {
+    if (!lookupOrderNumber && !navState) {
       navigate("/orders", { replace: true });
     }
-  }, [state, navigate]);
+  }, [lookupOrderNumber, navState, navigate]);
 
-  if (!state || !state.orderNumber) return null;
+  // If lookup failed (wrong order, not yours), bounce to Orders
+  useEffect(() => {
+    if (notFound) {
+      navigate("/orders", { replace: true });
+    }
+  }, [notFound, navigate]);
+
+  if (loading || authLoading) {
+    return (
+      <div className="min-h-screen bg-background pb-nav">
+        <main className="mx-auto flex max-w-lg items-center justify-center px-4 pt-24">
+          <div className="flex flex-col items-center gap-3 text-muted-foreground">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            <p className="text-sm">Loading your order…</p>
+          </div>
+        </main>
+        <BottomNav />
+      </div>
+    );
+  }
+
+  if (!data) return null;
 
   const {
     orderNumber,
@@ -37,7 +160,7 @@ const OrderConfirmation = () => {
     total,
     paymentMethod,
     restaurant,
-  } = state;
+  } = data;
 
   return (
     <div className="min-h-screen bg-background pb-nav">
