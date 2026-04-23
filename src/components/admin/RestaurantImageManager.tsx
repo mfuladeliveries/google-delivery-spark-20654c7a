@@ -3,8 +3,16 @@ import imageCompression from "browser-image-compression";
 import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Upload, Image as ImageIcon, X, Trash2, Save, Loader2 } from "lucide-react";
+import { Upload, Image as ImageIcon, X, Trash2, Save, Loader2, XCircle } from "lucide-react";
 import { toast } from "sonner";
+
+// Custom error thrown when a user cancels an in-flight upload.
+class UploadCancelledError extends Error {
+  constructor() {
+    super("cancelled");
+    this.name = "UploadCancelledError";
+  }
+}
 
 const ACCEPTED_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
 const MAX_BYTES = 2 * 1024 * 1024; // 2MB original-file cap (pre-compression)
@@ -24,6 +32,7 @@ const COMPRESSION_OPTS: Record<"logo" | "banner" | "gallery", {
 const compressImage = async (
   file: File,
   kind: "logo" | "banner" | "gallery",
+  signal?: AbortSignal,
   onProgress?: (percent: number) => void,
 ): Promise<File> => {
   try {
@@ -33,14 +42,22 @@ const compressImage = async (
       useWebWorker: true,
       initialQuality: 0.82,
       fileType: file.type === "image/png" ? "image/png" : "image/webp",
-      onProgress: (p: number) => onProgress?.(Math.max(0, Math.min(100, p))),
+      signal,
+      onProgress: (p: number) => {
+        if (signal?.aborted) throw new UploadCancelledError();
+        onProgress?.(Math.max(0, Math.min(100, p)));
+      },
     });
+    if (signal?.aborted) throw new UploadCancelledError();
     // Preserve a sensible filename + extension
     const ext = compressed.type === "image/png" ? "png" : "webp";
     const base = file.name.replace(/\.[^.]+$/, "");
     return new File([compressed], `${base}.${ext}`, { type: compressed.type });
-  } catch {
-    // If compression fails for any reason, fall back to the original file.
+  } catch (err: any) {
+    if (signal?.aborted || err?.name === "AbortError" || err instanceof UploadCancelledError) {
+      throw new UploadCancelledError();
+    }
+    // If compression fails for any other reason, fall back to the original file.
     return file;
   }
 };
@@ -60,7 +77,7 @@ interface ImageState {
 }
 
 // One row per in-flight file shown in the progress list.
-type UploadStage = "compressing" | "uploading" | "done" | "error";
+type UploadStage = "compressing" | "uploading" | "done" | "error" | "cancelled";
 interface UploadProgress {
   id: string;
   name: string;
@@ -81,20 +98,35 @@ const uploadToBucket = async (
   file: File,
   restaurantId: string,
   kind: "logo" | "banner" | "gallery",
+  signal: AbortSignal,
   onProgress?: (stage: UploadStage, percent: number) => void,
 ): Promise<string> => {
   // Compression: map library 0-100 → overall 0-70.
-  const compressed = await compressImage(file, kind, (p) => {
+  const compressed = await compressImage(file, kind, signal, (p) => {
     onProgress?.("compressing", Math.round(p * 0.7));
   });
+  if (signal.aborted) throw new UploadCancelledError();
   onProgress?.("uploading", 75);
   const ext = (compressed.name.split(".").pop() || "webp").toLowerCase();
   const path = `restaurant-images/${restaurantId}/${kind}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
-  const { error } = await supabase.storage.from("food-images").upload(path, compressed, {
+
+  // Race the upload against the abort signal so cancellation feels instant
+  // even though supabase-js doesn't natively accept an AbortSignal here.
+  const uploadPromise = supabase.storage.from("food-images").upload(path, compressed, {
     upsert: false,
     contentType: compressed.type,
     cacheControl: "3600",
   });
+  const abortPromise = new Promise<never>((_, reject) => {
+    if (signal.aborted) return reject(new UploadCancelledError());
+    signal.addEventListener("abort", () => reject(new UploadCancelledError()), { once: true });
+  });
+  const { error } = await Promise.race([uploadPromise, abortPromise]);
+  if (signal.aborted) {
+    // Best-effort cleanup if the upload actually completed before we noticed.
+    supabase.storage.from("food-images").remove([path]).catch(() => {});
+    throw new UploadCancelledError();
+  }
   if (error) throw error;
   onProgress?.("done", 100);
   const { data } = supabase.storage.from("food-images").getPublicUrl(path);
