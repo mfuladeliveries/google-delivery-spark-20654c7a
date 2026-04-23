@@ -218,7 +218,7 @@ const DriverJobBoard = ({ orders, isOnline, accepting, onAccept, driverLocation 
                   </div>
                   <div className="text-right">
                     <span className="font-bold text-primary text-lg">R{order.total}</span>
-                    <p className="text-xs text-[hsl(var(--driver-success))] font-bold">+R{order.delivery_fee} fee</p>
+                    <p className="text-xs text-[hsl(var(--driver-success))] font-bold">+R{driverPayoutForFee(order.delivery_fee)} payout</p>
                   </div>
                 </div>
 
