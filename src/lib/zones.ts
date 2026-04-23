@@ -25,6 +25,20 @@ export const DELIVERY_ZONES: DeliveryZone[] = [
   },
 ];
 
+/**
+ * Driver payout per delivery, by zone:
+ * - Zone 1 (R65 customer fee) → driver earns R45
+ * - Zone 2 (R75 customer fee) → driver earns R55
+ * The platform keeps the rest. Mirrors the public.update_driver_earnings trigger.
+ */
+export const driverPayoutForFee = (deliveryFee: number | null | undefined): number => {
+  const fee = Number(deliveryFee ?? 0);
+  if (fee >= 75) return 55;
+  if (fee >= 65) return 45;
+  // Legacy / unknown fee — fall back to the historical 70% split.
+  return Math.round(fee * 0.7);
+};
+
 const ZONE_KEYWORDS: Array<{ id: ZoneId; patterns: RegExp[] }> = [
   {
     id: 1,
