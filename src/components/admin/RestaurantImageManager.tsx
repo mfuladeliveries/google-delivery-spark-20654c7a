@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
+import imageCompression from "browser-image-compression";
 import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -6,8 +7,38 @@ import { Upload, Image as ImageIcon, X, Trash2, Save, Loader2 } from "lucide-rea
 import { toast } from "sonner";
 
 const ACCEPTED_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
-const MAX_BYTES = 2 * 1024 * 1024; // 2MB
+const MAX_BYTES = 2 * 1024 * 1024; // 2MB original-file cap (pre-compression)
 const FALLBACK_IMG = "https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=600&h=300&fit=crop";
+
+// Compression presets per image kind — keeps quality high where it matters
+// (banner/gallery) and shrinks logos aggressively since they render small.
+const COMPRESSION_OPTS: Record<"logo" | "banner" | "gallery", {
+  maxSizeMB: number;
+  maxWidthOrHeight: number;
+}> = {
+  logo:    { maxSizeMB: 0.15, maxWidthOrHeight: 512 },
+  banner:  { maxSizeMB: 0.5,  maxWidthOrHeight: 1600 },
+  gallery: { maxSizeMB: 0.4,  maxWidthOrHeight: 1400 },
+};
+
+const compressImage = async (file: File, kind: "logo" | "banner" | "gallery"): Promise<File> => {
+  try {
+    const opts = COMPRESSION_OPTS[kind];
+    const compressed = await imageCompression(file, {
+      ...opts,
+      useWebWorker: true,
+      initialQuality: 0.82,
+      fileType: file.type === "image/png" ? "image/png" : "image/webp",
+    });
+    // Preserve a sensible filename + extension
+    const ext = compressed.type === "image/png" ? "png" : "webp";
+    const base = file.name.replace(/\.[^.]+$/, "");
+    return new File([compressed], `${base}.${ext}`, { type: compressed.type });
+  } catch {
+    // If compression fails for any reason, fall back to the original file.
+    return file;
+  }
+};
 
 interface Props {
   open: boolean;
@@ -30,11 +61,12 @@ const validateFile = (file: File): string | null => {
 };
 
 const uploadToBucket = async (file: File, restaurantId: string, kind: "logo" | "banner" | "gallery"): Promise<string> => {
-  const ext = (file.name.split(".").pop() || "jpg").toLowerCase();
+  const compressed = await compressImage(file, kind);
+  const ext = (compressed.name.split(".").pop() || "webp").toLowerCase();
   const path = `restaurant-images/${restaurantId}/${kind}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
-  const { error } = await supabase.storage.from("food-images").upload(path, file, {
+  const { error } = await supabase.storage.from("food-images").upload(path, compressed, {
     upsert: false,
-    contentType: file.type,
+    contentType: compressed.type,
     cacheControl: "3600",
   });
   if (error) throw error;
@@ -155,7 +187,7 @@ const RestaurantImageManager = ({ open, onClose, restaurantId, restaurantName, o
         <DialogHeader>
           <DialogTitle className="text-base">🖼️ Manage images — {restaurantName}</DialogTitle>
           <DialogDescription className="text-xs">
-            JPG, PNG or WebP · max 2MB per image · changes save when you click "Save Changes"
+            JPG, PNG or WebP · max 2MB per image · auto-compressed before upload · changes save when you click "Save Changes"
           </DialogDescription>
         </DialogHeader>
 
