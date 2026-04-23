@@ -8,6 +8,7 @@ import { useCustomerCredits } from "@/hooks/useCustomerCredits";
 import { z } from "zod";
 import { toast } from "sonner";
 import { dispatchAndNotify } from "@/lib/pushNotify";
+import { useNavigate } from "react-router-dom";
 
 // Same-day delivery cutoff (last time a scheduled order can be requested for)
 const CLOSING_HOUR = 21; // 21:00
