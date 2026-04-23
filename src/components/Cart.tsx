@@ -126,7 +126,7 @@ const Cart = ({
                 <span>{storeInfo.currency}{subtotal.toFixed(2)}</span>
               </div>
               <div className="flex justify-between text-muted-foreground">
-                <span>Tax (5%)</span>
+                <span>Service Fee (5%)</span>
                 <span>{storeInfo.currency}{tax.toFixed(2)}</span>
               </div>
               <div className="flex justify-between text-muted-foreground">
@@ -145,8 +145,23 @@ const Cart = ({
               </p>
             )}
 
+            {/* Special note for food */}
+            <div className="mt-3">
+              <label className="mb-1.5 flex items-center gap-1.5 text-xs font-semibold text-foreground">
+                <StickyNote className="h-3.5 w-3.5 text-primary" /> Special note for your food
+              </label>
+              <textarea
+                value={foodNote}
+                onChange={(e) => setFoodNote(e.target.value)}
+                placeholder="e.g. extra sauce, no onions, well done..."
+                rows={2}
+                maxLength={300}
+                className="w-full rounded-xl border border-border bg-card px-3 py-2 text-xs text-card-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/30 resize-none"
+              />
+            </div>
+
             <button
-              onClick={onCheckout}
+              onClick={() => onCheckout(foodNote.trim() || undefined)}
               disabled={subtotal < storeInfo.minimumOrder}
               className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-primary py-3 font-display font-bold text-primary-foreground transition-transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:hover:scale-100 shadow-orange"
             >
