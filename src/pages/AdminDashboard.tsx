@@ -1377,6 +1377,14 @@ const RestaurantCard = ({
           </div>
         </div>
       )}
+
+      <RestaurantImageManager
+        open={imagesOpen}
+        onClose={() => setImagesOpen(false)}
+        restaurantId={r.id}
+        restaurantName={r.name}
+        onSaved={onRestaurantChanged}
+      />
     </div>
   );
 };
