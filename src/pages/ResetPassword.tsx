@@ -21,6 +21,10 @@ const ResetPassword = () => {
   const [linkInvalid, setLinkInvalid] = useState(false);
   const [awaitingEmail, setAwaitingEmail] = useState(false);
   const [errorDescription, setErrorDescription] = useState("");
+  const [resendEmail, setResendEmail] = useState("");
+  const [resendLoading, setResendLoading] = useState(false);
+  const [resendMessage, setResendMessage] = useState("");
+  const [resendError, setResendError] = useState("");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [showPw, setShowPw] = useState(false);
@@ -71,6 +75,43 @@ const ResetPassword = () => {
       window.clearTimeout(t);
     };
   }, [searchParams]);
+
+  // Pre-fill resend email from the forgot-password step (if available)
+  useEffect(() => {
+    try {
+      const stored = sessionStorage.getItem("mfula:reset-email");
+      if (stored) setResendEmail(stored);
+    } catch {}
+  }, []);
+
+  const isValidEmail = (v: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim());
+
+  const handleResend = async () => {
+    setResendError("");
+    setResendMessage("");
+    if (!isValidEmail(resendEmail)) {
+      setResendError("Please enter a valid email address.");
+      return;
+    }
+    setResendLoading(true);
+    const { error: sbError } = await supabase.auth.resetPasswordForEmail(resendEmail.trim(), {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
+    setResendLoading(false);
+    if (sbError) {
+      const msg = sbError.message?.toLowerCase() ?? "";
+      if (msg.includes("not found") || msg.includes("user")) {
+        setResendError("No account found with this email address.");
+      } else if (msg.includes("network") || msg.includes("fetch")) {
+        setResendError("Connection failed. Please check your internet and try again.");
+      } else {
+        setResendError(sbError.message || "Something went wrong. Please try again.");
+      }
+      return;
+    }
+    setResendMessage(`Reset link sent to ${resendEmail.trim()}.`);
+    try { sessionStorage.setItem("mfula:reset-email", resendEmail.trim()); } catch {}
+  };
 
   // Countdown after success
   useEffect(() => {
