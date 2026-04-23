@@ -49,6 +49,7 @@ const CheckoutDialog = ({
   onOrderPlaced,
   initialFoodNote,
 }: CheckoutDialogProps) => {
+  const navigate = useNavigate();
   const { user } = useAuth();
   const { balance: walletBalance, refresh: refreshWallet } = useCustomerCredits();
   const [useWallet, setUseWallet] = useState(false);
@@ -241,27 +242,31 @@ const CheckoutDialog = ({
         void dispatchAndNotify(orderId, Number(orderNum) || 0, restaurants[0] || "", orderTotal);
       }
 
-      const deliveryLine = scheduledLabel
-        ? `🕒 Scheduled: ${scheduledLabel}`
-        : `🕒 Delivery: ASAP`;
-      const notesLine = [
-        notes.trim() ? `📝 Food: ${notes.trim()}` : "",
-        deliveryInstructions.trim() ? `📍 Instructions: ${deliveryInstructions.trim()}` : "",
-      ].filter(Boolean).join("\n");
+      const orderTotalNum = Number(orderResult?.total) || 0;
 
-      toast.success("Your order has been placed successfully! 🎉", {
-        description: [
-          `Order #${orderNum} • Delivery PIN: ${deliveryCode}`,
-          deliveryLine,
-          notesLine,
-          `We'll notify you as your order progresses.`,
-        ].filter(Boolean).join("\n"),
-        duration: 10000,
-        style: { whiteSpace: "pre-line" },
+      toast.success("Order placed! 🎉", {
+        description: `Order #${orderNum} confirmed.`,
+        duration: 4000,
       });
+
       setLoading(false);
       onOrderPlaced();
       onClose();
+
+      // Navigate to dedicated confirmation page with full details
+      navigate("/order-confirmation", {
+        state: {
+          orderNumber: orderNum,
+          deliveryPin: deliveryCode,
+          scheduledLabel: scheduledLabel || undefined,
+          foodNote: notes.trim() || undefined,
+          deliveryInstructions: deliveryInstructions.trim() || undefined,
+          total: orderTotalNum,
+          paymentMethod,
+          restaurant: restaurants[0] || undefined,
+        },
+        replace: true,
+      });
     } catch (err) {
       console.error("Unexpected order error:", err);
       toast.error("Failed to place your order, try again.");
