@@ -1074,6 +1074,7 @@ const RestaurantCard = ({
   const [coordLat, setCoordLat] = useState("");
   const [coordLng, setCoordLng] = useState("");
   const [savingCoords, setSavingCoords] = useState(false);
+  const [imagesOpen, setImagesOpen] = useState(false);
 
   const handleSaveCoords = async () => {
     const lat = parseFloat(coordLat);
