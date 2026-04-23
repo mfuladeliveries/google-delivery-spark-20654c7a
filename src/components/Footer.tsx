@@ -3,8 +3,6 @@ import { Link } from "react-router-dom";
 import { storeInfo } from "@/data/menu";
 
 const Footer = () => {
-  const currentYear = new Date().getFullYear();
-
   return (
     <footer className="border-t border-border bg-card mt-12">
       <div className="mx-auto max-w-7xl px-4 py-10">
