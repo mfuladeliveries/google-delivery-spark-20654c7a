@@ -52,6 +52,7 @@ const ForgotPassword = () => {
     }
     setSent(true);
     setSecondsLeft(RESEND_COOLDOWN);
+    try { sessionStorage.setItem("mfula:reset-email", email.trim()); } catch {}
     if (isResend) setResendCount((c) => c + 1);
   };
 
