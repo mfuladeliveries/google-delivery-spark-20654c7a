@@ -244,37 +244,55 @@ export type Database = {
       }
       menu_items: {
         Row: {
+          add_ons: Json
           category: string
           created_at: string
           description: string
+          has_add_ons: boolean
+          has_sizes: boolean
           id: string
           image: string
+          image_url: string | null
           is_available: boolean
+          is_popular: boolean
           name: string
           price: number
           restaurant_id: string
+          sizes: Json
         }
         Insert: {
+          add_ons?: Json
           category?: string
           created_at?: string
           description?: string
+          has_add_ons?: boolean
+          has_sizes?: boolean
           id?: string
           image?: string
+          image_url?: string | null
           is_available?: boolean
+          is_popular?: boolean
           name?: string
           price?: number
           restaurant_id: string
+          sizes?: Json
         }
         Update: {
+          add_ons?: Json
           category?: string
           created_at?: string
           description?: string
+          has_add_ons?: boolean
+          has_sizes?: boolean
           id?: string
           image?: string
+          image_url?: string | null
           is_available?: boolean
+          is_popular?: boolean
           name?: string
           price?: number
           restaurant_id?: string
+          sizes?: Json
         }
         Relationships: [
           {
@@ -571,13 +589,16 @@ export type Database = {
         Row: {
           banner_url: string | null
           closes_at: string | null
+          contact_number: string | null
           created_at: string
           cuisine: string
           delivery_time: string
           description: string
           gallery_images: string[]
           id: string
+          image_url: string | null
           is_active: boolean
+          is_open: boolean
           lat: number | null
           lng: number | null
           location: string
@@ -586,19 +607,24 @@ export type Database = {
           min_order: number
           name: string
           opens_at: string | null
+          operating_days: Json
           owner_user_id: string | null
           rating: number
+          total_reviews: number
         }
         Insert: {
           banner_url?: string | null
           closes_at?: string | null
+          contact_number?: string | null
           created_at?: string
           cuisine?: string
           delivery_time?: string
           description?: string
           gallery_images?: string[]
           id?: string
+          image_url?: string | null
           is_active?: boolean
+          is_open?: boolean
           lat?: number | null
           lng?: number | null
           location?: string
@@ -607,19 +633,24 @@ export type Database = {
           min_order?: number
           name?: string
           opens_at?: string | null
+          operating_days?: Json
           owner_user_id?: string | null
           rating?: number
+          total_reviews?: number
         }
         Update: {
           banner_url?: string | null
           closes_at?: string | null
+          contact_number?: string | null
           created_at?: string
           cuisine?: string
           delivery_time?: string
           description?: string
           gallery_images?: string[]
           id?: string
+          image_url?: string | null
           is_active?: boolean
+          is_open?: boolean
           lat?: number | null
           lng?: number | null
           location?: string
@@ -628,8 +659,10 @@ export type Database = {
           min_order?: number
           name?: string
           opens_at?: string | null
+          operating_days?: Json
           owner_user_id?: string | null
           rating?: number
+          total_reviews?: number
         }
         Relationships: []
       }
