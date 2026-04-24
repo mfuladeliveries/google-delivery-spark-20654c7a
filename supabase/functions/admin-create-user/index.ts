@@ -33,15 +33,46 @@ Deno.serve(async (req) => {
     if (!email || !password || !role) throw new Error("Missing required fields");
 
     // Create user with admin API (no email confirmation needed)
+    let userId: string | null = null;
     const { data: newUser, error: createErr } = await adminClient.auth.admin.createUser({
       email,
       password,
       email_confirm: true,
       user_metadata: { full_name },
     });
-    if (createErr) throw createErr;
 
-    const userId = newUser.user.id;
+    if (createErr) {
+      // If the email is already registered, look up the existing user and reuse them.
+      const msg = (createErr.message || "").toLowerCase();
+      const alreadyExists =
+        msg.includes("already been registered") ||
+        msg.includes("already registered") ||
+        msg.includes("already exists") ||
+        msg.includes("duplicate");
+
+      if (!alreadyExists) throw createErr;
+
+      // Find the existing user by email (paginate just in case)
+      let found: { id: string } | null = null;
+      for (let page = 1; page <= 20 && !found; page++) {
+        const { data: list, error: listErr } = await adminClient.auth.admin.listUsers({ page, perPage: 200 });
+        if (listErr) throw listErr;
+        const match = list.users.find((u) => (u.email || "").toLowerCase() === email.toLowerCase());
+        if (match) found = { id: match.id };
+        if (list.users.length < 200) break;
+      }
+      if (!found) throw new Error("Email already registered but user could not be located");
+      userId = found.id;
+
+      // Reset password to the value the admin just entered so they can hand it off.
+      await adminClient.auth.admin.updateUserById(userId, {
+        password,
+        email_confirm: true,
+        user_metadata: { full_name },
+      });
+    } else {
+      userId = newUser.user.id;
+    }
 
     // Update profile
     if (full_name || contact_number) {
