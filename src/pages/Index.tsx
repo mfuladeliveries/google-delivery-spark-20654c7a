@@ -19,43 +19,16 @@ interface Restaurant extends RestaurantCardData {
   is_active: boolean;
 }
 
-const cuisineIcons: Record<string, any> = {
-  'Traditional': Utensils,
-  'Braai': Flame,
-  'Fast Food': Flame,
-  'Pizza': Pizza,
-  'Chicken': Utensils,
-  'Burgers': Utensils,
-  'Seafood': Fish,
-  'Groceries': ShoppingBasket,
-  'Liquor': Beer
-};
-
 const cuisineCategories = [
-{ label: "All", icon: Utensils },
-{ label: "Fast Food", icon: Flame },
-{ label: "Chicken", icon: Utensils },
-{ label: "Burgers", icon: Utensils },
-{ label: "Pizza", icon: Pizza },
-{ label: "Traditional", icon: Utensils },
-{ label: "Seafood", icon: Fish },
-{ label: "Groceries", icon: ShoppingBasket }];
-
-
-const restaurantImages: Record<string, string> = {
-  'Kitchen': 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=600&h=300&fit=crop',
-  'Mdala Tshisanyama': 'https://images.unsplash.com/photo-1544025162-d76694265947?w=600&h=300&fit=crop',
-  'KFC': 'https://images.unsplash.com/photo-1562967914-608f82629710?w=600&h=300&fit=crop',
-  'Debonnairs Pizza': 'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=600&h=300&fit=crop',
-  'McDonalds': 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=600&h=300&fit=crop',
-  'Pedros': 'https://images.unsplash.com/photo-1598515214211-89d3c73ae83b?w=600&h=300&fit=crop',
-  'BURGER KING': 'https://images.unsplash.com/photo-1571091718767-18b5b1457add?w=600&h=300&fit=crop',
-  'Hungry Lion': 'https://images.unsplash.com/photo-1562967914-608f82629710?w=600&h=300&fit=crop',
-  'Fellos Fishery': 'https://images.unsplash.com/photo-1559847844-5315695dadae?w=600&h=300&fit=crop',
-  'Shop': 'https://images.unsplash.com/photo-1578916171728-46686eac8d58?w=600&h=300&fit=crop',
-  'Liquor': 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=600&h=300&fit=crop',
-  'Steers': 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=600&h=300&fit=crop'
-};
+  { label: "All", icon: Utensils },
+  { label: "Fast Food", icon: Flame },
+  { label: "Chicken", icon: Utensils },
+  { label: "Burgers", icon: Utensils },
+  { label: "Pizza", icon: Pizza },
+  { label: "Traditional", icon: Utensils },
+  { label: "Seafood", icon: Fish },
+  { label: "Groceries", icon: ShoppingBasket },
+];
 
 const Index = () => {
   const [search, setSearch] = useState("");
