@@ -126,20 +126,38 @@ const RestaurantMenu = () => {
   });
 
   const getItemQty = (itemId: string) => {
-    const ci = cart.items.find(c => c.item.id === itemId);
-    return ci?.quantity || 0;
+    // Sum across all cart lines that refer to this base item (different size/sauce variants)
+    return cart.items
+      .filter(c => c.item.id === itemId)
+      .reduce((sum, c) => sum + c.quantity, 0);
   };
 
+  const itemHasOptions = (item: DbMenuItem) =>
+    (!!item.has_sizes && (item.sizes?.length ?? 0) > 0) ||
+    (!!item.has_add_ons && (item.add_ons?.length ?? 0) > 0);
+
+  const toMenuItem = (item: DbMenuItem) => ({
+    id: item.id,
+    name: item.name,
+    category: restaurant?.name || item.category,
+    caption: item.description,
+    image: item.image,
+    price: item.price,
+    available: item.is_available,
+    has_sizes: item.has_sizes,
+    sizes: item.sizes,
+    has_add_ons: item.has_add_ons,
+    add_ons: item.add_ons,
+  });
+
+  const [customizeItem, setCustomizeItem] = useState<DbMenuItem | null>(null);
+
   const handleAddItem = (item: DbMenuItem) => {
-    cart.addItem({
-      id: item.id,
-      name: item.name,
-      category: restaurant?.name || item.category,
-      caption: item.description,
-      image: item.image,
-      price: item.price,
-      available: item.is_available,
-    });
+    if (itemHasOptions(item)) {
+      setCustomizeItem(item);
+      return;
+    }
+    cart.addItem(toMenuItem(item));
   };
 
   const handleCheckout = (note?: string) => {
