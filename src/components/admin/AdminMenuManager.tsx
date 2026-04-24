@@ -444,53 +444,19 @@ const RestaurantDetail = ({
         </div>
       ) : (
         <div className="space-y-2">
-          {filteredItems.map(item => {
-            const img = item.image_url || item.image;
-            return (
-              <div key={item.id} className="rounded-2xl border border-border bg-card p-3 shadow-sm">
-                <div className="flex gap-3">
-                  {img ? (
-                    <img src={img} alt={item.name} className="h-16 w-16 shrink-0 rounded-xl object-cover" />
-                  ) : (
-                    <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-xl bg-muted">
-                      <ChefHat className="h-5 w-5 text-muted-foreground" />
-                    </div>
-                  )}
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-start justify-between gap-2">
-                      <p className="truncate font-bold text-foreground">{item.name}</p>
-                      <p className="shrink-0 font-bold text-primary">R{Number(item.price).toFixed(0)}</p>
-                    </div>
-                    <p className="text-[11px] text-muted-foreground">
-                      {item.category || "—"} ·{" "}
-                      <span className={item.is_available ? "text-green-600" : "text-red-600"}>
-                        {item.is_available ? "Available ✅" : "Sold Out ❌"}
-                      </span>
-                      {item.is_popular && <span className="ml-1 text-amber-500">⭐ Popular</span>}
-                    </p>
-                  </div>
-                </div>
-                <div className="mt-3 flex items-center gap-2">
-                  <div className="mr-auto flex items-center gap-2">
-                    <Switch checked={item.is_available} onCheckedChange={() => toggleAvailability(item)} />
-                    <span className="text-[11px] text-muted-foreground">Available</span>
-                  </div>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => togglePopular(item)}
-                    className="h-8 px-2"
-                  >
-                    <Star className={`h-4 w-4 ${item.is_popular ? "fill-amber-400 text-amber-400" : ""}`} />
-                  </Button>
-                  <Button size="sm" variant="outline" onClick={() => setEditingItem(item)} className="h-8 px-2">
-                    <Pencil className="h-4 w-4" />
-                  </Button>
-                  <DeleteItemButton item={item} onDeleted={() => deleteItem(item)} />
-                </div>
-              </div>
-            );
-          })}
+          {filteredItems.map(item => (
+            <MenuItemAdminCard
+              key={item.id}
+              item={item}
+              onToggleAvailability={() => toggleAvailability(item)}
+              onTogglePopular={() => togglePopular(item)}
+              onEditFull={() => setEditingItem(item)}
+              onDelete={() => deleteItem(item)}
+              onItemUpdated={updated =>
+                setItems(items.map(i => (i.id === updated.id ? updated : i)))
+              }
+            />
+          ))}
         </div>
       )}
 
