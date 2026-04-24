@@ -417,8 +417,8 @@ const RestaurantMenu = () => {
         open={!!customizeItem}
         item={customizeItem ? toMenuItem(customizeItem) : null}
         onClose={() => setCustomizeItem(null)}
-        onAdd={(menuItem, qty, cut, size, addOns) => {
-          for (let i = 0; i < qty; i++) cart.addItemWithOptions(menuItem, cut, size, addOns);
+        onAdd={(menuItem, qty, cut, size, addOns, pieces) => {
+          for (let i = 0; i < qty; i++) cart.addItemWithOptions(menuItem, cut, size, addOns, pieces);
         }}
       />
       <BottomNav />
