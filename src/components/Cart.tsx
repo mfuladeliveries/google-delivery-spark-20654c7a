@@ -37,7 +37,10 @@ const Cart = ({
   const [foodNote, setFoodNote] = useState("");
   const { user } = useAuth();
   const { needsAddress, needsCoords, outOfRange } = useCustomerLocation();
-  const canCheckout = !!user && !needsAddress && !needsCoords && !outOfRange;
+  // Personal details + GPS pin are collected in the checkout dialog itself,
+  // so we only block checkout if the saved address is confirmed out of range.
+  const canCheckout = !!user && !outOfRange;
+  const needsDetails = !!user && (needsAddress || needsCoords);
   // Cart items carry the restaurant name in `item.category` (set in RestaurantMenu)
   const restaurantName = items[0]?.item.category || "";
   if (!open) return null;
@@ -196,10 +199,12 @@ const Cart = ({
                 <Link to="/auth" className="font-bold text-primary hover:underline">Sign in</Link> to confirm your delivery address & place this order.
               </div>
             )}
-            {user && (needsAddress || needsCoords) && (
-              <div className="mt-3 rounded-xl border-2 border-primary/40 bg-primary/5 p-3 text-xs text-foreground">
-                <p className="font-bold">Set your delivery location first</p>
-                <Link to="/profile" className="text-primary hover:underline">Update profile →</Link>
+            {needsDetails && (
+              <div className="mt-3 rounded-xl border border-primary/30 bg-primary/5 p-3 text-xs text-foreground">
+                <p className="font-bold">Add your details on the next step</p>
+                <p className="mt-0.5 text-muted-foreground">
+                  Enter your name, contact &amp; pick your location (tap the pin or type the address) before placing the order.
+                </p>
               </div>
             )}
             {user && outOfRange && (
