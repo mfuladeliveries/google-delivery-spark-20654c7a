@@ -515,6 +515,517 @@ const RestaurantDetail = ({
 };
 
 // ─────────────────────────────────────────────────────────────────────
+// Menu item admin card with inline sizes & sauces
+// ─────────────────────────────────────────────────────────────────────
+const SAUCE_PRESETS: AddOnOption[] = [
+  { name: "🫙 Chakalaka", price: 0 },
+  { name: "🌶️ Peri-Peri", price: 0 },
+  { name: "🧄 Garlic", price: 0 },
+  { name: "🍅 Tomato", price: 0 },
+  { name: "🥫 BBQ", price: 0 },
+  { name: "🧈 Mushroom Sauce", price: 5 },
+  { name: "🫐 Monkey Gland", price: 5 },
+  { name: "🚫 No Sauce", price: 0 },
+];
+
+const MenuItemAdminCard = ({
+  item,
+  onToggleAvailability,
+  onTogglePopular,
+  onEditFull,
+  onDelete,
+  onItemUpdated,
+}: {
+  item: MenuItem;
+  onToggleAvailability: () => void;
+  onTogglePopular: () => void;
+  onEditFull: () => void;
+  onDelete: () => void;
+  onItemUpdated: (m: MenuItem) => void;
+}) => {
+  const img = item.image_url || item.image;
+  const sizes = Array.isArray(item.sizes) ? item.sizes : [];
+  const addOns = Array.isArray(item.add_ons) ? item.add_ons : [];
+  const freeAddOns = addOns.filter(a => Number(a.price) === 0);
+  const paidAddOns = addOns.filter(a => Number(a.price) > 0);
+
+  const [sizesOpen, setSizesOpen] = useState(sizes.length < 5);
+  const [addOnsOpen, setAddOnsOpen] = useState(addOns.length < 5);
+  const [editSizes, setEditSizes] = useState(false);
+  const [editAddOns, setEditAddOns] = useState(false);
+
+  return (
+    <div className="rounded-2xl border border-border bg-card p-3 shadow-sm">
+      {/* Header */}
+      <div className="flex gap-3">
+        {img ? (
+          <img src={img} alt={item.name} className="h-16 w-16 shrink-0 rounded-xl object-cover" />
+        ) : (
+          <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-xl bg-muted">
+            <ChefHat className="h-5 w-5 text-muted-foreground" />
+          </div>
+        )}
+        <div className="min-w-0 flex-1">
+          <div className="flex items-start justify-between gap-2">
+            <p className="truncate font-bold text-foreground">{item.name}</p>
+            {!item.has_sizes && (
+              <p className="shrink-0 font-bold text-primary">R{Number(item.price).toFixed(0)}</p>
+            )}
+          </div>
+          <p className="text-[11px] text-muted-foreground">
+            {item.category || "—"} ·{" "}
+            <span className={item.is_available ? "text-green-600" : "text-red-600"}>
+              {item.is_available ? "Available ✅" : "Sold Out ❌"}
+            </span>
+            {item.is_popular && <span className="ml-1 text-amber-500">⭐ Popular</span>}
+          </p>
+        </div>
+      </div>
+
+      {/* SIZES */}
+      <div className="mt-3 rounded-xl bg-muted/30 p-2.5">
+        <button
+          onClick={() => setSizesOpen(!sizesOpen)}
+          className="flex w-full items-center justify-between text-[10px] font-bold uppercase tracking-wide text-muted-foreground"
+        >
+          <span>
+            {item.has_sizes && sizes.length > 0
+              ? `Sizes (${sizes.length})`
+              : "No Sizes (single price)"}
+          </span>
+          {item.has_sizes && sizes.length > 0 && (
+            sizesOpen ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />
+          )}
+        </button>
+
+        {item.has_sizes && sizes.length > 0 && sizesOpen && (
+          <>
+            <div className="mt-2 flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
+              {sizes.map((s, i) => (
+                <div
+                  key={i}
+                  className="relative shrink-0 rounded-[10px] border-[1.5px] border-primary bg-primary/5 px-3 py-1.5"
+                >
+                  {s.popular && (
+                    <Star className="absolute -right-1 -top-1 h-3 w-3 fill-amber-400 text-amber-400" />
+                  )}
+                  <p className="text-[12px] font-bold text-primary">{s.name}</p>
+                  <p className="text-[13px] font-bold text-foreground">R{Number(s.price).toFixed(0)}</p>
+                </div>
+              ))}
+            </div>
+            <button
+              onClick={() => setEditSizes(true)}
+              className="mt-2 flex items-center gap-1 text-[11px] font-semibold text-primary"
+            >
+              <Pencil className="h-3 w-3" /> Edit Sizes
+            </button>
+          </>
+        )}
+
+        {(!item.has_sizes || sizes.length === 0) && (
+          <button
+            onClick={() => setEditSizes(true)}
+            className="mt-1.5 flex items-center gap-1 text-[11px] font-semibold text-primary"
+          >
+            <Plus className="h-3 w-3" /> Add Size Options
+          </button>
+        )}
+      </div>
+
+      {/* SAUCES / ADD-ONS */}
+      <div className="mt-2 rounded-xl bg-muted/30 p-2.5">
+        <button
+          onClick={() => setAddOnsOpen(!addOnsOpen)}
+          className="flex w-full items-center justify-between text-[10px] font-bold uppercase tracking-wide text-muted-foreground"
+        >
+          <span>
+            {item.has_add_ons && addOns.length > 0
+              ? `Sauces / Add-Ons (${addOns.length})`
+              : "No Sauces"}
+          </span>
+          {item.has_add_ons && addOns.length > 0 && (
+            addOnsOpen ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />
+          )}
+        </button>
+
+        {item.has_add_ons && addOns.length > 0 && addOnsOpen && (
+          <div className="mt-2 space-y-2">
+            {freeAddOns.length > 0 && (
+              <div>
+                <p className="text-[10px] font-bold uppercase text-green-600">Free</p>
+                <div className="mt-1 flex flex-wrap gap-1.5">
+                  {freeAddOns.map((a, i) => (
+                    <span
+                      key={i}
+                      className="rounded-full bg-secondary px-2.5 py-1 text-[12px] text-foreground"
+                    >
+                      {a.name}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+            {paidAddOns.length > 0 && (
+              <div>
+                <p className="text-[10px] font-bold uppercase text-primary">Premium</p>
+                <div className="mt-1 flex flex-wrap gap-1.5">
+                  {paidAddOns.map((a, i) => (
+                    <span
+                      key={i}
+                      className="rounded-full bg-secondary px-2.5 py-1 text-[12px] text-foreground"
+                    >
+                      {a.name} +R{Number(a.price).toFixed(0)}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+            <button
+              onClick={() => setEditAddOns(true)}
+              className="flex items-center gap-1 text-[11px] font-semibold text-primary"
+            >
+              <Pencil className="h-3 w-3" /> Edit Sauces
+            </button>
+          </div>
+        )}
+
+        {(!item.has_add_ons || addOns.length === 0) && (
+          <button
+            onClick={() => setEditAddOns(true)}
+            className="mt-1.5 flex items-center gap-1 text-[11px] font-semibold text-primary"
+          >
+            <Plus className="h-3 w-3" /> Add Sauce Options
+          </button>
+        )}
+      </div>
+
+      {/* Footer actions */}
+      <div className="mt-3 flex items-center gap-2 border-t border-border pt-3">
+        <div className="mr-auto flex items-center gap-2">
+          <Switch checked={item.is_available} onCheckedChange={onToggleAvailability} />
+          <span className="text-[11px] text-muted-foreground">Available</span>
+        </div>
+        <Button size="sm" variant="ghost" onClick={onTogglePopular} className="h-8 px-2">
+          <Star className={`h-4 w-4 ${item.is_popular ? "fill-amber-400 text-amber-400" : ""}`} />
+        </Button>
+        <Button size="sm" variant="outline" onClick={onEditFull} className="h-8 px-2">
+          <Pencil className="h-4 w-4" />
+        </Button>
+        <DeleteItemButton item={item} onDeleted={onDelete} />
+      </div>
+
+      {editSizes && (
+        <EditSizesDialog
+          item={item}
+          onClose={() => setEditSizes(false)}
+          onSaved={updated => {
+            setEditSizes(false);
+            onItemUpdated(updated);
+          }}
+        />
+      )}
+      {editAddOns && (
+        <EditAddOnsDialog
+          item={item}
+          onClose={() => setEditAddOns(false)}
+          onSaved={updated => {
+            setEditAddOns(false);
+            onItemUpdated(updated);
+          }}
+        />
+      )}
+    </div>
+  );
+};
+
+// ─────────────────────────────────────────────────────────────────────
+// Edit Sizes (inline modal)
+// ─────────────────────────────────────────────────────────────────────
+const EditSizesDialog = ({
+  item,
+  onClose,
+  onSaved,
+}: {
+  item: MenuItem;
+  onClose: () => void;
+  onSaved: (m: MenuItem) => void;
+}) => {
+  const [sizes, setSizes] = useState<SizeOption[]>(
+    item.sizes?.length ? item.sizes : [{ name: "", price: 0 }],
+  );
+  const [busy, setBusy] = useState(false);
+
+  const update = (i: number, patch: Partial<SizeOption>) =>
+    setSizes(sizes.map((s, idx) => (idx === i ? { ...s, ...patch } : s)));
+
+  const handleSave = async () => {
+    const cleaned = sizes
+      .map(s => ({ ...s, name: s.name.trim(), price: Number(s.price) || 0 }))
+      .filter(s => s.name);
+    if (cleaned.length === 0) return toast.error("Add at least one size");
+    if (cleaned.some(s => s.price <= 0)) return toast.error("Each size price must be > R0");
+    if (cleaned.length > 6) return toast.error("Max 6 sizes per item");
+    const names = cleaned.map(s => s.name.toLowerCase());
+    if (new Set(names).size !== names.length) return toast.error("Duplicate size names");
+
+    setBusy(true);
+    const { error } = await supabase
+      .from("menu_items")
+      .update({ has_sizes: true, sizes: cleaned as any })
+      .eq("id", item.id);
+    setBusy(false);
+    if (error) return toast.error("Save failed: " + error.message);
+    toast.success(`✅ Sizes updated for ${item.name}`);
+    onSaved({ ...item, has_sizes: true, sizes: cleaned });
+  };
+
+  const handleRemoveAll = async () => {
+    setBusy(true);
+    const { error } = await supabase
+      .from("menu_items")
+      .update({ has_sizes: false, sizes: [] as any })
+      .eq("id", item.id);
+    setBusy(false);
+    if (error) return toast.error("Save failed");
+    toast.success(`Sizes removed from ${item.name}`);
+    onSaved({ ...item, has_sizes: false, sizes: [] });
+  };
+
+  return (
+    <Dialog open onOpenChange={open => !open && onClose()}>
+      <DialogContent className="max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>📐 Edit Sizes</DialogTitle>
+          <DialogDescription>{item.name}</DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-3">
+          {sizes.map((s, i) => (
+            <div key={i} className="space-y-2 rounded-xl border border-border p-3">
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <Label className="text-[10px]">Name</Label>
+                  <Input
+                    value={s.name}
+                    placeholder="Small"
+                    onChange={e => update(i, { name: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <Label className="text-[10px]">Price (R)</Label>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    value={s.price}
+                    onChange={e => update(i, { price: parseFloat(e.target.value) || 0 })}
+                  />
+                </div>
+              </div>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Switch
+                    checked={!!s.popular}
+                    onCheckedChange={v => update(i, { popular: v })}
+                  />
+                  <span className="text-[11px] text-muted-foreground">⭐ Popular</span>
+                </div>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => setSizes(sizes.filter((_, idx) => idx !== i))}
+                  className="text-destructive"
+                >
+                  <Trash2 className="h-3.5 w-3.5" /> Remove
+                </Button>
+              </div>
+            </div>
+          ))}
+
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => setSizes([...sizes, { name: "", price: 0 }])}
+            className="w-full"
+            disabled={sizes.length >= 6}
+          >
+            <Plus className="h-4 w-4" /> Add Another Size
+          </Button>
+        </div>
+
+        <DialogFooter className="flex-col-reverse gap-2 sm:flex-row">
+          {item.has_sizes && (
+            <Button variant="ghost" onClick={handleRemoveAll} disabled={busy} className="text-destructive">
+              Remove All
+            </Button>
+          )}
+          <Button variant="outline" onClick={onClose}>Cancel</Button>
+          <Button onClick={handleSave} disabled={busy} className="bg-primary hover:bg-primary/90">
+            Save Sizes
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
+// ─────────────────────────────────────────────────────────────────────
+// Edit Add-ons / Sauces (inline modal)
+// ─────────────────────────────────────────────────────────────────────
+const EditAddOnsDialog = ({
+  item,
+  onClose,
+  onSaved,
+}: {
+  item: MenuItem;
+  onClose: () => void;
+  onSaved: (m: MenuItem) => void;
+}) => {
+  const [addOns, setAddOns] = useState<AddOnOption[]>(
+    item.add_ons?.length ? item.add_ons : [],
+  );
+  const [busy, setBusy] = useState(false);
+
+  const update = (i: number, patch: Partial<AddOnOption>) =>
+    setAddOns(addOns.map((s, idx) => (idx === i ? { ...s, ...patch } : s)));
+
+  const addPreset = (preset: AddOnOption) => {
+    if (addOns.some(a => a.name.trim().toLowerCase() === preset.name.toLowerCase())) return;
+    if (addOns.length >= 12) return toast.error("Max 12 sauces per item");
+    setAddOns([...addOns, { ...preset }]);
+  };
+
+  const handleSave = async () => {
+    const cleaned = addOns
+      .map(a => ({ ...a, name: a.name.trim(), price: Number(a.price) || 0 }))
+      .filter(a => a.name);
+    if (cleaned.some(a => a.price < 0)) return toast.error("Price cannot be negative");
+    if (cleaned.length > 12) return toast.error("Max 12 sauces per item");
+    const names = cleaned.map(a => a.name.toLowerCase());
+    if (new Set(names).size !== names.length) return toast.error("Duplicate sauce names");
+
+    setBusy(true);
+    const { error } = await supabase
+      .from("menu_items")
+      .update({
+        has_add_ons: cleaned.length > 0,
+        add_ons: cleaned as any,
+      })
+      .eq("id", item.id);
+    setBusy(false);
+    if (error) return toast.error("Save failed: " + error.message);
+    toast.success(`✅ Sauces updated for ${item.name}`);
+    onSaved({ ...item, has_add_ons: cleaned.length > 0, add_ons: cleaned });
+  };
+
+  return (
+    <Dialog open onOpenChange={open => !open && onClose()}>
+      <DialogContent className="max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>🫙 Edit Sauces & Add-Ons</DialogTitle>
+          <DialogDescription>{item.name}</DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-3">
+          <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
+            Current ({addOns.length})
+          </p>
+          {addOns.length === 0 && (
+            <p className="rounded-xl border border-dashed border-border p-3 text-center text-xs text-muted-foreground">
+              No sauces yet. Add from presets below or create custom.
+            </p>
+          )}
+          {addOns.map((a, i) => (
+            <div key={i} className="space-y-2 rounded-xl border border-border p-3">
+              <div className="grid grid-cols-[1fr_90px] gap-2">
+                <div>
+                  <Label className="text-[10px]">Name</Label>
+                  <Input
+                    value={a.name}
+                    placeholder="🫙 Sauce name"
+                    onChange={e => update(i, { name: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <Label className="text-[10px]">Price (R)</Label>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    value={a.price}
+                    onChange={e => update(i, { price: parseFloat(e.target.value) || 0 })}
+                  />
+                </div>
+              </div>
+              <div className="flex items-center justify-between">
+                <span
+                  className={`text-[10px] font-bold uppercase ${
+                    Number(a.price) === 0 ? "text-green-600" : "text-primary"
+                  }`}
+                >
+                  {Number(a.price) === 0 ? "Free" : `+R${Number(a.price).toFixed(0)}`}
+                </span>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => setAddOns(addOns.filter((_, idx) => idx !== i))}
+                  className="text-destructive"
+                >
+                  <Trash2 className="h-3.5 w-3.5" /> Remove
+                </Button>
+              </div>
+            </div>
+          ))}
+
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => setAddOns([...addOns, { name: "", price: 0 }])}
+            className="w-full"
+            disabled={addOns.length >= 12}
+          >
+            <Plus className="h-4 w-4" /> Add Custom Sauce
+          </Button>
+
+          <div className="rounded-xl bg-muted/40 p-3">
+            <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
+              Quick Add Presets
+            </p>
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              {SAUCE_PRESETS.map(p => {
+                const added = addOns.some(
+                  a => a.name.trim().toLowerCase() === p.name.toLowerCase(),
+                );
+                return (
+                  <button
+                    key={p.name}
+                    onClick={() => addPreset(p)}
+                    disabled={added}
+                    className={`rounded-full px-3 py-1 text-[11px] font-semibold transition-colors ${
+                      added
+                        ? "bg-secondary text-muted-foreground"
+                        : "bg-primary/10 text-primary hover:bg-primary/20"
+                    }`}
+                  >
+                    {p.name} {p.price > 0 && `+R${p.price}`} {added && "✓"}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>Cancel</Button>
+          <Button onClick={handleSave} disabled={busy} className="bg-primary hover:bg-primary/90">
+            Save Sauces
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
+// ─────────────────────────────────────────────────────────────────────
 // Delete item with confirm
 // ─────────────────────────────────────────────────────────────────────
 const DeleteItemButton = ({ item, onDeleted }: { item: MenuItem; onDeleted: () => void }) => {
