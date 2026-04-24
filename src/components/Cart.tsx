@@ -93,8 +93,10 @@ const Cart = ({
           ) : (
             <div className="space-y-3">
               {items.map((ci) => {
+                const cutLabel = ci.selectedCut?.name;
                 const sizeLabel = ci.selectedSize?.name;
                 const addOnLabels = (ci.selectedAddOns || []).map(a => a.name);
+                const titleSuffix = [cutLabel, sizeLabel].filter(Boolean).join(" · ");
                 return (
                   <div
                     key={ci.lineKey}
@@ -110,7 +112,7 @@ const Cart = ({
                     <div className="flex-1 min-w-0">
                       <h4 className="truncate text-sm font-semibold text-card-foreground">
                         {ci.item.name}
-                        {sizeLabel ? ` — ${sizeLabel}` : ""}
+                        {titleSuffix ? ` — ${titleSuffix}` : ""}
                       </h4>
                       {addOnLabels.length > 0 && (
                         <div className="mt-1 flex flex-wrap gap-1">

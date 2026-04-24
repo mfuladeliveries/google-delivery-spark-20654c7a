@@ -1,36 +1,45 @@
 import { useState, useCallback } from "react";
-import { MenuItem, SizeOption, AddOnOption, storeInfo } from "@/data/menu";
+import { MenuItem, SizeOption, AddOnOption, CutOption, storeInfo } from "@/data/menu";
 import { useDeliveryZone } from "@/hooks/useDeliveryZone";
 
 export interface CartItem {
-  /** Stable per-line key — same dish with different size/sauces becomes a separate line. */
+  /** Stable per-line key — same dish with different cut/size/sauces becomes a separate line. */
   lineKey: string;
   item: MenuItem;
   quantity: number;
+  selectedCut?: CutOption;
   selectedSize?: SizeOption;
   selectedAddOns?: AddOnOption[];
-  /** Final per-unit price (base/size price + paid add-ons). */
+  /** Final per-unit price (cut OR size base + paid add-ons). */
   unitPrice: number;
 }
 
 export function buildLineKey(
   itemId: string,
+  cut?: CutOption,
   size?: SizeOption,
   addOns?: AddOnOption[]
 ): string {
+  const cutPart = cut?.name ? `c:${cut.name}` : "c:-";
   const sizePart = size?.name ? `s:${size.name}` : "s:-";
   const addPart = addOns && addOns.length
     ? `a:${[...addOns].map(a => a.name).sort().join("|")}`
     : "a:-";
-  return `${itemId}::${sizePart}::${addPart}`;
+  return `${itemId}::${cutPart}::${sizePart}::${addPart}`;
 }
 
 export function computeUnitPrice(
   item: MenuItem,
+  cut?: CutOption,
   size?: SizeOption,
   addOns?: AddOnOption[]
 ): number {
-  const base = size ? Number(size.price) : Number(item.price);
+  // Base price priority: cut > size > item.price. Cuts are mutually-exclusive portions
+  // (e.g. Full / Half / Quarter chicken) and own the base price when present.
+  let base: number;
+  if (cut) base = Number(cut.price);
+  else if (size) base = Number(size.price);
+  else base = Number(item.price);
   const extras = (addOns || []).reduce((sum, a) => sum + Number(a.price || 0), 0);
   return base + extras;
 }
@@ -41,9 +50,9 @@ export function useCart() {
 
   /** Add a fully-configured line. If an identical line exists, increment qty. */
   const addItemWithOptions = useCallback(
-    (item: MenuItem, size?: SizeOption, addOns?: AddOnOption[]) => {
-      const lineKey = buildLineKey(item.id, size, addOns);
-      const unitPrice = computeUnitPrice(item, size, addOns);
+    (item: MenuItem, cut?: CutOption, size?: SizeOption, addOns?: AddOnOption[]) => {
+      const lineKey = buildLineKey(item.id, cut, size, addOns);
+      const unitPrice = computeUnitPrice(item, cut, size, addOns);
       setItems(prev => {
         const existing = prev.find(ci => ci.lineKey === lineKey);
         if (existing) {
@@ -53,7 +62,15 @@ export function useCart() {
         }
         return [
           ...prev,
-          { lineKey, item, quantity: 1, selectedSize: size, selectedAddOns: addOns, unitPrice },
+          {
+            lineKey,
+            item,
+            quantity: 1,
+            selectedCut: cut,
+            selectedSize: size,
+            selectedAddOns: addOns,
+            unitPrice,
+          },
         ];
       });
     },
@@ -63,7 +80,7 @@ export function useCart() {
   /** Quick-add for items with no options (back-compat). */
   const addItem = useCallback(
     (item: MenuItem) => {
-      addItemWithOptions(item, undefined, undefined);
+      addItemWithOptions(item, undefined, undefined, undefined);
     },
     [addItemWithOptions]
   );

@@ -1,21 +1,31 @@
 import { useEffect, useMemo, useState } from "react";
-import { X, Check, Plus, Minus, Star } from "lucide-react";
-import { MenuItem, SizeOption, AddOnOption, storeInfo } from "@/data/menu";
+import { X, Check, Plus, Minus, Star, Drumstick } from "lucide-react";
+import { MenuItem, SizeOption, AddOnOption, CutOption, storeInfo } from "@/data/menu";
 import { computeUnitPrice } from "@/hooks/useCart";
 
 interface ProductCustomizeModalProps {
   open: boolean;
   item: MenuItem | null;
   onClose: () => void;
-  onAdd: (item: MenuItem, qty: number, size?: SizeOption, addOns?: AddOnOption[]) => void;
+  onAdd: (
+    item: MenuItem,
+    qty: number,
+    cut?: CutOption,
+    size?: SizeOption,
+    addOns?: AddOnOption[]
+  ) => void;
 }
 
 /**
- * Bottom-sheet modal letting the customer pick a size + sauces/add-ons
- * before adding to cart. Driven by `item.has_sizes`/`item.has_add_ons`
+ * Bottom-sheet modal letting the customer pick a cut + size + sauces/add-ons
+ * before adding to cart. Driven by `item.has_cuts`/`has_sizes`/`has_add_ons`
  * which the admin configures in AdminMenuManager.
  */
 const ProductCustomizeModal = ({ open, item, onClose, onAdd }: ProductCustomizeModalProps) => {
+  const cuts = useMemo<CutOption[]>(
+    () => (Array.isArray(item?.cuts) ? item!.cuts : []),
+    [item]
+  );
   const sizes = useMemo<SizeOption[]>(
     () => (Array.isArray(item?.sizes) ? item!.sizes : []),
     [item]
@@ -24,27 +34,27 @@ const ProductCustomizeModal = ({ open, item, onClose, onAdd }: ProductCustomizeM
     () => (Array.isArray(item?.add_ons) ? item!.add_ons : []),
     [item]
   );
+  const hasCuts = !!item?.has_cuts && cuts.length > 0;
   const hasSizes = !!item?.has_sizes && sizes.length > 0;
   const hasAddOns = !!item?.has_add_ons && addOns.length > 0;
-  // If only one sauce is allowed, behave as radio; else checkboxes (capped).
   const maxAddOns = item?.max_add_ons && item.max_add_ons > 0 ? item.max_add_ons : 99;
 
-  const defaultSize = useMemo(
-    () => sizes.find(s => s.popular) || sizes[0],
-    [sizes]
-  );
-
-  const [selectedSize, setSelectedSize] = useState<SizeOption | undefined>(defaultSize);
+  const [selectedCut, setSelectedCut] = useState<CutOption | undefined>(undefined);
+  const [selectedSize, setSelectedSize] = useState<SizeOption | undefined>(undefined);
   const [selectedAddOns, setSelectedAddOns] = useState<AddOnOption[]>([]);
   const [qty, setQty] = useState(1);
+  const [showCutError, setShowCutError] = useState(false);
   const [showSizeError, setShowSizeError] = useState(false);
 
   // Reset state whenever the modal opens with a new item
   useEffect(() => {
     if (open && item) {
+      // Cuts have NO default — user must explicitly pick one (required).
+      setSelectedCut(undefined);
       setSelectedSize(sizes.find(s => s.popular) || sizes[0]);
       setSelectedAddOns([]);
       setQty(1);
+      setShowCutError(false);
       setShowSizeError(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -63,10 +73,26 @@ const ProductCustomizeModal = ({ open, item, onClose, onAdd }: ProductCustomizeM
     }
   };
 
-  const unitPrice = computeUnitPrice(item, hasSizes ? selectedSize : undefined, selectedAddOns);
+  const unitPrice = computeUnitPrice(
+    item,
+    hasCuts ? selectedCut : undefined,
+    hasSizes ? selectedSize : undefined,
+    selectedAddOns
+  );
   const lineTotal = unitPrice * qty;
 
+  const fromPrice = hasCuts
+    ? Math.min(...cuts.map(c => Number(c.price)))
+    : hasSizes
+    ? Math.min(...sizes.map(s => Number(s.price)))
+    : Number(item.price);
+
   const handleAdd = () => {
+    if (hasCuts && !selectedCut) {
+      setShowCutError(true);
+      // Scroll cut section into view-ish (best effort)
+      return;
+    }
     if (hasSizes && !selectedSize) {
       setShowSizeError(true);
       return;
@@ -74,11 +100,14 @@ const ProductCustomizeModal = ({ open, item, onClose, onAdd }: ProductCustomizeM
     onAdd(
       item,
       qty,
+      hasCuts ? selectedCut : undefined,
       hasSizes ? selectedSize : undefined,
       selectedAddOns.length > 0 ? selectedAddOns : undefined
     );
     onClose();
   };
+
+  const ctaDisabled = (hasCuts && !selectedCut) || (hasSizes && !selectedSize);
 
   return (
     <>
@@ -120,9 +149,89 @@ const ProductCustomizeModal = ({ open, item, onClose, onAdd }: ProductCustomizeM
             <p className="mt-1 text-sm text-muted-foreground">{item.caption}</p>
           )}
           <p className="mt-2 font-display text-lg font-bold text-primary">
-            From {storeInfo.currency}
-            {(hasSizes ? Number(sizes[0].price) : Number(item.price)).toFixed(0)}
+            {hasCuts || hasSizes ? "From " : ""}
+            {storeInfo.currency}
+            {fromPrice.toFixed(0)}
           </p>
+
+          {/* CUTS — required, mutually exclusive (radio) */}
+          {hasCuts && (
+            <section className="mt-5">
+              <div className="mb-2 flex items-center justify-between">
+                <h3 className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-foreground">
+                  <Drumstick className="h-3.5 w-3.5 text-primary" /> Choose your cut
+                </h3>
+                <span className="text-[10px] font-bold uppercase text-destructive">
+                  Required
+                </span>
+              </div>
+              <div className="space-y-2">
+                {cuts.map((c, i) => {
+                  const checked = selectedCut?.name === c.name;
+                  return (
+                    <label
+                      key={`${c.name}-${i}`}
+                      className={`flex cursor-pointer items-center justify-between rounded-xl border-2 p-3 transition-all ${
+                        checked
+                          ? "border-primary bg-primary/5"
+                          : "border-border bg-card hover:border-primary/40"
+                      }`}
+                    >
+                      <div className="flex items-center gap-3 min-w-0">
+                        <span
+                          className={`flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full border-2 transition-colors ${
+                            checked
+                              ? "border-primary bg-primary"
+                              : "border-muted-foreground/40 bg-card"
+                          }`}
+                        >
+                          {checked && (
+                            <span className="h-2 w-2 rounded-full bg-primary-foreground" />
+                          )}
+                        </span>
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-1.5">
+                            <p className="truncate text-sm font-semibold text-foreground">
+                              {c.name}
+                            </p>
+                            {c.popular && (
+                              <span className="flex items-center gap-0.5 rounded-full bg-primary/15 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-primary">
+                                <Star className="h-2.5 w-2.5 fill-primary" /> Popular
+                              </span>
+                            )}
+                          </div>
+                          {c.description && (
+                            <p className="truncate text-xs text-muted-foreground">
+                              {c.description}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                      <span className="ml-2 flex-shrink-0 font-display text-sm font-bold text-primary">
+                        {storeInfo.currency}
+                        {Number(c.price).toFixed(0)}
+                      </span>
+                      <input
+                        type="radio"
+                        name="cut"
+                        className="sr-only"
+                        checked={checked}
+                        onChange={() => {
+                          setSelectedCut(c);
+                          setShowCutError(false);
+                        }}
+                      />
+                    </label>
+                  );
+                })}
+              </div>
+              {showCutError && (
+                <p className="mt-2 text-xs font-semibold text-destructive">
+                  Please choose a cut to continue.
+                </p>
+              )}
+            </section>
+          )}
 
           {/* SIZES */}
           {hasSizes && (
@@ -302,7 +411,7 @@ const ProductCustomizeModal = ({ open, item, onClose, onAdd }: ProductCustomizeM
         <div className="border-t border-border bg-background/95 px-5 py-4 backdrop-blur-sm">
           <button
             onClick={handleAdd}
-            disabled={hasSizes && !selectedSize}
+            disabled={ctaDisabled}
             className="flex w-full items-center justify-between gap-3 rounded-xl bg-primary px-5 py-3.5 font-display text-sm font-bold text-primary-foreground shadow-orange transition-transform hover:scale-[1.01] active:scale-[0.99] disabled:opacity-50 disabled:hover:scale-100"
           >
             <span className="flex items-center gap-2">

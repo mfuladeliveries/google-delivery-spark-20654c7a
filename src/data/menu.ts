@@ -10,6 +10,14 @@ export interface AddOnOption {
   price: number;
 }
 
+/** A meat/portion cut (e.g. Full / Half / Quarter / Wings / Drumsticks). Sets the base price. */
+export interface CutOption {
+  name: string;
+  price: number;
+  popular?: boolean;
+  description?: string;
+}
+
 export interface MenuItem {
   id: string;
   name: string;
@@ -24,6 +32,9 @@ export interface MenuItem {
   has_add_ons?: boolean;
   add_ons?: AddOnOption[];
   max_add_ons?: number;
+  /** Required-pick "cut" portion (e.g. chicken cuts). When enabled, replaces the base price. */
+  has_cuts?: boolean;
+  cuts?: CutOption[];
 }
 
 export interface StoreInfo {

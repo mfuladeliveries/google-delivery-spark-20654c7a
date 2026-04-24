@@ -185,9 +185,14 @@ const CheckoutDialog = ({
 
       // Build a per-item options summary so the kitchen + driver see what was picked.
       const optionsLines = items
-        .filter(ci => ci.selectedSize || (ci.selectedAddOns && ci.selectedAddOns.length > 0))
+        .filter(ci =>
+          ci.selectedCut ||
+          ci.selectedSize ||
+          (ci.selectedAddOns && ci.selectedAddOns.length > 0)
+        )
         .map(ci => {
           const parts: string[] = [];
+          if (ci.selectedCut) parts.push(ci.selectedCut.name);
           if (ci.selectedSize) parts.push(ci.selectedSize.name);
           if (ci.selectedAddOns && ci.selectedAddOns.length > 0) {
             parts.push(`with ${ci.selectedAddOns.map(a => a.name).join(", ")}`);
