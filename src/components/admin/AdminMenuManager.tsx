@@ -594,6 +594,58 @@ const MenuItemAdminCard = ({
         </div>
       </div>
 
+      {/* CUTS — chicken portions / cut options */}
+      <div className="mt-3 rounded-xl bg-muted/30 p-2.5">
+        <button
+          onClick={() => setCutsOpen(!cutsOpen)}
+          className="flex w-full items-center justify-between text-[10px] font-bold uppercase tracking-wide text-muted-foreground"
+        >
+          <span className="flex items-center gap-1.5">
+            <Drumstick className="h-3 w-3" />
+            {item.has_cuts && cuts.length > 0
+              ? `Cuts (${cuts.length})`
+              : "No Cuts"}
+          </span>
+          {item.has_cuts && cuts.length > 0 && (
+            cutsOpen ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />
+          )}
+        </button>
+
+        {item.has_cuts && cuts.length > 0 && cutsOpen && (
+          <>
+            <div className="mt-2 flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
+              {cuts.map((c, i) => (
+                <div
+                  key={i}
+                  className="relative shrink-0 rounded-[10px] border-[1.5px] border-primary bg-primary/5 px-3 py-1.5"
+                >
+                  {c.popular && (
+                    <Star className="absolute -right-1 -top-1 h-3 w-3 fill-amber-400 text-amber-400" />
+                  )}
+                  <p className="text-[12px] font-bold text-primary">{c.name}</p>
+                  <p className="text-[13px] font-bold text-foreground">R{Number(c.price).toFixed(0)}</p>
+                </div>
+              ))}
+            </div>
+            <button
+              onClick={() => setEditCuts(true)}
+              className="mt-2 flex items-center gap-1 text-[11px] font-semibold text-primary"
+            >
+              <Pencil className="h-3 w-3" /> Edit Cuts
+            </button>
+          </>
+        )}
+
+        {(!item.has_cuts || cuts.length === 0) && (
+          <button
+            onClick={() => setEditCuts(true)}
+            className="mt-1.5 flex items-center gap-1 text-[11px] font-semibold text-primary"
+          >
+            <Plus className="h-3 w-3" /> Add Cut Options
+          </button>
+        )}
+      </div>
+
       {/* SIZES */}
       <div className="mt-3 rounded-xl bg-muted/30 p-2.5">
         <button
