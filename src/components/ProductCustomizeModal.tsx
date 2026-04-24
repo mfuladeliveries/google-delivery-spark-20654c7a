@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { X, Check, Plus, Minus, Star } from "lucide-react";
 import { MenuItem, SizeOption, AddOnOption, storeInfo } from "@/data/menu";
 import { computeUnitPrice } from "@/hooks/useCart";
@@ -40,7 +40,7 @@ const ProductCustomizeModal = ({ open, item, onClose, onAdd }: ProductCustomizeM
   const [showSizeError, setShowSizeError] = useState(false);
 
   // Reset state whenever the modal opens with a new item
-  useMemo(() => {
+  useEffect(() => {
     if (open && item) {
       setSelectedSize(sizes.find(s => s.popular) || sizes[0]);
       setSelectedAddOns([]);
@@ -249,7 +249,7 @@ const ProductCustomizeModal = ({ open, item, onClose, onAdd }: ProductCustomizeM
                       </div>
                       <span
                         className={`ml-2 flex-shrink-0 text-xs font-bold ${
-                          isFree ? "text-success" : "text-primary"
+                          isFree ? "text-emerald-600 dark:text-emerald-400" : "text-primary"
                         }`}
                       >
                         {isFree ? "FREE" : `+${storeInfo.currency}${Number(a.price).toFixed(0)}`}
