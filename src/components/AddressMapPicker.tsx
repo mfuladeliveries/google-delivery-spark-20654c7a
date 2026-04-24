@@ -73,23 +73,30 @@ export const AddressMapPicker = ({ onConfirm, initialAddress, initialCoords }: A
     };
   }, []);
 
-  // Reverse-geocode whenever the pin moves
+  // Reverse-geocode only after the pin has settled (debounced) so the
+  // house number stays accurate while the user is still adjusting.
   useEffect(() => {
     reverseAbort.current?.abort();
-    const ctrl = new AbortController();
-    reverseAbort.current = ctrl;
     setLoadingAddress(true);
-    fetch(
-      `https://nominatim.openstreetmap.org/reverse?lat=${position[0]}&lon=${position[1]}&format=json&zoom=18&addressdetails=1`,
-      { signal: ctrl.signal, headers: { Accept: "application/json" } },
-    )
-      .then((r) => r.json())
-      .then((data) => {
-        if (data?.display_name) setAddress(data.display_name);
-      })
-      .catch(() => {})
-      .finally(() => setLoadingAddress(false));
-    return () => ctrl.abort();
+    setAddress("");
+    const timer = window.setTimeout(() => {
+      const ctrl = new AbortController();
+      reverseAbort.current = ctrl;
+      fetch(
+        `https://nominatim.openstreetmap.org/reverse?lat=${position[0]}&lon=${position[1]}&format=jsonv2&zoom=18&addressdetails=1`,
+        { signal: ctrl.signal, headers: { Accept: "application/json" } },
+      )
+        .then((r) => r.json())
+        .then((data) => {
+          if (data?.display_name) setAddress(data.display_name);
+        })
+        .catch(() => {})
+        .finally(() => setLoadingAddress(false));
+    }, 600);
+    return () => {
+      window.clearTimeout(timer);
+      reverseAbort.current?.abort();
+    };
   }, [position]);
 
   // On first mount, try to centre on initial address (if no coords given)
