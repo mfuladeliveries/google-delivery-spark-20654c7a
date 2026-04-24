@@ -16,8 +16,8 @@ interface CartProps {
   tax: number;
   delivery: number;
   total: number;
-  onAdd: (itemId: string) => void;
-  onRemove: (itemId: string) => void;
+  onAdd: (lineKey: string) => void;
+  onRemove: (lineKey: string) => void;
   onClear: () => void;
   onCheckout: (foodNote?: string) => void;
 }
@@ -92,45 +92,64 @@ const Cart = ({
             </div>
           ) : (
             <div className="space-y-3">
-              {items.map((ci) => (
-                <div
-                  key={ci.item.id}
-                  className="flex items-center gap-3 rounded-xl border border-border bg-card p-3"
-                >
-                  {ci.item.image && (
-                    <img
-                      src={ci.item.image}
-                      alt={ci.item.name}
-                      className="h-14 w-14 rounded-lg object-cover"
-                    />
-                  )}
-                  <div className="flex-1 min-w-0">
-                    <h4 className="truncate text-sm font-semibold text-card-foreground">
-                      {ci.item.name}
-                    </h4>
-                    <p className="text-sm font-bold text-primary">
-                      {storeInfo.currency}{ci.item.price * ci.quantity}
-                    </p>
+              {items.map((ci) => {
+                const sizeLabel = ci.selectedSize?.name;
+                const addOnLabels = (ci.selectedAddOns || []).map(a => a.name);
+                return (
+                  <div
+                    key={ci.lineKey}
+                    className="flex items-start gap-3 rounded-xl border border-border bg-card p-3"
+                  >
+                    {ci.item.image && (
+                      <img
+                        src={ci.item.image}
+                        alt={ci.item.name}
+                        className="h-14 w-14 flex-shrink-0 rounded-lg object-cover"
+                      />
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <h4 className="truncate text-sm font-semibold text-card-foreground">
+                        {ci.item.name}
+                        {sizeLabel ? ` — ${sizeLabel}` : ""}
+                      </h4>
+                      {addOnLabels.length > 0 && (
+                        <div className="mt-1 flex flex-wrap gap-1">
+                          {addOnLabels.map((label, i) => (
+                            <span
+                              key={`${ci.lineKey}-${i}`}
+                              className="rounded-full bg-secondary px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground"
+                            >
+                              {label}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                      <p className="mt-1 text-sm font-bold text-primary">
+                        {storeInfo.currency}{(ci.unitPrice * ci.quantity).toFixed(2)}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        onClick={() => onRemove(ci.lineKey)}
+                        aria-label="Decrease quantity"
+                        className="rounded-lg bg-secondary p-1.5 text-secondary-foreground transition-colors hover:bg-destructive/20 hover:text-destructive"
+                      >
+                        <Minus className="h-3 w-3" />
+                      </button>
+                      <span className="w-6 text-center text-sm font-bold">
+                        {ci.quantity}
+                      </span>
+                      <button
+                        onClick={() => onAdd(ci.lineKey)}
+                        aria-label="Increase quantity"
+                        className="rounded-lg bg-primary p-1.5 text-primary-foreground"
+                      >
+                        <Plus className="h-3 w-3" />
+                      </button>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-1.5">
-                    <button
-                      onClick={() => onRemove(ci.item.id)}
-                      className="rounded-lg bg-secondary p-1.5 text-secondary-foreground transition-colors hover:bg-destructive/20 hover:text-destructive"
-                    >
-                      <Minus className="h-3 w-3" />
-                    </button>
-                    <span className="w-6 text-center text-sm font-bold">
-                      {ci.quantity}
-                    </span>
-                    <button
-                      onClick={() => onAdd(ci.item.id)}
-                      className="rounded-lg bg-primary p-1.5 text-primary-foreground"
-                    >
-                      <Plus className="h-3 w-3" />
-                    </button>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
