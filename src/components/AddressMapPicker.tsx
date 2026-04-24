@@ -206,6 +206,7 @@ export const AddressMapPicker = ({ onConfirm, initialAddress }: AddressMapPicker
           />
           {ZONE_AREAS.map((z) => {
             const style = ZONE_STYLES[z.zoneId];
+            const isActive = activeArea?.name === z.name;
             return (
               <Circle
                 key={z.name}
@@ -213,9 +214,10 @@ export const AddressMapPicker = ({ onConfirm, initialAddress }: AddressMapPicker
                 radius={z.radius}
                 pathOptions={{
                   color: style.color,
-                  weight: 2,
+                  weight: isActive ? 4 : 2,
                   fillColor: style.color,
-                  fillOpacity: 0.18,
+                  fillOpacity: isActive ? 0.35 : 0.15,
+                  dashArray: isActive ? undefined : "4 4",
                 }}
               >
                 <Popup>
