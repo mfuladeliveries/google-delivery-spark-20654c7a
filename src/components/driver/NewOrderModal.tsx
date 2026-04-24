@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { MapPin, Store, Clock, Package, Check, X } from "lucide-react";
 import { driverPayoutForFee, zoneIdForFee } from "@/lib/zones";
@@ -28,6 +28,31 @@ interface NewOrderModalProps {
 
 const NewOrderModal = ({ open, offer, distanceKm, accepting, rejecting, onAccept, onReject }: NewOrderModalProps) => {
   const [secondsLeft, setSecondsLeft] = useState<number | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  // Play custom alert sound on open, loop for ~10 seconds, then stop
+  useEffect(() => {
+    if (!open || !offer) return;
+
+    const audio = new Audio("/sounds/new-order.mp3");
+    audio.loop = true;
+    audio.volume = 1;
+    audioRef.current = audio;
+
+    audio.play().catch(() => { /* autoplay blocked — silent fallback */ });
+
+    const stopTimer = setTimeout(() => {
+      audio.pause();
+      audio.currentTime = 0;
+    }, 10000);
+
+    return () => {
+      clearTimeout(stopTimer);
+      audio.pause();
+      audio.currentTime = 0;
+      audioRef.current = null;
+    };
+  }, [open, offer?.id]);
 
   useEffect(() => {
     if (!offer?.offer_expires_at) {
