@@ -2,7 +2,7 @@ import { useState, useEffect, Fragment } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { Shield, TrendingUp, Users, ShoppingBag, Store, ArrowLeft, DollarSign, Truck, UserCheck, Search, UserPlus, Plus, Trash2, Pencil, X, Save, MapPin, Image as ImageIcon } from "lucide-react";
+import { Shield, TrendingUp, Users, ShoppingBag, Store, ArrowLeft, DollarSign, Truck, UserCheck, Search, UserPlus, Plus, Trash2, Pencil, X, Save, MapPin, Image as ImageIcon, Clock as ClockIcon } from "lucide-react";
 import RestaurantImageManager from "@/components/admin/RestaurantImageManager";
 import BottomNav from "@/components/BottomNav";
 import AdminEarnings from "@/components/admin/AdminEarnings";
@@ -18,6 +18,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import InstallAppButton from "@/components/InstallAppButton";
+import { RestaurantName } from "@/components/RestaurantName";
 
 interface Stats {
   totalOrders: number;
@@ -65,6 +66,8 @@ interface RestaurantRecord {
   logo_url: string | null;
   banner_url: string | null;
   gallery_images: string[];
+  opens_at: string | null;
+  closes_at: string | null;
 }
 
 interface DriverRecord {
@@ -250,7 +253,7 @@ const AdminDashboard = () => {
   };
 
   const fetchRestaurants = async () => {
-    const { data } = await supabase.from("restaurants").select("id, name, cuisine, is_active, owner_user_id, rating, location, lat, lng, logo_url, banner_url, gallery_images").order("name");
+    const { data } = await supabase.from("restaurants").select("id, name, cuisine, is_active, owner_user_id, rating, location, lat, lng, logo_url, banner_url, gallery_images, opens_at, closes_at").order("name");
     if (data) setRestaurants(data as RestaurantRecord[]);
   };
 
@@ -1446,8 +1449,13 @@ const OrdersTable = ({ orders, onCancel }: { orders: RecentOrder[]; onCancel?: (
                   <tr className={`border-b border-border ${i % 2 === 0 ? '' : 'bg-secondary/30'} ${showDispatch ? '!border-b-0' : ''}`}>
                     <td className="px-3 py-2.5 font-bold text-foreground">#{order.order_number}</td>
                     <td className="px-3 py-2.5 text-foreground text-xs">{order.customer_name || "—"}</td>
-                    <td className="px-3 py-2.5 text-muted-foreground text-xs">{order.restaurant || "—"}</td>
                     <td className="px-3 py-2.5 text-xs">
+                      {order.restaurant ? (
+                        <RestaurantName as="span" size="sm" name={order.restaurant} className="!text-xs" />
+                      ) : (
+                        <span className="text-muted-foreground">—</span>
+                      )}
+                    </td>
                       {order.driver_id ? (
                         <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-bold text-primary">Assigned</span>
                       ) : (
