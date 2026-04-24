@@ -182,6 +182,28 @@ export const AddressMapPicker = ({ onConfirm, initialAddress }: AddressMapPicker
             attribution='&copy; <a href="https://osm.org/copyright">OpenStreetMap</a>'
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           />
+          {ZONE_AREAS.map((z) => {
+            const style = ZONE_STYLES[z.zoneId];
+            return (
+              <Circle
+                key={z.name}
+                center={z.center}
+                radius={z.radius}
+                pathOptions={{
+                  color: style.color,
+                  weight: 2,
+                  fillColor: style.color,
+                  fillOpacity: 0.18,
+                }}
+              >
+                <Popup>
+                  <strong>{z.name}</strong>
+                  <br />
+                  Zone {z.zoneId} · R{z.zoneId === 1 ? 65 : 75} delivery
+                </Popup>
+              </Circle>
+            );
+          })}
           <Marker
             position={position}
             icon={markerIcon}
