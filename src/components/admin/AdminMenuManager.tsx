@@ -537,6 +537,14 @@ const SAUCE_PRESETS: AddOnOption[] = [
   { name: "🚫 No Sauce", price: 0 },
 ];
 
+const CHICKEN_CUT_PRESETS: CutOption[] = [
+  { name: "🍗 Full Chicken", price: 150, popular: true },
+  { name: "🍗 Half Chicken", price: 80 },
+  { name: "🍗 Quarter Chicken", price: 45 },
+  { name: "🍗 Wings", price: 60 },
+  { name: "🍗 Drumsticks", price: 50 },
+];
+
 const MenuItemAdminCard = ({
   item,
   onToggleAvailability,
@@ -795,6 +803,16 @@ const MenuItemAdminCard = ({
           onClose={() => setEditAddOns(false)}
           onSaved={updated => {
             setEditAddOns(false);
+            onItemUpdated(updated);
+          }}
+        />
+      )}
+      {editCuts && (
+        <EditCutsDialog
+          item={item}
+          onClose={() => setEditCuts(false)}
+          onSaved={updated => {
+            setEditCuts(false);
             onItemUpdated(updated);
           }}
         />
