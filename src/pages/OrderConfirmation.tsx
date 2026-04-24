@@ -4,6 +4,7 @@ import { CheckCircle2, Clock, KeyRound, StickyNote, Navigation, Package, Home, L
 import BottomNav from "@/components/BottomNav";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { RestaurantName } from "@/components/RestaurantName";
 
 interface ConfirmationState {
   orderNumber: string | number;
@@ -173,9 +174,17 @@ const OrderConfirmation = () => {
           <h1 className="mt-4 font-display text-2xl font-bold text-foreground">
             Order Confirmed!
           </h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Thanks for ordering with us — we'll keep you updated.
-          </p>
+          {restaurant ? (
+            <div className="mt-2 space-y-0.5">
+              <p className="text-sm text-muted-foreground">Your order from</p>
+              <RestaurantName as="p" size="xl" name={restaurant} />
+              <p className="text-sm text-muted-foreground">has been confirmed! 🎉</p>
+            </div>
+          ) : (
+            <p className="mt-1 text-sm text-muted-foreground">
+              Thanks for ordering with us — we'll keep you updated.
+            </p>
+          )}
         </div>
 
         {/* Order number */}
@@ -186,9 +195,6 @@ const OrderConfirmation = () => {
           <p className="mt-1 font-display text-3xl font-bold text-primary">
             #{orderNumber}
           </p>
-          {restaurant && (
-            <p className="mt-1 text-xs text-muted-foreground">🍽️ {restaurant}</p>
-          )}
         </div>
 
         {/* Delivery PIN */}

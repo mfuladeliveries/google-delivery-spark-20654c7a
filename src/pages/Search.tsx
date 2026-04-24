@@ -6,6 +6,7 @@ import BottomNav from "@/components/BottomNav";
 import { storeInfo } from "@/data/menu";
 import { useAuth } from "@/hooks/useAuth";
 import { getHomeRouteForRoles } from "@/lib/homeRoute";
+import { RestaurantName } from "@/components/RestaurantName";
 
 interface Restaurant {
   id: string;
@@ -175,7 +176,7 @@ const Search = () => {
                         />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <h3 className="font-bold text-sm text-foreground">{r.name}</h3>
+                        <RestaurantName as="h3" size="md" name={r.name} className="truncate" />
                         <p className="text-xs text-muted-foreground truncate mt-0.5">{r.description}</p>
                         <div className="flex items-center gap-3 mt-1.5 text-xs text-muted-foreground">
                           <span className="flex items-center gap-0.5 font-medium text-foreground">
