@@ -192,7 +192,13 @@ const CheckoutDialog = ({
         )
         .map(ci => {
           const parts: string[] = [];
-          if (ci.selectedCut) parts.push(ci.selectedCut.name);
+          if (ci.selectedCut) {
+            parts.push(
+              ci.selectedPieces && ci.selectedPieces > 1
+                ? `${ci.selectedPieces}× ${ci.selectedCut.name}`
+                : ci.selectedCut.name
+            );
+          }
           if (ci.selectedSize) parts.push(ci.selectedSize.name);
           if (ci.selectedAddOns && ci.selectedAddOns.length > 0) {
             parts.push(`with ${ci.selectedAddOns.map(a => a.name).join(", ")}`);
