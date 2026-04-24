@@ -139,8 +139,17 @@ const Orders = () => {
       }
       setLoading(false);
     };
+    const fetchRatings = async () => {
+      const { data } = await supabase
+        .from("order_ratings")
+        .select("order_id")
+        .eq("customer_id", user.id);
+      if (data) setRatedOrders(new Set(data.map((r: any) => r.order_id)));
+    };
+
     fetchOrders();
     fetchNotificationLog();
+    fetchRatings();
 
     const channel = supabase
       .channel('customer-orders')
