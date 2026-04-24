@@ -68,6 +68,13 @@ export function useCart() {
     [addItemWithOptions]
   );
 
+  /** Increment quantity for an existing line by lineKey. */
+  const incrementLine = useCallback((lineKey: string) => {
+    setItems(prev =>
+      prev.map(ci => (ci.lineKey === lineKey ? { ...ci, quantity: ci.quantity + 1 } : ci))
+    );
+  }, []);
+
   /** Remove one unit from a specific line. Falls back to first line for legacy callers passing item.id. */
   const removeItem = useCallback((lineKeyOrItemId: string) => {
     setItems(prev => {
@@ -97,6 +104,7 @@ export function useCart() {
     items,
     addItem,
     addItemWithOptions,
+    incrementLine,
     removeItem,
     clearCart,
     subtotal,
