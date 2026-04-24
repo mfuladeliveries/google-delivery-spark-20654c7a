@@ -201,6 +201,23 @@ export const UpdateAddressSheet = ({ open, onOpenChange, onSaved }: UpdateAddres
               </button>
             </div>
           </>
+        ) : view === "map" ? (
+          <>
+            <DrawerHeader className="flex flex-row items-center gap-2 text-left">
+              <button
+                type="button"
+                onClick={() => setView("choice")}
+                className="-ml-1 inline-flex h-8 w-8 items-center justify-center rounded-full text-foreground hover:bg-muted"
+                aria-label="Back"
+              >
+                <ArrowLeft className="h-5 w-5" />
+              </button>
+              <DrawerTitle className="text-lg">Pick on map</DrawerTitle>
+            </DrawerHeader>
+            <div className="overflow-y-auto pb-2">
+              <AddressMapPicker onConfirm={handleMapConfirm} />
+            </div>
+          </>
         ) : (
           <>
             <DrawerHeader className="flex flex-row items-center gap-2 text-left">
