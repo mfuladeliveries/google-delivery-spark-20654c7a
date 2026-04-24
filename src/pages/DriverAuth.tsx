@@ -165,7 +165,7 @@ const DriverAuth = () => {
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:underline"
                 >
-                  Contact the Admin on WhatsApp: 0686768409
+                  Contact the Admin on WhatsApp
                 </a>
               </div>
             </>
@@ -448,7 +448,7 @@ const DriverAuth = () => {
               rel="noopener noreferrer"
               className="inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:underline"
             >
-              Contact the Admin on WhatsApp: 0686768409
+              Contact the Admin on WhatsApp
             </a>
           </div>
           </>
