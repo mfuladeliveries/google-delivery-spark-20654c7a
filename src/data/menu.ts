@@ -13,9 +13,14 @@ export interface AddOnOption {
 /** A meat/portion cut (e.g. Full / Half / Quarter / Wings / Drumsticks). Sets the base price. */
 export interface CutOption {
   name: string;
+  /** Price per piece (or per portion if min/max pieces are not configured). */
   price: number;
   popular?: boolean;
   description?: string;
+  /** Minimum pieces a customer must order for this cut. Defaults to 1. */
+  min_pieces?: number;
+  /** Maximum pieces a customer can order for this cut. Defaults to 1 (no piece-stepper shown). */
+  max_pieces?: number;
 }
 
 export interface MenuItem {

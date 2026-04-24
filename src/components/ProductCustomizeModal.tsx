@@ -12,7 +12,8 @@ interface ProductCustomizeModalProps {
     qty: number,
     cut?: CutOption,
     size?: SizeOption,
-    addOns?: AddOnOption[]
+    addOns?: AddOnOption[],
+    pieces?: number
   ) => void;
 }
 
@@ -42,6 +43,7 @@ const ProductCustomizeModal = ({ open, item, onClose, onAdd }: ProductCustomizeM
   const [selectedCut, setSelectedCut] = useState<CutOption | undefined>(undefined);
   const [selectedSize, setSelectedSize] = useState<SizeOption | undefined>(undefined);
   const [selectedAddOns, setSelectedAddOns] = useState<AddOnOption[]>([]);
+  const [pieces, setPieces] = useState(1);
   const [qty, setQty] = useState(1);
   const [showCutError, setShowCutError] = useState(false);
   const [showSizeError, setShowSizeError] = useState(false);
@@ -53,6 +55,7 @@ const ProductCustomizeModal = ({ open, item, onClose, onAdd }: ProductCustomizeM
       setSelectedCut(undefined);
       setSelectedSize(sizes.find(s => s.popular) || sizes[0]);
       setSelectedAddOns([]);
+      setPieces(1);
       setQty(1);
       setShowCutError(false);
       setShowSizeError(false);
@@ -60,7 +63,19 @@ const ProductCustomizeModal = ({ open, item, onClose, onAdd }: ProductCustomizeM
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, item?.id]);
 
+  // When the customer changes cut, snap pieces back into the cut's allowed range.
+  useEffect(() => {
+    if (!selectedCut) return;
+    const min = Math.max(1, Number(selectedCut.min_pieces ?? 1));
+    const max = Math.max(min, Number(selectedCut.max_pieces ?? 1));
+    setPieces(p => Math.min(Math.max(p, min), max));
+  }, [selectedCut]);
+
   if (!open || !item) return null;
+
+  const cutMin = Math.max(1, Number(selectedCut?.min_pieces ?? 1));
+  const cutMax = Math.max(cutMin, Number(selectedCut?.max_pieces ?? 1));
+  const showPiecesStepper = !!selectedCut && cutMax > 1;
 
   const toggleAddOn = (a: AddOnOption) => {
     const isSelected = selectedAddOns.some(x => x.name === a.name);
@@ -77,12 +92,13 @@ const ProductCustomizeModal = ({ open, item, onClose, onAdd }: ProductCustomizeM
     item,
     hasCuts ? selectedCut : undefined,
     hasSizes ? selectedSize : undefined,
-    selectedAddOns
+    selectedAddOns,
+    showPiecesStepper ? pieces : undefined
   );
   const lineTotal = unitPrice * qty;
 
   const fromPrice = hasCuts
-    ? Math.min(...cuts.map(c => Number(c.price)))
+    ? Math.min(...cuts.map(c => Number(c.price) * Math.max(1, Number(c.min_pieces ?? 1))))
     : hasSizes
     ? Math.min(...sizes.map(s => Number(s.price)))
     : Number(item.price);
@@ -102,7 +118,8 @@ const ProductCustomizeModal = ({ open, item, onClose, onAdd }: ProductCustomizeM
       qty,
       hasCuts ? selectedCut : undefined,
       hasSizes ? selectedSize : undefined,
-      selectedAddOns.length > 0 ? selectedAddOns : undefined
+      selectedAddOns.length > 0 ? selectedAddOns : undefined,
+      showPiecesStepper ? pieces : undefined
     );
     onClose();
   };
@@ -210,6 +227,11 @@ const ProductCustomizeModal = ({ open, item, onClose, onAdd }: ProductCustomizeM
                       <span className="ml-2 flex-shrink-0 font-display text-sm font-bold text-primary">
                         {storeInfo.currency}
                         {Number(c.price).toFixed(0)}
+                        {Number(c.max_pieces ?? 1) > 1 && (
+                          <span className="ml-0.5 text-[10px] font-semibold text-muted-foreground">
+                            /pc
+                          </span>
+                        )}
                       </span>
                       <input
                         type="radio"
@@ -229,6 +251,43 @@ const ProductCustomizeModal = ({ open, item, onClose, onAdd }: ProductCustomizeM
                 <p className="mt-2 text-xs font-semibold text-destructive">
                   Please choose a cut to continue.
                 </p>
+              )}
+
+              {/* PIECES stepper — only when the chosen cut allows >1 pieces */}
+              {showPiecesStepper && (
+                <div className="mt-3 flex items-center justify-between rounded-xl border-2 border-primary/30 bg-primary/5 p-3">
+                  <div className="min-w-0">
+                    <p className="text-xs font-bold uppercase tracking-wider text-foreground">
+                      How many pieces?
+                    </p>
+                    <p className="mt-0.5 text-[11px] text-muted-foreground">
+                      {storeInfo.currency}{Number(selectedCut!.price).toFixed(0)} per piece · min {cutMin}, max {cutMax}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setPieces(p => Math.max(cutMin, p - 1))}
+                      disabled={pieces <= cutMin}
+                      aria-label="Fewer pieces"
+                      className="rounded-full bg-card p-1.5 text-foreground shadow-sm ring-1 ring-border disabled:opacity-40"
+                    >
+                      <Minus className="h-3.5 w-3.5" />
+                    </button>
+                    <span className="w-8 text-center font-display text-base font-bold text-foreground">
+                      {pieces}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setPieces(p => Math.min(cutMax, p + 1))}
+                      disabled={pieces >= cutMax}
+                      aria-label="More pieces"
+                      className="rounded-full bg-primary p-1.5 text-primary-foreground shadow-sm disabled:opacity-40"
+                    >
+                      <Plus className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                </div>
               )}
             </section>
           )}

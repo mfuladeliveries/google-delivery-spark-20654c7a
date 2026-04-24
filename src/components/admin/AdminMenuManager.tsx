@@ -91,6 +91,8 @@ interface CutOption {
   name: string;
   price: number;
   popular?: boolean;
+  min_pieces?: number;
+  max_pieces?: number;
 }
 
 interface MenuItem {
@@ -1020,12 +1022,12 @@ const EditCutsDialog = ({
                   <Label className="text-[10px]">Name</Label>
                   <Input
                     value={c.name}
-                    placeholder="Half Chicken"
+                    placeholder="Drumsticks"
                     onChange={e => update(i, { name: e.target.value })}
                   />
                 </div>
                 <div>
-                  <Label className="text-[10px]">Price (R)</Label>
+                  <Label className="text-[10px]">Price per piece (R)</Label>
                   <Input
                     type="number"
                     step="0.01"
@@ -1034,6 +1036,29 @@ const EditCutsDialog = ({
                   />
                 </div>
               </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <Label className="text-[10px]">Min pieces</Label>
+                  <Input
+                    type="number"
+                    min={1}
+                    value={c.min_pieces ?? 1}
+                    onChange={e => update(i, { min_pieces: Math.max(1, parseInt(e.target.value) || 1) })}
+                  />
+                </div>
+                <div>
+                  <Label className="text-[10px]">Max pieces</Label>
+                  <Input
+                    type="number"
+                    min={1}
+                    value={c.max_pieces ?? 1}
+                    onChange={e => update(i, { max_pieces: Math.max(1, parseInt(e.target.value) || 1) })}
+                  />
+                </div>
+              </div>
+              <p className="text-[10px] text-muted-foreground">
+                Set Max &gt; 1 to let customers choose how many pieces (e.g. 1–10 drumsticks). Leave Max = 1 for fixed portions like Full / Half chicken.
+              </p>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Switch

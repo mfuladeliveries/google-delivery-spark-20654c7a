@@ -286,7 +286,7 @@ const RestaurantMenu = () => {
               const qty = getItemQty(item.id);
               const hasOptions = itemHasOptions(item);
               const fromPrice = item.has_cuts && (item.cuts?.length ?? 0) > 0
-                ? Math.min(...item.cuts!.map(c => Number(c.price)))
+                ? Math.min(...item.cuts!.map(c => Number(c.price) * Math.max(1, Number(c.min_pieces ?? 1))))
                 : item.has_sizes && (item.sizes?.length ?? 0) > 0
                 ? Math.min(...item.sizes!.map(s => Number(s.price)))
                 : Number(item.price);
@@ -417,8 +417,8 @@ const RestaurantMenu = () => {
         open={!!customizeItem}
         item={customizeItem ? toMenuItem(customizeItem) : null}
         onClose={() => setCustomizeItem(null)}
-        onAdd={(menuItem, qty, cut, size, addOns) => {
-          for (let i = 0; i < qty; i++) cart.addItemWithOptions(menuItem, cut, size, addOns);
+        onAdd={(menuItem, qty, cut, size, addOns, pieces) => {
+          for (let i = 0; i < qty; i++) cart.addItemWithOptions(menuItem, cut, size, addOns, pieces);
         }}
       />
       <BottomNav />

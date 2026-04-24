@@ -93,7 +93,11 @@ const Cart = ({
           ) : (
             <div className="space-y-3">
               {items.map((ci) => {
-                const cutLabel = ci.selectedCut?.name;
+                const cutLabel = ci.selectedCut?.name
+                  ? ci.selectedPieces && ci.selectedPieces > 1
+                    ? `${ci.selectedPieces}× ${ci.selectedCut.name}`
+                    : ci.selectedCut.name
+                  : undefined;
                 const sizeLabel = ci.selectedSize?.name;
                 const addOnLabels = (ci.selectedAddOns || []).map(a => a.name);
                 const titleSuffix = [cutLabel, sizeLabel].filter(Boolean).join(" · ");
