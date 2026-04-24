@@ -152,6 +152,28 @@ export const AddressMapPicker = ({ onConfirm, initialAddress }: AddressMapPicker
 
   const detectedZone = useMemo(() => detectZone(address), [address]);
 
+  // Geographically determine which circle the pin is currently inside.
+  // Picks the area whose centre is closest to the pin AND within its radius.
+  const activeArea = useMemo(() => {
+    const [lat, lng] = position;
+    const toRad = (d: number) => (d * Math.PI) / 180;
+    const distM = (a: [number, number], b: [number, number]) => {
+      const R = 6371000;
+      const dLat = toRad(b[0] - a[0]);
+      const dLng = toRad(b[1] - a[1]);
+      const s =
+        Math.sin(dLat / 2) ** 2 +
+        Math.cos(toRad(a[0])) * Math.cos(toRad(b[0])) * Math.sin(dLng / 2) ** 2;
+      return 2 * R * Math.asin(Math.sqrt(s));
+    };
+    let best: { area: (typeof ZONE_AREAS)[number]; d: number } | null = null;
+    for (const a of ZONE_AREAS) {
+      const d = distM([lat, lng], a.center);
+      if (d <= a.radius && (!best || d < best.d)) best = { area: a, d };
+    }
+    return best?.area ?? null;
+  }, [position]);
+
   return (
     <div className="flex h-full flex-col">
       {/* Search bar */}
