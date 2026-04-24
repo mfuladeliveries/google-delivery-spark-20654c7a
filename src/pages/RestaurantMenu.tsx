@@ -4,7 +4,7 @@ import { ArrowLeft, Star, Clock, Plus, Minus, ShoppingCart, Search, ChevronRight
 import { supabase } from "@/integrations/supabase/client";
 import { useCart } from "@/hooks/useCart";
 import { useAuth } from "@/hooks/useAuth";
-import { menuItems as staticMenuItems, SizeOption, AddOnOption } from "@/data/menu";
+import { menuItems as staticMenuItems, SizeOption, AddOnOption, CutOption } from "@/data/menu";
 import Cart from "@/components/Cart";
 import CheckoutDialog from "@/components/CheckoutDialog";
 import BottomNav from "@/components/BottomNav";
@@ -37,6 +37,8 @@ interface DbMenuItem {
   sizes?: SizeOption[];
   has_add_ons?: boolean;
   add_ons?: AddOnOption[];
+  has_cuts?: boolean;
+  cuts?: CutOption[];
 }
 
 const foodImages: Record<string, string> = {
@@ -95,6 +97,8 @@ const RestaurantMenu = () => {
           sizes: Array.isArray(row.sizes) ? (row.sizes as SizeOption[]) : [],
           has_add_ons: !!row.has_add_ons,
           add_ons: Array.isArray(row.add_ons) ? (row.add_ons as AddOnOption[]) : [],
+          has_cuts: !!row.has_cuts,
+          cuts: Array.isArray(row.cuts) ? (row.cuts as CutOption[]) : [],
         }));
         setMenuItems(normalized);
       } else {
@@ -133,6 +137,7 @@ const RestaurantMenu = () => {
   };
 
   const itemHasOptions = (item: DbMenuItem) =>
+    (!!item.has_cuts && (item.cuts?.length ?? 0) > 0) ||
     (!!item.has_sizes && (item.sizes?.length ?? 0) > 0) ||
     (!!item.has_add_ons && (item.add_ons?.length ?? 0) > 0);
 
@@ -148,6 +153,8 @@ const RestaurantMenu = () => {
     sizes: item.sizes,
     has_add_ons: item.has_add_ons,
     add_ons: item.add_ons,
+    has_cuts: item.has_cuts,
+    cuts: item.cuts,
   });
 
   const [customizeItem, setCustomizeItem] = useState<DbMenuItem | null>(null);
@@ -278,7 +285,9 @@ const RestaurantMenu = () => {
             {filtered.map(item => {
               const qty = getItemQty(item.id);
               const hasOptions = itemHasOptions(item);
-              const fromPrice = item.has_sizes && (item.sizes?.length ?? 0) > 0
+              const fromPrice = item.has_cuts && (item.cuts?.length ?? 0) > 0
+                ? Math.min(...item.cuts!.map(c => Number(c.price)))
+                : item.has_sizes && (item.sizes?.length ?? 0) > 0
                 ? Math.min(...item.sizes!.map(s => Number(s.price)))
                 : Number(item.price);
               return (
@@ -317,7 +326,7 @@ const RestaurantMenu = () => {
                     </div>
                     <div className="flex items-center justify-between mt-2">
                       <span className="font-bold text-sm text-primary">
-                        {item.has_sizes ? "From " : ""}R{fromPrice}
+                        {item.has_cuts || item.has_sizes ? "From " : ""}R{fromPrice}
                       </span>
                       {qty === 0 ? (
                         <button
@@ -408,8 +417,8 @@ const RestaurantMenu = () => {
         open={!!customizeItem}
         item={customizeItem ? toMenuItem(customizeItem) : null}
         onClose={() => setCustomizeItem(null)}
-        onAdd={(menuItem, qty, size, addOns) => {
-          for (let i = 0; i < qty; i++) cart.addItemWithOptions(menuItem, size, addOns);
+        onAdd={(menuItem, qty, cut, size, addOns) => {
+          for (let i = 0; i < qty; i++) cart.addItemWithOptions(menuItem, cut, size, addOns);
         }}
       />
       <BottomNav />

@@ -247,8 +247,10 @@ export type Database = {
           add_ons: Json
           category: string
           created_at: string
+          cuts: Json
           description: string
           has_add_ons: boolean
+          has_cuts: boolean
           has_sizes: boolean
           id: string
           image: string
@@ -264,8 +266,10 @@ export type Database = {
           add_ons?: Json
           category?: string
           created_at?: string
+          cuts?: Json
           description?: string
           has_add_ons?: boolean
+          has_cuts?: boolean
           has_sizes?: boolean
           id?: string
           image?: string
@@ -281,8 +285,10 @@ export type Database = {
           add_ons?: Json
           category?: string
           created_at?: string
+          cuts?: Json
           description?: string
           has_add_ons?: boolean
+          has_cuts?: boolean
           has_sizes?: boolean
           id?: string
           image?: string

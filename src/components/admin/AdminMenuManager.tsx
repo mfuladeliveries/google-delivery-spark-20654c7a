@@ -16,6 +16,7 @@ import {
   ChevronDown,
   ChevronUp,
   Eye,
+  Drumstick,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -86,6 +87,12 @@ interface AddOnOption {
   price: number;
 }
 
+interface CutOption {
+  name: string;
+  price: number;
+  popular?: boolean;
+}
+
 interface MenuItem {
   id: string;
   restaurant_id: string;
@@ -101,6 +108,8 @@ interface MenuItem {
   sizes: SizeOption[];
   has_add_ons: boolean;
   add_ons: AddOnOption[];
+  has_cuts: boolean;
+  cuts: CutOption[];
 }
 
 type FilterMode = "all" | "open" | "closed";
@@ -528,6 +537,14 @@ const SAUCE_PRESETS: AddOnOption[] = [
   { name: "🚫 No Sauce", price: 0 },
 ];
 
+const CHICKEN_CUT_PRESETS: CutOption[] = [
+  { name: "🍗 Full Chicken", price: 150, popular: true },
+  { name: "🍗 Half Chicken", price: 80 },
+  { name: "🍗 Quarter Chicken", price: 45 },
+  { name: "🍗 Wings", price: 60 },
+  { name: "🍗 Drumsticks", price: 50 },
+];
+
 const MenuItemAdminCard = ({
   item,
   onToggleAvailability,
@@ -544,13 +561,16 @@ const MenuItemAdminCard = ({
   onItemUpdated: (m: MenuItem) => void;
 }) => {
   const img = item.image_url || item.image;
+  const cuts = Array.isArray(item.cuts) ? item.cuts : [];
   const sizes = Array.isArray(item.sizes) ? item.sizes : [];
   const addOns = Array.isArray(item.add_ons) ? item.add_ons : [];
   const freeAddOns = addOns.filter(a => Number(a.price) === 0);
   const paidAddOns = addOns.filter(a => Number(a.price) > 0);
 
+  const [cutsOpen, setCutsOpen] = useState(cuts.length < 5);
   const [sizesOpen, setSizesOpen] = useState(sizes.length < 5);
   const [addOnsOpen, setAddOnsOpen] = useState(addOns.length < 5);
+  const [editCuts, setEditCuts] = useState(false);
   const [editSizes, setEditSizes] = useState(false);
   const [editAddOns, setEditAddOns] = useState(false);
 
@@ -568,7 +588,7 @@ const MenuItemAdminCard = ({
         <div className="min-w-0 flex-1">
           <div className="flex items-start justify-between gap-2">
             <p className="truncate font-bold text-foreground">{item.name}</p>
-            {!item.has_sizes && (
+            {!item.has_sizes && !item.has_cuts && (
               <p className="shrink-0 font-bold text-primary">R{Number(item.price).toFixed(0)}</p>
             )}
           </div>
@@ -580,6 +600,58 @@ const MenuItemAdminCard = ({
             {item.is_popular && <span className="ml-1 text-amber-500">⭐ Popular</span>}
           </p>
         </div>
+      </div>
+
+      {/* CUTS — chicken portions / cut options */}
+      <div className="mt-3 rounded-xl bg-muted/30 p-2.5">
+        <button
+          onClick={() => setCutsOpen(!cutsOpen)}
+          className="flex w-full items-center justify-between text-[10px] font-bold uppercase tracking-wide text-muted-foreground"
+        >
+          <span className="flex items-center gap-1.5">
+            <Drumstick className="h-3 w-3" />
+            {item.has_cuts && cuts.length > 0
+              ? `Cuts (${cuts.length})`
+              : "No Cuts"}
+          </span>
+          {item.has_cuts && cuts.length > 0 && (
+            cutsOpen ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />
+          )}
+        </button>
+
+        {item.has_cuts && cuts.length > 0 && cutsOpen && (
+          <>
+            <div className="mt-2 flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
+              {cuts.map((c, i) => (
+                <div
+                  key={i}
+                  className="relative shrink-0 rounded-[10px] border-[1.5px] border-primary bg-primary/5 px-3 py-1.5"
+                >
+                  {c.popular && (
+                    <Star className="absolute -right-1 -top-1 h-3 w-3 fill-amber-400 text-amber-400" />
+                  )}
+                  <p className="text-[12px] font-bold text-primary">{c.name}</p>
+                  <p className="text-[13px] font-bold text-foreground">R{Number(c.price).toFixed(0)}</p>
+                </div>
+              ))}
+            </div>
+            <button
+              onClick={() => setEditCuts(true)}
+              className="mt-2 flex items-center gap-1 text-[11px] font-semibold text-primary"
+            >
+              <Pencil className="h-3 w-3" /> Edit Cuts
+            </button>
+          </>
+        )}
+
+        {(!item.has_cuts || cuts.length === 0) && (
+          <button
+            onClick={() => setEditCuts(true)}
+            className="mt-1.5 flex items-center gap-1 text-[11px] font-semibold text-primary"
+          >
+            <Plus className="h-3 w-3" /> Add Cut Options
+          </button>
+        )}
       </div>
 
       {/* SIZES */}
@@ -731,6 +803,16 @@ const MenuItemAdminCard = ({
           onClose={() => setEditAddOns(false)}
           onSaved={updated => {
             setEditAddOns(false);
+            onItemUpdated(updated);
+          }}
+        />
+      )}
+      {editCuts && (
+        <EditCutsDialog
+          item={item}
+          onClose={() => setEditCuts(false)}
+          onSaved={updated => {
+            setEditCuts(false);
             onItemUpdated(updated);
           }}
         />
