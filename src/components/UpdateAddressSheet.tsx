@@ -250,7 +250,7 @@ export const UpdateAddressSheet = ({ open, onOpenChange, onSaved }: UpdateAddres
                   <p className="text-xs font-medium text-destructive">{errors.suburb}</p>
                 )}
                 {suburbOutsideZone && !errors.suburb && (
-                  <p className="rounded-lg bg-amber-500/10 p-2 text-[11px] font-medium text-amber-700 dark:text-amber-400">
+                  <p className="rounded-lg border border-destructive/30 bg-destructive/10 p-2 text-[11px] font-medium text-destructive">
                     ⚠️ &ldquo;{suburb.trim()}&rdquo; may be outside our delivery area. You can save it
                     but delivery may not be available.
                   </p>
