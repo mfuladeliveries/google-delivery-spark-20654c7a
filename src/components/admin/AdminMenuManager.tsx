@@ -553,13 +553,16 @@ const MenuItemAdminCard = ({
   onItemUpdated: (m: MenuItem) => void;
 }) => {
   const img = item.image_url || item.image;
+  const cuts = Array.isArray(item.cuts) ? item.cuts : [];
   const sizes = Array.isArray(item.sizes) ? item.sizes : [];
   const addOns = Array.isArray(item.add_ons) ? item.add_ons : [];
   const freeAddOns = addOns.filter(a => Number(a.price) === 0);
   const paidAddOns = addOns.filter(a => Number(a.price) > 0);
 
+  const [cutsOpen, setCutsOpen] = useState(cuts.length < 5);
   const [sizesOpen, setSizesOpen] = useState(sizes.length < 5);
   const [addOnsOpen, setAddOnsOpen] = useState(addOns.length < 5);
+  const [editCuts, setEditCuts] = useState(false);
   const [editSizes, setEditSizes] = useState(false);
   const [editAddOns, setEditAddOns] = useState(false);
 
@@ -577,7 +580,7 @@ const MenuItemAdminCard = ({
         <div className="min-w-0 flex-1">
           <div className="flex items-start justify-between gap-2">
             <p className="truncate font-bold text-foreground">{item.name}</p>
-            {!item.has_sizes && (
+            {!item.has_sizes && !item.has_cuts && (
               <p className="shrink-0 font-bold text-primary">R{Number(item.price).toFixed(0)}</p>
             )}
           </div>
