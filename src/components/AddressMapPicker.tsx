@@ -2,11 +2,11 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { MapContainer, Marker, TileLayer, useMap, useMapEvents } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
-import { Crosshair, Loader2, MapPin, Search } from "lucide-react";
+import { AlertTriangle, Crosshair, Loader2, MapPin, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
-import { detectZone } from "@/lib/zones";
+import { ALL_DELIVERY_AREAS, detectZone } from "@/lib/zones";
 
 // Fix default marker icon paths (Leaflet + bundlers).
 const markerIcon = L.icon({
