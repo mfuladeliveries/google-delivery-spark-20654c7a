@@ -43,6 +43,7 @@ const ProductCustomizeModal = ({ open, item, onClose, onAdd }: ProductCustomizeM
   const [selectedCut, setSelectedCut] = useState<CutOption | undefined>(undefined);
   const [selectedSize, setSelectedSize] = useState<SizeOption | undefined>(undefined);
   const [selectedAddOns, setSelectedAddOns] = useState<AddOnOption[]>([]);
+  const [pieces, setPieces] = useState(1);
   const [qty, setQty] = useState(1);
   const [showCutError, setShowCutError] = useState(false);
   const [showSizeError, setShowSizeError] = useState(false);
@@ -54,6 +55,7 @@ const ProductCustomizeModal = ({ open, item, onClose, onAdd }: ProductCustomizeM
       setSelectedCut(undefined);
       setSelectedSize(sizes.find(s => s.popular) || sizes[0]);
       setSelectedAddOns([]);
+      setPieces(1);
       setQty(1);
       setShowCutError(false);
       setShowSizeError(false);
@@ -61,7 +63,19 @@ const ProductCustomizeModal = ({ open, item, onClose, onAdd }: ProductCustomizeM
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, item?.id]);
 
+  // When the customer changes cut, snap pieces back into the cut's allowed range.
+  useEffect(() => {
+    if (!selectedCut) return;
+    const min = Math.max(1, Number(selectedCut.min_pieces ?? 1));
+    const max = Math.max(min, Number(selectedCut.max_pieces ?? 1));
+    setPieces(p => Math.min(Math.max(p, min), max));
+  }, [selectedCut]);
+
   if (!open || !item) return null;
+
+  const cutMin = Math.max(1, Number(selectedCut?.min_pieces ?? 1));
+  const cutMax = Math.max(cutMin, Number(selectedCut?.max_pieces ?? 1));
+  const showPiecesStepper = !!selectedCut && cutMax > 1;
 
   const toggleAddOn = (a: AddOnOption) => {
     const isSelected = selectedAddOns.some(x => x.name === a.name);
@@ -78,12 +92,13 @@ const ProductCustomizeModal = ({ open, item, onClose, onAdd }: ProductCustomizeM
     item,
     hasCuts ? selectedCut : undefined,
     hasSizes ? selectedSize : undefined,
-    selectedAddOns
+    selectedAddOns,
+    showPiecesStepper ? pieces : undefined
   );
   const lineTotal = unitPrice * qty;
 
   const fromPrice = hasCuts
-    ? Math.min(...cuts.map(c => Number(c.price)))
+    ? Math.min(...cuts.map(c => Number(c.price) * Math.max(1, Number(c.min_pieces ?? 1))))
     : hasSizes
     ? Math.min(...sizes.map(s => Number(s.price)))
     : Number(item.price);
@@ -103,7 +118,8 @@ const ProductCustomizeModal = ({ open, item, onClose, onAdd }: ProductCustomizeM
       qty,
       hasCuts ? selectedCut : undefined,
       hasSizes ? selectedSize : undefined,
-      selectedAddOns.length > 0 ? selectedAddOns : undefined
+      selectedAddOns.length > 0 ? selectedAddOns : undefined,
+      showPiecesStepper ? pieces : undefined
     );
     onClose();
   };
