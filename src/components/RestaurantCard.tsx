@@ -2,6 +2,7 @@ import { Star, Clock, MapPin, ArrowRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { isRestaurantOpen, formatOpensAt } from "@/lib/restaurantHours";
+import { RestaurantName } from "@/components/RestaurantName";
 
 export interface RestaurantCardData {
   id: string;
