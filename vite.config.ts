@@ -17,12 +17,24 @@ export default defineConfig(({ mode }) => ({
     react(),
     mode === "development" && componentTagger(),
     VitePWA({
-      registerType: "autoUpdate",
+      // 'prompt' prevents the SW from silently activating + reloading the page
+      // when the user returns from background. We control updates ourselves.
+      registerType: "prompt",
+      injectRegister: null, // we register manually in main.tsx with iframe/preview guards
+      devOptions: {
+        enabled: false,
+      },
       includeAssets: ["favicon.ico", "placeholder.svg"],
       workbox: {
+        // Don't precache HTML — that's what causes "reload on resume" because
+        // Workbox detects a new index.html hash and triggers skipWaiting.
+        globPatterns: ["**/*.{js,css,ico,png,svg,jpg,jpeg,webp}"],
         navigateFallbackDenylist: [/^\/~oauth/],
-        globPatterns: ["**/*.{js,css,html,ico,png,svg,jpg,jpeg,webp}"],
         importScripts: ["/push-handler.js"],
+        // Don't take control of pages that were loaded before the SW activated.
+        clientsClaim: false,
+        skipWaiting: false,
+        cleanupOutdatedCaches: true,
       },
       manifest: {
         name: "Mfula Deliveries",

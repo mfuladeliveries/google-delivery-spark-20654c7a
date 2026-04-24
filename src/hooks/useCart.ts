@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { MenuItem, SizeOption, AddOnOption, CutOption, storeInfo } from "@/data/menu";
 import { useDeliveryZone } from "@/hooks/useDeliveryZone";
 
@@ -55,9 +55,34 @@ export function computeUnitPrice(
   return base + extras;
 }
 
+const CART_STORAGE_KEY = "mfula-cart-v1";
+
+function loadPersistedCart(): CartItem[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = window.localStorage.getItem(CART_STORAGE_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
 export function useCart() {
-  const [items, setItems] = useState<CartItem[]>([]);
+  // Lazy initializer rehydrates the cart from localStorage so the user's
+  // selections survive minimize/relaunch and full app restarts.
+  const [items, setItems] = useState<CartItem[]>(() => loadPersistedCart());
   const { zone } = useDeliveryZone();
+
+  // Persist cart on every change. localStorage is synchronous but tiny here.
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(items));
+    } catch {
+      /* quota / private mode — ignore */
+    }
+  }, [items]);
 
   /** Add a fully-configured line. If an identical line exists, increment qty. */
   const addItemWithOptions = useCallback(
