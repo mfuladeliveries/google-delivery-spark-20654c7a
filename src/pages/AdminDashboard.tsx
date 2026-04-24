@@ -1382,6 +1382,61 @@ const RestaurantCard = ({
             </button>
           </div>
 
+          {/* Operating hours editor */}
+          <div className="border-t border-border pt-3 space-y-2">
+            <div className="flex items-center justify-between">
+              <h4 className="font-bold text-xs text-foreground flex items-center gap-1">
+                <ClockIcon className="h-3 w-3" /> Operating Hours
+              </h4>
+              <span className="text-[10px] text-muted-foreground">Leave blank = always open</span>
+            </div>
+            <p className="text-[10px] text-muted-foreground">
+              Customers will see "Closed" outside these hours. Overnight hours (e.g. 18:00 → 02:00) are supported.
+            </p>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-semibold text-muted-foreground mb-1">Opens at</label>
+                <input
+                  type="time"
+                  value={opensAt}
+                  onChange={(e) => setOpensAt(e.target.value)}
+                  className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-muted-foreground mb-1">Closes at</label>
+                <input
+                  type="time"
+                  value={closesAt}
+                  onChange={(e) => setClosesAt(e.target.value)}
+                  className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                />
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={handleSaveHours}
+                disabled={savingHours}
+                className="flex-1 flex items-center justify-center gap-1.5 rounded-xl bg-primary py-2 text-xs font-bold text-primary-foreground disabled:opacity-50 hover:opacity-90 transition-opacity"
+              >
+                <Save className="h-3 w-3" />
+                {savingHours ? "Saving..." : "Save Hours"}
+              </button>
+              {(opensAt || closesAt) && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setOpensAt("");
+                    setClosesAt("");
+                  }}
+                  className="rounded-xl border border-border bg-card px-3 py-2 text-xs font-semibold text-muted-foreground hover:bg-secondary"
+                >
+                  Clear
+                </button>
+              )}
+            </div>
+          </div>
+
           {/* Owner credentials editor */}
           <div className="border-t border-border pt-3">
             {loadingOwner ? (
