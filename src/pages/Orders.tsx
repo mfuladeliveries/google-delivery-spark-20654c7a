@@ -272,11 +272,12 @@ const Orders = () => {
             {orders.map((order) => {
               const sc = getStatusConfig(order.status);
               const StatusIcon = sc.icon;
-              const currentStep = getStepIndex(order.status);
-              // Once driver accepts, collapse tracking — banner takes over on home screen
-              const driverAccepted = ["driver_assigned", "picking_up", "arrived_at_restaurant", "out_for_delivery"].includes(order.status);
-              const isActive = order.status === "out_for_delivery" || order.status === "driver_assigned";
+              // Live map activates from "Heading to Restaurant" onwards
+              const showLiveMap = ["picking_up", "arrived_at_restaurant", "out_for_delivery"].includes(order.status);
+              const driverAssigned = ["driver_assigned", "picking_up", "arrived_at_restaurant", "out_for_delivery"].includes(order.status);
+              const isDelivered = order.status === "delivered";
               const isCancelled = order.status === "cancelled" || order.status === "rejected";
+              const canRate = isDelivered && !ratedOrders.has(order.id);
 
               return (
                 <div key={order.id} className="rounded-2xl border border-border bg-card shadow-card overflow-hidden">
@@ -289,42 +290,20 @@ const Orders = () => {
                     </span>
                   </div>
 
-                  {/* 7-stage progress tracker — hidden once driver accepts (banner takes over) */}
-                  {!isCancelled && !driverAccepted && (
+                  {/* 8-stage timeline with timestamps */}
+                  {!isCancelled && (
                     <div className="px-4 pt-3">
-                      <div className="flex gap-0.5">
-                        {statusSteps.map((step, i) => (
-                          <div
-                            key={step.key}
-                            className={`h-1.5 flex-1 rounded-full transition-all duration-500 ${
-                              i <= currentStep ? "bg-primary" : "bg-muted"
-                            }`}
-                          />
-                        ))}
-                      </div>
-                      <div className="mt-2 flex justify-between">
-                        {statusSteps.map((step, i) => {
-                          const StepIcon = step.icon;
-                          const isCompleted = i <= currentStep;
-                          const isCurrent = i === currentStep;
-                          return (
-                            <div key={step.key} className="flex flex-col items-center" style={{ width: `${100 / statusSteps.length}%` }}>
-                              <div className={`flex h-6 w-6 items-center justify-center rounded-full transition-all ${
-                                isCurrent ? "bg-primary text-primary-foreground scale-110" :
-                                isCompleted ? "bg-primary/20 text-primary" : "bg-muted text-muted-foreground"
-                              }`}>
-                                <StepIcon className="h-3 w-3" />
-                              </div>
-                              <span className={`mt-0.5 text-[8px] text-center leading-tight ${
-                                isCurrent ? "font-bold text-primary" :
-                                isCompleted ? "text-foreground" : "text-muted-foreground"
-                              }`}>
-                                {step.label}
-                              </span>
-                            </div>
-                          );
-                        })}
-                      </div>
+                      <OrderTimeline
+                        status={order.status}
+                        timings={{
+                          created_at: order.created_at,
+                          accepted_at: order.accepted_at,
+                          picking_up_at: order.picking_up_at,
+                          arrived_at: order.arrived_at,
+                          picked_up_at: order.picked_up_at,
+                          delivered_at: order.delivered_at,
+                        }}
+                      />
                     </div>
                   )}
 
