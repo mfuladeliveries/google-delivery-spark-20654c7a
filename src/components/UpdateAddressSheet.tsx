@@ -26,7 +26,7 @@ interface UpdateAddressSheetProps {
   onSaved?: () => void;
 }
 
-type View = "choice" | "manual";
+type View = "choice" | "manual" | "map";
 type LabelOption = "Home" | "Work" | "Other";
 
 const SUBURB_SUGGESTIONS = DELIVERY_ZONES.flatMap((z) => z.areas);
@@ -133,22 +133,22 @@ export const UpdateAddressSheet = ({ open, onOpenChange, onSaved }: UpdateAddres
               <DrawerDescription>How would you like to enter your address?</DrawerDescription>
             </DrawerHeader>
             <div className="space-y-3 px-4 pb-6">
-              <Link
-                to="/profile"
-                onClick={() => onOpenChange(false)}
+              <button
+                type="button"
+                onClick={() => setView("map")}
                 className="flex w-full items-center gap-3 rounded-2xl border-2 border-border bg-card p-4 text-left transition-colors hover:border-primary/50 hover:bg-primary/5"
               >
                 <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
                   <Search className="h-5 w-5" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-bold text-foreground">Search for address</p>
+                  <p className="text-sm font-bold text-foreground">Search on map</p>
                   <p className="mt-0.5 text-xs text-muted-foreground">
-                    Use map search & auto-detect on your profile
+                    Drop a pin or use your current location
                   </p>
                 </div>
                 <ChevronRight className="h-5 w-5 flex-shrink-0 text-muted-foreground" />
-              </Link>
+              </button>
 
               <div className="flex items-center gap-3 py-1">
                 <div className="h-px flex-1 bg-border" />
