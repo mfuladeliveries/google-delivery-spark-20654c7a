@@ -62,10 +62,10 @@ const AdminAboutEditor = () => {
       ...content,
       services: content.services.map((s) => s.trim()).filter(Boolean),
     };
-    const { error } = await supabase.from("app_settings").upsert(
+    const { error } = await (supabase.from("app_settings") as any).upsert(
       {
         key: "about_page",
-        value: cleaned as unknown as Record<string, unknown>,
+        value: cleaned,
         updated_at: new Date().toISOString(),
         updated_by: user?.id ?? null,
       },
