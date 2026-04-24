@@ -120,6 +120,31 @@ export const UpdateAddressSheet = ({ open, onOpenChange, onSaved }: UpdateAddres
     }
   };
 
+  const handleMapConfirm = async ({ address }: { address: string; lat: number; lng: number }) => {
+    if (!user) {
+      toast.error("Please sign in to save your address");
+      return;
+    }
+    setSaving(true);
+    try {
+      const { error } = await supabase
+        .from("profiles")
+        .update({ address })
+        .eq("user_id", user.id);
+      if (error) throw error;
+      const z = detectZone(address);
+      if (z) toast.success(`Address updated! Delivering to ${z.name}`);
+      else toast.warning("Address saved, but it looks outside our delivery area.");
+      onSaved?.();
+      onOpenChange(false);
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Could not save address";
+      toast.error(msg);
+    } finally {
+      setSaving(false);
+    }
+  };
+
   return (
     <Drawer open={open} onOpenChange={onOpenChange}>
       <DrawerContent className="max-h-[92vh]">
