@@ -952,6 +952,136 @@ const EditSizesDialog = ({
 };
 
 // ─────────────────────────────────────────────────────────────────────
+// Edit Cuts (inline modal) — for chicken-style items
+// ─────────────────────────────────────────────────────────────────────
+const EditCutsDialog = ({
+  item,
+  onClose,
+  onSaved,
+}: {
+  item: MenuItem;
+  onClose: () => void;
+  onSaved: (m: MenuItem) => void;
+}) => {
+  const [cuts, setCuts] = useState<CutOption[]>(
+    item.cuts?.length ? item.cuts : CHICKEN_CUT_PRESETS,
+  );
+  const [busy, setBusy] = useState(false);
+
+  const update = (i: number, patch: Partial<CutOption>) =>
+    setCuts(cuts.map((c, idx) => (idx === i ? { ...c, ...patch } : c)));
+
+  const handleSave = async () => {
+    const cleaned = cuts
+      .map(c => ({ ...c, name: c.name.trim(), price: Number(c.price) || 0 }))
+      .filter(c => c.name);
+    if (cleaned.length === 0) return toast.error("Add at least one cut");
+    if (cleaned.some(c => c.price <= 0)) return toast.error("Each cut price must be > R0");
+    if (cleaned.length > 8) return toast.error("Max 8 cuts per item");
+    const names = cleaned.map(c => c.name.toLowerCase());
+    if (new Set(names).size !== names.length) return toast.error("Duplicate cut names");
+
+    setBusy(true);
+    const { error } = await supabase
+      .from("menu_items")
+      .update({ has_cuts: true, cuts: cleaned as any })
+      .eq("id", item.id);
+    setBusy(false);
+    if (error) return toast.error("Save failed: " + error.message);
+    toast.success(`✅ Cuts updated for ${item.name}`);
+    onSaved({ ...item, has_cuts: true, cuts: cleaned });
+  };
+
+  const handleRemoveAll = async () => {
+    setBusy(true);
+    const { error } = await supabase
+      .from("menu_items")
+      .update({ has_cuts: false, cuts: [] as any })
+      .eq("id", item.id);
+    setBusy(false);
+    if (error) return toast.error("Save failed");
+    toast.success(`Cuts removed from ${item.name}`);
+    onSaved({ ...item, has_cuts: false, cuts: [] });
+  };
+
+  return (
+    <Dialog open onOpenChange={open => !open && onClose()}>
+      <DialogContent className="max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>🍗 Edit Cuts</DialogTitle>
+          <DialogDescription>{item.name}</DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-3">
+          {cuts.map((c, i) => (
+            <div key={i} className="space-y-2 rounded-xl border border-border p-3">
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <Label className="text-[10px]">Name</Label>
+                  <Input
+                    value={c.name}
+                    placeholder="Half Chicken"
+                    onChange={e => update(i, { name: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <Label className="text-[10px]">Price (R)</Label>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    value={c.price}
+                    onChange={e => update(i, { price: parseFloat(e.target.value) || 0 })}
+                  />
+                </div>
+              </div>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Switch
+                    checked={!!c.popular}
+                    onCheckedChange={v => update(i, { popular: v })}
+                  />
+                  <span className="text-[11px] text-muted-foreground">⭐ Popular</span>
+                </div>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => setCuts(cuts.filter((_, idx) => idx !== i))}
+                  className="text-destructive"
+                >
+                  <Trash2 className="h-3.5 w-3.5" /> Remove
+                </Button>
+              </div>
+            </div>
+          ))}
+
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => setCuts([...cuts, { name: "", price: 0 }])}
+            className="w-full"
+            disabled={cuts.length >= 8}
+          >
+            <Plus className="h-4 w-4" /> Add Another Cut
+          </Button>
+        </div>
+
+        <DialogFooter className="flex-col-reverse gap-2 sm:flex-row">
+          {item.has_cuts && (
+            <Button variant="ghost" onClick={handleRemoveAll} disabled={busy} className="text-destructive">
+              Remove All
+            </Button>
+          )}
+          <Button variant="outline" onClick={onClose}>Cancel</Button>
+          <Button onClick={handleSave} disabled={busy} className="bg-primary hover:bg-primary/90">
+            Save Cuts
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
+// ─────────────────────────────────────────────────────────────────────
 // Edit Add-ons / Sauces (inline modal)
 // ─────────────────────────────────────────────────────────────────────
 const EditAddOnsDialog = ({
