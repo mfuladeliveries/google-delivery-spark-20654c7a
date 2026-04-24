@@ -13,12 +13,15 @@ export const queryClient = new QueryClient({
       // every time the tab regains focus.
       staleTime: 60_000,
       gcTime: 1000 * 60 * 60 * 24, // keep in cache for a day
-      // We DO want a background refresh on focus for things like order
-      // status, but it must not block the UI. React Query handles this
-      // correctly when staleTime is set — it returns cached data instantly
-      // and revalidates silently.
-      refetchOnWindowFocus: true,
-      refetchOnReconnect: true,
+      // CRITICAL: Do NOT refetch when window/tab regains focus. Returning
+      // from background must feel instant, like Uber Eats — the UI keeps
+      // showing cached data and live updates come from realtime
+      // subscriptions / polling already wired up in the driver and order
+      // components. Refetch-on-focus caused visible loader flashes and
+      // felt like a "reload" when minimizing/restoring the app.
+      refetchOnWindowFocus: false,
+      refetchOnReconnect: "always",
+      refetchOnMount: false,
       retry: 1,
     },
   },
