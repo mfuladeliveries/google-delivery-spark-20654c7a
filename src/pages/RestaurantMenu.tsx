@@ -1,13 +1,14 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Star, Clock, Plus, Minus, ShoppingCart, Search } from "lucide-react";
+import { ArrowLeft, Star, Clock, Plus, Minus, ShoppingCart, Search, ChevronRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useCart } from "@/hooks/useCart";
 import { useAuth } from "@/hooks/useAuth";
-import { menuItems as staticMenuItems } from "@/data/menu";
+import { menuItems as staticMenuItems, SizeOption, AddOnOption } from "@/data/menu";
 import Cart from "@/components/Cart";
 import CheckoutDialog from "@/components/CheckoutDialog";
 import BottomNav from "@/components/BottomNav";
+import ProductCustomizeModal from "@/components/ProductCustomizeModal";
 import { RestaurantName } from "@/components/RestaurantName";
 
 interface Restaurant {
@@ -32,6 +33,10 @@ interface DbMenuItem {
   image: string;
   category: string;
   is_available: boolean;
+  has_sizes?: boolean;
+  sizes?: SizeOption[];
+  has_add_ons?: boolean;
+  add_ons?: AddOnOption[];
 }
 
 const foodImages: Record<string, string> = {
@@ -78,10 +83,23 @@ const RestaurantMenu = () => {
         .eq("is_available", true);
 
       if (dbItems && dbItems.length > 0) {
-        setMenuItems(dbItems as DbMenuItem[]);
+        const normalized: DbMenuItem[] = dbItems.map((row: any) => ({
+          id: row.id,
+          name: row.name,
+          description: row.description ?? "",
+          price: Number(row.price ?? 0),
+          image: row.image_url || row.image || "",
+          category: row.category ?? "",
+          is_available: !!row.is_available,
+          has_sizes: !!row.has_sizes,
+          sizes: Array.isArray(row.sizes) ? (row.sizes as SizeOption[]) : [],
+          has_add_ons: !!row.has_add_ons,
+          add_ons: Array.isArray(row.add_ons) ? (row.add_ons as AddOnOption[]) : [],
+        }));
+        setMenuItems(normalized);
       } else {
         // Use static data filtered by restaurant name
-        const staticItems = staticMenuItems
+        const staticItems: DbMenuItem[] = staticMenuItems
           .filter(i => i.available && i.price > 0 && i.category === rest.name)
           .map(i => ({
             id: i.id,
@@ -108,20 +126,38 @@ const RestaurantMenu = () => {
   });
 
   const getItemQty = (itemId: string) => {
-    const ci = cart.items.find(c => c.item.id === itemId);
-    return ci?.quantity || 0;
+    // Sum across all cart lines that refer to this base item (different size/sauce variants)
+    return cart.items
+      .filter(c => c.item.id === itemId)
+      .reduce((sum, c) => sum + c.quantity, 0);
   };
 
+  const itemHasOptions = (item: DbMenuItem) =>
+    (!!item.has_sizes && (item.sizes?.length ?? 0) > 0) ||
+    (!!item.has_add_ons && (item.add_ons?.length ?? 0) > 0);
+
+  const toMenuItem = (item: DbMenuItem) => ({
+    id: item.id,
+    name: item.name,
+    category: restaurant?.name || item.category,
+    caption: item.description,
+    image: item.image,
+    price: item.price,
+    available: item.is_available,
+    has_sizes: item.has_sizes,
+    sizes: item.sizes,
+    has_add_ons: item.has_add_ons,
+    add_ons: item.add_ons,
+  });
+
+  const [customizeItem, setCustomizeItem] = useState<DbMenuItem | null>(null);
+
   const handleAddItem = (item: DbMenuItem) => {
-    cart.addItem({
-      id: item.id,
-      name: item.name,
-      category: restaurant?.name || item.category,
-      caption: item.description,
-      image: item.image,
-      price: item.price,
-      available: item.is_available,
-    });
+    if (itemHasOptions(item)) {
+      setCustomizeItem(item);
+      return;
+    }
+    cart.addItem(toMenuItem(item));
   };
 
   const handleCheckout = (note?: string) => {
@@ -241,8 +277,16 @@ const RestaurantMenu = () => {
           <div className="space-y-3">
             {filtered.map(item => {
               const qty = getItemQty(item.id);
+              const hasOptions = itemHasOptions(item);
+              const fromPrice = item.has_sizes && (item.sizes?.length ?? 0) > 0
+                ? Math.min(...item.sizes!.map(s => Number(s.price)))
+                : Number(item.price);
               return (
-                <div key={item.id} className="flex gap-3 rounded-2xl border border-border bg-card p-3 shadow-card">
+                <div
+                  key={item.id}
+                  onClick={() => handleAddItem(item)}
+                  className="flex cursor-pointer gap-3 rounded-2xl border border-border bg-card p-3 shadow-card transition-colors hover:border-primary/40"
+                >
                   <div className="h-20 w-20 flex-shrink-0 overflow-hidden rounded-xl bg-muted">
                     {item.image ? (
                       <img
@@ -259,31 +303,53 @@ const RestaurantMenu = () => {
                   </div>
                   <div className="flex flex-1 flex-col justify-between min-w-0">
                     <div>
-                      <h4 className="font-semibold text-sm text-foreground truncate">{item.name}</h4>
+                      <div className="flex items-center gap-1.5">
+                        <h4 className="font-semibold text-sm text-foreground truncate">{item.name}</h4>
+                        {hasOptions && (
+                          <span className="shrink-0 rounded-full bg-primary/10 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-primary">
+                            Options
+                          </span>
+                        )}
+                      </div>
                       {item.description && (
                         <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{item.description}</p>
                       )}
                     </div>
                     <div className="flex items-center justify-between mt-2">
-                      <span className="font-bold text-sm text-primary">R{item.price}</span>
+                      <span className="font-bold text-sm text-primary">
+                        {item.has_sizes ? "From " : ""}R{fromPrice}
+                      </span>
                       {qty === 0 ? (
                         <button
-                          onClick={() => handleAddItem(item)}
+                          onClick={(e) => { e.stopPropagation(); handleAddItem(item); }}
                           className="flex items-center gap-1 rounded-xl bg-primary px-3 py-1.5 text-xs font-bold text-primary-foreground transition-transform hover:scale-105 active:scale-95"
                         >
-                          <Plus className="h-3.5 w-3.5" /> Add
+                          {hasOptions ? (
+                            <>Customize <ChevronRight className="h-3.5 w-3.5" /></>
+                          ) : (
+                            <><Plus className="h-3.5 w-3.5" /> Add</>
+                          )}
                         </button>
                       ) : (
-                        <div className="flex items-center gap-2">
-                          <button
-                            onClick={() => cart.removeItem(item.id)}
-                            className="flex h-7 w-7 items-center justify-center rounded-full border border-border bg-secondary text-foreground"
-                          >
-                            <Minus className="h-3.5 w-3.5" />
-                          </button>
-                          <span className="w-5 text-center text-sm font-bold text-foreground">{qty}</span>
+                        <div
+                          className="flex items-center gap-2"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          {!hasOptions && (
+                            <button
+                              onClick={() => cart.removeItem(item.id)}
+                              aria-label="Remove one"
+                              className="flex h-7 w-7 items-center justify-center rounded-full border border-border bg-secondary text-foreground"
+                            >
+                              <Minus className="h-3.5 w-3.5" />
+                            </button>
+                          )}
+                          <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-bold text-primary">
+                            {qty} in cart
+                          </span>
                           <button
                             onClick={() => handleAddItem(item)}
+                            aria-label={hasOptions ? "Add another with options" : "Add one"}
                             className="flex h-7 w-7 items-center justify-center rounded-full bg-primary text-primary-foreground"
                           >
                             <Plus className="h-3.5 w-3.5" />
@@ -323,10 +389,7 @@ const RestaurantMenu = () => {
         tax={cart.tax}
         delivery={cart.delivery}
         total={cart.total}
-        onAdd={(itemId) => {
-          const item = menuItems.find(i => i.id === itemId);
-          if (item) handleAddItem(item);
-        }}
+        onAdd={(lineKey) => cart.incrementLine(lineKey)}
         onRemove={cart.removeItem}
         onClear={cart.clearCart}
         onCheckout={handleCheckout}
@@ -340,6 +403,14 @@ const RestaurantMenu = () => {
         delivery={cart.delivery}
         initialFoodNote={foodNote}
         onOrderPlaced={cart.clearCart}
+      />
+      <ProductCustomizeModal
+        open={!!customizeItem}
+        item={customizeItem ? toMenuItem(customizeItem) : null}
+        onClose={() => setCustomizeItem(null)}
+        onAdd={(menuItem, qty, size, addOns) => {
+          for (let i = 0; i < qty; i++) cart.addItemWithOptions(menuItem, size, addOns);
+        }}
       />
       <BottomNav />
     </div>

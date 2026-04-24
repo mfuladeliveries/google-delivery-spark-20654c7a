@@ -183,8 +183,21 @@ const CheckoutDialog = ({
         quantity: ci.quantity,
       }));
 
+      // Build a per-item options summary so the kitchen + driver see what was picked.
+      const optionsLines = items
+        .filter(ci => ci.selectedSize || (ci.selectedAddOns && ci.selectedAddOns.length > 0))
+        .map(ci => {
+          const parts: string[] = [];
+          if (ci.selectedSize) parts.push(ci.selectedSize.name);
+          if (ci.selectedAddOns && ci.selectedAddOns.length > 0) {
+            parts.push(`with ${ci.selectedAddOns.map(a => a.name).join(", ")}`);
+          }
+          return `${ci.quantity}× ${ci.item.name} (${parts.join(" — ")})`;
+        });
+
       // Combine food note, delivery instructions, and scheduled time into special_notes
       const combinedNotes = [
+        optionsLines.length > 0 ? `Item options: ${optionsLines.join(" | ")}` : "",
         notes.trim() ? `Food note: ${notes.trim()}` : "",
         deliveryInstructions.trim() ? `Delivery instructions: ${deliveryInstructions.trim()}` : "",
         scheduledLabel ? `Scheduled for: ${scheduledLabel}` : "Deliver ASAP",
