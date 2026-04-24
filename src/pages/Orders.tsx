@@ -72,10 +72,6 @@ const getStatusConfig = (status: string) => {
   return statusSteps.find(s => s.key === status) || statusSteps[0];
 };
 
-const getStepIndex = (status: string) => {
-  const idx = statusSteps.findIndex(s => s.key === status);
-  return idx >= 0 ? idx : 0;
-};
 
 const Orders = () => {
   const { user, roles, loading: authLoading } = useAuth();
@@ -498,6 +494,24 @@ const Orders = () => {
         )}
       </main>
       <BottomNav />
+
+      {/* Rating dialog — shown after customer taps "Rate this order" */}
+      {ratingOrder && user && (
+        <RatingDialog
+          open={!!ratingOrder}
+          onOpenChange={(o) => !o && setRatingOrder(null)}
+          orderId={ratingOrder.id}
+          orderNumber={ratingOrder.order_number}
+          customerId={user.id}
+          driverId={ratingOrder.driver_id}
+          restaurantId={ratingOrder.restaurant_id}
+          restaurant={ratingOrder.restaurant}
+          onSubmitted={() => {
+            setRatedOrders((prev) => new Set(prev).add(ratingOrder.id));
+            setRatingOrder(null);
+          }}
+        />
+      )}
     </div>
   );
 };
