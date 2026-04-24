@@ -1,9 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
-import { Briefcase, Home, MapPin } from "lucide-react";
+import { Link } from "react-router-dom";
+import { ArrowLeft, Briefcase, ChevronRight, Home, MapPin, Pencil, Search } from "lucide-react";
 import { toast } from "sonner";
 import {
   Drawer,
   DrawerContent,
+  DrawerDescription,
   DrawerHeader,
   DrawerTitle,
 } from "@/components/ui/drawer";
@@ -24,6 +26,7 @@ interface UpdateAddressSheetProps {
   onSaved?: () => void;
 }
 
+type View = "choice" | "manual";
 type LabelOption = "Home" | "Work" | "Other";
 
 const SUBURB_SUGGESTIONS = DELIVERY_ZONES.flatMap((z) => z.areas);
@@ -37,6 +40,7 @@ const LABEL_OPTIONS: { value: LabelOption; icon: typeof Home; emoji: string }[] 
 
 export const UpdateAddressSheet = ({ open, onOpenChange, onSaved }: UpdateAddressSheetProps) => {
   const { user } = useAuth();
+  const [view, setView] = useState<View>("choice");
 
   // Manual form state
   const [street, setStreet] = useState("");
@@ -49,10 +53,14 @@ export const UpdateAddressSheet = ({ open, onOpenChange, onSaved }: UpdateAddres
   const [errors, setErrors] = useState<{ street?: string; suburb?: string; city?: string }>({});
   const [saving, setSaving] = useState(false);
 
-  // Clear validation errors whenever the sheet closes.
+  // Reset to choice view whenever the sheet closes.
   useEffect(() => {
     if (!open) {
-      const t = setTimeout(() => setErrors({}), 200);
+      // small delay so it doesn't flicker mid-close
+      const t = setTimeout(() => {
+        setView("choice");
+        setErrors({});
+      }, 200);
       return () => clearTimeout(t);
     }
   }, [open]);
@@ -115,14 +123,74 @@ export const UpdateAddressSheet = ({ open, onOpenChange, onSaved }: UpdateAddres
   return (
     <Drawer open={open} onOpenChange={onOpenChange}>
       <DrawerContent className="max-h-[92vh]">
-        <DrawerHeader className="text-left">
-          <DrawerTitle className="flex items-center gap-2 text-lg">
-            <MapPin className="h-5 w-5 text-primary" />
-            Update Delivery Address
-          </DrawerTitle>
-        </DrawerHeader>
+        {view === "choice" ? (
+          <>
+            <DrawerHeader className="text-left">
+              <DrawerTitle className="flex items-center gap-2 text-lg">
+                <MapPin className="h-5 w-5 text-primary" />
+                Update Delivery Address
+              </DrawerTitle>
+              <DrawerDescription>How would you like to enter your address?</DrawerDescription>
+            </DrawerHeader>
+            <div className="space-y-3 px-4 pb-6">
+              <Link
+                to="/profile"
+                onClick={() => onOpenChange(false)}
+                className="flex w-full items-center gap-3 rounded-2xl border-2 border-border bg-card p-4 text-left transition-colors hover:border-primary/50 hover:bg-primary/5"
+              >
+                <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                  <Search className="h-5 w-5" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-bold text-foreground">Search for address</p>
+                  <p className="mt-0.5 text-xs text-muted-foreground">
+                    Use map search & auto-detect on your profile
+                  </p>
+                </div>
+                <ChevronRight className="h-5 w-5 flex-shrink-0 text-muted-foreground" />
+              </Link>
 
-        <div className="space-y-4 overflow-y-auto px-4 pb-6">
+              <div className="flex items-center gap-3 py-1">
+                <div className="h-px flex-1 bg-border" />
+                <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                  or
+                </span>
+                <div className="h-px flex-1 bg-border" />
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setView("manual")}
+                className="flex w-full items-center gap-3 rounded-2xl border-2 border-border bg-card p-4 text-left transition-colors hover:border-primary/50 hover:bg-primary/5"
+              >
+                <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                  <Pencil className="h-5 w-5" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-bold text-foreground">Enter address manually</p>
+                  <p className="mt-0.5 text-xs text-muted-foreground">
+                    Type your street, suburb & landmark
+                  </p>
+                </div>
+                <ChevronRight className="h-5 w-5 flex-shrink-0 text-muted-foreground" />
+              </button>
+            </div>
+          </>
+        ) : (
+          <>
+            <DrawerHeader className="flex flex-row items-center gap-2 text-left">
+              <button
+                type="button"
+                onClick={() => setView("choice")}
+                className="-ml-1 inline-flex h-8 w-8 items-center justify-center rounded-full text-foreground hover:bg-muted"
+                aria-label="Back"
+              >
+                <ArrowLeft className="h-5 w-5" />
+              </button>
+              <DrawerTitle className="text-lg">Enter Address</DrawerTitle>
+            </DrawerHeader>
+
+            <div className="space-y-4 overflow-y-auto px-4 pb-6">
               {/* Street */}
               <div className="space-y-1.5">
                 <Label htmlFor="addr-street" className="text-xs font-semibold text-foreground">
@@ -276,7 +344,9 @@ export const UpdateAddressSheet = ({ open, onOpenChange, onSaved }: UpdateAddres
               >
                 {saving ? "Saving..." : "Save Address"}
               </Button>
-        </div>
+            </div>
+          </>
+        )}
       </DrawerContent>
     </Drawer>
   );
