@@ -85,6 +85,8 @@ const Orders = () => {
   const [loading, setLoading] = useState(true);
   const [deliveryPins, setDeliveryPins] = useState<Record<string, string>>({});
   const [notificationLog, setNotificationLog] = useState<Record<string, Set<string>>>({});
+  const [ratedOrders, setRatedOrders] = useState<Set<string>>(new Set());
+  const [ratingOrder, setRatingOrder] = useState<Order | null>(null);
   const { prefs, update: updatePrefs } = useNotificationPrefs();
 
   useEffect(() => {
