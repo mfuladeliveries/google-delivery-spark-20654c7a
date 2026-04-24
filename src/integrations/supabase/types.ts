@@ -570,6 +570,7 @@ export type Database = {
       restaurants: {
         Row: {
           banner_url: string | null
+          closes_at: string | null
           created_at: string
           cuisine: string
           delivery_time: string
@@ -584,11 +585,13 @@ export type Database = {
           logo_url: string | null
           min_order: number
           name: string
+          opens_at: string | null
           owner_user_id: string | null
           rating: number
         }
         Insert: {
           banner_url?: string | null
+          closes_at?: string | null
           created_at?: string
           cuisine?: string
           delivery_time?: string
@@ -603,11 +606,13 @@ export type Database = {
           logo_url?: string | null
           min_order?: number
           name?: string
+          opens_at?: string | null
           owner_user_id?: string | null
           rating?: number
         }
         Update: {
           banner_url?: string | null
+          closes_at?: string | null
           created_at?: string
           cuisine?: string
           delivery_time?: string
@@ -622,6 +627,7 @@ export type Database = {
           logo_url?: string | null
           min_order?: number
           name?: string
+          opens_at?: string | null
           owner_user_id?: string | null
           rating?: number
         }
