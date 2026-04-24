@@ -299,12 +299,6 @@ export const UpdateAddressSheet = ({ open, onOpenChange, onSaved }: UpdateAddres
                 {errors.suburb && (
                   <p className="text-xs font-medium text-destructive">{errors.suburb}</p>
                 )}
-                {suburbOutsideZone && !errors.suburb && (
-                  <p className="rounded-lg border border-destructive/30 bg-destructive/10 p-2 text-[11px] font-medium text-destructive">
-                    ⚠️ &ldquo;{suburb.trim()}&rdquo; may be outside our delivery area. You can save it
-                    but delivery may not be available.
-                  </p>
-                )}
               </div>
 
               {/* City */}
@@ -380,9 +374,9 @@ export const UpdateAddressSheet = ({ open, onOpenChange, onSaved }: UpdateAddres
 
               {/* Delivery area hint */}
               <div className="rounded-2xl border border-border bg-muted/40 p-3 text-[11px] leading-relaxed text-muted-foreground">
-                <p className="font-bold text-foreground">⚠️ Delivery Area Check</p>
+                <p className="font-bold text-foreground">📍 Tip</p>
                 <p className="mt-1">
-                  We deliver to: <span className="font-semibold text-foreground">{ALL_DELIVERY_AREAS}</span>.
+                  For the most accurate delivery, use <span className="font-semibold text-foreground">Search on map</span> to drop a precise GPS pin. We'll automatically check if your location is within our delivery range.
                 </p>
               </div>
 
