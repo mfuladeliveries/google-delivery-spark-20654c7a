@@ -227,6 +227,11 @@ const ProductCustomizeModal = ({ open, item, onClose, onAdd }: ProductCustomizeM
                       <span className="ml-2 flex-shrink-0 font-display text-sm font-bold text-primary">
                         {storeInfo.currency}
                         {Number(c.price).toFixed(0)}
+                        {Number(c.max_pieces ?? 1) > 1 && (
+                          <span className="ml-0.5 text-[10px] font-semibold text-muted-foreground">
+                            /pc
+                          </span>
+                        )}
                       </span>
                       <input
                         type="radio"
@@ -246,6 +251,43 @@ const ProductCustomizeModal = ({ open, item, onClose, onAdd }: ProductCustomizeM
                 <p className="mt-2 text-xs font-semibold text-destructive">
                   Please choose a cut to continue.
                 </p>
+              )}
+
+              {/* PIECES stepper — only when the chosen cut allows >1 pieces */}
+              {showPiecesStepper && (
+                <div className="mt-3 flex items-center justify-between rounded-xl border-2 border-primary/30 bg-primary/5 p-3">
+                  <div className="min-w-0">
+                    <p className="text-xs font-bold uppercase tracking-wider text-foreground">
+                      How many pieces?
+                    </p>
+                    <p className="mt-0.5 text-[11px] text-muted-foreground">
+                      {storeInfo.currency}{Number(selectedCut!.price).toFixed(0)} per piece · min {cutMin}, max {cutMax}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setPieces(p => Math.max(cutMin, p - 1))}
+                      disabled={pieces <= cutMin}
+                      aria-label="Fewer pieces"
+                      className="rounded-full bg-card p-1.5 text-foreground shadow-sm ring-1 ring-border disabled:opacity-40"
+                    >
+                      <Minus className="h-3.5 w-3.5" />
+                    </button>
+                    <span className="w-8 text-center font-display text-base font-bold text-foreground">
+                      {pieces}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setPieces(p => Math.min(cutMax, p + 1))}
+                      disabled={pieces >= cutMax}
+                      aria-label="More pieces"
+                      className="rounded-full bg-primary p-1.5 text-primary-foreground shadow-sm disabled:opacity-40"
+                    >
+                      <Plus className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                </div>
               )}
             </section>
           )}
