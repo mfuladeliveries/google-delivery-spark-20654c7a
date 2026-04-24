@@ -20,6 +20,7 @@ import AdminDashboard from "./pages/AdminDashboard";
 import Profile from "./pages/Profile";
 import Search from "./pages/Search";
 import Install from "./pages/Install";
+import About from "./pages/About";
 import RouteAwareInstallPrompt from "@/components/RouteAwareInstallPrompt";
 import SplashScreen from "@/components/SplashScreen";
 import ActiveOrderBanner from "@/components/ActiveOrderBanner";
@@ -56,6 +57,7 @@ const App = () => (
             <Route path="/search" element={<Search />} />
             <Route path="/install" element={<Install />} />
             <Route path="/install/:variant" element={<Install />} />
+            <Route path="/about" element={<About />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

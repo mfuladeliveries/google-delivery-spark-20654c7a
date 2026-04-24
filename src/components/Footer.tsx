@@ -33,6 +33,7 @@ const Footer = () => {
                 { to: "/search", label: "Search Restaurants" },
                 { to: "/orders", label: "My Orders" },
                 { to: "/profile", label: "My Profile" },
+                { to: "/about", label: "About Us" },
               ].map((link) => (
                 <li key={link.to}>
                   <Link
