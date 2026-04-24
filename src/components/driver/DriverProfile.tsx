@@ -271,34 +271,6 @@ const DriverProfileTab = () => {
         </div>
       </div>
 
-      {/* Notification Sound */}
-      <div className="rounded-2xl border border-border bg-card p-4 shadow-card space-y-3">
-        <h3 className="font-bold text-foreground flex items-center gap-2">
-          <Volume2 className="h-4 w-4 text-primary" /> Notification Sound
-        </h3>
-        <p className="text-xs text-muted-foreground">
-          Test the alert sound that plays when a new order arrives. It will play for 10 seconds.
-        </p>
-        <button
-          type="button"
-          onClick={handleTestSound}
-          className={`w-full rounded-xl py-3 text-sm font-bold transition-all active:scale-[0.99] flex items-center justify-center gap-2 ${
-            testingSound
-              ? "bg-destructive/10 text-destructive border-2 border-destructive/30"
-              : "bg-primary/10 text-primary border-2 border-primary/30 hover:bg-primary/15"
-          }`}
-        >
-          {testingSound ? (
-            <>
-              <Square className="h-4 w-4 fill-current" /> Stop Test Sound
-            </>
-          ) : (
-            <>
-              <Volume2 className="h-4 w-4" /> Test Notification Sound
-            </>
-          )}
-        </button>
-      </div>
 
       {/* Save button */}
       <button
