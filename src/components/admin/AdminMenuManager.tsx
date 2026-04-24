@@ -16,6 +16,7 @@ import {
   ChevronDown,
   ChevronUp,
   Eye,
+  Drumstick,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -86,6 +87,12 @@ interface AddOnOption {
   price: number;
 }
 
+interface CutOption {
+  name: string;
+  price: number;
+  popular?: boolean;
+}
+
 interface MenuItem {
   id: string;
   restaurant_id: string;
@@ -101,6 +108,8 @@ interface MenuItem {
   sizes: SizeOption[];
   has_add_ons: boolean;
   add_ons: AddOnOption[];
+  has_cuts: boolean;
+  cuts: CutOption[];
 }
 
 type FilterMode = "all" | "open" | "closed";
