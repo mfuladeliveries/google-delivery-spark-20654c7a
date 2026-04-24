@@ -1087,6 +1087,37 @@ const RestaurantCard = ({
   const [coordLng, setCoordLng] = useState("");
   const [savingCoords, setSavingCoords] = useState(false);
   const [imagesOpen, setImagesOpen] = useState(false);
+  const [opensAt, setOpensAt] = useState("");
+  const [closesAt, setClosesAt] = useState("");
+  const [savingHours, setSavingHours] = useState(false);
+
+  const handleSaveHours = async () => {
+    // Allow clearing both fields to remove hours
+    if ((opensAt && !closesAt) || (!opensAt && closesAt)) {
+      toast.error("Set both opening and closing times, or clear both.");
+      return;
+    }
+    setSavingHours(true);
+    try {
+      const { error } = await supabase
+        .from("restaurants")
+        .update({
+          opens_at: opensAt || null,
+          closes_at: closesAt || null,
+        })
+        .eq("id", r.id);
+      if (error) throw error;
+      toast.success(
+        opensAt && closesAt
+          ? `⏰ ${r.name} hours: ${opensAt}–${closesAt}`
+          : `⏰ ${r.name} hours cleared (always open)`
+      );
+      onRestaurantChanged();
+    } catch (err: any) {
+      toast.error(err.message || "Failed to save hours");
+    }
+    setSavingHours(false);
+  };
 
   const handleSaveCoords = async () => {
     const lat = parseFloat(coordLat);
