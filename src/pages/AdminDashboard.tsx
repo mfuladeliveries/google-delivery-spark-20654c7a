@@ -115,7 +115,7 @@ const getDelayInfo = (order: { status: string; created_at: string }) => {
 const AdminDashboard = () => {
   const { user, role, loading: authLoading } = useAuth();
   const navigate = useNavigate();
-  const [tab, setTab] = useState<"overview" | "orders" | "earnings" | "withdrawals" | "refunds" | "requests" | "users" | "restaurants" | "drivers">("overview");
+  const [tab, setTab] = useState<"overview" | "orders" | "earnings" | "withdrawals" | "refunds" | "requests" | "users" | "restaurants" | "drivers" | "about">("overview");
   const [stats, setStats] = useState<Stats>({
     totalOrders: 0, totalRevenue: 0, totalRestaurants: 0,
     pendingOrders: 0, deliveredToday: 0, totalDrivers: 0,
