@@ -1,13 +1,14 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Star, Clock, Plus, Minus, ShoppingCart, Search } from "lucide-react";
+import { ArrowLeft, Star, Clock, Plus, Minus, ShoppingCart, Search, ChevronRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useCart } from "@/hooks/useCart";
 import { useAuth } from "@/hooks/useAuth";
-import { menuItems as staticMenuItems } from "@/data/menu";
+import { menuItems as staticMenuItems, SizeOption, AddOnOption } from "@/data/menu";
 import Cart from "@/components/Cart";
 import CheckoutDialog from "@/components/CheckoutDialog";
 import BottomNav from "@/components/BottomNav";
+import ProductCustomizeModal from "@/components/ProductCustomizeModal";
 import { RestaurantName } from "@/components/RestaurantName";
 
 interface Restaurant {
@@ -32,6 +33,10 @@ interface DbMenuItem {
   image: string;
   category: string;
   is_available: boolean;
+  has_sizes?: boolean;
+  sizes?: SizeOption[];
+  has_add_ons?: boolean;
+  add_ons?: AddOnOption[];
 }
 
 const foodImages: Record<string, string> = {
