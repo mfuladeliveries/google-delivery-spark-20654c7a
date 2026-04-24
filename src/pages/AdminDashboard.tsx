@@ -9,6 +9,7 @@ import AdminEarnings from "@/components/admin/AdminEarnings";
 import AdminWithdrawals from "@/components/admin/AdminWithdrawals";
 import AdminRefunds from "@/components/admin/AdminRefunds";
 import AdminDriverRequests from "@/components/admin/AdminDriverRequests";
+import AdminAboutEditor from "@/components/admin/AdminAboutEditor";
 import { toast } from "sonner";
 import { geocodeAddress } from "@/lib/geocode";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
@@ -293,7 +294,7 @@ const AdminDashboard = () => {
     { label: "Today", value: stats.deliveredToday, icon: UserCheck, color: "bg-primary/10 text-primary" },
   ];
 
-  const tabs = ["overview", "orders", "earnings", "withdrawals", "refunds", "requests", "users", "restaurants", "drivers"] as const;
+  const tabs = ["overview", "orders", "earnings", "withdrawals", "refunds", "requests", "users", "restaurants", "drivers", "about"] as const;
 
   return (
     <div className="min-h-screen bg-background">
@@ -463,6 +464,14 @@ const AdminDashboard = () => {
         {/* Drivers Tab */}
         {tab === "drivers" && (
           <DriversTab drivers={drivers} onDriverAdded={() => { fetchDrivers(); fetchUsers(); }} />
+        )}
+
+        {/* About Page Editor */}
+        {tab === "about" && (
+          <>
+            <h2 className="font-bold text-foreground mb-3">ℹ️ About Page Content</h2>
+            <AdminAboutEditor />
+          </>
         )}
       </main>
       <BottomNav />

@@ -1,4 +1,4 @@
-import { ShoppingCart, MapPin, User, LogOut, ClipboardList, ChefHat, Truck, Shield, Menu, Wallet } from "lucide-react";
+import { ShoppingCart, MapPin, User, LogOut, ClipboardList, ChefHat, Truck, Shield, Menu, Wallet, Info } from "lucide-react";
 import { storeInfo } from "@/data/menu";
 import { useAuth } from "@/hooks/useAuth";
 import { useCustomerCredits } from "@/hooks/useCustomerCredits";
@@ -64,6 +64,13 @@ const Header = ({ cartCount, onCartClick, title }: HeaderProps) => {
                 My Orders
               </Link>
             )}
+            <Link
+              to="/about"
+              className="flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors"
+            >
+              <Info className="h-4 w-4" />
+              About
+            </Link>
             {user ? (
               <button
                 onClick={signOut}
