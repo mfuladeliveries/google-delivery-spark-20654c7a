@@ -23,6 +23,55 @@ const DriverProfileTab = () => {
   const [driverData, setDriverData] = useState<DriverProfileData>({ vehicle_type: "", license_plate: "", license_url: "", id_document_url: "" });
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState<string | null>(null);
+  const [testingSound, setTestingSound] = useState(false);
+  const testAudioRef = useRef<HTMLAudioElement | null>(null);
+  const testTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Cleanup audio on unmount
+  useEffect(() => {
+    return () => {
+      if (testAudioRef.current) {
+        testAudioRef.current.pause();
+        testAudioRef.current = null;
+      }
+      if (testTimerRef.current) clearTimeout(testTimerRef.current);
+    };
+  }, []);
+
+  const stopTestSound = () => {
+    if (testAudioRef.current) {
+      testAudioRef.current.pause();
+      testAudioRef.current.currentTime = 0;
+      testAudioRef.current = null;
+    }
+    if (testTimerRef.current) {
+      clearTimeout(testTimerRef.current);
+      testTimerRef.current = null;
+    }
+    setTestingSound(false);
+  };
+
+  const handleTestSound = async () => {
+    if (testingSound) {
+      stopTestSound();
+      return;
+    }
+    try {
+      const audio = new Audio("/sounds/new-order.mp3");
+      audio.loop = true;
+      audio.volume = 1;
+      testAudioRef.current = audio;
+      await audio.play();
+      setTestingSound(true);
+      toast.success("Playing test sound for 10 seconds...");
+      testTimerRef.current = setTimeout(() => {
+        stopTestSound();
+      }, 10000);
+    } catch (err) {
+      toast.error("Could not play sound. Tap the screen first, then retry.");
+      stopTestSound();
+    }
+  };
 
   useEffect(() => {
     if (!user) return;
