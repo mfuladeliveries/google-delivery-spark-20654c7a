@@ -1456,6 +1456,7 @@ const OrdersTable = ({ orders, onCancel }: { orders: RecentOrder[]; onCancel?: (
                         <span className="text-muted-foreground">—</span>
                       )}
                     </td>
+                    <td className="px-3 py-2.5 text-xs">
                       {order.driver_id ? (
                         <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-bold text-primary">Assigned</span>
                       ) : (
