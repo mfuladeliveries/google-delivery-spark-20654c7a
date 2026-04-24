@@ -91,6 +91,8 @@ interface CutOption {
   name: string;
   price: number;
   popular?: boolean;
+  min_pieces?: number;
+  max_pieces?: number;
 }
 
 interface MenuItem {
