@@ -706,15 +706,15 @@ const MenuItemDialog = ({
       is_available: isAvailable,
       is_popular: isPopular,
       has_sizes: hasSizes,
-      sizes: hasSizes ? sizes.filter(s => s.name.trim()) : [],
+      sizes: (hasSizes ? sizes.filter(s => s.name.trim()) : []) as any,
       has_add_ons: hasAddOns,
-      add_ons: hasAddOns ? addOns.filter(a => a.name.trim()) : [],
+      add_ons: (hasAddOns ? addOns.filter(a => a.name.trim()) : []) as any,
     };
 
     setBusy(true);
     const { error } = existing
       ? await supabase.from("menu_items").update(payload).eq("id", existing.id)
-      : await supabase.from("menu_items").insert(payload);
+      : await supabase.from("menu_items").insert(payload as any);
     setBusy(false);
 
     if (error) {
