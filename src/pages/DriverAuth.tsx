@@ -121,12 +121,7 @@ const DriverAuth = () => {
           background: "linear-gradient(135deg, hsl(217 91% 25%), hsl(217 91% 40%))",
         }}
       >
-        <button
-          onClick={() => navigate("/")}
-          className="absolute left-4 top-4 flex h-9 w-9 items-center justify-center rounded-full bg-white/10 text-white backdrop-blur-sm hover:bg-white/20 transition-colors"
-        >
-          <ArrowLeft className="h-5 w-5" />
-        </button>
+
 
         <div className="flex flex-col items-center text-center">
           <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-white/15 backdrop-blur-sm shadow-lg">
@@ -165,7 +160,7 @@ const DriverAuth = () => {
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:underline"
                 >
-                  Contact the Admin on WhatsApp: 0686768409
+                  Contact the Admin on WhatsApp
                 </a>
               </div>
             </>
@@ -448,7 +443,7 @@ const DriverAuth = () => {
               rel="noopener noreferrer"
               className="inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:underline"
             >
-              Contact the Admin on WhatsApp: 0686768409
+              Contact the Admin on WhatsApp
             </a>
           </div>
           </>
