@@ -264,16 +264,54 @@ export const AddressMapPicker = ({ onConfirm, initialAddress, initialCoords }: A
           </div>
         )}
 
-        <Button
-          type="button"
-          onClick={() => onConfirm({ address, lat: position[0], lng: position[1] })}
-          disabled={!address || loadingAddress || !service.in_range}
-          className={cn("h-12 w-full rounded-full text-sm font-bold")}
-        >
-          {!service.in_range && address && !loadingAddress
-            ? "Outside delivery range"
-            : "Use this address"}
-        </Button>
+        {!confirming ? (
+          <Button
+            type="button"
+            onClick={() => setConfirming(true)}
+            disabled={!address || loadingAddress || !service.in_range}
+            className={cn("h-12 w-full rounded-full text-sm font-bold")}
+          >
+            {!service.in_range && address && !loadingAddress
+              ? "Outside delivery range"
+              : "Use this address"}
+          </Button>
+        ) : (
+          <div className="space-y-2 rounded-2xl border-2 border-primary/40 bg-primary/5 p-3 animate-in fade-in slide-in-from-bottom-1">
+            <div className="flex items-start gap-2">
+              <Check className="mt-0.5 h-4 w-4 flex-shrink-0 text-primary" />
+              <div className="flex-1 min-w-0">
+                <p className="text-[11px] font-bold uppercase tracking-wider text-primary">
+                  Confirm this address?
+                </p>
+                <p className="mt-0.5 text-sm font-medium text-foreground break-words">
+                  {address}
+                </p>
+                <p className="mt-1 text-[11px] text-muted-foreground">
+                  We'll save this exact spot and your GPS pin for delivery.
+                </p>
+              </div>
+            </div>
+            <div className="flex gap-2 pt-1">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setConfirming(false)}
+                className="h-11 flex-1 rounded-full text-sm font-bold"
+              >
+                <Pencil className="h-4 w-4" />
+                Adjust pin
+              </Button>
+              <Button
+                type="button"
+                onClick={() => onConfirm({ address, lat: position[0], lng: position[1] })}
+                className="h-11 flex-1 rounded-full text-sm font-bold"
+              >
+                <Check className="h-4 w-4" />
+                Confirm
+              </Button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
