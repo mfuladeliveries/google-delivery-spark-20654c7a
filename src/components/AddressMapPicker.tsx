@@ -232,9 +232,29 @@ export const AddressMapPicker = ({ onConfirm, initialAddress }: AddressMapPicker
         </button>
       </div>
 
-      <p className="px-4 pt-2 text-[11px] text-muted-foreground">
-        Tap the map or drag the pin to your exact spot.
-      </p>
+      <div className="flex items-center justify-between gap-3 px-4 pt-2">
+        <p className="text-[11px] text-muted-foreground">
+          Tap the map or drag the pin to your exact spot.
+        </p>
+        <div className="flex items-center gap-2 text-[10px] font-semibold">
+          <span className="inline-flex items-center gap-1 text-foreground">
+            <span
+              className="h-2.5 w-2.5 rounded-full"
+              style={{ background: ZONE_STYLES[1].color, opacity: 0.6 }}
+              aria-hidden
+            />
+            R65
+          </span>
+          <span className="inline-flex items-center gap-1 text-foreground">
+            <span
+              className="h-2.5 w-2.5 rounded-full"
+              style={{ background: ZONE_STYLES[2].color, opacity: 0.6 }}
+              aria-hidden
+            />
+            R75
+          </span>
+        </div>
+      </div>
 
       {/* Selected address */}
       <div className="mt-3 space-y-2 px-4 pb-4">
