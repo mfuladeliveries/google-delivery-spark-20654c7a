@@ -389,10 +389,7 @@ const RestaurantMenu = () => {
         tax={cart.tax}
         delivery={cart.delivery}
         total={cart.total}
-        onAdd={(itemId) => {
-          const item = menuItems.find(i => i.id === itemId);
-          if (item) handleAddItem(item);
-        }}
+        onAdd={(lineKey) => cart.incrementLine(lineKey)}
         onRemove={cart.removeItem}
         onClear={cart.clearCart}
         onCheckout={handleCheckout}
@@ -406,6 +403,14 @@ const RestaurantMenu = () => {
         delivery={cart.delivery}
         initialFoodNote={foodNote}
         onOrderPlaced={cart.clearCart}
+      />
+      <ProductCustomizeModal
+        open={!!customizeItem}
+        item={customizeItem ? toMenuItem(customizeItem) : null}
+        onClose={() => setCustomizeItem(null)}
+        onAdd={(menuItem, qty, size, addOns) => {
+          for (let i = 0; i < qty; i++) cart.addItemWithOptions(menuItem, size, addOns);
+        }}
       />
       <BottomNav />
     </div>

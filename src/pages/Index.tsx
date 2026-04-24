@@ -233,10 +233,7 @@ const Index = () => {
         tax={cart.tax}
         delivery={cart.delivery}
         total={cart.total}
-        onAdd={(id) => {
-          const item = menuItems.find((i) => i.id === id);
-          if (item) cart.addItem(item);
-        }}
+        onAdd={(lineKey) => cart.incrementLine(lineKey)}
         onRemove={cart.removeItem}
         onClear={cart.clearCart}
         onCheckout={handleCheckout} />
