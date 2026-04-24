@@ -277,8 +277,16 @@ const RestaurantMenu = () => {
           <div className="space-y-3">
             {filtered.map(item => {
               const qty = getItemQty(item.id);
+              const hasOptions = itemHasOptions(item);
+              const fromPrice = item.has_sizes && (item.sizes?.length ?? 0) > 0
+                ? Math.min(...item.sizes!.map(s => Number(s.price)))
+                : Number(item.price);
               return (
-                <div key={item.id} className="flex gap-3 rounded-2xl border border-border bg-card p-3 shadow-card">
+                <div
+                  key={item.id}
+                  onClick={() => handleAddItem(item)}
+                  className="flex cursor-pointer gap-3 rounded-2xl border border-border bg-card p-3 shadow-card transition-colors hover:border-primary/40"
+                >
                   <div className="h-20 w-20 flex-shrink-0 overflow-hidden rounded-xl bg-muted">
                     {item.image ? (
                       <img
@@ -295,31 +303,53 @@ const RestaurantMenu = () => {
                   </div>
                   <div className="flex flex-1 flex-col justify-between min-w-0">
                     <div>
-                      <h4 className="font-semibold text-sm text-foreground truncate">{item.name}</h4>
+                      <div className="flex items-center gap-1.5">
+                        <h4 className="font-semibold text-sm text-foreground truncate">{item.name}</h4>
+                        {hasOptions && (
+                          <span className="shrink-0 rounded-full bg-primary/10 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-primary">
+                            Options
+                          </span>
+                        )}
+                      </div>
                       {item.description && (
                         <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{item.description}</p>
                       )}
                     </div>
                     <div className="flex items-center justify-between mt-2">
-                      <span className="font-bold text-sm text-primary">R{item.price}</span>
+                      <span className="font-bold text-sm text-primary">
+                        {item.has_sizes ? "From " : ""}R{fromPrice}
+                      </span>
                       {qty === 0 ? (
                         <button
-                          onClick={() => handleAddItem(item)}
+                          onClick={(e) => { e.stopPropagation(); handleAddItem(item); }}
                           className="flex items-center gap-1 rounded-xl bg-primary px-3 py-1.5 text-xs font-bold text-primary-foreground transition-transform hover:scale-105 active:scale-95"
                         >
-                          <Plus className="h-3.5 w-3.5" /> Add
+                          {hasOptions ? (
+                            <>Customize <ChevronRight className="h-3.5 w-3.5" /></>
+                          ) : (
+                            <><Plus className="h-3.5 w-3.5" /> Add</>
+                          )}
                         </button>
                       ) : (
-                        <div className="flex items-center gap-2">
-                          <button
-                            onClick={() => cart.removeItem(item.id)}
-                            className="flex h-7 w-7 items-center justify-center rounded-full border border-border bg-secondary text-foreground"
-                          >
-                            <Minus className="h-3.5 w-3.5" />
-                          </button>
-                          <span className="w-5 text-center text-sm font-bold text-foreground">{qty}</span>
+                        <div
+                          className="flex items-center gap-2"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          {!hasOptions && (
+                            <button
+                              onClick={() => cart.removeItem(item.id)}
+                              aria-label="Remove one"
+                              className="flex h-7 w-7 items-center justify-center rounded-full border border-border bg-secondary text-foreground"
+                            >
+                              <Minus className="h-3.5 w-3.5" />
+                            </button>
+                          )}
+                          <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-bold text-primary">
+                            {qty} in cart
+                          </span>
                           <button
                             onClick={() => handleAddItem(item)}
+                            aria-label={hasOptions ? "Add another with options" : "Add one"}
                             className="flex h-7 w-7 items-center justify-center rounded-full bg-primary text-primary-foreground"
                           >
                             <Plus className="h-3.5 w-3.5" />
