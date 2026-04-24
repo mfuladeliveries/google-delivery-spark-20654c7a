@@ -152,6 +152,28 @@ export const AddressMapPicker = ({ onConfirm, initialAddress }: AddressMapPicker
 
   const detectedZone = useMemo(() => detectZone(address), [address]);
 
+  // Geographically determine which circle the pin is currently inside.
+  // Picks the area whose centre is closest to the pin AND within its radius.
+  const activeArea = useMemo(() => {
+    const [lat, lng] = position;
+    const toRad = (d: number) => (d * Math.PI) / 180;
+    const distM = (a: [number, number], b: [number, number]) => {
+      const R = 6371000;
+      const dLat = toRad(b[0] - a[0]);
+      const dLng = toRad(b[1] - a[1]);
+      const s =
+        Math.sin(dLat / 2) ** 2 +
+        Math.cos(toRad(a[0])) * Math.cos(toRad(b[0])) * Math.sin(dLng / 2) ** 2;
+      return 2 * R * Math.asin(Math.sqrt(s));
+    };
+    let best: { area: (typeof ZONE_AREAS)[number]; d: number } | null = null;
+    for (const a of ZONE_AREAS) {
+      const d = distM([lat, lng], a.center);
+      if (d <= a.radius && (!best || d < best.d)) best = { area: a, d };
+    }
+    return best?.area ?? null;
+  }, [position]);
+
   return (
     <div className="flex h-full flex-col">
       {/* Search bar */}
@@ -184,6 +206,7 @@ export const AddressMapPicker = ({ onConfirm, initialAddress }: AddressMapPicker
           />
           {ZONE_AREAS.map((z) => {
             const style = ZONE_STYLES[z.zoneId];
+            const isActive = activeArea?.name === z.name;
             return (
               <Circle
                 key={z.name}
@@ -191,9 +214,10 @@ export const AddressMapPicker = ({ onConfirm, initialAddress }: AddressMapPicker
                 radius={z.radius}
                 pathOptions={{
                   color: style.color,
-                  weight: 2,
+                  weight: isActive ? 4 : 2,
                   fillColor: style.color,
-                  fillOpacity: 0.18,
+                  fillOpacity: isActive ? 0.35 : 0.15,
+                  dashArray: isActive ? undefined : "4 4",
                 }}
               >
                 <Popup>
@@ -219,6 +243,27 @@ export const AddressMapPicker = ({ onConfirm, initialAddress }: AddressMapPicker
           <ClickHandler onPick={(lat, lng) => setPosition([lat, lng])} />
           <RecenterMap position={position} />
         </MapContainer>
+
+        {/* Live zone badge */}
+        <div className="pointer-events-none absolute left-3 top-3 z-[1000] max-w-[60%]">
+          {activeArea ? (
+            <div
+              key={activeArea.name}
+              className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-extrabold text-white shadow-lg ring-2 ring-white/70 animate-in fade-in slide-in-from-top-1"
+              style={{ background: ZONE_STYLES[activeArea.zoneId].color }}
+            >
+              <span aria-hidden>📍</span>
+              <span className="truncate">
+                You're in: {activeArea.name} · R{activeArea.zoneId === 1 ? 65 : 75}
+              </span>
+            </div>
+          ) : (
+            <div className="inline-flex items-center gap-1.5 rounded-full bg-card/95 px-3 py-1.5 text-[11px] font-bold text-destructive shadow-lg ring-1 ring-destructive/40 backdrop-blur">
+              <span aria-hidden>⚠️</span>
+              Outside delivery zones
+            </div>
+          )}
+        </div>
 
         {/* Use my location FAB */}
         <button
