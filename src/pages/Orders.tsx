@@ -376,11 +376,33 @@ const Orders = () => {
                       </div>
                     )}
 
-                    {/* Live GPS Map — only on this Orders page when out_for_delivery (final leg) */}
-                    {isActive && order.status === "out_for_delivery" && (
+                    {/* Driver info card — visible whenever a driver is assigned */}
+                    {driverAssigned && order.driver_id && (
+                      <DriverInfoCard driverId={order.driver_id} />
+                    )}
+
+                    {/* Live GPS Map — active from "Heading to Restaurant" through "On the Way" */}
+                    {showLiveMap && (
                       <div className="mb-3">
                         <p className="text-xs font-medium text-muted-foreground mb-1.5">📍 Live Tracking</p>
                         <OrderTrackingMap orderId={order.id} customerAddress={order.customer_address} />
+                      </div>
+                    )}
+
+                    {/* Rating CTA after delivered */}
+                    {canRate && (
+                      <button
+                        onClick={() => setRatingOrder(order)}
+                        className="mb-3 flex w-full items-center justify-center gap-2 rounded-xl border-2 border-dashed border-primary/40 bg-primary/5 px-4 py-3 text-sm font-bold text-primary transition-all hover:bg-primary/10 hover:border-primary"
+                      >
+                        <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
+                        Rate this order
+                      </button>
+                    )}
+                    {isDelivered && ratedOrders.has(order.id) && (
+                      <div className="mb-3 flex items-center justify-center gap-1.5 rounded-xl bg-secondary px-3 py-2 text-xs text-muted-foreground">
+                        <CheckCircle className="h-3.5 w-3.5 text-green-600" />
+                        <span className="font-semibold">Thanks for rating this order</span>
                       </div>
                     )}
 
