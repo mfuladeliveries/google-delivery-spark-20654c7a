@@ -334,6 +334,45 @@ export type Database = {
         }
         Relationships: []
       }
+      order_ratings: {
+        Row: {
+          comment: string | null
+          created_at: string
+          customer_id: string
+          driver_id: string | null
+          driver_rating: number | null
+          food_rating: number
+          id: string
+          order_id: string
+          restaurant_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          comment?: string | null
+          created_at?: string
+          customer_id: string
+          driver_id?: string | null
+          driver_rating?: number | null
+          food_rating: number
+          id?: string
+          order_id: string
+          restaurant_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          comment?: string | null
+          created_at?: string
+          customer_id?: string
+          driver_id?: string | null
+          driver_rating?: number | null
+          food_rating?: number
+          id?: string
+          order_id?: string
+          restaurant_id?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       orders: {
         Row: {
           accepted_at: string | null
