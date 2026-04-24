@@ -1,12 +1,15 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import { MapPin, AlertTriangle, Truck, ChevronRight } from "lucide-react";
 import { useDeliveryZone } from "@/hooks/useDeliveryZone";
 import { useAuth } from "@/hooks/useAuth";
-import { DELIVERY_ZONES, ALL_DELIVERY_AREAS } from "@/lib/zones";
+import { ALL_DELIVERY_AREAS } from "@/lib/zones";
+import { UpdateAddressSheet } from "@/components/UpdateAddressSheet";
 
 const DeliveryZoneBanner = () => {
   const { user } = useAuth();
-  const { loading, address, zone, outsideZone, needsAddress } = useDeliveryZone();
+  const { loading, address, zone, outsideZone, needsAddress, refresh } = useDeliveryZone();
+  const [sheetOpen, setSheetOpen] = useState(false);
 
   // Logged-out: show a generic banner with both zones (no pricing)
   if (!user) {
@@ -57,28 +60,30 @@ const DeliveryZoneBanner = () => {
   // Address outside both zones — block ordering
   if (outsideZone) {
     return (
-      <div className="mb-4 rounded-2xl border-2 border-destructive/40 bg-destructive/5 p-4 shadow-card">
-        <div className="flex items-start gap-3">
-          <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-destructive text-destructive-foreground">
-            <AlertTriangle className="h-5 w-5" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-bold text-foreground">Outside our delivery area</p>
-            <p className="mt-0.5 text-xs text-muted-foreground line-clamp-2">
-              {address}
-            </p>
-            <p className="mt-1.5 text-xs text-foreground">
-              We currently deliver to: <span className="font-semibold">{ALL_DELIVERY_AREAS}</span>.
-            </p>
-            <Link
-              to="/profile"
-              className="mt-2 inline-flex items-center gap-1 text-xs font-bold text-primary hover:underline"
-            >
-              Update address <ChevronRight className="h-3.5 w-3.5" />
-            </Link>
+      <>
+        <div className="mb-4 rounded-2xl border-2 border-destructive/40 bg-destructive/5 p-4 shadow-card">
+          <div className="flex items-start gap-3">
+            <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-destructive text-destructive-foreground">
+              <AlertTriangle className="h-5 w-5" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-bold text-foreground">Outside our delivery area</p>
+              <p className="mt-0.5 text-xs text-muted-foreground line-clamp-2">{address}</p>
+              <p className="mt-1.5 text-xs text-foreground">
+                We currently deliver to: <span className="font-semibold">{ALL_DELIVERY_AREAS}</span>.
+              </p>
+              <button
+                type="button"
+                onClick={() => setSheetOpen(true)}
+                className="mt-2 inline-flex items-center gap-1 text-xs font-bold text-primary hover:underline"
+              >
+                Update address <ChevronRight className="h-3.5 w-3.5" />
+              </button>
+            </div>
           </div>
         </div>
-      </div>
+        <UpdateAddressSheet open={sheetOpen} onOpenChange={setSheetOpen} onSaved={refresh} />
+      </>
     );
   }
 
