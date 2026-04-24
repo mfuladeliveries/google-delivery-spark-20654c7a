@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Search, Star, Clock, ChevronRight, Flame, Utensils, Pizza, Coffee, Fish, ShoppingBasket, Beer } from "lucide-react";
+import { Search, ChevronRight, Flame, Utensils, Pizza, Fish, ShoppingBasket, Trophy, UtensilsCrossed } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -8,28 +8,14 @@ import BottomNav from "@/components/BottomNav";
 import Cart from "@/components/Cart";
 import CheckoutDialog from "@/components/CheckoutDialog";
 import DeliveryZoneBanner from "@/components/DeliveryZoneBanner";
+import RestaurantCard, { RestaurantCardSkeleton, type RestaurantCardData } from "@/components/RestaurantCard";
 import { useCart } from "@/hooks/useCart";
 import { useAuth } from "@/hooks/useAuth";
 import { useDeliveryZone } from "@/hooks/useDeliveryZone";
-import { menuItems, storeInfo } from "@/data/menu";
-import { toast } from "sonner";
+import { menuItems } from "@/data/menu";
 import mfulaLogo from "@/assets/mfula-logo.png";
 
-
-
-interface Restaurant {
-  id: string;
-  name: string;
-  description: string;
-  logo: string;
-  logo_url: string | null;
-  banner_url: string | null;
-  gallery_images: string[];
-  location: string;
-  cuisine: string;
-  rating: number;
-  delivery_time: string;
-  min_order: number;
+interface Restaurant extends RestaurantCardData {
   is_active: boolean;
 }
 
