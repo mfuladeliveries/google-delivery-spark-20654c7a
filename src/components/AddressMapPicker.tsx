@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { MapContainer, Marker, TileLayer, useMap, useMapEvents } from "react-leaflet";
+import { Circle, MapContainer, Marker, Popup, TileLayer, useMap, useMapEvents } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { AlertTriangle, Crosshair, Loader2, MapPin, Search } from "lucide-react";
@@ -21,6 +21,32 @@ const markerIcon = L.icon({
 
 // Default centre = Mfuleni, Cape Town
 const DEFAULT_CENTER: [number, number] = [-34.0233, 18.6781];
+
+// Approximate delivery-zone footprints (suburb centroids + radius in meters).
+// These are used to draw a visible boundary overlay so customers can see where
+// they're allowed to drop the pin. Final zone match still uses detectZone().
+const ZONE_AREAS: Array<{
+  zoneId: 1 | 2;
+  name: string;
+  center: [number, number];
+  radius: number;
+}> = [
+  // Zone 1 — R65
+  { zoneId: 1, name: "Mfuleni", center: [-34.0233, 18.6781], radius: 1800 },
+  { zoneId: 1, name: "Bluedowns", center: [-34.0058, 18.6622], radius: 1500 },
+  { zoneId: 1, name: "Bardale Village", center: [-34.0285, 18.6605], radius: 1200 },
+  { zoneId: 1, name: "Bosasa", center: [-34.0156, 18.6712], radius: 900 },
+  { zoneId: 1, name: "Belladonna", center: [-34.0192, 18.6892], radius: 900 },
+  // Zone 2 — R75
+  { zoneId: 2, name: "Eerste River", center: [-34.0233, 18.7244], radius: 2000 },
+  { zoneId: 2, name: "Summerville", center: [-34.0148, 18.7058], radius: 1100 },
+  { zoneId: 2, name: "Blackheath", center: [-33.9933, 18.6917], radius: 1700 },
+];
+
+const ZONE_STYLES: Record<1 | 2, { color: string; fill: string }> = {
+  1: { color: "hsl(24 95% 53%)", fill: "hsl(24 95% 53% / 0.15)" }, // primary orange
+  2: { color: "hsl(217 91% 60%)", fill: "hsl(217 91% 60% / 0.15)" }, // blue
+};
 
 interface AddressMapPickerProps {
   /** Called when the user confirms a picked location. */
@@ -156,6 +182,28 @@ export const AddressMapPicker = ({ onConfirm, initialAddress }: AddressMapPicker
             attribution='&copy; <a href="https://osm.org/copyright">OpenStreetMap</a>'
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           />
+          {ZONE_AREAS.map((z) => {
+            const style = ZONE_STYLES[z.zoneId];
+            return (
+              <Circle
+                key={z.name}
+                center={z.center}
+                radius={z.radius}
+                pathOptions={{
+                  color: style.color,
+                  weight: 2,
+                  fillColor: style.color,
+                  fillOpacity: 0.18,
+                }}
+              >
+                <Popup>
+                  <strong>{z.name}</strong>
+                  <br />
+                  Zone {z.zoneId} · R{z.zoneId === 1 ? 65 : 75} delivery
+                </Popup>
+              </Circle>
+            );
+          })}
           <Marker
             position={position}
             icon={markerIcon}
@@ -184,9 +232,29 @@ export const AddressMapPicker = ({ onConfirm, initialAddress }: AddressMapPicker
         </button>
       </div>
 
-      <p className="px-4 pt-2 text-[11px] text-muted-foreground">
-        Tap the map or drag the pin to your exact spot.
-      </p>
+      <div className="flex items-center justify-between gap-3 px-4 pt-2">
+        <p className="text-[11px] text-muted-foreground">
+          Tap the map or drag the pin to your exact spot.
+        </p>
+        <div className="flex items-center gap-2 text-[10px] font-semibold">
+          <span className="inline-flex items-center gap-1 text-foreground">
+            <span
+              className="h-2.5 w-2.5 rounded-full"
+              style={{ background: ZONE_STYLES[1].color, opacity: 0.6 }}
+              aria-hidden
+            />
+            R65
+          </span>
+          <span className="inline-flex items-center gap-1 text-foreground">
+            <span
+              className="h-2.5 w-2.5 rounded-full"
+              style={{ background: ZONE_STYLES[2].color, opacity: 0.6 }}
+              aria-hidden
+            />
+            R75
+          </span>
+        </div>
+      </div>
 
       {/* Selected address */}
       <div className="mt-3 space-y-2 px-4 pb-4">
