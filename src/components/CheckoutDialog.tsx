@@ -392,24 +392,9 @@ const CheckoutDialog = ({
                       const lng = pos.coords.longitude;
                       setCoords({ lat, lng });
                       try {
-                        const res = await fetch(
-                          `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&addressdetails=1&zoom=18`,
-                        );
+                        const res = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`);
                         const data = await res.json();
-                        const a = data?.address ?? {};
-                        // Build a precise street-level address that includes the house number when available.
-                        const streetLine = [a.house_number, a.road].filter(Boolean).join(" ");
-                        const parts = [
-                          streetLine,
-                          a.suburb || a.neighbourhood || a.village,
-                          a.city || a.town || a.municipality,
-                        ].filter(Boolean);
-                        const composed = parts.join(", ");
-                        if (composed) {
-                          setAddress(composed);
-                        } else if (data?.display_name) {
-                          setAddress(data.display_name);
-                        }
+                        if (data.display_name) setAddress(data.display_name);
                       } catch { /* ignore */ }
                       setLocating(false);
                     },

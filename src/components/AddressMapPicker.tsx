@@ -85,16 +85,7 @@ export const AddressMapPicker = ({ onConfirm, initialAddress, initialCoords }: A
     )
       .then((r) => r.json())
       .then((data) => {
-        const a = data?.address ?? {};
-        const streetLine = [a.house_number, a.road].filter(Boolean).join(" ");
-        const parts = [
-          streetLine,
-          a.suburb || a.neighbourhood || a.village,
-          a.city || a.town || a.municipality,
-        ].filter(Boolean);
-        const composed = parts.join(", ");
-        if (composed) setAddress(composed);
-        else if (data?.display_name) setAddress(data.display_name);
+        if (data?.display_name) setAddress(data.display_name);
       })
       .catch(() => {})
       .finally(() => setLoadingAddress(false));
