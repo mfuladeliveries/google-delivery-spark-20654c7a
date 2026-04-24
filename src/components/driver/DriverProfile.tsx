@@ -48,6 +48,9 @@ const DriverProfileTab = () => {
       clearTimeout(testTimerRef.current);
       testTimerRef.current = null;
     }
+    if (typeof navigator !== "undefined" && "vibrate" in navigator) {
+      try { navigator.vibrate(0); } catch { /* noop */ }
+    }
     setTestingSound(false);
   };
 
@@ -62,8 +65,16 @@ const DriverProfileTab = () => {
       audio.volume = 1;
       testAudioRef.current = audio;
       await audio.play();
+
+      // Vibration pattern: buzz 600ms, pause 300ms — repeated for ~10s
+      if (typeof navigator !== "undefined" && "vibrate" in navigator) {
+        const pattern: number[] = [];
+        for (let i = 0; i < 11; i++) pattern.push(600, 300);
+        try { navigator.vibrate(pattern); } catch { /* not supported */ }
+      }
+
       setTestingSound(true);
-      toast.success("Playing test sound for 10 seconds...");
+      toast.success("Playing test sound + vibration for 10 seconds...");
       testTimerRef.current = setTimeout(() => {
         stopTestSound();
       }, 10000);

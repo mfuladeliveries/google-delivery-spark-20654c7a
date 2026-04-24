@@ -30,7 +30,7 @@ const NewOrderModal = ({ open, offer, distanceKm, accepting, rejecting, onAccept
   const [secondsLeft, setSecondsLeft] = useState<number | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
-  // Play custom alert sound on open, loop for ~10 seconds, then stop
+  // Play custom alert sound + vibrate on open, loop for ~10 seconds, then stop
   useEffect(() => {
     if (!open || !offer) return;
 
@@ -41,9 +41,20 @@ const NewOrderModal = ({ open, offer, distanceKm, accepting, rejecting, onAccept
 
     audio.play().catch(() => { /* autoplay blocked — silent fallback */ });
 
+    // Vibration pattern: buzz 600ms, pause 300ms — repeated for ~10s
+    // navigator.vibrate accepts an array of on/off durations in ms
+    if (typeof navigator !== "undefined" && "vibrate" in navigator) {
+      const pattern: number[] = [];
+      for (let i = 0; i < 11; i++) pattern.push(600, 300);
+      try { navigator.vibrate(pattern); } catch { /* not supported */ }
+    }
+
     const stopTimer = setTimeout(() => {
       audio.pause();
       audio.currentTime = 0;
+      if (typeof navigator !== "undefined" && "vibrate" in navigator) {
+        try { navigator.vibrate(0); } catch { /* noop */ }
+      }
     }, 10000);
 
     return () => {
@@ -51,6 +62,9 @@ const NewOrderModal = ({ open, offer, distanceKm, accepting, rejecting, onAccept
       audio.pause();
       audio.currentTime = 0;
       audioRef.current = null;
+      if (typeof navigator !== "undefined" && "vibrate" in navigator) {
+        try { navigator.vibrate(0); } catch { /* noop */ }
+      }
     };
   }, [open, offer?.id]);
 
