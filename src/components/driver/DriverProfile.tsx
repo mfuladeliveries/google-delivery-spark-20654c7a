@@ -1,7 +1,7 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { Camera, Upload, Save, Car, FileText, CreditCard, LogOut, User, Volume2, Square } from "lucide-react";
+import { Camera, Upload, Save, Car, FileText, CreditCard, LogOut, User } from "lucide-react";
 import { toast } from "sonner";
 
 interface ProfileData {
@@ -23,66 +23,6 @@ const DriverProfileTab = () => {
   const [driverData, setDriverData] = useState<DriverProfileData>({ vehicle_type: "", license_plate: "", license_url: "", id_document_url: "" });
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState<string | null>(null);
-  const [testingSound, setTestingSound] = useState(false);
-  const testAudioRef = useRef<HTMLAudioElement | null>(null);
-  const testTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  // Cleanup audio on unmount
-  useEffect(() => {
-    return () => {
-      if (testAudioRef.current) {
-        testAudioRef.current.pause();
-        testAudioRef.current = null;
-      }
-      if (testTimerRef.current) clearTimeout(testTimerRef.current);
-    };
-  }, []);
-
-  const stopTestSound = () => {
-    if (testAudioRef.current) {
-      testAudioRef.current.pause();
-      testAudioRef.current.currentTime = 0;
-      testAudioRef.current = null;
-    }
-    if (testTimerRef.current) {
-      clearTimeout(testTimerRef.current);
-      testTimerRef.current = null;
-    }
-    if (typeof navigator !== "undefined" && "vibrate" in navigator) {
-      try { navigator.vibrate(0); } catch { /* noop */ }
-    }
-    setTestingSound(false);
-  };
-
-  const handleTestSound = async () => {
-    if (testingSound) {
-      stopTestSound();
-      return;
-    }
-    try {
-      const audio = new Audio("/sounds/new-order.mp3");
-      audio.loop = true;
-      audio.volume = 1;
-      testAudioRef.current = audio;
-      await audio.play();
-
-      // Vibration pattern: buzz 600ms, pause 300ms — repeated for ~10s
-      if (typeof navigator !== "undefined" && "vibrate" in navigator) {
-        const pattern: number[] = [];
-        for (let i = 0; i < 11; i++) pattern.push(600, 300);
-        try { navigator.vibrate(pattern); } catch { /* not supported */ }
-      }
-
-      setTestingSound(true);
-      toast.success("Playing test sound + vibration for 10 seconds...");
-      testTimerRef.current = setTimeout(() => {
-        stopTestSound();
-      }, 10000);
-    } catch (err) {
-      toast.error("Could not play sound. Tap the screen first, then retry.");
-      stopTestSound();
-    }
-  };
 
   useEffect(() => {
     if (!user) return;
@@ -271,34 +211,6 @@ const DriverProfileTab = () => {
         </div>
       </div>
 
-      {/* Notification Sound */}
-      <div className="rounded-2xl border border-border bg-card p-4 shadow-card space-y-3">
-        <h3 className="font-bold text-foreground flex items-center gap-2">
-          <Volume2 className="h-4 w-4 text-primary" /> Notification Sound
-        </h3>
-        <p className="text-xs text-muted-foreground">
-          Test the alert sound that plays when a new order arrives. It will play for 10 seconds.
-        </p>
-        <button
-          type="button"
-          onClick={handleTestSound}
-          className={`w-full rounded-xl py-3 text-sm font-bold transition-all active:scale-[0.99] flex items-center justify-center gap-2 ${
-            testingSound
-              ? "bg-destructive/10 text-destructive border-2 border-destructive/30"
-              : "bg-primary/10 text-primary border-2 border-primary/30 hover:bg-primary/15"
-          }`}
-        >
-          {testingSound ? (
-            <>
-              <Square className="h-4 w-4 fill-current" /> Stop Test Sound
-            </>
-          ) : (
-            <>
-              <Volume2 className="h-4 w-4" /> Test Notification Sound
-            </>
-          )}
-        </button>
-      </div>
 
       {/* Save button */}
       <button
