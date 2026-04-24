@@ -276,9 +276,7 @@ export const UpdateAddressSheet = ({ open, onOpenChange, onSaved }: UpdateAddres
               >
                 {saving ? "Saving..." : "Save Address"}
               </Button>
-            </div>
-          </>
-        )}
+        </div>
       </DrawerContent>
     </Drawer>
   );
