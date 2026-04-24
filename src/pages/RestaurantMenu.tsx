@@ -83,10 +83,23 @@ const RestaurantMenu = () => {
         .eq("is_available", true);
 
       if (dbItems && dbItems.length > 0) {
-        setMenuItems(dbItems as DbMenuItem[]);
+        const normalized: DbMenuItem[] = dbItems.map((row: any) => ({
+          id: row.id,
+          name: row.name,
+          description: row.description ?? "",
+          price: Number(row.price ?? 0),
+          image: row.image_url || row.image || "",
+          category: row.category ?? "",
+          is_available: !!row.is_available,
+          has_sizes: !!row.has_sizes,
+          sizes: Array.isArray(row.sizes) ? (row.sizes as SizeOption[]) : [],
+          has_add_ons: !!row.has_add_ons,
+          add_ons: Array.isArray(row.add_ons) ? (row.add_ons as AddOnOption[]) : [],
+        }));
+        setMenuItems(normalized);
       } else {
         // Use static data filtered by restaurant name
-        const staticItems = staticMenuItems
+        const staticItems: DbMenuItem[] = staticMenuItems
           .filter(i => i.available && i.price > 0 && i.category === rest.name)
           .map(i => ({
             id: i.id,
