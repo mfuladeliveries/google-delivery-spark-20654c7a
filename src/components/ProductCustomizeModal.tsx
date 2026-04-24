@@ -12,7 +12,8 @@ interface ProductCustomizeModalProps {
     qty: number,
     cut?: CutOption,
     size?: SizeOption,
-    addOns?: AddOnOption[]
+    addOns?: AddOnOption[],
+    pieces?: number
   ) => void;
 }
 
