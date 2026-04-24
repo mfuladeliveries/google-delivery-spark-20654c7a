@@ -2,10 +2,13 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate, Link } from "react-router-dom";
-import { ArrowLeft, Clock, Package, CheckCircle, Truck, ChefHat, AlertCircle, ShieldCheck, UserCheck, Store, Bike, Wallet, Banknote, BellRing, Bell } from "lucide-react";
+import { ArrowLeft, Clock, Package, CheckCircle, Truck, ChefHat, AlertCircle, ShieldCheck, UserCheck, Store, Bike, Wallet, Banknote, BellRing, Bell, Star } from "lucide-react";
 import { storeInfo } from "@/data/menu";
 import BottomNav from "@/components/BottomNav";
 import OrderTrackingMap from "@/components/OrderTrackingMap";
+import OrderTimeline from "@/components/OrderTimeline";
+import DriverInfoCard from "@/components/DriverInfoCard";
+import RatingDialog from "@/components/RatingDialog";
 import { toast } from "sonner";
 import { getHomeRouteForRoles } from "@/lib/homeRoute";
 import { useNotificationPrefs } from "@/hooks/useNotificationPrefs";
@@ -24,6 +27,7 @@ interface Order {
   order_number: number;
   items: OrderItem[];
   restaurant: string;
+  restaurant_id?: string | null;
   subtotal: number;
   tax: number;
   delivery_fee: number;
@@ -39,6 +43,12 @@ interface Order {
   refund_status?: "pending" | "credited" | "bank_pending" | "bank_paid" | null;
   refund_method?: "credits" | "bank" | null;
   refund_amount?: number | null;
+  driver_id?: string | null;
+  accepted_at?: string | null;
+  picking_up_at?: string | null;
+  arrived_at?: string | null;
+  picked_up_at?: string | null;
+  delivered_at?: string | null;
 }
 
 const statusSteps = [
@@ -62,10 +72,6 @@ const getStatusConfig = (status: string) => {
   return statusSteps.find(s => s.key === status) || statusSteps[0];
 };
 
-const getStepIndex = (status: string) => {
-  const idx = statusSteps.findIndex(s => s.key === status);
-  return idx >= 0 ? idx : 0;
-};
 
 const Orders = () => {
   const { user, roles, loading: authLoading } = useAuth();
@@ -75,6 +81,8 @@ const Orders = () => {
   const [loading, setLoading] = useState(true);
   const [deliveryPins, setDeliveryPins] = useState<Record<string, string>>({});
   const [notificationLog, setNotificationLog] = useState<Record<string, Set<string>>>({});
+  const [ratedOrders, setRatedOrders] = useState<Set<string>>(new Set());
+  const [ratingOrder, setRatingOrder] = useState<Order | null>(null);
   const { prefs, update: updatePrefs } = useNotificationPrefs();
 
   useEffect(() => {
@@ -127,8 +135,17 @@ const Orders = () => {
       }
       setLoading(false);
     };
+    const fetchRatings = async () => {
+      const { data } = await supabase
+        .from("order_ratings")
+        .select("order_id")
+        .eq("customer_id", user.id);
+      if (data) setRatedOrders(new Set(data.map((r: any) => r.order_id)));
+    };
+
     fetchOrders();
     fetchNotificationLog();
+    fetchRatings();
 
     const channel = supabase
       .channel('customer-orders')
@@ -251,11 +268,12 @@ const Orders = () => {
             {orders.map((order) => {
               const sc = getStatusConfig(order.status);
               const StatusIcon = sc.icon;
-              const currentStep = getStepIndex(order.status);
-              // Once driver accepts, collapse tracking — banner takes over on home screen
-              const driverAccepted = ["driver_assigned", "picking_up", "arrived_at_restaurant", "out_for_delivery"].includes(order.status);
-              const isActive = order.status === "out_for_delivery" || order.status === "driver_assigned";
+              // Live map activates from "Heading to Restaurant" onwards
+              const showLiveMap = ["picking_up", "arrived_at_restaurant", "out_for_delivery"].includes(order.status);
+              const driverAssigned = ["driver_assigned", "picking_up", "arrived_at_restaurant", "out_for_delivery"].includes(order.status);
+              const isDelivered = order.status === "delivered";
               const isCancelled = order.status === "cancelled" || order.status === "rejected";
+              const canRate = isDelivered && !ratedOrders.has(order.id);
 
               return (
                 <div key={order.id} className="rounded-2xl border border-border bg-card shadow-card overflow-hidden">
@@ -268,42 +286,20 @@ const Orders = () => {
                     </span>
                   </div>
 
-                  {/* 7-stage progress tracker — hidden once driver accepts (banner takes over) */}
-                  {!isCancelled && !driverAccepted && (
+                  {/* 8-stage timeline with timestamps */}
+                  {!isCancelled && (
                     <div className="px-4 pt-3">
-                      <div className="flex gap-0.5">
-                        {statusSteps.map((step, i) => (
-                          <div
-                            key={step.key}
-                            className={`h-1.5 flex-1 rounded-full transition-all duration-500 ${
-                              i <= currentStep ? "bg-primary" : "bg-muted"
-                            }`}
-                          />
-                        ))}
-                      </div>
-                      <div className="mt-2 flex justify-between">
-                        {statusSteps.map((step, i) => {
-                          const StepIcon = step.icon;
-                          const isCompleted = i <= currentStep;
-                          const isCurrent = i === currentStep;
-                          return (
-                            <div key={step.key} className="flex flex-col items-center" style={{ width: `${100 / statusSteps.length}%` }}>
-                              <div className={`flex h-6 w-6 items-center justify-center rounded-full transition-all ${
-                                isCurrent ? "bg-primary text-primary-foreground scale-110" :
-                                isCompleted ? "bg-primary/20 text-primary" : "bg-muted text-muted-foreground"
-                              }`}>
-                                <StepIcon className="h-3 w-3" />
-                              </div>
-                              <span className={`mt-0.5 text-[8px] text-center leading-tight ${
-                                isCurrent ? "font-bold text-primary" :
-                                isCompleted ? "text-foreground" : "text-muted-foreground"
-                              }`}>
-                                {step.label}
-                              </span>
-                            </div>
-                          );
-                        })}
-                      </div>
+                      <OrderTimeline
+                        status={order.status}
+                        timings={{
+                          created_at: order.created_at,
+                          accepted_at: order.accepted_at,
+                          picking_up_at: order.picking_up_at,
+                          arrived_at: order.arrived_at,
+                          picked_up_at: order.picked_up_at,
+                          delivered_at: order.delivered_at,
+                        }}
+                      />
                     </div>
                   )}
 
@@ -376,11 +372,33 @@ const Orders = () => {
                       </div>
                     )}
 
-                    {/* Live GPS Map — only on this Orders page when out_for_delivery (final leg) */}
-                    {isActive && order.status === "out_for_delivery" && (
+                    {/* Driver info card — visible whenever a driver is assigned */}
+                    {driverAssigned && order.driver_id && (
+                      <DriverInfoCard driverId={order.driver_id} />
+                    )}
+
+                    {/* Live GPS Map — active from "Heading to Restaurant" through "On the Way" */}
+                    {showLiveMap && (
                       <div className="mb-3">
                         <p className="text-xs font-medium text-muted-foreground mb-1.5">📍 Live Tracking</p>
                         <OrderTrackingMap orderId={order.id} customerAddress={order.customer_address} />
+                      </div>
+                    )}
+
+                    {/* Rating CTA after delivered */}
+                    {canRate && (
+                      <button
+                        onClick={() => setRatingOrder(order)}
+                        className="mb-3 flex w-full items-center justify-center gap-2 rounded-xl border-2 border-dashed border-primary/40 bg-primary/5 px-4 py-3 text-sm font-bold text-primary transition-all hover:bg-primary/10 hover:border-primary"
+                      >
+                        <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
+                        Rate this order
+                      </button>
+                    )}
+                    {isDelivered && ratedOrders.has(order.id) && (
+                      <div className="mb-3 flex items-center justify-center gap-1.5 rounded-xl bg-secondary px-3 py-2 text-xs text-muted-foreground">
+                        <CheckCircle className="h-3.5 w-3.5 text-green-600" />
+                        <span className="font-semibold">Thanks for rating this order</span>
                       </div>
                     )}
 
@@ -476,6 +494,24 @@ const Orders = () => {
         )}
       </main>
       <BottomNav />
+
+      {/* Rating dialog — shown after customer taps "Rate this order" */}
+      {ratingOrder && user && (
+        <RatingDialog
+          open={!!ratingOrder}
+          onOpenChange={(o) => !o && setRatingOrder(null)}
+          orderId={ratingOrder.id}
+          orderNumber={ratingOrder.order_number}
+          customerId={user.id}
+          driverId={ratingOrder.driver_id}
+          restaurantId={ratingOrder.restaurant_id}
+          restaurant={ratingOrder.restaurant}
+          onSubmitted={() => {
+            setRatedOrders((prev) => new Set(prev).add(ratingOrder.id));
+            setRatingOrder(null);
+          }}
+        />
+      )}
     </div>
   );
 };
