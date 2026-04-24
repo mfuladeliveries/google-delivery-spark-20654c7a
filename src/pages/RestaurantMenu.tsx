@@ -286,7 +286,7 @@ const RestaurantMenu = () => {
               const qty = getItemQty(item.id);
               const hasOptions = itemHasOptions(item);
               const fromPrice = item.has_cuts && (item.cuts?.length ?? 0) > 0
-                ? Math.min(...item.cuts!.map(c => Number(c.price)))
+                ? Math.min(...item.cuts!.map(c => Number(c.price) * Math.max(1, Number(c.min_pieces ?? 1))))
                 : item.has_sizes && (item.sizes?.length ?? 0) > 0
                 ? Math.min(...item.sizes!.map(s => Number(s.price)))
                 : Number(item.price);
