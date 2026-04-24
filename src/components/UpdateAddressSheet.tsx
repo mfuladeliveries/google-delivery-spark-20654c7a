@@ -1,11 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
-import { ArrowLeft, Briefcase, ChevronRight, Home, MapPin, Pencil, Search } from "lucide-react";
+import { Briefcase, Home, MapPin } from "lucide-react";
 import { toast } from "sonner";
 import {
   Drawer,
   DrawerContent,
-  DrawerDescription,
   DrawerHeader,
   DrawerTitle,
 } from "@/components/ui/drawer";
@@ -26,7 +24,6 @@ interface UpdateAddressSheetProps {
   onSaved?: () => void;
 }
 
-type View = "choice" | "manual";
 type LabelOption = "Home" | "Work" | "Other";
 
 const SUBURB_SUGGESTIONS = DELIVERY_ZONES.flatMap((z) => z.areas);
@@ -40,7 +37,6 @@ const LABEL_OPTIONS: { value: LabelOption; icon: typeof Home; emoji: string }[] 
 
 export const UpdateAddressSheet = ({ open, onOpenChange, onSaved }: UpdateAddressSheetProps) => {
   const { user } = useAuth();
-  const [view, setView] = useState<View>("choice");
 
   // Manual form state
   const [street, setStreet] = useState("");
@@ -53,14 +49,10 @@ export const UpdateAddressSheet = ({ open, onOpenChange, onSaved }: UpdateAddres
   const [errors, setErrors] = useState<{ street?: string; suburb?: string; city?: string }>({});
   const [saving, setSaving] = useState(false);
 
-  // Reset to choice view whenever the sheet closes.
+  // Clear validation errors whenever the sheet closes.
   useEffect(() => {
     if (!open) {
-      // small delay so it doesn't flicker mid-close
-      const t = setTimeout(() => {
-        setView("choice");
-        setErrors({});
-      }, 200);
+      const t = setTimeout(() => setErrors({}), 200);
       return () => clearTimeout(t);
     }
   }, [open]);
