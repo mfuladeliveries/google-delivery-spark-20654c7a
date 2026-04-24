@@ -1231,7 +1231,7 @@ const RestaurantCard = ({
         </div>
 
         <div className="min-w-0 flex-1">
-          <h3 className="font-bold text-sm text-foreground truncate">{r.name}</h3>
+          <RestaurantName as="h3" size="md" name={r.name} className="truncate" />
           <p className="text-xs text-muted-foreground">{r.cuisine} · ⭐ {r.rating}</p>
           <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 mt-0.5">
             {r.owner_user_id && (
@@ -1241,6 +1241,13 @@ const RestaurantCard = ({
               <p className="text-[10px] text-green-600 font-semibold">📍 Located ({r.lat!.toFixed(3)}, {r.lng!.toFixed(3)})</p>
             ) : (
               <p className="text-[10px] text-amber-600 font-semibold">⚠️ No coordinates</p>
+            )}
+            {r.opens_at && r.closes_at ? (
+              <p className="text-[10px] text-blue-600 font-semibold flex items-center gap-0.5">
+                <ClockIcon className="h-2.5 w-2.5" /> {r.opens_at.slice(0, 5)}–{r.closes_at.slice(0, 5)}
+              </p>
+            ) : (
+              <p className="text-[10px] text-muted-foreground font-medium">⏰ No hours set</p>
             )}
             {r.gallery_images?.length > 0 && (
               <p className="text-[10px] text-muted-foreground font-medium">🖼️ {r.gallery_images.length} gallery</p>
