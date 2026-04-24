@@ -2,10 +2,13 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate, Link } from "react-router-dom";
-import { ArrowLeft, Clock, Package, CheckCircle, Truck, ChefHat, AlertCircle, ShieldCheck, UserCheck, Store, Bike, Wallet, Banknote, BellRing, Bell } from "lucide-react";
+import { ArrowLeft, Clock, Package, CheckCircle, Truck, ChefHat, AlertCircle, ShieldCheck, UserCheck, Store, Bike, Wallet, Banknote, BellRing, Bell, Star } from "lucide-react";
 import { storeInfo } from "@/data/menu";
 import BottomNav from "@/components/BottomNav";
 import OrderTrackingMap from "@/components/OrderTrackingMap";
+import OrderTimeline from "@/components/OrderTimeline";
+import DriverInfoCard from "@/components/DriverInfoCard";
+import RatingDialog from "@/components/RatingDialog";
 import { toast } from "sonner";
 import { getHomeRouteForRoles } from "@/lib/homeRoute";
 import { useNotificationPrefs } from "@/hooks/useNotificationPrefs";
@@ -24,6 +27,7 @@ interface Order {
   order_number: number;
   items: OrderItem[];
   restaurant: string;
+  restaurant_id?: string | null;
   subtotal: number;
   tax: number;
   delivery_fee: number;
@@ -39,6 +43,12 @@ interface Order {
   refund_status?: "pending" | "credited" | "bank_pending" | "bank_paid" | null;
   refund_method?: "credits" | "bank" | null;
   refund_amount?: number | null;
+  driver_id?: string | null;
+  accepted_at?: string | null;
+  picking_up_at?: string | null;
+  arrived_at?: string | null;
+  picked_up_at?: string | null;
+  delivered_at?: string | null;
 }
 
 const statusSteps = [
