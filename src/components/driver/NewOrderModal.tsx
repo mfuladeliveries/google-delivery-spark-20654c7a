@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { MapPin, Store, Clock, Package, Check, X } from "lucide-react";
 import { driverPayoutForFee, zoneIdForFee } from "@/lib/zones";
