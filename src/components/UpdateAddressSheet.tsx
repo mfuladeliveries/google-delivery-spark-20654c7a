@@ -17,7 +17,7 @@ import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { ALL_DELIVERY_AREAS, DELIVERY_ZONES, detectZone } from "@/lib/zones";
+// Distance-based service area is enforced server-side; this sheet just collects an address + GPS pin.
 
 interface UpdateAddressSheetProps {
   open: boolean;
@@ -29,7 +29,7 @@ interface UpdateAddressSheetProps {
 type View = "choice" | "manual" | "map";
 type LabelOption = "Home" | "Work" | "Other";
 
-const SUBURB_SUGGESTIONS = DELIVERY_ZONES.flatMap((z) => z.areas);
+const SUBURB_SUGGESTIONS = ["Mfuleni", "Bluedowns", "Bardale Village", "Bosasa", "Belladonna", "Eerste River", "Summerville", "Blackheath"];
 const LANDMARK_MAX = 200;
 
 const LABEL_OPTIONS: { value: LabelOption; icon: typeof Home; emoji: string }[] = [
@@ -77,9 +77,6 @@ export const UpdateAddressSheet = ({ open, onOpenChange, onSaved }: UpdateAddres
     return landmark.trim() ? `${base} (${landmark.trim()})` : base;
   }, [street, suburb, city, landmark]);
 
-  const detectedZone = useMemo(() => detectZone(composedAddress), [composedAddress]);
-  const suburbOutsideZone = suburb.trim().length > 0 && !detectZone(suburb);
-
   const validate = () => {
     const next: typeof errors = {};
     if (street.trim().length < 5) next.street = "Please enter your street address";
@@ -97,18 +94,31 @@ export const UpdateAddressSheet = ({ open, onOpenChange, onSaved }: UpdateAddres
     }
     setSaving(true);
     try {
+      // Try to forward-geocode the typed address so we get GPS coords too.
+      let lat: number | null = null;
+      let lng: number | null = null;
+      try {
+        const res = await fetch(
+          `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(composedAddress)}&format=json&limit=1&countrycodes=za`,
+          { headers: { Accept: "application/json" } },
+        );
+        const data = await res.json();
+        if (Array.isArray(data) && data[0]) {
+          lat = parseFloat(data[0].lat);
+          lng = parseFloat(data[0].lon);
+        }
+      } catch { /* fall back to address-only save */ }
+
       const { error } = await supabase
         .from("profiles")
-        .update({ address: composedAddress })
+        .update({ address: composedAddress, lat, lng })
         .eq("user_id", user.id);
       if (error) throw error;
 
-      if (detectedZone) {
-        toast.success(`Address updated! Delivering to ${detectedZone.name}`);
+      if (lat === null || lng === null) {
+        toast.warning("Address saved, but we couldn't pinpoint it on the map. Use 'Pick on map' for an exact GPS pin.");
       } else {
-        toast.warning(
-          "Address saved, but it looks outside our delivery area. We deliver to: " + ALL_DELIVERY_AREAS,
-        );
+        toast.success("Address saved");
       }
       onSaved?.();
       onOpenChange(false);
@@ -120,7 +130,7 @@ export const UpdateAddressSheet = ({ open, onOpenChange, onSaved }: UpdateAddres
     }
   };
 
-  const handleMapConfirm = async ({ address }: { address: string; lat: number; lng: number }) => {
+  const handleMapConfirm = async ({ address, lat, lng }: { address: string; lat: number; lng: number }) => {
     if (!user) {
       toast.error("Please sign in to save your address");
       return;
@@ -129,12 +139,10 @@ export const UpdateAddressSheet = ({ open, onOpenChange, onSaved }: UpdateAddres
     try {
       const { error } = await supabase
         .from("profiles")
-        .update({ address })
+        .update({ address, lat, lng })
         .eq("user_id", user.id);
       if (error) throw error;
-      const z = detectZone(address);
-      if (z) toast.success(`Address updated! Delivering to ${z.name}`);
-      else toast.warning("Address saved, but it looks outside our delivery area.");
+      toast.success("Address saved");
       onSaved?.();
       onOpenChange(false);
     } catch (e) {

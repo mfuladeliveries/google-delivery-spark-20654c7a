@@ -5,7 +5,7 @@ import { storeInfo } from "@/data/menu";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useCustomerCredits } from "@/hooks/useCustomerCredits";
-import { detectZone, ALL_DELIVERY_AREAS } from "@/lib/zones";
+import { useCustomerLocation } from "@/hooks/useCustomerLocation";
 import { z } from "zod";
 import { toast } from "sonner";
 import { dispatchAndNotify } from "@/lib/pushNotify";
@@ -53,14 +53,16 @@ const CheckoutDialog = ({
   const navigate = useNavigate();
   const { user } = useAuth();
   const { balance: walletBalance, refresh: refreshWallet } = useCustomerCredits();
+  const { lat: profileLat, lng: profileLng, refresh: refreshLocation } = useCustomerLocation();
   const [useWallet, setUseWallet] = useState(false);
   const [name, setName] = useState("");
   const [contact, setContact] = useState("");
   const [address, setAddress] = useState("");
+  const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [notes, setNotes] = useState("");
   const [deliveryInstructions, setDeliveryInstructions] = useState("");
   const [deliveryWhen, setDeliveryWhen] = useState<"asap" | "schedule">("asap");
-  const [scheduleTime, setScheduleTime] = useState(""); // HH:mm
+  const [scheduleTime, setScheduleTime] = useState("");
   const [tip, setTip] = useState(0);
   const [customTip, setCustomTip] = useState("");
   const [paymentMethod, setPaymentMethod] = useState<"cash" | "online">("cash");
@@ -68,6 +70,13 @@ const CheckoutDialog = ({
   const [locating, setLocating] = useState(false);
   const [profileLoaded, setProfileLoaded] = useState(false);
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
+
+  // Sync profile coords once they load
+  useEffect(() => {
+    if (profileLat !== null && profileLng !== null && !coords) {
+      setCoords({ lat: profileLat, lng: profileLng });
+    }
+  }, [profileLat, profileLng, coords]);
 
   // Sync incoming food note from cart
   useEffect(() => {
@@ -127,6 +136,11 @@ const CheckoutDialog = ({
       return;
     }
 
+    if (!coords) {
+      toast.error("Please use the location button so we have your exact GPS coordinates.");
+      return;
+    }
+
     const result = checkoutSchema.safeParse({
       name, contact, address, notes, deliveryInstructions, tip: actualTip,
     });
@@ -142,7 +156,6 @@ const CheckoutDialog = ({
       return;
     }
 
-    // Validate scheduled delivery time (same day, before closing, after lead time)
     let scheduledLabel = "";
     if (deliveryWhen === "schedule") {
       if (!scheduleTime) {
@@ -173,8 +186,11 @@ const CheckoutDialog = ({
           full_name: name.trim(),
           contact_number: contact.trim(),
           address: address.trim(),
+          lat: coords.lat,
+          lng: coords.lng,
         })
         .eq("user_id", user.id);
+      refreshLocation();
 
       const deliveryCode = String(Math.floor(100000 + Math.random() * 900000));
 
@@ -220,6 +236,8 @@ const CheckoutDialog = ({
         p_customer_name: name.trim(),
         p_customer_contact: contact.trim(),
         p_customer_address: address.trim(),
+        p_customer_lat: coords.lat,
+        p_customer_lng: coords.lng,
         p_special_notes: combinedNotes,
         p_tip: actualTip,
         p_delivery_code: deliveryCode,
@@ -231,18 +249,18 @@ const CheckoutDialog = ({
         const isRateLimited =
           orderError.code === "42901" ||
           /too many orders/i.test(orderError.message || "");
-        const isOutsideZone =
+        const isOutOfRange =
           orderError.code === "22023" ||
-          /outside our delivery area/i.test(orderError.message || "");
+          /not available in your area/i.test(orderError.message || "");
         const title = isRateLimited
           ? "You're placing orders too quickly"
-          : isOutsideZone
-          ? "Outside delivery area"
+          : isOutOfRange
+          ? "Delivery not available in your area"
           : "Failed to place your order, try again.";
         const description = isRateLimited
           ? "Please wait about a minute before placing another order."
-          : isOutsideZone
-          ? "Update your delivery address to one of our supported areas."
+          : isOutOfRange
+          ? "Please pick a delivery location closer to our service area."
           : orderError.message;
         toast.error(title, { description });
         setLoading(false);
@@ -370,8 +388,11 @@ const CheckoutDialog = ({
                   setLocating(true);
                   navigator.geolocation.getCurrentPosition(
                     async (pos) => {
+                      const lat = pos.coords.latitude;
+                      const lng = pos.coords.longitude;
+                      setCoords({ lat, lng });
                       try {
-                        const res = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${pos.coords.latitude}&lon=${pos.coords.longitude}&format=json`);
+                        const res = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`);
                         const data = await res.json();
                         if (data.display_name) setAddress(data.display_name);
                       } catch { /* ignore */ }
@@ -393,24 +414,17 @@ const CheckoutDialog = ({
               </button>
             </div>
             {validationErrors.address && <p className="mt-1 text-xs text-destructive">{validationErrors.address}</p>}
-            {/* Live zone feedback based on what they've typed */}
-            {(() => {
-              const z = detectZone(address);
-              if (!address.trim()) return null;
-              if (z) {
-                return (
-                  <p className="mt-1.5 flex items-center gap-1.5 text-xs font-semibold text-primary">
-                    <Truck className="h-3.5 w-3.5" /> {z.name} · R{z.fee} delivery
-                  </p>
-                );
-              }
-              return (
-                <p className="mt-1.5 flex items-start gap-1.5 text-xs text-destructive">
-                  <AlertTriangle className="h-3.5 w-3.5 flex-shrink-0 mt-0.5" />
-                  <span>Address is outside our delivery area. We deliver to: {ALL_DELIVERY_AREAS}.</span>
-                </p>
-              );
-            })()}
+            {!coords && address.trim() && (
+              <p className="mt-1.5 flex items-start gap-1.5 text-xs text-amber-600">
+                <AlertTriangle className="h-3.5 w-3.5 flex-shrink-0 mt-0.5" />
+                <span>Tap the location button to confirm your exact GPS coordinates before placing the order.</span>
+              </p>
+            )}
+            {coords && (
+              <p className="mt-1.5 flex items-center gap-1.5 text-xs font-semibold text-primary">
+                <Truck className="h-3.5 w-3.5" /> Location confirmed · GPS captured
+              </p>
+            )}
           </div>
 
           {/* Delivery Instructions */}
@@ -638,7 +652,7 @@ const CheckoutDialog = ({
 
           <button
             onClick={handleCheckout}
-            disabled={loading || !name.trim() || !contact.trim() || !address.trim() || !detectZone(address)}
+            disabled={loading || !name.trim() || !contact.trim() || !address.trim() || !coords}
             className="flex w-full items-center justify-center gap-2 rounded-2xl bg-primary py-3.5 font-display font-bold text-primary-foreground transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:hover:scale-100 shadow-orange"
           >
             <Package className="h-5 w-5" />

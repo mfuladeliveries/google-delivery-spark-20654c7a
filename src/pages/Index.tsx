@@ -7,11 +7,9 @@ import Footer from "@/components/Footer";
 import BottomNav from "@/components/BottomNav";
 import Cart from "@/components/Cart";
 import CheckoutDialog from "@/components/CheckoutDialog";
-import DeliveryZoneBanner from "@/components/DeliveryZoneBanner";
 import RestaurantCard, { RestaurantCardSkeleton, type RestaurantCardData } from "@/components/RestaurantCard";
 import { useCart } from "@/hooks/useCart";
 import { useAuth } from "@/hooks/useAuth";
-import { useDeliveryZone } from "@/hooks/useDeliveryZone";
 import { menuItems } from "@/data/menu";
 import mfulaLogo from "@/assets/mfula-logo.png";
 
@@ -39,9 +37,7 @@ const Index = () => {
   const [checkoutOpen, setCheckoutOpen] = useState(false);
   const cart = useCart();
   const { user, roles, loading: authLoading } = useAuth();
-  const { zone, outsideZone, needsAddress } = useDeliveryZone();
   const navigate = useNavigate();
-  const canOrder = !!user && !!zone && !outsideZone && !needsAddress;
 
   // Lock providers (admin / driver / restaurant) into their own dashboards.
   // A user with ONLY a provider role should not be able to browse the customer app.
@@ -89,9 +85,6 @@ const Index = () => {
       <Navbar cartCount={cart.totalItems} onCartClick={() => setCartOpen(true)} />
 
       <main className="mx-auto max-w-7xl px-4 pb-nav pt-4 md:pb-8">
-        {/* Delivery zone banner — shown above hero so customers see fee BEFORE shopping */}
-        <DeliveryZoneBanner />
-
         {/* Hero */}
         <div className="mb-6 rounded-2xl overflow-hidden relative" style={{ background: 'linear-gradient(135deg, hsl(21 100% 50%), hsl(35 100% 55%))' }}>
           <div className="px-6 py-8 relative">

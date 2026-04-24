@@ -385,6 +385,8 @@ export type Database = {
           customer_address: string
           customer_contact: string
           customer_id: string | null
+          customer_lat: number | null
+          customer_lng: number | null
           customer_name: string
           delivered_at: string | null
           delivery_code: string | null
@@ -432,6 +434,8 @@ export type Database = {
           customer_address?: string
           customer_contact?: string
           customer_id?: string | null
+          customer_lat?: number | null
+          customer_lng?: number | null
           customer_name?: string
           delivered_at?: string | null
           delivery_code?: string | null
@@ -479,6 +483,8 @@ export type Database = {
           customer_address?: string
           customer_contact?: string
           customer_id?: string | null
+          customer_lat?: number | null
+          customer_lng?: number | null
           customer_name?: string
           delivered_at?: string | null
           delivery_code?: string | null
@@ -532,6 +538,8 @@ export type Database = {
           created_at: string
           full_name: string
           id: string
+          lat: number | null
+          lng: number | null
           updated_at: string
           user_id: string
         }
@@ -541,6 +549,8 @@ export type Database = {
           created_at?: string
           full_name?: string
           id?: string
+          lat?: number | null
+          lng?: number | null
           updated_at?: string
           user_id: string
         }
@@ -550,6 +560,8 @@ export type Database = {
           created_at?: string
           full_name?: string
           id?: string
+          lat?: number | null
+          lng?: number | null
           updated_at?: string
           user_id?: string
         }
@@ -858,42 +870,37 @@ export type Database = {
         }
         Returns: boolean
       }
+      check_service_area: {
+        Args: { p_lat: number; p_lng: number }
+        Returns: Json
+      }
       claim_order: { Args: { p_order_id: string }; Returns: boolean }
-      create_verified_order:
-        | {
-            Args: {
-              p_customer_address: string
-              p_customer_contact: string
-              p_customer_name: string
-              p_delivery_code?: string
-              p_items: Json
-              p_restaurant_name: string
-              p_special_notes?: string
-              p_tip?: number
-            }
-            Returns: Json
-          }
-        | {
-            Args: {
-              p_customer_address: string
-              p_customer_contact: string
-              p_customer_name: string
-              p_delivery_code?: string
-              p_items: Json
-              p_payment_method?: string
-              p_restaurant_name: string
-              p_special_notes?: string
-              p_tip?: number
-            }
-            Returns: Json
-          }
+      create_verified_order: {
+        Args: {
+          p_customer_address: string
+          p_customer_contact: string
+          p_customer_lat: number
+          p_customer_lng: number
+          p_customer_name: string
+          p_delivery_code?: string
+          p_items: Json
+          p_payment_method?: string
+          p_restaurant_name: string
+          p_special_notes?: string
+          p_tip?: number
+        }
+        Returns: Json
+      }
       customer_choose_refund: {
         Args: { p_method: string; p_order_id: string }
         Returns: Json
       }
-      detect_delivery_zone: { Args: { p_address: string }; Returns: number }
       dispatch_assign_next: { Args: { p_order_id: string }; Returns: Json }
       dispatch_tick: { Args: never; Returns: Json }
+      distance_km: {
+        Args: { lat1: number; lat2: number; lng1: number; lng2: number }
+        Returns: number
+      }
       driver_accept_offer: { Args: { p_order_id: string }; Returns: boolean }
       driver_cancel_order: {
         Args: { p_order_id: string; p_reason?: string }

@@ -58,13 +58,24 @@ const UpdateDriverMarker = ({ position }: { position: [number, number] }) => {
 interface DriverDeliveryMapProps {
   driverLocation: { lat: number; lng: number } | null;
   customerAddress: string;
+  customerLat?: number | null;
+  customerLng?: number | null;
   restaurantName?: string;
 }
 
-const DriverDeliveryMap = ({ driverLocation, customerAddress, restaurantName }: DriverDeliveryMapProps) => {
-  const [customerPos, setCustomerPos] = useState<{ lat: number; lng: number } | null>(null);
+const DriverDeliveryMap = ({ driverLocation, customerAddress, customerLat, customerLng, restaurantName }: DriverDeliveryMapProps) => {
+  const [customerPos, setCustomerPos] = useState<{ lat: number; lng: number } | null>(
+    typeof customerLat === "number" && typeof customerLng === "number"
+      ? { lat: customerLat, lng: customerLng }
+      : null,
+  );
 
   useEffect(() => {
+    // Prefer exact GPS coords stored on the order; only geocode the address as a fallback.
+    if (typeof customerLat === "number" && typeof customerLng === "number") {
+      setCustomerPos({ lat: customerLat, lng: customerLng });
+      return;
+    }
     const geocode = async () => {
       try {
         const res = await fetch(
@@ -77,7 +88,7 @@ const DriverDeliveryMap = ({ driverLocation, customerAddress, restaurantName }: 
       } catch {}
     };
     if (customerAddress) geocode();
-  }, [customerAddress]);
+  }, [customerAddress, customerLat, customerLng]);
 
   const center = driverLocation || customerPos || { lat: -29.12, lng: 26.22 };
   const positions: [number, number][] = [];
