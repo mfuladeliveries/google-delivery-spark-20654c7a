@@ -1192,6 +1192,9 @@ const RestaurantCard = ({
       setEditPassword("");
       setCoordLat(r.lat != null ? String(r.lat) : "");
       setCoordLng(r.lng != null ? String(r.lng) : "");
+      // Postgres `time` returns "HH:MM:SS"; trim to "HH:MM" for <input type="time">
+      setOpensAt(r.opens_at ? r.opens_at.slice(0, 5) : "");
+      setClosesAt(r.closes_at ? r.closes_at.slice(0, 5) : "");
       await loadOwnerInfo();
       return;
     }
