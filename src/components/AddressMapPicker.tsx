@@ -60,6 +60,7 @@ export const AddressMapPicker = ({ onConfirm, initialAddress, initialCoords }: A
   const [loadingAddress, setLoadingAddress] = useState(false);
   const [locating, setLocating] = useState(false);
   const [searching, setSearching] = useState(false);
+  const [confirming, setConfirming] = useState(false);
   const reverseAbort = useRef<AbortController | null>(null);
 
   // Load admin-configured service area once
