@@ -244,6 +244,27 @@ export const AddressMapPicker = ({ onConfirm, initialAddress }: AddressMapPicker
           <RecenterMap position={position} />
         </MapContainer>
 
+        {/* Live zone badge */}
+        <div className="pointer-events-none absolute left-3 top-3 z-[1000] max-w-[60%]">
+          {activeArea ? (
+            <div
+              key={activeArea.name}
+              className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-extrabold text-white shadow-lg ring-2 ring-white/70 animate-in fade-in slide-in-from-top-1"
+              style={{ background: ZONE_STYLES[activeArea.zoneId].color }}
+            >
+              <span aria-hidden>📍</span>
+              <span className="truncate">
+                You're in: {activeArea.name} · R{activeArea.zoneId === 1 ? 65 : 75}
+              </span>
+            </div>
+          ) : (
+            <div className="inline-flex items-center gap-1.5 rounded-full bg-card/95 px-3 py-1.5 text-[11px] font-bold text-destructive shadow-lg ring-1 ring-destructive/40 backdrop-blur">
+              <span aria-hidden>⚠️</span>
+              Outside delivery zones
+            </div>
+          )}
+        </div>
+
         {/* Use my location FAB */}
         <button
           type="button"
