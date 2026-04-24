@@ -80,6 +80,7 @@ export const AddressMapPicker = ({ onConfirm, initialAddress, initialCoords }: A
     reverseAbort.current?.abort();
     setLoadingAddress(true);
     setAddress("");
+    setConfirming(false);
     const timer = window.setTimeout(() => {
       const ctrl = new AbortController();
       reverseAbort.current = ctrl;
