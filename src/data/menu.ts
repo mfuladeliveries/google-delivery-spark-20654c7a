@@ -1,3 +1,15 @@
+export interface SizeOption {
+  name: string;
+  price: number;
+  popular?: boolean;
+  description?: string;
+}
+
+export interface AddOnOption {
+  name: string;
+  price: number;
+}
+
 export interface MenuItem {
   id: string;
   name: string;
@@ -6,6 +18,12 @@ export interface MenuItem {
   image?: string;
   price: number;
   available: boolean;
+  // Optional product-customization config (driven by admin)
+  has_sizes?: boolean;
+  sizes?: SizeOption[];
+  has_add_ons?: boolean;
+  add_ons?: AddOnOption[];
+  max_add_ons?: number;
 }
 
 export interface StoreInfo {
