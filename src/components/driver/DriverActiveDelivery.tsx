@@ -27,7 +27,7 @@ class MapErrorBoundary extends Component<{ children: ReactNode }, { hasError: bo
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { sendPushNotification } from "@/lib/pushNotify";
-import { zoneIdForFee, driverPayoutForFee } from "@/lib/zones";
+import { driverPayoutForFee } from "@/lib/serviceArea";
 
 interface Order {
   id: string;
@@ -35,6 +35,8 @@ interface Order {
   customer_name: string;
   customer_contact: string;
   customer_address: string;
+  customer_lat?: number | null;
+  customer_lng?: number | null;
   items: any[];
   total: number;
   status: string;
@@ -50,8 +52,12 @@ interface DriverActiveDeliveryProps {
   onStatusChange?: () => void;
 }
 
-const openGoogleMaps = (address: string) => {
-  window.open(`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(address)}`, "_blank");
+const openGoogleMaps = (address: string, lat?: number | null, lng?: number | null) => {
+  // Prefer exact GPS coords when we have them; fall back to address text.
+  const dest = typeof lat === "number" && typeof lng === "number"
+    ? `${lat},${lng}`
+    : address;
+  window.open(`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(dest)}`, "_blank");
 };
 
 // Progress steps based on status
@@ -160,7 +166,6 @@ const DriverActiveDelivery = ({ orders, driverLocation, onDeliveryComplete, onSt
 
       {orders.map(order => {
         const currentStep = getStepIndex(order.status);
-        const zoneId = zoneIdForFee(order.delivery_fee);
         const payout = driverPayoutForFee(order.delivery_fee);
 
         return (
@@ -172,6 +177,8 @@ const DriverActiveDelivery = ({ orders, driverLocation, onDeliveryComplete, onSt
                   <DriverDeliveryMap
                     driverLocation={driverLocation}
                     customerAddress={order.customer_address}
+                    customerLat={order.customer_lat ?? null}
+                    customerLng={order.customer_lng ?? null}
                     restaurantName={order.restaurant}
                   />
                 </Suspense>
@@ -188,11 +195,9 @@ const DriverActiveDelivery = ({ orders, driverLocation, onDeliveryComplete, onSt
                 <div className="min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="font-bold text-foreground text-lg">Order #{order.order_number}</span>
-                    {zoneId && (
-                      <span className="rounded-full bg-[hsl(var(--driver-info)/0.12)] px-2.5 py-1 text-xs font-bold text-[hsl(var(--driver-info))] border border-[hsl(var(--driver-info)/0.25)]">
-                        Zone {zoneId} · R{payout} payout
-                      </span>
-                    )}
+                    <span className="rounded-full bg-[hsl(var(--driver-info)/0.12)] px-2.5 py-1 text-xs font-bold text-[hsl(var(--driver-info))] border border-[hsl(var(--driver-info)/0.25)]">
+                      +R{payout} payout
+                    </span>
                   </div>
                   <span className="mt-1 inline-block rounded-full bg-primary/10 px-2.5 py-1 text-xs font-bold text-primary capitalize">
                     {order.status.replace(/_/g, " ")}
@@ -281,13 +286,13 @@ const DriverActiveDelivery = ({ orders, driverLocation, onDeliveryComplete, onSt
                 </button>
               )}
 
-              {/* Navigate button */}
+              {/* Navigate button — uses exact GPS pin when available */}
               <button
-                onClick={() => openGoogleMaps(order.customer_address)}
+                onClick={() => openGoogleMaps(order.customer_address, order.customer_lat, order.customer_lng)}
                 className="flex w-full items-center gap-3 rounded-2xl bg-[hsl(var(--driver-info)/0.08)] border border-[hsl(var(--driver-info)/0.2)] px-4 py-3.5 text-sm font-semibold text-[hsl(var(--driver-info))] hover:bg-[hsl(var(--driver-info)/0.15)] transition-colors"
               >
                 <Navigation className="h-5 w-5" />
-                <span className="flex-1 text-left truncate">{order.customer_address}</span>
+                <span className="flex-1 text-left truncate">Open in Google Maps</span>
                 <ExternalLink className="h-4 w-4 shrink-0" />
               </button>
 

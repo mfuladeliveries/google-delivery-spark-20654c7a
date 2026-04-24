@@ -3,9 +3,8 @@ import { Link } from "react-router-dom";
 import { X, Plus, Minus, Package, Trash2, StickyNote, AlertTriangle, Truck } from "lucide-react";
 import { CartItem } from "@/hooks/useCart";
 import { storeInfo } from "@/data/menu";
-import { useDeliveryZone } from "@/hooks/useDeliveryZone";
+import { useCustomerLocation } from "@/hooks/useCustomerLocation";
 import { useAuth } from "@/hooks/useAuth";
-import { ALL_DELIVERY_AREAS } from "@/lib/zones";
 import { RestaurantName } from "@/components/RestaurantName";
 
 interface CartProps {
@@ -37,8 +36,8 @@ const Cart = ({
 }: CartProps) => {
   const [foodNote, setFoodNote] = useState("");
   const { user } = useAuth();
-  const { zone, outsideZone, needsAddress } = useDeliveryZone();
-  const canCheckout = !!user && !!zone && !outsideZone && !needsAddress;
+  const { needsAddress, needsCoords, outOfRange } = useCustomerLocation();
+  const canCheckout = !!user && !needsAddress && !needsCoords && !outOfRange;
   // Cart items carry the restaurant name in `item.category` (set in RestaurantMenu)
   const restaurantName = items[0]?.item.category || "";
   if (!open) return null;
@@ -175,7 +174,7 @@ const Cart = ({
               <div className="flex justify-between text-muted-foreground">
                 <span className="flex items-center gap-1">
                   <Truck className="h-3.5 w-3.5" />
-                  Delivery {zone ? `(${zone.name})` : ""}
+                  Delivery
                 </span>
                 <span>{storeInfo.currency}{delivery}</span>
               </div>
@@ -191,24 +190,23 @@ const Cart = ({
               </p>
             )}
 
-            {/* Zone gating messages */}
+            {/* Location gating messages — distance-based, no zone names */}
             {!user && (
               <div className="mt-3 rounded-xl border border-primary/30 bg-primary/5 p-3 text-xs text-foreground">
-                <Link to="/auth" className="font-bold text-primary hover:underline">Sign in</Link> to confirm your delivery zone & place this order.
+                <Link to="/auth" className="font-bold text-primary hover:underline">Sign in</Link> to confirm your delivery address & place this order.
               </div>
             )}
-            {user && needsAddress && (
+            {user && (needsAddress || needsCoords) && (
               <div className="mt-3 rounded-xl border-2 border-primary/40 bg-primary/5 p-3 text-xs text-foreground">
-                <p className="font-bold">Add your delivery address first</p>
+                <p className="font-bold">Set your delivery location first</p>
                 <Link to="/profile" className="text-primary hover:underline">Update profile →</Link>
               </div>
             )}
-            {user && outsideZone && (
+            {user && outOfRange && (
               <div className="mt-3 flex items-start gap-2 rounded-xl border-2 border-destructive/40 bg-destructive/5 p-3 text-xs text-foreground">
                 <AlertTriangle className="mt-0.5 h-4 w-4 flex-shrink-0 text-destructive" />
                 <div>
-                  <p className="font-bold">Outside our delivery area</p>
-                  <p className="mt-0.5 text-muted-foreground">We deliver to: {ALL_DELIVERY_AREAS}.</p>
+                  <p className="font-bold">Delivery not available in your area</p>
                   <Link to="/profile" className="mt-1 inline-block font-bold text-primary hover:underline">Update address →</Link>
                 </div>
               </div>

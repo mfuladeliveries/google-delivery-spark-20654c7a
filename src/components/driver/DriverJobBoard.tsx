@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { MapPin, Clock, Package, ExternalLink, Phone, Navigation, Filter, AlertTriangle, Zap } from "lucide-react";
-import { driverPayoutForFee, zoneIdForFee } from "@/lib/zones";
+import { driverPayoutForFee } from "@/lib/serviceArea";
 
 interface Order {
   id: string;
@@ -222,7 +222,7 @@ const DriverJobBoard = ({ orders, isOnline, accepting, onAccept, driverLocation 
                   </div>
                 </div>
 
-                {/* Distance + ETA + Zone badges */}
+                {/* Distance + ETA badges (no zone label) */}
                 <div className="flex items-center gap-2 mb-3 flex-wrap">
                   <span className={`inline-flex items-center gap-1 rounded-lg ${distBadge.bg} px-2.5 py-1 text-xs font-bold ${distBadge.text}`}>
                     <MapPin className="h-3 w-3" /> {distBadge.label}
@@ -230,11 +230,6 @@ const DriverJobBoard = ({ orders, isOnline, accepting, onAccept, driverLocation 
                   <span className="inline-flex items-center gap-1 rounded-lg bg-[hsl(var(--driver-info)/0.1)] px-2.5 py-1 text-xs font-bold text-[hsl(var(--driver-info))]">
                     <Clock className="h-3 w-3" /> {eta}
                   </span>
-                  {zoneIdForFee(order.delivery_fee) && (
-                    <span className="inline-flex items-center rounded-lg bg-primary/10 px-2.5 py-1 text-xs font-bold text-primary">
-                      Zone {zoneIdForFee(order.delivery_fee)} · R{driverPayoutForFee(order.delivery_fee)}
-                    </span>
-                  )}
                   <span className="text-[10px] text-muted-foreground ml-auto">
                     {minutes}m ago
                   </span>

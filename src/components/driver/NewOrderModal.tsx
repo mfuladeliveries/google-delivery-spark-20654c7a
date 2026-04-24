@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { MapPin, Store, Clock, Package, Check, X } from "lucide-react";
-import { driverPayoutForFee, zoneIdForFee } from "@/lib/zones";
+import { driverPayoutForFee } from "@/lib/serviceArea";
 
 interface NewOrderOffer {
   id: string;
@@ -145,11 +145,6 @@ const NewOrderModal = ({ open, offer, distanceKm, accepting, rejecting, onAccept
               <p className="text-[10px] uppercase font-semibold tracking-wide text-muted-foreground">You'll earn</p>
               <div className="flex items-center gap-2">
                 <p className="text-2xl font-bold text-[hsl(var(--driver-success))]">R{driverPayoutForFee(offer.delivery_fee)}</p>
-                {zoneIdForFee(offer.delivery_fee) && (
-                  <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-bold text-primary">
-                    Zone {zoneIdForFee(offer.delivery_fee)}
-                  </span>
-                )}
               </div>
               <p className="mt-0.5 text-[10px] text-muted-foreground">
                 Customer pays R{offer.delivery_fee} delivery
