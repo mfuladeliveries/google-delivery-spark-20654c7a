@@ -159,12 +159,14 @@ const DriverAuth = () => {
             <>
               <RequestDriverAccess userEmail={user.email || ""} />
               <div className="mt-8 text-center">
-                <button
-                  onClick={() => navigate("/")}
-                  className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                <a
+                  href="https://wa.me/27686768409"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:underline"
                 >
-                  ← Back to Mfula Deliveries
-                </button>
+                  Contact the Admin on WhatsApp: 0686768409
+                </a>
               </div>
             </>
           ) : (
@@ -438,14 +440,16 @@ const DriverAuth = () => {
             </>
           )}
 
-          {/* Footer link back to main app */}
+          {/* Contact admin via WhatsApp */}
           <div className="mt-8 text-center">
-            <button
-              onClick={() => navigate("/")}
-              className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+            <a
+              href="https://wa.me/27686768409"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:underline"
             >
-              ← Back to Mfula Deliveries
-            </button>
+              Contact the Admin on WhatsApp: 0686768409
+            </a>
           </div>
           </>
           )}
