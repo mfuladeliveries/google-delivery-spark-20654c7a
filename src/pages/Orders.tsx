@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { getHomeRouteForRoles } from "@/lib/homeRoute";
 import { useNotificationPrefs } from "@/hooks/useNotificationPrefs";
 import { Switch } from "@/components/ui/switch";
+import { RestaurantName } from "@/components/RestaurantName";
 
 interface OrderItem {
   name: string;
@@ -307,9 +308,9 @@ const Orders = () => {
                   )}
 
                   <div className="p-4">
-                    <div className="flex items-center justify-between mb-1">
+                    <div className="flex items-center justify-between gap-2 mb-1">
                       <span className="font-bold text-foreground text-base">Order #{order.order_number}</span>
-                      <span className="text-sm text-muted-foreground">🍽️ {order.restaurant}</span>
+                      <RestaurantName as="span" size="sm" name={order.restaurant} className="truncate" />
                     </div>
 
                     {/* Notification delivery indicators (one-shot dedupe alerts) */}

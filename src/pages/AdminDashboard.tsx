@@ -2,7 +2,7 @@ import { useState, useEffect, Fragment } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { Shield, TrendingUp, Users, ShoppingBag, Store, ArrowLeft, DollarSign, Truck, UserCheck, Search, UserPlus, Plus, Trash2, Pencil, X, Save, MapPin, Image as ImageIcon } from "lucide-react";
+import { Shield, TrendingUp, Users, ShoppingBag, Store, ArrowLeft, DollarSign, Truck, UserCheck, Search, UserPlus, Plus, Trash2, Pencil, X, Save, MapPin, Image as ImageIcon, Clock as ClockIcon } from "lucide-react";
 import RestaurantImageManager from "@/components/admin/RestaurantImageManager";
 import BottomNav from "@/components/BottomNav";
 import AdminEarnings from "@/components/admin/AdminEarnings";
@@ -18,6 +18,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import InstallAppButton from "@/components/InstallAppButton";
+import { RestaurantName } from "@/components/RestaurantName";
 
 interface Stats {
   totalOrders: number;
@@ -65,6 +66,8 @@ interface RestaurantRecord {
   logo_url: string | null;
   banner_url: string | null;
   gallery_images: string[];
+  opens_at: string | null;
+  closes_at: string | null;
 }
 
 interface DriverRecord {
@@ -250,7 +253,7 @@ const AdminDashboard = () => {
   };
 
   const fetchRestaurants = async () => {
-    const { data } = await supabase.from("restaurants").select("id, name, cuisine, is_active, owner_user_id, rating, location, lat, lng, logo_url, banner_url, gallery_images").order("name");
+    const { data } = await supabase.from("restaurants").select("id, name, cuisine, is_active, owner_user_id, rating, location, lat, lng, logo_url, banner_url, gallery_images, opens_at, closes_at").order("name");
     if (data) setRestaurants(data as RestaurantRecord[]);
   };
 
@@ -1084,6 +1087,37 @@ const RestaurantCard = ({
   const [coordLng, setCoordLng] = useState("");
   const [savingCoords, setSavingCoords] = useState(false);
   const [imagesOpen, setImagesOpen] = useState(false);
+  const [opensAt, setOpensAt] = useState("");
+  const [closesAt, setClosesAt] = useState("");
+  const [savingHours, setSavingHours] = useState(false);
+
+  const handleSaveHours = async () => {
+    // Allow clearing both fields to remove hours
+    if ((opensAt && !closesAt) || (!opensAt && closesAt)) {
+      toast.error("Set both opening and closing times, or clear both.");
+      return;
+    }
+    setSavingHours(true);
+    try {
+      const { error } = await supabase
+        .from("restaurants")
+        .update({
+          opens_at: opensAt || null,
+          closes_at: closesAt || null,
+        })
+        .eq("id", r.id);
+      if (error) throw error;
+      toast.success(
+        opensAt && closesAt
+          ? `⏰ ${r.name} hours: ${opensAt}–${closesAt}`
+          : `⏰ ${r.name} hours cleared (always open)`
+      );
+      onRestaurantChanged();
+    } catch (err: any) {
+      toast.error(err.message || "Failed to save hours");
+    }
+    setSavingHours(false);
+  };
 
   const handleSaveCoords = async () => {
     const lat = parseFloat(coordLat);
@@ -1158,6 +1192,9 @@ const RestaurantCard = ({
       setEditPassword("");
       setCoordLat(r.lat != null ? String(r.lat) : "");
       setCoordLng(r.lng != null ? String(r.lng) : "");
+      // Postgres `time` returns "HH:MM:SS"; trim to "HH:MM" for <input type="time">
+      setOpensAt(r.opens_at ? r.opens_at.slice(0, 5) : "");
+      setClosesAt(r.closes_at ? r.closes_at.slice(0, 5) : "");
       await loadOwnerInfo();
       return;
     }
@@ -1228,7 +1265,7 @@ const RestaurantCard = ({
         </div>
 
         <div className="min-w-0 flex-1">
-          <h3 className="font-bold text-sm text-foreground truncate">{r.name}</h3>
+          <RestaurantName as="h3" size="md" name={r.name} className="truncate" />
           <p className="text-xs text-muted-foreground">{r.cuisine} · ⭐ {r.rating}</p>
           <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 mt-0.5">
             {r.owner_user_id && (
@@ -1238,6 +1275,13 @@ const RestaurantCard = ({
               <p className="text-[10px] text-green-600 font-semibold">📍 Located ({r.lat!.toFixed(3)}, {r.lng!.toFixed(3)})</p>
             ) : (
               <p className="text-[10px] text-amber-600 font-semibold">⚠️ No coordinates</p>
+            )}
+            {r.opens_at && r.closes_at ? (
+              <p className="text-[10px] text-blue-600 font-semibold flex items-center gap-0.5">
+                <ClockIcon className="h-2.5 w-2.5" /> {r.opens_at.slice(0, 5)}–{r.closes_at.slice(0, 5)}
+              </p>
+            ) : (
+              <p className="text-[10px] text-muted-foreground font-medium">⏰ No hours set</p>
             )}
             {r.gallery_images?.length > 0 && (
               <p className="text-[10px] text-muted-foreground font-medium">🖼️ {r.gallery_images.length} gallery</p>
@@ -1336,6 +1380,61 @@ const RestaurantCard = ({
               <Save className="h-3 w-3" />
               {savingCoords ? "Saving..." : "Save Coordinates"}
             </button>
+          </div>
+
+          {/* Operating hours editor */}
+          <div className="border-t border-border pt-3 space-y-2">
+            <div className="flex items-center justify-between">
+              <h4 className="font-bold text-xs text-foreground flex items-center gap-1">
+                <ClockIcon className="h-3 w-3" /> Operating Hours
+              </h4>
+              <span className="text-[10px] text-muted-foreground">Leave blank = always open</span>
+            </div>
+            <p className="text-[10px] text-muted-foreground">
+              Customers will see "Closed" outside these hours. Overnight hours (e.g. 18:00 → 02:00) are supported.
+            </p>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-semibold text-muted-foreground mb-1">Opens at</label>
+                <input
+                  type="time"
+                  value={opensAt}
+                  onChange={(e) => setOpensAt(e.target.value)}
+                  className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-muted-foreground mb-1">Closes at</label>
+                <input
+                  type="time"
+                  value={closesAt}
+                  onChange={(e) => setClosesAt(e.target.value)}
+                  className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                />
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={handleSaveHours}
+                disabled={savingHours}
+                className="flex-1 flex items-center justify-center gap-1.5 rounded-xl bg-primary py-2 text-xs font-bold text-primary-foreground disabled:opacity-50 hover:opacity-90 transition-opacity"
+              >
+                <Save className="h-3 w-3" />
+                {savingHours ? "Saving..." : "Save Hours"}
+              </button>
+              {(opensAt || closesAt) && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setOpensAt("");
+                    setClosesAt("");
+                  }}
+                  className="rounded-xl border border-border bg-card px-3 py-2 text-xs font-semibold text-muted-foreground hover:bg-secondary"
+                >
+                  Clear
+                </button>
+              )}
+            </div>
           </div>
 
           {/* Owner credentials editor */}
@@ -1446,7 +1545,13 @@ const OrdersTable = ({ orders, onCancel }: { orders: RecentOrder[]; onCancel?: (
                   <tr className={`border-b border-border ${i % 2 === 0 ? '' : 'bg-secondary/30'} ${showDispatch ? '!border-b-0' : ''}`}>
                     <td className="px-3 py-2.5 font-bold text-foreground">#{order.order_number}</td>
                     <td className="px-3 py-2.5 text-foreground text-xs">{order.customer_name || "—"}</td>
-                    <td className="px-3 py-2.5 text-muted-foreground text-xs">{order.restaurant || "—"}</td>
+                    <td className="px-3 py-2.5 text-xs">
+                      {order.restaurant ? (
+                        <RestaurantName as="span" size="sm" name={order.restaurant} className="!text-xs" />
+                      ) : (
+                        <span className="text-muted-foreground">—</span>
+                      )}
+                    </td>
                     <td className="px-3 py-2.5 text-xs">
                       {order.driver_id ? (
                         <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-bold text-primary">Assigned</span>

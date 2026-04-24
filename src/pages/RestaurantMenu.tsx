@@ -8,6 +8,7 @@ import { menuItems as staticMenuItems } from "@/data/menu";
 import Cart from "@/components/Cart";
 import CheckoutDialog from "@/components/CheckoutDialog";
 import BottomNav from "@/components/BottomNav";
+import { RestaurantName } from "@/components/RestaurantName";
 
 interface Restaurant {
   id: string;
@@ -145,7 +146,8 @@ const RestaurantMenu = () => {
       {/* Hero Banner */}
       <div className="relative h-48 bg-muted">
         <img src={bannerImg} alt={restaurant.name} className="h-full w-full object-cover" />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
+        {/* Stronger bottom gradient so the orange name pops over photo */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/30 to-transparent" />
         <button
           onClick={() => navigate(-1)}
           className="absolute top-4 left-4 rounded-full bg-card p-2 shadow-card"
@@ -153,8 +155,8 @@ const RestaurantMenu = () => {
           <ArrowLeft className="h-5 w-5 text-foreground" />
         </button>
         <div className="absolute bottom-4 left-4 right-4">
-          <h1 className="text-xl font-bold text-white">{restaurant.name}</h1>
-          <div className="flex items-center gap-3 mt-1">
+          <RestaurantName as="h1" size="2xl" name={restaurant.name} />
+          <div className="flex items-center gap-3 mt-1.5">
             <span className="flex items-center gap-1 text-white text-xs">
               <Star className="h-3 w-3 fill-primary text-primary" /> {restaurant.rating}
             </span>

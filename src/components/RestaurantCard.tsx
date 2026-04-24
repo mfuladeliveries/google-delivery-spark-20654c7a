@@ -2,6 +2,7 @@ import { Star, Clock, MapPin, ArrowRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { isRestaurantOpen, formatOpensAt } from "@/lib/restaurantHours";
+import { RestaurantName } from "@/components/RestaurantName";
 
 export interface RestaurantCardData {
   id: string;
@@ -75,7 +76,7 @@ const RestaurantCard = ({ restaurant: r, variant = "standard" }: Props) => {
           {!open && <div className="absolute inset-0 bg-black/50" />}
         </div>
         <div className="min-w-0 flex-1">
-          <h4 className="truncate text-sm font-bold text-foreground">{r.name}</h4>
+          <RestaurantName as="h4" size="md" name={r.name} className="truncate" />
           <p className="truncate text-xs text-muted-foreground">{r.description}</p>
           <div className="mt-1 flex items-center gap-2 text-[11px] text-muted-foreground">
             <span className="flex items-center gap-0.5 font-semibold text-foreground">
@@ -145,9 +146,12 @@ const RestaurantCard = ({ restaurant: r, variant = "standard" }: Props) => {
       {/* Body */}
       <div className={isFeatured ? "p-5" : "p-4"}>
         <div className="flex items-start justify-between gap-2">
-          <h4 className={`font-bold text-foreground ${isFeatured ? "text-lg" : "text-[15px]"}`}>
-            {r.name}
-          </h4>
+          <RestaurantName
+            as="h4"
+            size={isFeatured ? "xl" : "lg"}
+            name={r.name}
+            className="truncate"
+          />
         </div>
 
         <p className="mt-0.5 line-clamp-1 text-[13px] text-muted-foreground">{r.description}</p>
