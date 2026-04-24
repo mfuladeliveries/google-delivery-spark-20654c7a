@@ -199,10 +199,12 @@ const Cart = ({
                 <Link to="/auth" className="font-bold text-primary hover:underline">Sign in</Link> to confirm your delivery address & place this order.
               </div>
             )}
-            {user && (needsAddress || needsCoords) && (
-              <div className="mt-3 rounded-xl border-2 border-primary/40 bg-primary/5 p-3 text-xs text-foreground">
-                <p className="font-bold">Set your delivery location first</p>
-                <Link to="/profile" className="text-primary hover:underline">Update profile →</Link>
+            {needsDetails && (
+              <div className="mt-3 rounded-xl border border-primary/30 bg-primary/5 p-3 text-xs text-foreground">
+                <p className="font-bold">Add your details on the next step</p>
+                <p className="mt-0.5 text-muted-foreground">
+                  Enter your name, contact &amp; pick your location (tap the pin or type the address) before placing the order.
+                </p>
               </div>
             )}
             {user && outOfRange && (
