@@ -6,6 +6,7 @@ import { storeInfo } from "@/data/menu";
 import { useDeliveryZone } from "@/hooks/useDeliveryZone";
 import { useAuth } from "@/hooks/useAuth";
 import { ALL_DELIVERY_AREAS } from "@/lib/zones";
+import { RestaurantName } from "@/components/RestaurantName";
 
 interface CartProps {
   open: boolean;
@@ -38,6 +39,8 @@ const Cart = ({
   const { user } = useAuth();
   const { zone, outsideZone, needsAddress } = useDeliveryZone();
   const canCheckout = !!user && !!zone && !outsideZone && !needsAddress;
+  // Cart items carry the restaurant name in `item.category` (set in RestaurantMenu)
+  const restaurantName = items[0]?.item.category || "";
   if (!open) return null;
 
   return (
@@ -51,24 +54,32 @@ const Cart = ({
       {/* Panel */}
       <div className="fixed bottom-0 right-0 top-0 z-[60] flex w-full max-w-md flex-col border-l border-border bg-background">
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-border px-5 py-4">
-          <h2 className="font-display text-xl font-bold">Your Order</h2>
-          <div className="flex gap-2">
-            {items.length > 0 && (
+        <div className="border-b border-border px-5 py-4">
+          <div className="flex items-center justify-between">
+            <h2 className="font-display text-xl font-bold">Your Order</h2>
+            <div className="flex gap-2">
+              {items.length > 0 && (
+                <button
+                  onClick={onClear}
+                  className="rounded-lg p-2 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </button>
+              )}
               <button
-                onClick={onClear}
-                className="rounded-lg p-2 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
+                onClick={onClose}
+                className="rounded-lg p-2 text-muted-foreground transition-colors hover:bg-secondary"
               >
-                <Trash2 className="h-4 w-4" />
+                <X className="h-5 w-5" />
               </button>
-            )}
-            <button
-              onClick={onClose}
-              className="rounded-lg p-2 text-muted-foreground transition-colors hover:bg-secondary"
-            >
-              <X className="h-5 w-5" />
-            </button>
+            </div>
           </div>
+          {restaurantName && (
+            <p className="mt-1 text-[13px] font-medium text-muted-foreground">
+              Ordering from:{" "}
+              <RestaurantName as="span" size="sm" name={restaurantName} className="!text-[14px]" />
+            </p>
+          )}
         </div>
 
         {/* Items */}
