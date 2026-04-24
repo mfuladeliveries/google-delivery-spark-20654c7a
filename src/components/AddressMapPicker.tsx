@@ -207,20 +207,33 @@ export const AddressMapPicker = ({ onConfirm, initialAddress }: AddressMapPicker
               ✓ {detectedZone.name} · R{detectedZone.fee} delivery
             </p>
           )}
-          {!detectedZone && address && !loadingAddress && (
-            <p className="mt-2 inline-flex items-center gap-1 rounded-full bg-destructive/10 px-2 py-0.5 text-[10px] font-bold text-destructive">
-              ⚠️ Outside our delivery area
-            </p>
-          )}
         </div>
+
+        {!detectedZone && address && !loadingAddress && (
+          <div
+            role="alert"
+            className="flex items-start gap-3 rounded-2xl border-2 border-destructive/40 bg-destructive/10 p-3 animate-in fade-in slide-in-from-top-1"
+          >
+            <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-destructive text-destructive-foreground">
+              <AlertTriangle className="h-4 w-4" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-bold text-destructive">Outside our delivery area</p>
+              <p className="mt-0.5 text-[11px] leading-relaxed text-foreground">
+                We can't deliver to this pin yet. Move it to one of our zones:{" "}
+                <span className="font-semibold">{ALL_DELIVERY_AREAS}</span>.
+              </p>
+            </div>
+          </div>
+        )}
 
         <Button
           type="button"
           onClick={() => onConfirm({ address, lat: position[0], lng: position[1] })}
-          disabled={!address || loadingAddress}
+          disabled={!address || loadingAddress || !detectedZone}
           className={cn("h-12 w-full rounded-full text-sm font-bold")}
         >
-          Use this address
+          {!detectedZone && address && !loadingAddress ? "Pick a spot inside our zones" : "Use this address"}
         </Button>
       </div>
     </div>
