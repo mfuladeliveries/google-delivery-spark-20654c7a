@@ -1,12 +1,17 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Circle, MapContainer, Marker, Popup, TileLayer, useMap, useMapEvents } from "react-leaflet";
+import { Circle, MapContainer, Marker, TileLayer, useMap, useMapEvents } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { AlertTriangle, Crosshair, Loader2, MapPin, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
-import { ALL_DELIVERY_AREAS, detectZone } from "@/lib/zones";
+import {
+  DEFAULT_SERVICE_AREA,
+  evaluateServiceArea,
+  getServiceArea,
+  type ServiceAreaConfig,
+} from "@/lib/serviceArea";
 
 // Fix default marker icon paths (Leaflet + bundlers).
 const markerIcon = L.icon({
@@ -19,40 +24,13 @@ const markerIcon = L.icon({
   shadowSize: [41, 41],
 });
 
-// Default centre = Mfuleni, Cape Town
-const DEFAULT_CENTER: [number, number] = [-34.0233, 18.6781];
-
-// Approximate delivery-zone footprints (suburb centroids + radius in meters).
-// These are used to draw a visible boundary overlay so customers can see where
-// they're allowed to drop the pin. Final zone match still uses detectZone().
-const ZONE_AREAS: Array<{
-  zoneId: 1 | 2;
-  name: string;
-  center: [number, number];
-  radius: number;
-}> = [
-  // Zone 1 — R65
-  { zoneId: 1, name: "Mfuleni", center: [-34.0233, 18.6781], radius: 1800 },
-  { zoneId: 1, name: "Bluedowns", center: [-34.0058, 18.6622], radius: 1500 },
-  { zoneId: 1, name: "Bardale Village", center: [-34.0285, 18.6605], radius: 1200 },
-  { zoneId: 1, name: "Bosasa", center: [-34.0156, 18.6712], radius: 900 },
-  { zoneId: 1, name: "Belladonna", center: [-34.0192, 18.6892], radius: 900 },
-  // Zone 2 — R75
-  { zoneId: 2, name: "Eerste River", center: [-34.0233, 18.7244], radius: 2000 },
-  { zoneId: 2, name: "Summerville", center: [-34.0148, 18.7058], radius: 1100 },
-  { zoneId: 2, name: "Blackheath", center: [-33.9933, 18.6917], radius: 1700 },
-];
-
-const ZONE_STYLES: Record<1 | 2, { color: string; fill: string }> = {
-  1: { color: "hsl(24 95% 53%)", fill: "hsl(24 95% 53% / 0.15)" }, // primary orange
-  2: { color: "hsl(217 91% 60%)", fill: "hsl(217 91% 60% / 0.15)" }, // blue
-};
-
 interface AddressMapPickerProps {
   /** Called when the user confirms a picked location. */
   onConfirm: (result: { address: string; lat: number; lng: number }) => void;
   /** Optional initial address to centre on. */
   initialAddress?: string;
+  /** Optional initial coordinates (skips the geocode round-trip). */
+  initialCoords?: { lat: number; lng: number } | null;
 }
 
 const RecenterMap = ({ position }: { position: [number, number] }) => {
@@ -72,14 +50,28 @@ const ClickHandler = ({ onPick }: { onPick: (lat: number, lng: number) => void }
   return null;
 };
 
-export const AddressMapPicker = ({ onConfirm, initialAddress }: AddressMapPickerProps) => {
-  const [position, setPosition] = useState<[number, number]>(DEFAULT_CENTER);
+export const AddressMapPicker = ({ onConfirm, initialAddress, initialCoords }: AddressMapPickerProps) => {
+  const [config, setConfig] = useState<ServiceAreaConfig>(DEFAULT_SERVICE_AREA);
+  const [position, setPosition] = useState<[number, number]>(
+    initialCoords ? [initialCoords.lat, initialCoords.lng] : [DEFAULT_SERVICE_AREA.center_lat, DEFAULT_SERVICE_AREA.center_lng],
+  );
   const [address, setAddress] = useState<string>("");
   const [search, setSearch] = useState<string>("");
   const [loadingAddress, setLoadingAddress] = useState(false);
   const [locating, setLocating] = useState(false);
   const [searching, setSearching] = useState(false);
   const reverseAbort = useRef<AbortController | null>(null);
+
+  // Load admin-configured service area once
+  useEffect(() => {
+    let alive = true;
+    getServiceArea().then((cfg) => {
+      if (alive) setConfig(cfg);
+    });
+    return () => {
+      alive = false;
+    };
+  }, []);
 
   // Reverse-geocode whenever the pin moves
   useEffect(() => {
@@ -100,8 +92,9 @@ export const AddressMapPicker = ({ onConfirm, initialAddress }: AddressMapPicker
     return () => ctrl.abort();
   }, [position]);
 
-  // On first mount, try to centre on initial address
+  // On first mount, try to centre on initial address (if no coords given)
   useEffect(() => {
+    if (initialCoords) return;
     const q = initialAddress?.trim();
     if (!q) return;
     fetch(
@@ -150,29 +143,10 @@ export const AddressMapPicker = ({ onConfirm, initialAddress }: AddressMapPicker
     }
   };
 
-  const detectedZone = useMemo(() => detectZone(address), [address]);
-
-  // Geographically determine which circle the pin is currently inside.
-  // Picks the area whose centre is closest to the pin AND within its radius.
-  const activeArea = useMemo(() => {
-    const [lat, lng] = position;
-    const toRad = (d: number) => (d * Math.PI) / 180;
-    const distM = (a: [number, number], b: [number, number]) => {
-      const R = 6371000;
-      const dLat = toRad(b[0] - a[0]);
-      const dLng = toRad(b[1] - a[1]);
-      const s =
-        Math.sin(dLat / 2) ** 2 +
-        Math.cos(toRad(a[0])) * Math.cos(toRad(b[0])) * Math.sin(dLng / 2) ** 2;
-      return 2 * R * Math.asin(Math.sqrt(s));
-    };
-    let best: { area: (typeof ZONE_AREAS)[number]; d: number } | null = null;
-    for (const a of ZONE_AREAS) {
-      const d = distM([lat, lng], a.center);
-      if (d <= a.radius && (!best || d < best.d)) best = { area: a, d };
-    }
-    return best?.area ?? null;
-  }, [position]);
+  const service = useMemo(
+    () => evaluateServiceArea(position[0], position[1], config),
+    [position, config],
+  );
 
   return (
     <div className="flex h-full flex-col">
@@ -204,30 +178,18 @@ export const AddressMapPicker = ({ onConfirm, initialAddress }: AddressMapPicker
             attribution='&copy; <a href="https://osm.org/copyright">OpenStreetMap</a>'
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           />
-          {ZONE_AREAS.map((z) => {
-            const style = ZONE_STYLES[z.zoneId];
-            const isActive = activeArea?.name === z.name;
-            return (
-              <Circle
-                key={z.name}
-                center={z.center}
-                radius={z.radius}
-                pathOptions={{
-                  color: style.color,
-                  weight: isActive ? 4 : 2,
-                  fillColor: style.color,
-                  fillOpacity: isActive ? 0.35 : 0.15,
-                  dashArray: isActive ? undefined : "4 4",
-                }}
-              >
-                <Popup>
-                  <strong>{z.name}</strong>
-                  <br />
-                  Zone {z.zoneId} · R{z.zoneId === 1 ? 65 : 75} delivery
-                </Popup>
-              </Circle>
-            );
-          })}
+          {/* Subtle service-area ring (no labels — customer never sees "zones") */}
+          <Circle
+            center={[config.center_lat, config.center_lng]}
+            radius={config.outer_radius_km * 1000}
+            pathOptions={{
+              color: "hsl(24 95% 53%)",
+              weight: 1.5,
+              fillColor: "hsl(24 95% 53%)",
+              fillOpacity: 0.05,
+              dashArray: "4 6",
+            }}
+          />
           <Marker
             position={position}
             icon={markerIcon}
@@ -244,27 +206,6 @@ export const AddressMapPicker = ({ onConfirm, initialAddress }: AddressMapPicker
           <RecenterMap position={position} />
         </MapContainer>
 
-        {/* Live zone badge */}
-        <div className="pointer-events-none absolute left-3 top-3 z-[1000] max-w-[60%]">
-          {activeArea ? (
-            <div
-              key={activeArea.name}
-              className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-extrabold text-white shadow-lg ring-2 ring-white/70 animate-in fade-in slide-in-from-top-1"
-              style={{ background: ZONE_STYLES[activeArea.zoneId].color }}
-            >
-              <span aria-hidden>📍</span>
-              <span className="truncate">
-                You're in: {activeArea.name} · R{activeArea.zoneId === 1 ? 65 : 75}
-              </span>
-            </div>
-          ) : (
-            <div className="inline-flex items-center gap-1.5 rounded-full bg-card/95 px-3 py-1.5 text-[11px] font-bold text-destructive shadow-lg ring-1 ring-destructive/40 backdrop-blur">
-              <span aria-hidden>⚠️</span>
-              Outside delivery zones
-            </div>
-          )}
-        </div>
-
         {/* Use my location FAB */}
         <button
           type="button"
@@ -277,29 +218,9 @@ export const AddressMapPicker = ({ onConfirm, initialAddress }: AddressMapPicker
         </button>
       </div>
 
-      <div className="flex items-center justify-between gap-3 px-4 pt-2">
-        <p className="text-[11px] text-muted-foreground">
-          Tap the map or drag the pin to your exact spot.
-        </p>
-        <div className="flex items-center gap-2 text-[10px] font-semibold">
-          <span className="inline-flex items-center gap-1 text-foreground">
-            <span
-              className="h-2.5 w-2.5 rounded-full"
-              style={{ background: ZONE_STYLES[1].color, opacity: 0.6 }}
-              aria-hidden
-            />
-            R65
-          </span>
-          <span className="inline-flex items-center gap-1 text-foreground">
-            <span
-              className="h-2.5 w-2.5 rounded-full"
-              style={{ background: ZONE_STYLES[2].color, opacity: 0.6 }}
-              aria-hidden
-            />
-            R75
-          </span>
-        </div>
-      </div>
+      <p className="px-4 pt-2 text-[11px] text-muted-foreground">
+        Tap the map or drag the pin to your exact spot.
+      </p>
 
       {/* Selected address */}
       <div className="mt-3 space-y-2 px-4 pb-4">
@@ -315,14 +236,9 @@ export const AddressMapPicker = ({ onConfirm, initialAddress }: AddressMapPicker
               </p>
             </div>
           </div>
-          {detectedZone && !loadingAddress && (
-            <p className="mt-2 inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-bold text-primary">
-              ✓ {detectedZone.name} · R{detectedZone.fee} delivery
-            </p>
-          )}
         </div>
 
-        {!detectedZone && address && !loadingAddress && (
+        {!service.in_range && address && !loadingAddress && (
           <div
             role="alert"
             className="flex items-start gap-3 rounded-2xl border-2 border-destructive/40 bg-destructive/10 p-3 animate-in fade-in slide-in-from-top-1"
@@ -331,10 +247,9 @@ export const AddressMapPicker = ({ onConfirm, initialAddress }: AddressMapPicker
               <AlertTriangle className="h-4 w-4" />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-bold text-destructive">Outside our delivery area</p>
+              <p className="text-sm font-bold text-destructive">Delivery not available in your area</p>
               <p className="mt-0.5 text-[11px] leading-relaxed text-foreground">
-                We can't deliver to this pin yet. Move it to one of our zones:{" "}
-                <span className="font-semibold">{ALL_DELIVERY_AREAS}</span>.
+                Please pick a spot closer to the centre of our service area.
               </p>
             </div>
           </div>
@@ -343,10 +258,12 @@ export const AddressMapPicker = ({ onConfirm, initialAddress }: AddressMapPicker
         <Button
           type="button"
           onClick={() => onConfirm({ address, lat: position[0], lng: position[1] })}
-          disabled={!address || loadingAddress || !detectedZone}
+          disabled={!address || loadingAddress || !service.in_range}
           className={cn("h-12 w-full rounded-full text-sm font-bold")}
         >
-          {!detectedZone && address && !loadingAddress ? "Pick a spot inside our zones" : "Use this address"}
+          {!service.in_range && address && !loadingAddress
+            ? "Outside delivery range"
+            : "Use this address"}
         </Button>
       </div>
     </div>
