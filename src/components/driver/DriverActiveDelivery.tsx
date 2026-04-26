@@ -28,6 +28,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { sendPushNotification } from "@/lib/pushNotify";
 import { driverPayoutForFee } from "@/lib/serviceArea";
+import { OrderChat } from "@/components/OrderChat";
+import { useAuth } from "@/hooks/useAuth";
 
 interface Order {
   id: string;
