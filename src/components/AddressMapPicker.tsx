@@ -3,6 +3,7 @@ import { Circle, MapContainer, Marker, TileLayer, useMap, useMapEvents } from "r
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { AlertTriangle, Check, Crosshair, Loader2, MapPin, Pencil, Search } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
@@ -303,7 +304,13 @@ export const AddressMapPicker = ({ onConfirm, initialAddress, initialCoords }: A
               </Button>
               <Button
                 type="button"
-                onClick={() => onConfirm({ address, lat: position[0], lng: position[1] })}
+                onClick={() => {
+                  const shortAddress = address.length > 60 ? `${address.slice(0, 60)}…` : address;
+                  toast.success("Address saved", {
+                    description: shortAddress,
+                  });
+                  onConfirm({ address, lat: position[0], lng: position[1] });
+                }}
                 className="h-11 flex-1 rounded-full text-sm font-bold"
               >
                 <Check className="h-4 w-4" />
