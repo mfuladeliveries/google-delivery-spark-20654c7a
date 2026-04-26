@@ -313,6 +313,16 @@ const DriverActiveDelivery = ({ orders, driverLocation, onDeliveryComplete, onSt
                 </a>
               </div>
 
+              {/* Live chat with customer */}
+              {user && (
+                <OrderChat
+                  orderId={order.id}
+                  userId={user.id}
+                  role="driver"
+                  counterpartyLabel={order.customer_name?.split(" ")[0] || "Customer"}
+                />
+              )}
+
               {/* Order items */}
               <div className="rounded-xl border border-border p-3">
                 <p className="text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wide">Order Items</p>
