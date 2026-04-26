@@ -129,6 +129,8 @@ const Orders = () => {
             items: (o.items as unknown as OrderItem[]) || [],
             delivery_code: o.delivery_code || "",
             customer_address: o.customer_address || "",
+            restaurant_id: o.restaurant_id ?? null,
+            driver_id: o.driver_id ?? null,
           }))
         );
         const deliveredIds = data.filter(o => o.status === "delivered" || o.status === "cancelled" || o.status === "rejected").map(o => o.id);
@@ -141,8 +143,18 @@ const Orders = () => {
       }
       setLoading(false);
     };
+
+    const fetchRatings = async () => {
+      const { data } = await supabase
+        .from("order_ratings")
+        .select("order_id")
+        .eq("customer_id", user.id);
+      if (data) setRatedOrderIds(new Set(data.map((r: any) => r.order_id)));
+    };
+
     fetchOrders();
     fetchNotificationLog();
+    fetchRatings();
 
     const channel = supabase
       .channel('customer-orders')
