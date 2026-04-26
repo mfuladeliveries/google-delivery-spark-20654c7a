@@ -295,6 +295,103 @@ const Orders = () => {
           </div>
         </div>
 
+        {/* Your ratings history */}
+        {ratings.length > 0 && (
+          <section className="mb-4 rounded-2xl border border-border bg-card shadow-card">
+            <button
+              type="button"
+              onClick={() => setRatingsOpen((v) => !v)}
+              className="flex w-full items-center justify-between gap-2 px-4 py-3 text-left"
+              aria-expanded={ratingsOpen}
+            >
+              <div className="flex items-center gap-2">
+                <Star className="h-4 w-4 text-primary" />
+                <h2 className="text-sm font-bold text-foreground">Your ratings</h2>
+                <span className="rounded-full bg-secondary px-2 py-0.5 text-[10px] font-semibold text-muted-foreground">
+                  {ratings.length}
+                </span>
+              </div>
+              <span className="text-xs font-semibold text-primary">
+                {ratingsOpen ? "Hide" : "Show"}
+              </span>
+            </button>
+            {ratingsOpen && (
+              <ul className="divide-y divide-border border-t border-border">
+                {ratings.map((r) => {
+                  const order = orders.find((o) => o.id === r.order_id);
+                  const restaurantName = order?.restaurant || "Order";
+                  const orderNumber = order?.order_number;
+                  const ratedAt = new Date(r.created_at);
+                  const ratedLabel = ratedAt.toLocaleDateString(undefined, {
+                    day: "numeric",
+                    month: "short",
+                    year: "numeric",
+                  });
+                  return (
+                    <li key={r.id} className="px-4 py-3">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-sm font-semibold text-foreground">
+                            {restaurantName}
+                            {orderNumber ? (
+                              <span className="ml-1 font-normal text-muted-foreground">
+                                #{orderNumber}
+                              </span>
+                            ) : null}
+                          </p>
+                          <p className="mt-0.5 text-[11px] text-muted-foreground">
+                            Rated on {ratedLabel}
+                          </p>
+                        </div>
+                        <CheckCircle className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+                      </div>
+                      <div className="mt-2 flex flex-wrap items-center gap-3 text-xs">
+                        <span className="flex items-center gap-1 text-muted-foreground">
+                          Food:
+                          <span className="flex">
+                            {[1, 2, 3, 4, 5].map((n) => (
+                              <Star
+                                key={n}
+                                className={`h-3.5 w-3.5 ${
+                                  n <= r.food_rating
+                                    ? "fill-primary text-primary"
+                                    : "text-muted-foreground/40"
+                                }`}
+                              />
+                            ))}
+                          </span>
+                        </span>
+                        {r.driver_rating ? (
+                          <span className="flex items-center gap-1 text-muted-foreground">
+                            Driver:
+                            <span className="flex">
+                              {[1, 2, 3, 4, 5].map((n) => (
+                                <Star
+                                  key={n}
+                                  className={`h-3.5 w-3.5 ${
+                                    n <= (r.driver_rating || 0)
+                                      ? "fill-primary text-primary"
+                                      : "text-muted-foreground/40"
+                                  }`}
+                                />
+                              ))}
+                            </span>
+                          </span>
+                        ) : null}
+                      </div>
+                      {r.comment ? (
+                        <p className="mt-2 rounded-lg bg-secondary/40 px-2.5 py-1.5 text-xs italic text-foreground">
+                          “{r.comment}”
+                        </p>
+                      ) : null}
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </section>
+        )}
+
         {orders.length === 0 ? (
           <div className="py-20 text-center text-muted-foreground">
             <Package className="mx-auto h-12 w-12 opacity-40" />
