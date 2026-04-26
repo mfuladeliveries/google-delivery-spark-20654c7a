@@ -10,6 +10,8 @@ import CheckoutDialog from "@/components/CheckoutDialog";
 import BottomNav from "@/components/BottomNav";
 import ProductCustomizeModal from "@/components/ProductCustomizeModal";
 import { RestaurantName } from "@/components/RestaurantName";
+import { popReorder } from "@/lib/reorder";
+import { toast } from "sonner";
 
 interface Restaurant {
   id: string;
