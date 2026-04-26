@@ -312,27 +312,33 @@ export type Database = {
       }
       order_messages: {
         Row: {
+          attachment_type: string | null
+          attachment_url: string | null
           created_at: string
           id: string
-          message: string
+          message: string | null
           order_id: string
           read_at: string | null
           sender_id: string
           sender_role: string
         }
         Insert: {
+          attachment_type?: string | null
+          attachment_url?: string | null
           created_at?: string
           id?: string
-          message: string
+          message?: string | null
           order_id: string
           read_at?: string | null
           sender_id: string
           sender_role: string
         }
         Update: {
+          attachment_type?: string | null
+          attachment_url?: string | null
           created_at?: string
           id?: string
-          message?: string
+          message?: string | null
           order_id?: string
           read_at?: string | null
           sender_id?: string
