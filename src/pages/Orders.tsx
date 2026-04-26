@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate, Link } from "react-router-dom";
-import { ArrowLeft, Clock, Package, CheckCircle, Truck, ChefHat, AlertCircle, ShieldCheck, UserCheck, Store, Bike, Wallet, Banknote, BellRing, Bell, Star, RotateCcw } from "lucide-react";
+import { ArrowLeft, Clock, Package, CheckCircle, Truck, ChefHat, AlertCircle, ShieldCheck, UserCheck, Store, Bike, Wallet, Banknote, BellRing, Bell, Star, RotateCcw, Search, X } from "lucide-react";
 import { storeInfo } from "@/data/menu";
 import BottomNav from "@/components/BottomNav";
 import OrderTrackingMap from "@/components/OrderTrackingMap";
@@ -101,6 +101,7 @@ const Orders = () => {
   const [ratingsOpen, setRatingsOpen] = useState(false);
   const [ratingsSort, setRatingsSort] = useState<"newest" | "oldest" | "highest" | "lowest">("newest");
   const [ratingsPage, setRatingsPage] = useState(1);
+  const [ratingsQuery, setRatingsQuery] = useState("");
   const RATINGS_PAGE_SIZE = 5;
   const [ratingTarget, setRatingTarget] = useState<RatingTarget | null>(null);
   const { prefs, update: updatePrefs } = useNotificationPrefs();
@@ -300,7 +301,17 @@ const Orders = () => {
 
         {/* Your ratings history */}
         {ratings.length > 0 && (() => {
-          const sorted = [...ratings].sort((a, b) => {
+          const q = ratingsQuery.trim().toLowerCase();
+          const filtered = q
+            ? ratings.filter((r) => {
+                const order = orders.find((o) => o.id === r.order_id);
+                const name = (order?.restaurant || "").toLowerCase();
+                const num = order?.order_number != null ? String(order.order_number) : "";
+                const qNum = q.replace(/^#/, "");
+                return name.includes(q) || num.includes(qNum);
+              })
+            : ratings;
+          const sorted = [...filtered].sort((a, b) => {
             if (ratingsSort === "newest") return +new Date(b.created_at) - +new Date(a.created_at);
             if (ratingsSort === "oldest") return +new Date(a.created_at) - +new Date(b.created_at);
             if (ratingsSort === "highest") return b.food_rating - a.food_rating;
@@ -331,6 +342,35 @@ const Orders = () => {
             </button>
             {ratingsOpen && (
               <>
+                <div className="border-t border-border px-4 py-2.5">
+                  <div className="relative">
+                    <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+                    <input
+                      type="search"
+                      value={ratingsQuery}
+                      onChange={(e) => {
+                        setRatingsQuery(e.target.value);
+                        setRatingsPage(1);
+                      }}
+                      placeholder="Search by restaurant or order #"
+                      aria-label="Search ratings"
+                      className="w-full rounded-md border border-border bg-background py-1.5 pl-8 pr-8 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                    />
+                    {ratingsQuery && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setRatingsQuery("");
+                          setRatingsPage(1);
+                        }}
+                        aria-label="Clear search"
+                        className="absolute right-2 top-1/2 -translate-y-1/2 rounded text-muted-foreground hover:text-foreground"
+                      >
+                        <X className="h-3.5 w-3.5" />
+                      </button>
+                    )}
+                  </div>
+                </div>
                 <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border px-4 py-2.5">
                   <label className="flex items-center gap-2 text-xs text-muted-foreground">
                     Sort by
@@ -350,9 +390,16 @@ const Orders = () => {
                     </select>
                   </label>
                   <span className="text-[11px] text-muted-foreground">
-                    Showing {start + 1}–{Math.min(start + RATINGS_PAGE_SIZE, sorted.length)} of {sorted.length}
+                    {sorted.length === 0
+                      ? "No matches"
+                      : `Showing ${start + 1}–${Math.min(start + RATINGS_PAGE_SIZE, sorted.length)} of ${sorted.length}`}
                   </span>
                 </div>
+                {sorted.length === 0 && (
+                  <div className="border-t border-border px-4 py-6 text-center text-xs text-muted-foreground">
+                    No ratings match “{ratingsQuery}”.
+                  </div>
+                )}
                 <ul className="divide-y divide-border border-t border-border">
                   {pageItems.map((r) => {
                     const order = orders.find((o) => o.id === r.order_id);
