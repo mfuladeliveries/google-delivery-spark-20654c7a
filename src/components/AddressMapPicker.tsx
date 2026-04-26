@@ -308,6 +308,8 @@ export const AddressMapPicker = ({ onConfirm, initialAddress, initialCoords }: A
                   const shortAddress = address.length > 60 ? `${address.slice(0, 60)}…` : address;
                   toast.success("Address saved", {
                     description: shortAddress,
+                    duration: 3000,
+                    closeButton: true,
                   });
                   onConfirm({ address, lat: position[0], lng: position[1] });
                 }}
