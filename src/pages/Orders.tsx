@@ -209,6 +209,22 @@ const Orders = () => {
     }
   };
 
+  const handleReorder = (order: Order) => {
+    if (!order.restaurant_id) {
+      toast.error("This restaurant is no longer available");
+      return;
+    }
+    const seeds = order.items
+      .filter((it) => !!it.id)
+      .map((it) => ({ id: it.id as string, quantity: it.quantity }));
+    if (seeds.length === 0) {
+      toast.error("No reorderable items in this order");
+      return;
+    }
+    stashReorder({ restaurantId: order.restaurant_id, items: seeds });
+    navigate(`/restaurant/${order.restaurant_id}`);
+  };
+
   if (authLoading || loading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
