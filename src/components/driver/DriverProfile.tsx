@@ -23,6 +23,8 @@ const DriverProfileTab = () => {
   const [driverData, setDriverData] = useState<DriverProfileData>({ vehicle_type: "", license_plate: "", license_url: "", id_document_url: "" });
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState<string | null>(null);
+  const [ratingAvg, setRatingAvg] = useState<number | null>(null);
+  const [ratingCount, setRatingCount] = useState(0);
 
   useEffect(() => {
     if (!user) return;
