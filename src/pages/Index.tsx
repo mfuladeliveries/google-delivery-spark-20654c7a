@@ -41,6 +41,12 @@ const Index = () => {
 
   // Lock providers (admin / driver / restaurant) into their own dashboards.
   // A user with ONLY a provider role should not be able to browse the customer app.
+  const isProviderOnly =
+    !!user &&
+    roles.length > 0 &&
+    !roles.includes("customer") &&
+    (roles.includes("admin") || roles.includes("driver") || roles.includes("restaurant"));
+
   useEffect(() => {
     if (authLoading || !user || roles.length === 0) return;
     if (roles.includes("customer")) return; // anyone who is also a customer can browse freely
@@ -48,6 +54,12 @@ const Index = () => {
     else if (roles.includes("driver")) navigate("/driver", { replace: true });
     else if (roles.includes("restaurant")) navigate("/restaurant/dashboard", { replace: true });
   }, [user, roles, authLoading, navigate]);
+
+  // While auth is resolving, or if a provider-only user briefly lands here,
+  // render nothing so the customer UI never flashes before the redirect.
+  if (authLoading || isProviderOnly) {
+    return <div className="min-h-screen bg-background" />;
+  }
 
   useEffect(() => {
     const fetchRestaurants = async () => {
