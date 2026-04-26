@@ -55,12 +55,6 @@ const Index = () => {
     else if (roles.includes("restaurant")) navigate("/restaurant/dashboard", { replace: true });
   }, [user, roles, authLoading, navigate]);
 
-  // While auth is resolving, or if a provider-only user briefly lands here,
-  // render nothing so the customer UI never flashes before the redirect.
-  if (authLoading || isProviderOnly) {
-    return <div className="min-h-screen bg-background" />;
-  }
-
   useEffect(() => {
     const fetchRestaurants = async () => {
       const { data } = await supabase.
@@ -91,6 +85,12 @@ const Index = () => {
     setCartOpen(false);
     setCheckoutOpen(true);
   };
+
+  // While auth is resolving, or if a provider-only user briefly lands here,
+  // render nothing so the customer UI never flashes before the redirect.
+  if (authLoading || isProviderOnly) {
+    return <div className="min-h-screen bg-background" />;
+  }
 
   return (
     <div className="min-h-screen bg-background">
