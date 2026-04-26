@@ -10,6 +10,8 @@ import CheckoutDialog from "@/components/CheckoutDialog";
 import BottomNav from "@/components/BottomNav";
 import ProductCustomizeModal from "@/components/ProductCustomizeModal";
 import { RestaurantName } from "@/components/RestaurantName";
+import { popReorder } from "@/lib/reorder";
+import { toast } from "sonner";
 
 interface Restaurant {
   id: string;
@@ -120,6 +122,53 @@ const RestaurantMenu = () => {
     };
     if (id) fetchData();
   }, [id, navigate]);
+
+  // One-tap reorder: if a handoff was stashed from the Orders page,
+  // pre-fill the cart once this restaurant's menu has loaded. Items not
+  // currently available are silently skipped (and reported via toast).
+  useEffect(() => {
+    if (!id || loading || menuItems.length === 0) return;
+    const seeds = popReorder(id);
+    if (!seeds || seeds.length === 0) return;
+
+    let added = 0;
+    let skipped = 0;
+    seeds.forEach(({ id: seedId, quantity }) => {
+      const match = menuItems.find((m) => m.id === seedId);
+      if (!match) {
+        skipped += 1;
+        return;
+      }
+      const qty = Math.max(1, Math.min(20, Math.floor(quantity || 1)));
+      // Only auto-add items without required customisation.
+      // Items with cuts/sizes/add-ons need a fresh selection.
+      if (
+        (match.has_cuts && (match.cuts?.length ?? 0) > 0) ||
+        (match.has_sizes && (match.sizes?.length ?? 0) > 0)
+      ) {
+        skipped += 1;
+        return;
+      }
+      for (let i = 0; i < qty; i++) cart.addItem(toMenuItem(match));
+      added += 1;
+    });
+
+    if (added > 0) {
+      setCartOpen(true);
+      toast.success(
+        `${added} item${added > 1 ? "s" : ""} added to your cart`,
+        skipped > 0
+          ? { description: `${skipped} item${skipped > 1 ? "s" : ""} need${skipped === 1 ? "s" : ""} customisation — please add ${skipped === 1 ? "it" : "them"} manually.`, duration: 5000 }
+          : { description: "Review your order, then check out.", duration: 4000 }
+      );
+    } else if (skipped > 0) {
+      toast.info("Couldn't auto-add items", {
+        description: "Please re-select your options on the menu.",
+      });
+    }
+    // We intentionally only run this after the menu is loaded.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id, loading, menuItems.length]);
 
   const categories = ["All", ...Array.from(new Set(menuItems.map(i => i.category)))];
 

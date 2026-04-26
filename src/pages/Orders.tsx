@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate, Link } from "react-router-dom";
-import { ArrowLeft, Clock, Package, CheckCircle, Truck, ChefHat, AlertCircle, ShieldCheck, UserCheck, Store, Bike, Wallet, Banknote, BellRing, Bell } from "lucide-react";
+import { ArrowLeft, Clock, Package, CheckCircle, Truck, ChefHat, AlertCircle, ShieldCheck, UserCheck, Store, Bike, Wallet, Banknote, BellRing, Bell, Star, RotateCcw } from "lucide-react";
 import { storeInfo } from "@/data/menu";
 import BottomNav from "@/components/BottomNav";
 import OrderTrackingMap from "@/components/OrderTrackingMap";
@@ -11,8 +11,11 @@ import { getHomeRouteForRoles } from "@/lib/homeRoute";
 import { useNotificationPrefs } from "@/hooks/useNotificationPrefs";
 import { Switch } from "@/components/ui/switch";
 import { RestaurantName } from "@/components/RestaurantName";
+import { RatingDialog } from "@/components/RatingDialog";
+import { stashReorder } from "@/lib/reorder";
 
 interface OrderItem {
+  id?: string;
   name: string;
   category: string;
   price: number;
@@ -24,6 +27,8 @@ interface Order {
   order_number: number;
   items: OrderItem[];
   restaurant: string;
+  restaurant_id: string | null;
+  driver_id: string | null;
   subtotal: number;
   tax: number;
   delivery_fee: number;
@@ -39,6 +44,13 @@ interface Order {
   refund_status?: "pending" | "credited" | "bank_pending" | "bank_paid" | null;
   refund_method?: "credits" | "bank" | null;
   refund_amount?: number | null;
+}
+
+interface RatingTarget {
+  orderId: string;
+  restaurantId: string | null;
+  driverId: string | null;
+  restaurantName: string;
 }
 
 const statusSteps = [
@@ -75,6 +87,8 @@ const Orders = () => {
   const [loading, setLoading] = useState(true);
   const [deliveryPins, setDeliveryPins] = useState<Record<string, string>>({});
   const [notificationLog, setNotificationLog] = useState<Record<string, Set<string>>>({});
+  const [ratedOrderIds, setRatedOrderIds] = useState<Set<string>>(new Set());
+  const [ratingTarget, setRatingTarget] = useState<RatingTarget | null>(null);
   const { prefs, update: updatePrefs } = useNotificationPrefs();
 
   useEffect(() => {
@@ -115,6 +129,8 @@ const Orders = () => {
             items: (o.items as unknown as OrderItem[]) || [],
             delivery_code: o.delivery_code || "",
             customer_address: o.customer_address || "",
+            restaurant_id: o.restaurant_id ?? null,
+            driver_id: o.driver_id ?? null,
           }))
         );
         const deliveredIds = data.filter(o => o.status === "delivered" || o.status === "cancelled" || o.status === "rejected").map(o => o.id);
@@ -127,8 +143,18 @@ const Orders = () => {
       }
       setLoading(false);
     };
+
+    const fetchRatings = async () => {
+      const { data } = await supabase
+        .from("order_ratings")
+        .select("order_id")
+        .eq("customer_id", user.id);
+      if (data) setRatedOrderIds(new Set(data.map((r: any) => r.order_id)));
+    };
+
     fetchOrders();
     fetchNotificationLog();
+    fetchRatings();
 
     const channel = supabase
       .channel('customer-orders')
@@ -181,6 +207,22 @@ const Orders = () => {
         duration: 8000,
       });
     }
+  };
+
+  const handleReorder = (order: Order) => {
+    if (!order.restaurant_id) {
+      toast.error("This restaurant is no longer available");
+      return;
+    }
+    const seeds = order.items
+      .filter((it) => !!it.id)
+      .map((it) => ({ id: it.id as string, quantity: it.quantity }));
+    if (seeds.length === 0) {
+      toast.error("No reorderable items in this order");
+      return;
+    }
+    stashReorder({ restaurantId: order.restaurant_id, items: seeds });
+    navigate(`/restaurant/${order.restaurant_id}`);
   };
 
   if (authLoading || loading) {
@@ -467,6 +509,43 @@ const Orders = () => {
                       <span>Total {order.tip > 0 && `(incl. R${order.tip} tip)`}</span>
                       <span className="text-primary">{storeInfo.currency}{(order.total + 15).toFixed(2)}</span>
                     </div>
+
+                    {/* Post-delivery actions: rate + reorder */}
+                    {(order.status === "delivered" || isCancelled) && (
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        {order.status === "delivered" && !ratedOrderIds.has(order.id) && (
+                          <button
+                            onClick={() =>
+                              setRatingTarget({
+                                orderId: order.id,
+                                restaurantId: order.restaurant_id,
+                                driverId: order.driver_id,
+                                restaurantName: order.restaurant,
+                              })
+                            }
+                            className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-primary px-3 py-2.5 text-xs font-bold text-primary-foreground hover:opacity-90"
+                          >
+                            <Star className="h-3.5 w-3.5" />
+                            Rate order
+                          </button>
+                        )}
+                        {order.status === "delivered" && ratedOrderIds.has(order.id) && (
+                          <span className="flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-border bg-secondary/40 px-3 py-2.5 text-xs font-semibold text-muted-foreground">
+                            <CheckCircle className="h-3.5 w-3.5 text-primary" />
+                            Rated
+                          </span>
+                        )}
+                        {order.restaurant_id && (
+                          <button
+                            onClick={() => handleReorder(order)}
+                            className="flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-border bg-card px-3 py-2.5 text-xs font-bold text-foreground hover:bg-secondary"
+                          >
+                            <RotateCcw className="h-3.5 w-3.5" />
+                            Order again
+                          </button>
+                        )}
+                      </div>
+                    )}
                   </div>
 
                 </div>
@@ -476,6 +555,25 @@ const Orders = () => {
         )}
       </main>
       <BottomNav />
+
+      {ratingTarget && user && (
+        <RatingDialog
+          open={!!ratingTarget}
+          onOpenChange={(o) => { if (!o) setRatingTarget(null); }}
+          orderId={ratingTarget.orderId}
+          restaurantId={ratingTarget.restaurantId}
+          driverId={ratingTarget.driverId}
+          customerId={user.id}
+          restaurantName={ratingTarget.restaurantName}
+          onSaved={() =>
+            setRatedOrderIds((prev) => {
+              const next = new Set(prev);
+              next.add(ratingTarget.orderId);
+              return next;
+            })
+          }
+        />
+      )}
     </div>
   );
 };

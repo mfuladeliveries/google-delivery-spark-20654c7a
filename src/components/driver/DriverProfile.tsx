@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { Camera, Upload, Save, Car, FileText, CreditCard, LogOut, User } from "lucide-react";
+import { Camera, Upload, Save, Car, FileText, CreditCard, LogOut, User, Star } from "lucide-react";
 import { toast } from "sonner";
 
 interface ProfileData {
@@ -23,6 +23,8 @@ const DriverProfileTab = () => {
   const [driverData, setDriverData] = useState<DriverProfileData>({ vehicle_type: "", license_plate: "", license_url: "", id_document_url: "" });
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState<string | null>(null);
+  const [ratingAvg, setRatingAvg] = useState<number | null>(null);
+  const [ratingCount, setRatingCount] = useState(0);
 
   useEffect(() => {
     if (!user) return;
@@ -30,9 +32,10 @@ const DriverProfileTab = () => {
   }, [user]);
 
   const fetchData = async () => {
-    const [{ data: p }, { data: d }] = await Promise.all([
+    const [{ data: p }, { data: d }, { data: ratings }] = await Promise.all([
       supabase.from("profiles").select("full_name, contact_number, address").eq("user_id", user!.id).maybeSingle(),
       supabase.from("driver_profiles").select("vehicle_type, license_plate, license_url, id_document_url").eq("user_id", user!.id).maybeSingle(),
+      supabase.from("order_ratings").select("driver_rating").eq("driver_id", user!.id).not("driver_rating", "is", null),
     ]);
     if (p) setProfile(p);
     if (d) {
@@ -47,6 +50,14 @@ const DriverProfileTab = () => {
         if (s2?.signedUrl) withSignedUrls.id_document_url = s2.signedUrl;
       }
       setDriverData(withSignedUrls);
+    }
+    if (ratings && ratings.length > 0) {
+      const sum = ratings.reduce((acc, r: any) => acc + Number(r.driver_rating || 0), 0);
+      setRatingAvg(sum / ratings.length);
+      setRatingCount(ratings.length);
+    } else {
+      setRatingAvg(null);
+      setRatingCount(0);
     }
   };
 
@@ -95,6 +106,15 @@ const DriverProfileTab = () => {
         </div>
         <p className="font-bold text-foreground text-lg">{profile.full_name || "Driver"}</p>
         <p className="text-sm text-muted-foreground">{user?.email}</p>
+        {ratingAvg !== null ? (
+          <div className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1">
+            <Star className="h-4 w-4 fill-primary text-primary" />
+            <span className="text-sm font-bold text-primary">{ratingAvg.toFixed(1)}</span>
+            <span className="text-xs text-muted-foreground">({ratingCount} {ratingCount === 1 ? "rating" : "ratings"})</span>
+          </div>
+        ) : (
+          <p className="mt-2 text-xs text-muted-foreground">No ratings yet</p>
+        )}
       </div>
 
       {/* Personal Info */}
