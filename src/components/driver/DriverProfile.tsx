@@ -106,6 +106,15 @@ const DriverProfileTab = () => {
         </div>
         <p className="font-bold text-foreground text-lg">{profile.full_name || "Driver"}</p>
         <p className="text-sm text-muted-foreground">{user?.email}</p>
+        {ratingAvg !== null ? (
+          <div className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1">
+            <Star className="h-4 w-4 fill-primary text-primary" />
+            <span className="text-sm font-bold text-primary">{ratingAvg.toFixed(1)}</span>
+            <span className="text-xs text-muted-foreground">({ratingCount} {ratingCount === 1 ? "rating" : "ratings"})</span>
+          </div>
+        ) : (
+          <p className="mt-2 text-xs text-muted-foreground">No ratings yet</p>
+        )}
       </div>
 
       {/* Personal Info */}
