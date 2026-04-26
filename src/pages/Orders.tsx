@@ -342,6 +342,35 @@ const Orders = () => {
             </button>
             {ratingsOpen && (
               <>
+                <div className="border-t border-border px-4 py-2.5">
+                  <div className="relative">
+                    <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+                    <input
+                      type="search"
+                      value={ratingsQuery}
+                      onChange={(e) => {
+                        setRatingsQuery(e.target.value);
+                        setRatingsPage(1);
+                      }}
+                      placeholder="Search by restaurant or order #"
+                      aria-label="Search ratings"
+                      className="w-full rounded-md border border-border bg-background py-1.5 pl-8 pr-8 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                    />
+                    {ratingsQuery && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setRatingsQuery("");
+                          setRatingsPage(1);
+                        }}
+                        aria-label="Clear search"
+                        className="absolute right-2 top-1/2 -translate-y-1/2 rounded text-muted-foreground hover:text-foreground"
+                      >
+                        <X className="h-3.5 w-3.5" />
+                      </button>
+                    )}
+                  </div>
+                </div>
                 <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border px-4 py-2.5">
                   <label className="flex items-center gap-2 text-xs text-muted-foreground">
                     Sort by
@@ -361,9 +390,16 @@ const Orders = () => {
                     </select>
                   </label>
                   <span className="text-[11px] text-muted-foreground">
-                    Showing {start + 1}–{Math.min(start + RATINGS_PAGE_SIZE, sorted.length)} of {sorted.length}
+                    {sorted.length === 0
+                      ? "No matches"
+                      : `Showing ${start + 1}–${Math.min(start + RATINGS_PAGE_SIZE, sorted.length)} of ${sorted.length}`}
                   </span>
                 </div>
+                {sorted.length === 0 && (
+                  <div className="border-t border-border px-4 py-6 text-center text-xs text-muted-foreground">
+                    No ratings match “{ratingsQuery}”.
+                  </div>
+                )}
                 <ul className="divide-y divide-border border-t border-border">
                   {pageItems.map((r) => {
                     const order = orders.find((o) => o.id === r.order_id);
