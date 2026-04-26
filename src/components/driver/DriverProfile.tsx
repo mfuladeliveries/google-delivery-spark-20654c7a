@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { Camera, Upload, Save, Car, FileText, CreditCard, LogOut, User } from "lucide-react";
+import { Camera, Upload, Save, Car, FileText, CreditCard, LogOut, User, Star } from "lucide-react";
 import { toast } from "sonner";
 
 interface ProfileData {
