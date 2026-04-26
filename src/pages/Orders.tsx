@@ -15,6 +15,7 @@ import { RatingDialog } from "@/components/RatingDialog";
 import { stashReorder } from "@/lib/reorder";
 
 interface OrderItem {
+  id?: string;
   name: string;
   category: string;
   price: number;
@@ -26,6 +27,8 @@ interface Order {
   order_number: number;
   items: OrderItem[];
   restaurant: string;
+  restaurant_id: string | null;
+  driver_id: string | null;
   subtotal: number;
   tax: number;
   delivery_fee: number;
@@ -41,6 +44,13 @@ interface Order {
   refund_status?: "pending" | "credited" | "bank_pending" | "bank_paid" | null;
   refund_method?: "credits" | "bank" | null;
   refund_amount?: number | null;
+}
+
+interface RatingTarget {
+  orderId: string;
+  restaurantId: string | null;
+  driverId: string | null;
+  restaurantName: string;
 }
 
 const statusSteps = [
