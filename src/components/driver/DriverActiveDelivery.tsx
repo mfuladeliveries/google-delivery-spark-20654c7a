@@ -28,6 +28,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { sendPushNotification } from "@/lib/pushNotify";
 import { driverPayoutForFee } from "@/lib/serviceArea";
+import { OrderChat } from "@/components/OrderChat";
+import { useAuth } from "@/hooks/useAuth";
 
 interface Order {
   id: string;
@@ -81,6 +83,7 @@ const DriverActiveDelivery = ({ orders, driverLocation, onDeliveryComplete, onSt
   const [updatingStatus, setUpdatingStatus] = useState<string | null>(null);
   const [cancelOrderId, setCancelOrderId] = useState<string | null>(null);
   const [cancelling, setCancelling] = useState(false);
+  const { user } = useAuth();
 
   const handleCancelUnavailable = async () => {
     if (!cancelOrderId) return;
@@ -309,6 +312,16 @@ const DriverActiveDelivery = ({ orders, driverLocation, onDeliveryComplete, onSt
                   <Phone className="h-5 w-5" />
                 </a>
               </div>
+
+              {/* Live chat with customer */}
+              {user && (
+                <OrderChat
+                  orderId={order.id}
+                  userId={user.id}
+                  role="driver"
+                  counterpartyLabel={order.customer_name?.split(" ")[0] || "Customer"}
+                />
+              )}
 
               {/* Order items */}
               <div className="rounded-xl border border-border p-3">

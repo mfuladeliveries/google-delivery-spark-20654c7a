@@ -13,6 +13,7 @@ import { Switch } from "@/components/ui/switch";
 import { RestaurantName } from "@/components/RestaurantName";
 import { RatingDialog } from "@/components/RatingDialog";
 import { stashReorder } from "@/lib/reorder";
+import { OrderChat } from "@/components/OrderChat";
 
 interface OrderItem {
   id?: string;
@@ -644,6 +645,18 @@ const Orders = () => {
                       <div className="mb-3">
                         <p className="text-xs font-medium text-muted-foreground mb-1.5">📍 Live Tracking</p>
                         <OrderTrackingMap orderId={order.id} customerAddress={order.customer_address} />
+                      </div>
+                    )}
+
+                    {/* Live chat with the assigned driver — available from assignment until delivered */}
+                    {driverAccepted && order.driver_id && user && (
+                      <div className="mb-3">
+                        <OrderChat
+                          orderId={order.id}
+                          userId={user.id}
+                          role="customer"
+                          counterpartyLabel="Driver"
+                        />
                       </div>
                     )}
 

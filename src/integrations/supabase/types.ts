@@ -310,6 +310,36 @@ export type Database = {
           },
         ]
       }
+      order_messages: {
+        Row: {
+          created_at: string
+          id: string
+          message: string
+          order_id: string
+          read_at: string | null
+          sender_id: string
+          sender_role: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          message: string
+          order_id: string
+          read_at?: string | null
+          sender_id: string
+          sender_role: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          message?: string
+          order_id?: string
+          read_at?: string | null
+          sender_id?: string
+          sender_role?: string
+        }
+        Relationships: []
+      }
       order_notification_log: {
         Row: {
           id: string
@@ -923,6 +953,10 @@ export type Database = {
           _role: Database["public"]["Enums"]["app_role"]
           _user_id: string
         }
+        Returns: boolean
+      }
+      is_order_participant: {
+        Args: { _order_id: string; _user_id: string }
         Returns: boolean
       }
       request_withdrawal: { Args: { p_amount: number }; Returns: string }
