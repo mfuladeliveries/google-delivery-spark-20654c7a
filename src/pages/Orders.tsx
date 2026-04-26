@@ -679,7 +679,7 @@ const Orders = () => {
           driverId={ratingTarget.driverId}
           customerId={user.id}
           restaurantName={ratingTarget.restaurantName}
-          onSaved={() => {
+          onSaved={async () => {
             const savedId = ratingTarget.orderId;
             setRatedOrderIds((prev) => {
               const next = new Set(prev);
@@ -687,6 +687,16 @@ const Orders = () => {
               return next;
             });
             setRatingTarget(null);
+            // Refresh ratings history so the new entry shows up immediately
+            if (user) {
+              const { data } = await supabase
+                .from("order_ratings")
+                .select("id, order_id, food_rating, driver_rating, comment, created_at")
+                .eq("customer_id", user.id)
+                .order("created_at", { ascending: false });
+              if (data) setRatings(data as RatingRow[]);
+            }
+            setRatingsOpen(true);
           }}
         />
       )}
