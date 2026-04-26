@@ -509,6 +509,43 @@ const Orders = () => {
                       <span>Total {order.tip > 0 && `(incl. R${order.tip} tip)`}</span>
                       <span className="text-primary">{storeInfo.currency}{(order.total + 15).toFixed(2)}</span>
                     </div>
+
+                    {/* Post-delivery actions: rate + reorder */}
+                    {(order.status === "delivered" || isCancelled) && (
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        {order.status === "delivered" && !ratedOrderIds.has(order.id) && (
+                          <button
+                            onClick={() =>
+                              setRatingTarget({
+                                orderId: order.id,
+                                restaurantId: order.restaurant_id,
+                                driverId: order.driver_id,
+                                restaurantName: order.restaurant,
+                              })
+                            }
+                            className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-primary px-3 py-2.5 text-xs font-bold text-primary-foreground hover:opacity-90"
+                          >
+                            <Star className="h-3.5 w-3.5" />
+                            Rate order
+                          </button>
+                        )}
+                        {order.status === "delivered" && ratedOrderIds.has(order.id) && (
+                          <span className="flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-border bg-secondary/40 px-3 py-2.5 text-xs font-semibold text-muted-foreground">
+                            <CheckCircle className="h-3.5 w-3.5 text-primary" />
+                            Rated
+                          </span>
+                        )}
+                        {order.restaurant_id && (
+                          <button
+                            onClick={() => handleReorder(order)}
+                            className="flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-border bg-card px-3 py-2.5 text-xs font-bold text-foreground hover:bg-secondary"
+                          >
+                            <RotateCcw className="h-3.5 w-3.5" />
+                            Order again
+                          </button>
+                        )}
+                      </div>
+                    )}
                   </div>
 
                 </div>
@@ -518,6 +555,25 @@ const Orders = () => {
         )}
       </main>
       <BottomNav />
+
+      {ratingTarget && user && (
+        <RatingDialog
+          open={!!ratingTarget}
+          onOpenChange={(o) => { if (!o) setRatingTarget(null); }}
+          orderId={ratingTarget.orderId}
+          restaurantId={ratingTarget.restaurantId}
+          driverId={ratingTarget.driverId}
+          customerId={user.id}
+          restaurantName={ratingTarget.restaurantName}
+          onSaved={() =>
+            setRatedOrderIds((prev) => {
+              const next = new Set(prev);
+              next.add(ratingTarget.orderId);
+              return next;
+            })
+          }
+        />
+      )}
     </div>
   );
 };
