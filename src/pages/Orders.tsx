@@ -515,15 +515,17 @@ const Orders = () => {
                       <div className="mt-3 flex flex-wrap gap-2">
                         {order.status === "delivered" && !ratedOrderIds.has(order.id) && (
                           <button
-                            onClick={() =>
+                            onClick={() => {
+                              if (ratedOrderIds.has(order.id)) return;
                               setRatingTarget({
                                 orderId: order.id,
                                 restaurantId: order.restaurant_id,
                                 driverId: order.driver_id,
                                 restaurantName: order.restaurant,
-                              })
-                            }
-                            className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-primary px-3 py-2.5 text-xs font-bold text-primary-foreground hover:opacity-90"
+                              });
+                            }}
+                            disabled={ratedOrderIds.has(order.id)}
+                            className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-primary px-3 py-2.5 text-xs font-bold text-primary-foreground hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
                           >
                             <Star className="h-3.5 w-3.5" />
                             Rate order
@@ -565,13 +567,15 @@ const Orders = () => {
           driverId={ratingTarget.driverId}
           customerId={user.id}
           restaurantName={ratingTarget.restaurantName}
-          onSaved={() =>
+          onSaved={() => {
+            const savedId = ratingTarget.orderId;
             setRatedOrderIds((prev) => {
               const next = new Set(prev);
-              next.add(ratingTarget.orderId);
+              next.add(savedId);
               return next;
-            })
-          }
+            });
+            setRatingTarget(null);
+          }}
         />
       )}
     </div>
