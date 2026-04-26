@@ -83,6 +83,7 @@ const DriverActiveDelivery = ({ orders, driverLocation, onDeliveryComplete, onSt
   const [updatingStatus, setUpdatingStatus] = useState<string | null>(null);
   const [cancelOrderId, setCancelOrderId] = useState<string | null>(null);
   const [cancelling, setCancelling] = useState(false);
+  const { user } = useAuth();
 
   const handleCancelUnavailable = async () => {
     if (!cancelOrderId) return;
