@@ -301,7 +301,17 @@ const Orders = () => {
 
         {/* Your ratings history */}
         {ratings.length > 0 && (() => {
-          const sorted = [...ratings].sort((a, b) => {
+          const q = ratingsQuery.trim().toLowerCase();
+          const filtered = q
+            ? ratings.filter((r) => {
+                const order = orders.find((o) => o.id === r.order_id);
+                const name = (order?.restaurant || "").toLowerCase();
+                const num = order?.order_number != null ? String(order.order_number) : "";
+                const qNum = q.replace(/^#/, "");
+                return name.includes(q) || num.includes(qNum);
+              })
+            : ratings;
+          const sorted = [...filtered].sort((a, b) => {
             if (ratingsSort === "newest") return +new Date(b.created_at) - +new Date(a.created_at);
             if (ratingsSort === "oldest") return +new Date(a.created_at) - +new Date(b.created_at);
             if (ratingsSort === "highest") return b.food_rating - a.food_rating;
