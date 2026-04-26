@@ -53,6 +53,15 @@ interface RatingTarget {
   restaurantName: string;
 }
 
+interface RatingRow {
+  id: string;
+  order_id: string;
+  food_rating: number;
+  driver_rating: number | null;
+  comment: string | null;
+  created_at: string;
+}
+
 const statusSteps = [
   { key: "pending", label: "Order Placed", icon: Clock, color: "text-amber-600", bg: "bg-amber-100" },
   { key: "confirmed", label: "Accepted", icon: Store, color: "text-blue-600", bg: "bg-blue-100" },
@@ -88,6 +97,8 @@ const Orders = () => {
   const [deliveryPins, setDeliveryPins] = useState<Record<string, string>>({});
   const [notificationLog, setNotificationLog] = useState<Record<string, Set<string>>>({});
   const [ratedOrderIds, setRatedOrderIds] = useState<Set<string>>(new Set());
+  const [ratings, setRatings] = useState<RatingRow[]>([]);
+  const [ratingsOpen, setRatingsOpen] = useState(false);
   const [ratingTarget, setRatingTarget] = useState<RatingTarget | null>(null);
   const { prefs, update: updatePrefs } = useNotificationPrefs();
 
@@ -147,9 +158,13 @@ const Orders = () => {
     const fetchRatings = async () => {
       const { data } = await supabase
         .from("order_ratings")
-        .select("order_id")
-        .eq("customer_id", user.id);
-      if (data) setRatedOrderIds(new Set(data.map((r: any) => r.order_id)));
+        .select("id, order_id, food_rating, driver_rating, comment, created_at")
+        .eq("customer_id", user.id)
+        .order("created_at", { ascending: false });
+      if (data) {
+        setRatings(data as RatingRow[]);
+        setRatedOrderIds(new Set(data.map((r: any) => r.order_id)));
+      }
     };
 
     fetchOrders();
