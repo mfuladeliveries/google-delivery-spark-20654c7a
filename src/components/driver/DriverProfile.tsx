@@ -32,9 +32,10 @@ const DriverProfileTab = () => {
   }, [user]);
 
   const fetchData = async () => {
-    const [{ data: p }, { data: d }] = await Promise.all([
+    const [{ data: p }, { data: d }, { data: ratings }] = await Promise.all([
       supabase.from("profiles").select("full_name, contact_number, address").eq("user_id", user!.id).maybeSingle(),
       supabase.from("driver_profiles").select("vehicle_type, license_plate, license_url, id_document_url").eq("user_id", user!.id).maybeSingle(),
+      supabase.from("order_ratings").select("driver_rating").eq("driver_id", user!.id).not("driver_rating", "is", null),
     ]);
     if (p) setProfile(p);
     if (d) {
@@ -49,6 +50,14 @@ const DriverProfileTab = () => {
         if (s2?.signedUrl) withSignedUrls.id_document_url = s2.signedUrl;
       }
       setDriverData(withSignedUrls);
+    }
+    if (ratings && ratings.length > 0) {
+      const sum = ratings.reduce((acc, r: any) => acc + Number(r.driver_rating || 0), 0);
+      setRatingAvg(sum / ratings.length);
+      setRatingCount(ratings.length);
+    } else {
+      setRatingAvg(null);
+      setRatingCount(0);
     }
   };
 
