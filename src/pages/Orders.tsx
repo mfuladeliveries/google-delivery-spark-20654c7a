@@ -99,6 +99,9 @@ const Orders = () => {
   const [ratedOrderIds, setRatedOrderIds] = useState<Set<string>>(new Set());
   const [ratings, setRatings] = useState<RatingRow[]>([]);
   const [ratingsOpen, setRatingsOpen] = useState(false);
+  const [ratingsSort, setRatingsSort] = useState<"newest" | "oldest" | "highest" | "lowest">("newest");
+  const [ratingsPage, setRatingsPage] = useState(1);
+  const RATINGS_PAGE_SIZE = 5;
   const [ratingTarget, setRatingTarget] = useState<RatingTarget | null>(null);
   const { prefs, update: updatePrefs } = useNotificationPrefs();
 
