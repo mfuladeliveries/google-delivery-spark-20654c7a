@@ -53,6 +53,15 @@ interface RatingTarget {
   restaurantName: string;
 }
 
+interface RatingRow {
+  id: string;
+  order_id: string;
+  food_rating: number;
+  driver_rating: number | null;
+  comment: string | null;
+  created_at: string;
+}
+
 const statusSteps = [
   { key: "pending", label: "Order Placed", icon: Clock, color: "text-amber-600", bg: "bg-amber-100" },
   { key: "confirmed", label: "Accepted", icon: Store, color: "text-blue-600", bg: "bg-blue-100" },
@@ -88,6 +97,8 @@ const Orders = () => {
   const [deliveryPins, setDeliveryPins] = useState<Record<string, string>>({});
   const [notificationLog, setNotificationLog] = useState<Record<string, Set<string>>>({});
   const [ratedOrderIds, setRatedOrderIds] = useState<Set<string>>(new Set());
+  const [ratings, setRatings] = useState<RatingRow[]>([]);
+  const [ratingsOpen, setRatingsOpen] = useState(false);
   const [ratingTarget, setRatingTarget] = useState<RatingTarget | null>(null);
   const { prefs, update: updatePrefs } = useNotificationPrefs();
 
@@ -147,9 +158,13 @@ const Orders = () => {
     const fetchRatings = async () => {
       const { data } = await supabase
         .from("order_ratings")
-        .select("order_id")
-        .eq("customer_id", user.id);
-      if (data) setRatedOrderIds(new Set(data.map((r: any) => r.order_id)));
+        .select("id, order_id, food_rating, driver_rating, comment, created_at")
+        .eq("customer_id", user.id)
+        .order("created_at", { ascending: false });
+      if (data) {
+        setRatings(data as RatingRow[]);
+        setRatedOrderIds(new Set(data.map((r: any) => r.order_id)));
+      }
     };
 
     fetchOrders();
@@ -279,6 +294,103 @@ const Orders = () => {
             </label>
           </div>
         </div>
+
+        {/* Your ratings history */}
+        {ratings.length > 0 && (
+          <section className="mb-4 rounded-2xl border border-border bg-card shadow-card">
+            <button
+              type="button"
+              onClick={() => setRatingsOpen((v) => !v)}
+              className="flex w-full items-center justify-between gap-2 px-4 py-3 text-left"
+              aria-expanded={ratingsOpen}
+            >
+              <div className="flex items-center gap-2">
+                <Star className="h-4 w-4 text-primary" />
+                <h2 className="text-sm font-bold text-foreground">Your ratings</h2>
+                <span className="rounded-full bg-secondary px-2 py-0.5 text-[10px] font-semibold text-muted-foreground">
+                  {ratings.length}
+                </span>
+              </div>
+              <span className="text-xs font-semibold text-primary">
+                {ratingsOpen ? "Hide" : "Show"}
+              </span>
+            </button>
+            {ratingsOpen && (
+              <ul className="divide-y divide-border border-t border-border">
+                {ratings.map((r) => {
+                  const order = orders.find((o) => o.id === r.order_id);
+                  const restaurantName = order?.restaurant || "Order";
+                  const orderNumber = order?.order_number;
+                  const ratedAt = new Date(r.created_at);
+                  const ratedLabel = ratedAt.toLocaleDateString(undefined, {
+                    day: "numeric",
+                    month: "short",
+                    year: "numeric",
+                  });
+                  return (
+                    <li key={r.id} className="px-4 py-3">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-sm font-semibold text-foreground">
+                            {restaurantName}
+                            {orderNumber ? (
+                              <span className="ml-1 font-normal text-muted-foreground">
+                                #{orderNumber}
+                              </span>
+                            ) : null}
+                          </p>
+                          <p className="mt-0.5 text-[11px] text-muted-foreground">
+                            Rated on {ratedLabel}
+                          </p>
+                        </div>
+                        <CheckCircle className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+                      </div>
+                      <div className="mt-2 flex flex-wrap items-center gap-3 text-xs">
+                        <span className="flex items-center gap-1 text-muted-foreground">
+                          Food:
+                          <span className="flex">
+                            {[1, 2, 3, 4, 5].map((n) => (
+                              <Star
+                                key={n}
+                                className={`h-3.5 w-3.5 ${
+                                  n <= r.food_rating
+                                    ? "fill-primary text-primary"
+                                    : "text-muted-foreground/40"
+                                }`}
+                              />
+                            ))}
+                          </span>
+                        </span>
+                        {r.driver_rating ? (
+                          <span className="flex items-center gap-1 text-muted-foreground">
+                            Driver:
+                            <span className="flex">
+                              {[1, 2, 3, 4, 5].map((n) => (
+                                <Star
+                                  key={n}
+                                  className={`h-3.5 w-3.5 ${
+                                    n <= (r.driver_rating || 0)
+                                      ? "fill-primary text-primary"
+                                      : "text-muted-foreground/40"
+                                  }`}
+                                />
+                              ))}
+                            </span>
+                          </span>
+                        ) : null}
+                      </div>
+                      {r.comment ? (
+                        <p className="mt-2 rounded-lg bg-secondary/40 px-2.5 py-1.5 text-xs italic text-foreground">
+                          “{r.comment}”
+                        </p>
+                      ) : null}
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </section>
+        )}
 
         {orders.length === 0 ? (
           <div className="py-20 text-center text-muted-foreground">
@@ -567,7 +679,7 @@ const Orders = () => {
           driverId={ratingTarget.driverId}
           customerId={user.id}
           restaurantName={ratingTarget.restaurantName}
-          onSaved={() => {
+          onSaved={async () => {
             const savedId = ratingTarget.orderId;
             setRatedOrderIds((prev) => {
               const next = new Set(prev);
@@ -575,6 +687,16 @@ const Orders = () => {
               return next;
             });
             setRatingTarget(null);
+            // Refresh ratings history so the new entry shows up immediately
+            if (user) {
+              const { data } = await supabase
+                .from("order_ratings")
+                .select("id, order_id, food_rating, driver_rating, comment, created_at")
+                .eq("customer_id", user.id)
+                .order("created_at", { ascending: false });
+              if (data) setRatings(data as RatingRow[]);
+            }
+            setRatingsOpen(true);
           }}
         />
       )}
