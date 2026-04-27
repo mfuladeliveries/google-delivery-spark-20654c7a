@@ -45,7 +45,7 @@ const AdminDeliveryFees = () => {
     const map = Object.fromEntries((data ?? []).map((r) => [r.key, r.value]));
     const df = (map["delivery_fees"] ?? {}) as Partial<DeliveryFees>;
     setFees({ ...DEFAULTS, ...df });
-    setServiceArea((map["service_area"] ?? null) as ServiceArea | null);
+    setServiceArea((map["service_area"] ?? null) as unknown as ServiceArea | null);
     setLoading(false);
   };
 
