@@ -18,14 +18,18 @@ test.describe("Admin dashboard", () => {
     await page.goto("/admin");
     await expect(page).toHaveURL(/\/admin(\/|$)/);
 
-    // Try clicking the first row that looks like an order. Non-fatal — if the
-    // admin layout doesn't expose a clickable row by accessible name we still
-    // pass on the previous assertion.
-    const firstOrderRow = page
+    // Prefer a stable testid if the admin tab renders shared order cards;
+    // otherwise fall back to an accessible-name match.
+    const testidOrder = page.locator('[data-testid="order-card"]').first();
+    const namedOrder = page
       .getByRole("button", { name: /order #|view|details/i })
       .first();
-    if (await firstOrderRow.isVisible().catch(() => false)) {
-      await firstOrderRow.click();
+    const target = (await testidOrder.isVisible().catch(() => false))
+      ? testidOrder
+      : namedOrder;
+
+    if (await target.isVisible().catch(() => false)) {
+      await target.click();
       await expect(page.getByText(/order|customer|status/i).first()).toBeVisible();
     }
   });

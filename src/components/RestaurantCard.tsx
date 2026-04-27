@@ -64,6 +64,10 @@ const RestaurantCard = ({ restaurant: r, variant = "standard" }: Props) => {
     return (
       <button
         onClick={handleClick}
+        data-testid="restaurant-card"
+        data-restaurant-id={r.id}
+        data-restaurant-open={open ? "true" : "false"}
+        aria-label={`Open ${r.name}`}
         className={`flex w-full items-center gap-3 rounded-2xl border border-border bg-card p-2.5 text-left transition-all hover:shadow-card shadow-card ${!open ? "opacity-60" : "hover:-translate-y-0.5"}`}
       >
         <div className="relative h-20 w-20 flex-shrink-0 overflow-hidden rounded-xl bg-muted">
@@ -98,6 +102,11 @@ const RestaurantCard = ({ restaurant: r, variant = "standard" }: Props) => {
   return (
     <div
       onClick={handleClick}
+      role="link"
+      data-testid="restaurant-card"
+      data-restaurant-id={r.id}
+      data-restaurant-open={open ? "true" : "false"}
+      aria-label={`Open ${r.name}`}
       className={`group relative cursor-pointer overflow-hidden rounded-[20px] border border-border bg-card shadow-card transition-all ${open ? "hover:-translate-y-0.5 hover:shadow-orange/30" : "opacity-70"}`}
       style={{ boxShadow: "0 2px 16px hsl(0 0% 0% / 0.08)" }}
     >
