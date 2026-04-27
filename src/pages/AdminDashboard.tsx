@@ -10,6 +10,7 @@ import AdminWithdrawals from "@/components/admin/AdminWithdrawals";
 import AdminRefunds from "@/components/admin/AdminRefunds";
 import AdminDriverRequests from "@/components/admin/AdminDriverRequests";
 import AdminAboutEditor from "@/components/admin/AdminAboutEditor";
+import AdminDeliveryFees from "@/components/admin/AdminDeliveryFees";
 import AdminMenuManager from "@/components/admin/AdminMenuManager";
 import { toast } from "sonner";
 import { geocodeAddress } from "@/lib/geocode";
@@ -119,7 +120,7 @@ const getDelayInfo = (order: { status: string; created_at: string }) => {
 const AdminDashboard = () => {
   const { user, role, loading: authLoading } = useAuth();
   const navigate = useNavigate();
-  const [tab, setTab] = useState<"overview" | "orders" | "earnings" | "withdrawals" | "refunds" | "requests" | "users" | "restaurants" | "menus" | "drivers" | "about">("overview");
+  const [tab, setTab] = useState<"overview" | "orders" | "earnings" | "withdrawals" | "refunds" | "requests" | "users" | "restaurants" | "menus" | "drivers" | "fees" | "about">("overview");
   const [stats, setStats] = useState<Stats>({
     totalOrders: 0, totalRevenue: 0, totalRestaurants: 0,
     pendingOrders: 0, deliveredToday: 0, totalDrivers: 0,
@@ -298,7 +299,7 @@ const AdminDashboard = () => {
     { label: "Today", value: stats.deliveredToday, icon: UserCheck, color: "bg-primary/10 text-primary" },
   ];
 
-  const tabs = ["overview", "orders", "earnings", "withdrawals", "refunds", "requests", "users", "restaurants", "menus", "drivers", "about"] as const;
+  const tabs = ["overview", "orders", "earnings", "withdrawals", "refunds", "requests", "users", "restaurants", "menus", "drivers", "fees", "about"] as const;
 
   return (
     <div className="min-h-screen bg-background">
@@ -471,6 +472,14 @@ const AdminDashboard = () => {
         {/* Drivers Tab */}
         {tab === "drivers" && (
           <DriversTab drivers={drivers} onDriverAdded={() => { fetchDrivers(); fetchUsers(); }} />
+        )}
+
+        {/* Delivery Fees */}
+        {tab === "fees" && (
+          <>
+            <h2 className="font-bold text-foreground mb-3">🚚 Delivery Fees</h2>
+            <AdminDeliveryFees />
+          </>
         )}
 
         {/* About Page Editor */}
