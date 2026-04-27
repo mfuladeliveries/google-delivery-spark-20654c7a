@@ -8,6 +8,7 @@ import BottomNav from "@/components/BottomNav";
 import Cart from "@/components/Cart";
 import CheckoutDialog from "@/components/CheckoutDialog";
 import RestaurantCard, { RestaurantCardSkeleton, type RestaurantCardData } from "@/components/RestaurantCard";
+import AuthLoadingScreen from "@/components/AuthLoadingScreen";
 import { useCart } from "@/hooks/useCart";
 import { useAuth } from "@/hooks/useAuth";
 import { menuItems } from "@/data/menu";
@@ -87,9 +88,10 @@ const Index = () => {
   };
 
   // While auth is resolving, or if a provider-only user briefly lands here,
-  // render nothing so the customer UI never flashes before the redirect.
+  // show a consistent loading screen so the customer UI never flashes
+  // before the redirect to the right dashboard completes.
   if (authLoading || isProviderOnly) {
-    return <div className="min-h-screen bg-background" />;
+    return <AuthLoadingScreen label={isProviderOnly ? "Taking you to your dashboard…" : undefined} />;
   }
 
   return (

@@ -12,6 +12,7 @@ import DriverActiveDelivery from "@/components/driver/DriverActiveDelivery";
 import DriverEarnings from "@/components/driver/DriverEarnings";
 import DriverWithdrawals from "@/components/driver/DriverWithdrawals";
 import DriverProfileTab from "@/components/driver/DriverProfile";
+import AuthLoadingScreen from "@/components/AuthLoadingScreen";
 
 interface Order {
   id: string;
@@ -378,12 +379,13 @@ const DriverDashboard = () => {
 
   const expandedOrder = expandedOrderId ? myOrders.find((o) => o.id === expandedOrderId) ?? null : null;
 
-  if (authLoading || loading)
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-background">
-        <div className="h-10 w-10 animate-spin rounded-full border-3 border-primary border-t-transparent" />
-      </div>
-    );
+  // Show the same loading screen during auth resolution, role check,
+  // redirect to /driver/auth for non-drivers, or initial data fetch —
+  // so the dashboard UI never flashes before it's actually ready.
+  const hasDriverAccess = !!user && (roles.includes("driver") || roles.includes("admin"));
+  if (authLoading || !user || !hasDriverAccess || loading) {
+    return <AuthLoadingScreen label="Loading driver dashboard…" />;
+  }
 
   const isOnline = driverProfile?.is_online ?? false;
 
