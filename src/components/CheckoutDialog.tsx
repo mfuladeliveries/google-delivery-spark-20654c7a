@@ -436,6 +436,14 @@ const CheckoutDialog = ({
               </button>
             </div>
             {validationErrors.address && <p className="mt-1 text-xs text-destructive">{validationErrors.address}</p>}
+            {locationDenied && !coords && (
+              <p className="mt-1.5 flex items-start gap-1.5 text-xs text-amber-600">
+                <AlertTriangle className="h-3.5 w-3.5 flex-shrink-0 mt-0.5" />
+                <span>
+                  Location access is blocked. Enable location for this site in your browser settings to autofill your address, or type it manually below.
+                </span>
+              </p>
+            )}
             {!coords && address.trim() && (
               <p className="mt-1.5 flex items-start gap-1.5 text-xs text-amber-600">
                 <AlertTriangle className="h-3.5 w-3.5 flex-shrink-0 mt-0.5" />
