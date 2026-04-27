@@ -474,6 +474,14 @@ const AdminDashboard = () => {
           <DriversTab drivers={drivers} onDriverAdded={() => { fetchDrivers(); fetchUsers(); }} />
         )}
 
+        {/* Delivery Fees */}
+        {tab === "fees" && (
+          <>
+            <h2 className="font-bold text-foreground mb-3">🚚 Delivery Fees</h2>
+            <AdminDeliveryFees />
+          </>
+        )}
+
         {/* About Page Editor */}
         {tab === "about" && (
           <>
