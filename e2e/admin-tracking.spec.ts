@@ -162,6 +162,3 @@ test.describe("Admin dashboard", () => {
   });
 });
 
-// Silence unused import warning — `chromium` is reserved for future use
-// if we need to bootstrap a real browser context during cleanup.
-void chromium;
