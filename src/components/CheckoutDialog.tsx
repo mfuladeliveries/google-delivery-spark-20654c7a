@@ -97,6 +97,7 @@ const CheckoutDialog = ({
         const lat = pos.coords.latitude;
         const lng = pos.coords.longitude;
         setCoords({ lat, lng });
+        setLocationDenied(false);
         try {
           const res = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`);
           const data = await res.json();
@@ -106,7 +107,9 @@ const CheckoutDialog = ({
       },
       (err) => {
         setLocating(false);
-        if (!silent && err.code !== err.PERMISSION_DENIED) {
+        if (err.code === err.PERMISSION_DENIED) {
+          setLocationDenied(true);
+        } else if (!silent) {
           toast.error("Couldn't get your location. Please enter your address manually.");
         }
       },
