@@ -85,6 +85,42 @@ const CheckoutDialog = ({
     }
   }, [open, initialFoodNote]);
 
+  const requestLocation = (silent = false) => {
+    if (!navigator.geolocation) {
+      if (!silent) toast.error("Location not supported on this device.");
+      return;
+    }
+    setLocating(true);
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        const lat = pos.coords.latitude;
+        const lng = pos.coords.longitude;
+        setCoords({ lat, lng });
+        try {
+          const res = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`);
+          const data = await res.json();
+          if (data.display_name) setAddress(data.display_name);
+        } catch { /* ignore */ }
+        setLocating(false);
+      },
+      (err) => {
+        setLocating(false);
+        if (!silent && err.code !== err.PERMISSION_DENIED) {
+          toast.error("Couldn't get your location. Please enter your address manually.");
+        }
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
+    );
+  };
+
+  // Auto-trigger GPS once when dialog opens, only if we don't already have coords
+  useEffect(() => {
+    if (!open) return;
+    if (coords || profileLat !== null) return;
+    requestLocation(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
+
   // Compute valid schedule range for today
   const { minTime, maxTime, todayLabel, isPastClosing } = useMemo(() => {
     const now = new Date();
@@ -383,25 +419,7 @@ const CheckoutDialog = ({
               />
               <button
                 type="button"
-                onClick={async () => {
-                  if (!navigator.geolocation) return;
-                  setLocating(true);
-                  navigator.geolocation.getCurrentPosition(
-                    async (pos) => {
-                      const lat = pos.coords.latitude;
-                      const lng = pos.coords.longitude;
-                      setCoords({ lat, lng });
-                      try {
-                        const res = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`);
-                        const data = await res.json();
-                        if (data.display_name) setAddress(data.display_name);
-                      } catch { /* ignore */ }
-                      setLocating(false);
-                    },
-                    () => setLocating(false),
-                    { enableHighAccuracy: true, timeout: 10000 }
-                  );
-                }}
+                onClick={() => requestLocation(false)}
                 disabled={locating}
                 className="flex items-center justify-center rounded-xl border border-border bg-card px-3 text-primary hover:bg-secondary transition-colors disabled:opacity-50"
                 title="Use my location"
