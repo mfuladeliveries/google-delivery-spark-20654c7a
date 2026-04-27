@@ -37,24 +37,12 @@ const Index = () => {
   const [cartOpen, setCartOpen] = useState(false);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
   const cart = useCart();
-  const { user, roles, loading: authLoading } = useAuth();
+  const { user } = useAuth();
   const navigate = useNavigate();
 
-  // Lock providers (admin / driver / restaurant) into their own dashboards.
-  // A user with ONLY a provider role should not be able to browse the customer app.
-  const isProviderOnly =
-    !!user &&
-    roles.length > 0 &&
-    !roles.includes("customer") &&
-    (roles.includes("admin") || roles.includes("driver") || roles.includes("restaurant"));
-
-  useEffect(() => {
-    if (authLoading || !user || roles.length === 0) return;
-    if (roles.includes("customer")) return; // anyone who is also a customer can browse freely
-    if (roles.includes("admin")) navigate("/admin", { replace: true });
-    else if (roles.includes("driver")) navigate("/driver", { replace: true });
-    else if (roles.includes("restaurant")) navigate("/restaurant/dashboard", { replace: true });
-  }, [user, roles, authLoading, navigate]);
+  // Auth/role gating + redirect to the right dashboard is handled by
+  // <RoleGuard allow={["customer"]}> in App.tsx. This page only renders
+  // once the viewer is confirmed to be a guest or a customer.
 
   useEffect(() => {
     const fetchRestaurants = async () => {
@@ -90,9 +78,7 @@ const Index = () => {
   // While auth is resolving, or if a provider-only user briefly lands here,
   // show a consistent loading screen so the customer UI never flashes
   // before the redirect to the right dashboard completes.
-  if (authLoading || isProviderOnly) {
-    return <AuthLoadingScreen label={isProviderOnly ? "Taking you to your dashboard…" : undefined} />;
-  }
+  // Loading screen is now rendered by <RoleGuard> in App.tsx.
 
   return (
     <div className="min-h-screen bg-background">
