@@ -67,10 +67,31 @@ const App = () => (
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/orders" element={<Orders />} />
             <Route path="/order-confirmation" element={<OrderConfirmation />} />
-            <Route path="/restaurant/dashboard" element={<RestaurantDashboard />} />
+            <Route
+              path="/restaurant/dashboard"
+              element={
+                <RoleGuard allow={["restaurant", "admin"]} requireAuth redirectUnauthedTo="/auth" loadingLabel="Loading restaurant dashboard…">
+                  <RestaurantDashboard />
+                </RoleGuard>
+              }
+            />
             <Route path="/restaurant/:id" element={<RestaurantMenu />} />
-            <Route path="/restaurant/orders" element={<RestaurantDashboard />} />
-            <Route path="/restaurant/menu" element={<RestaurantDashboard />} />
+            <Route
+              path="/restaurant/orders"
+              element={
+                <RoleGuard allow={["restaurant", "admin"]} requireAuth redirectUnauthedTo="/auth" loadingLabel="Loading restaurant dashboard…">
+                  <RestaurantDashboard />
+                </RoleGuard>
+              }
+            />
+            <Route
+              path="/restaurant/menu"
+              element={
+                <RoleGuard allow={["restaurant", "admin"]} requireAuth redirectUnauthedTo="/auth" loadingLabel="Loading restaurant dashboard…">
+                  <RestaurantDashboard />
+                </RoleGuard>
+              }
+            />
             <Route path="/driver/auth" element={<DriverAuth />} />
             <Route
               path="/driver"
@@ -98,8 +119,22 @@ const App = () => (
                 </RoleGuard>
               }
             />
-            <Route path="/admin" element={<AdminDashboard />} />
-            <Route path="/profile" element={<Profile />} />
+            <Route
+              path="/admin"
+              element={
+                <RoleGuard allow={["admin"]} requireAuth redirectUnauthedTo="/auth" loadingLabel="Loading admin dashboard…">
+                  <AdminDashboard />
+                </RoleGuard>
+              }
+            />
+            <Route
+              path="/profile"
+              element={
+                <RoleGuard allow={["customer", "driver", "restaurant", "admin"]} requireAuth redirectUnauthedTo="/auth" loadingLabel="Loading profile…">
+                  <Profile />
+                </RoleGuard>
+              }
+            />
             <Route path="/search" element={<Search />} />
             <Route path="/install" element={<Install />} />
             <Route path="/install/:variant" element={<Install />} />
