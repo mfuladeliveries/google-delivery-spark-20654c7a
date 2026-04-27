@@ -119,8 +119,22 @@ const App = () => (
                 </RoleGuard>
               }
             />
-            <Route path="/admin" element={<AdminDashboard />} />
-            <Route path="/profile" element={<Profile />} />
+            <Route
+              path="/admin"
+              element={
+                <RoleGuard allow={["admin"]} requireAuth redirectUnauthedTo="/auth" loadingLabel="Loading admin dashboard…">
+                  <AdminDashboard />
+                </RoleGuard>
+              }
+            />
+            <Route
+              path="/profile"
+              element={
+                <RoleGuard allow={["customer", "driver", "restaurant", "admin"]} requireAuth redirectUnauthedTo="/auth" loadingLabel="Loading profile…">
+                  <Profile />
+                </RoleGuard>
+              }
+            />
             <Route path="/search" element={<Search />} />
             <Route path="/install" element={<Install />} />
             <Route path="/install/:variant" element={<Install />} />
