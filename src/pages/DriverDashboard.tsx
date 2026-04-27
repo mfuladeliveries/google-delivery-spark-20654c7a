@@ -116,13 +116,8 @@ const DriverDashboard = () => {
     } catch { /* ignore */ }
   }, []);
 
-  // Auth guard
-  useEffect(() => {
-    if (authLoading) return;
-    if (!user) { navigate("/driver/auth"); return; }
-    const hasAccess = roles.includes("driver") || roles.includes("admin");
-    if (!hasAccess) navigate("/driver/auth");
-  }, [user, roles, authLoading, navigate]);
+  // Auth + role gating is handled by <RoleGuard> in App.tsx, so this
+  // component only renders once the viewer is confirmed to be a driver/admin.
 
   // Initial load + realtime
   useEffect(() => {
@@ -379,13 +374,14 @@ const DriverDashboard = () => {
 
   const expandedOrder = expandedOrderId ? myOrders.find((o) => o.id === expandedOrderId) ?? null : null;
 
-  // Show the same loading screen during auth resolution, role check,
-  // redirect to /driver/auth for non-drivers, or initial data fetch —
-  // so the dashboard UI never flashes before it's actually ready.
+  // Auth/role loader is rendered by <RoleGuard> in App.tsx; here we
+  // only need to cover the initial data fetch so the dashboard chrome
+  // doesn't flash before orders/profile data is ready.
   const hasDriverAccess = !!user && (roles.includes("driver") || roles.includes("admin"));
-  if (authLoading || !user || !hasDriverAccess || loading) {
+  if (!hasDriverAccess || loading) {
     return <AuthLoadingScreen label="Loading driver dashboard…" />;
   }
+
 
   const isOnline = driverProfile?.is_online ?? false;
 
