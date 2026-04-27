@@ -381,8 +381,7 @@ const DriverDashboard = () => {
   if (!hasDriverAccess || loading) {
     return <AuthLoadingScreen label="Loading driver dashboard…" />;
   }
-    return <AuthLoadingScreen label="Loading driver dashboard…" />;
-  }
+
 
   const isOnline = driverProfile?.is_online ?? false;
 
