@@ -104,11 +104,13 @@ const Header = ({ cartCount, onCartClick, title }: HeaderProps) => {
           {onCartClick !== undefined && (
             <button
               onClick={onCartClick}
+              data-testid="open-cart-button"
+              aria-label="Open cart"
               className="relative rounded-xl bg-primary px-3 py-2 text-primary-foreground transition-transform hover:scale-105 active:scale-95 shadow-orange flex items-center gap-1.5"
             >
               <ShoppingCart className="h-5 w-5" />
               {cartCount !== undefined && cartCount > 0 && (
-                <span className="flex h-5 w-5 items-center justify-center rounded-full bg-card text-[10px] font-bold text-primary">
+                <span data-testid="cart-count" className="flex h-5 w-5 items-center justify-center rounded-full bg-card text-[10px] font-bold text-primary">
                   {cartCount}
                 </span>
               )}

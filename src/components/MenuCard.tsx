@@ -8,7 +8,7 @@ interface MenuCardProps {
 
 const MenuCard = ({ item, onAdd }: MenuCardProps) => {
   return (
-    <div className="group relative overflow-hidden rounded-2xl border border-border bg-card shadow-card transition-all hover:border-primary/30 hover:shadow-glow">
+    <div data-testid="menu-card" data-menu-item-id={item.id} className="group relative overflow-hidden rounded-2xl border border-border bg-card shadow-card transition-all hover:border-primary/30 hover:shadow-glow">
       <div className="aspect-[4/3] w-full overflow-hidden bg-muted">
         {item.image ? (
           <img
@@ -39,6 +39,7 @@ const MenuCard = ({ item, onAdd }: MenuCardProps) => {
           </span>
           <button
             onClick={() => onAdd(item)}
+            data-testid="menu-add-button"
             className="rounded-xl bg-primary p-2 text-primary-foreground transition-transform hover:scale-110 active:scale-95"
             aria-label={`Add ${item.name} to cart`}
           >

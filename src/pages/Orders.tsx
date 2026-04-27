@@ -522,11 +522,11 @@ const Orders = () => {
               const isCancelled = order.status === "cancelled" || order.status === "rejected";
 
               return (
-                <div key={order.id} className="rounded-2xl border border-border bg-card shadow-card overflow-hidden">
+                <div key={order.id} data-testid="order-card" data-order-id={order.id} data-order-status={order.status} className="rounded-2xl border border-border bg-card shadow-card overflow-hidden">
                   {/* Status header */}
                   <div className={`flex items-center gap-2 px-4 py-3 ${sc.bg}`}>
                     <StatusIcon className={`h-4 w-4 ${sc.color}`} />
-                    <span className={`text-sm font-bold ${sc.color}`}>{sc.label}</span>
+                    <span data-testid="order-status-label" className={`text-sm font-bold ${sc.color}`}>{sc.label}</span>
                     <span className="ml-auto text-xs text-muted-foreground">
                       {new Date(order.created_at).toLocaleString("en-ZA")}
                     </span>
