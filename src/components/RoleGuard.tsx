@@ -51,7 +51,10 @@ const RoleGuard = ({
   const isAllowed = (() => {
     if (!userKnown) return false;
     if (!allow || allow.length === 0) return true; // public route, just gate on auth resolution
-    if (!user) return false;
+    // Guests are allowed on routes that don't require auth (e.g. customer home),
+    // since the guard's job is only to prevent the *wrong signed-in role* from
+    // seeing this UI. Auth-required routes are handled by the redirect effect.
+    if (!user) return !requireAuth;
     return allow.some((r) => roles.includes(r));
   })();
 
