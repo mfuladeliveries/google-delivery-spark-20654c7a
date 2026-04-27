@@ -25,6 +25,7 @@ import About from "./pages/About";
 import RouteAwareInstallPrompt from "@/components/RouteAwareInstallPrompt";
 import SplashScreen from "@/components/SplashScreen";
 import ActiveOrderBanner from "@/components/ActiveOrderBanner";
+import RoleGuard from "@/components/RoleGuard";
 import { queryClient, queryPersister } from "@/lib/queryPersister";
 
 // Use the persistent provider when localStorage is available so the cache
@@ -53,7 +54,14 @@ const App = () => (
           <RouteAwareInstallPrompt />
           <ActiveOrderBanner />
           <Routes>
-            <Route path="/" element={<Index />} />
+            <Route
+              path="/"
+              element={
+                <RoleGuard allow={["customer"]}>
+                  <Index />
+                </RoleGuard>
+              }
+            />
             <Route path="/auth" element={<Auth />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/reset-password" element={<ResetPassword />} />
@@ -64,8 +72,32 @@ const App = () => (
             <Route path="/restaurant/orders" element={<RestaurantDashboard />} />
             <Route path="/restaurant/menu" element={<RestaurantDashboard />} />
             <Route path="/driver/auth" element={<DriverAuth />} />
-            <Route path="/driver" element={<DriverDashboard />} />
-            <Route path="/driver/*" element={<DriverDashboard />} />
+            <Route
+              path="/driver"
+              element={
+                <RoleGuard
+                  allow={["driver", "admin"]}
+                  requireAuth
+                  redirectUnauthedTo="/driver/auth"
+                  loadingLabel="Loading driver dashboard…"
+                >
+                  <DriverDashboard />
+                </RoleGuard>
+              }
+            />
+            <Route
+              path="/driver/*"
+              element={
+                <RoleGuard
+                  allow={["driver", "admin"]}
+                  requireAuth
+                  redirectUnauthedTo="/driver/auth"
+                  loadingLabel="Loading driver dashboard…"
+                >
+                  <DriverDashboard />
+                </RoleGuard>
+              }
+            />
             <Route path="/admin" element={<AdminDashboard />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/search" element={<Search />} />
