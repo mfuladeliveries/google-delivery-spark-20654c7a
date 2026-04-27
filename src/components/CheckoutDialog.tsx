@@ -68,6 +68,7 @@ const CheckoutDialog = ({
   const [paymentMethod, setPaymentMethod] = useState<"cash" | "online">("cash");
   const [loading, setLoading] = useState(false);
   const [locating, setLocating] = useState(false);
+  const [locationDenied, setLocationDenied] = useState(false);
   const [profileLoaded, setProfileLoaded] = useState(false);
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
 
