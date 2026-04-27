@@ -68,6 +68,7 @@ const CheckoutDialog = ({
   const [paymentMethod, setPaymentMethod] = useState<"cash" | "online">("cash");
   const [loading, setLoading] = useState(false);
   const [locating, setLocating] = useState(false);
+  const [locationDenied, setLocationDenied] = useState(false);
   const [profileLoaded, setProfileLoaded] = useState(false);
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
 
@@ -96,6 +97,7 @@ const CheckoutDialog = ({
         const lat = pos.coords.latitude;
         const lng = pos.coords.longitude;
         setCoords({ lat, lng });
+        setLocationDenied(false);
         try {
           const res = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`);
           const data = await res.json();
@@ -105,7 +107,9 @@ const CheckoutDialog = ({
       },
       (err) => {
         setLocating(false);
-        if (!silent && err.code !== err.PERMISSION_DENIED) {
+        if (err.code === err.PERMISSION_DENIED) {
+          setLocationDenied(true);
+        } else if (!silent) {
           toast.error("Couldn't get your location. Please enter your address manually.");
         }
       },
@@ -432,6 +436,14 @@ const CheckoutDialog = ({
               </button>
             </div>
             {validationErrors.address && <p className="mt-1 text-xs text-destructive">{validationErrors.address}</p>}
+            {locationDenied && !coords && (
+              <p className="mt-1.5 flex items-start gap-1.5 text-xs text-amber-600">
+                <AlertTriangle className="h-3.5 w-3.5 flex-shrink-0 mt-0.5" />
+                <span>
+                  Location access is blocked. Enable location for this site in your browser settings to autofill your address, or type it manually below.
+                </span>
+              </p>
+            )}
             {!coords && address.trim() && (
               <p className="mt-1.5 flex items-start gap-1.5 text-xs text-amber-600">
                 <AlertTriangle className="h-3.5 w-3.5 flex-shrink-0 mt-0.5" />
