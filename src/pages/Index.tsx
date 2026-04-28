@@ -15,6 +15,7 @@ import { menuItems } from "@/data/menu";
 import mfulaLogo from "@/assets/mfula-logo.png";
 import AddressAutocomplete, { type ValidatedAddress } from "@/components/AddressAutocomplete";
 import { distanceKm } from "@/lib/serviceArea";
+import { toast } from "sonner";
 
 interface Restaurant extends RestaurantCardData {
   is_active: boolean;
@@ -390,6 +391,9 @@ const Index = () => {
               ) {
                 setManualOpen(false);
                 setManualUpdatedAt(Date.now());
+                toast.success("Address confirmed", {
+                  description: "Restaurant list refreshed for your saved area.",
+                });
               }
             };
             return (
