@@ -213,9 +213,9 @@ export function useGeoLocation(): GeoState & {
           // GPS failed entirely — use whatever profile coords we already have
           const fb = profileCoordsRef.current ?? (await loadProfileFallback());
           if (fb) {
-            setState({ status: "fallback", lat: fb.lat, lng: fb.lng, ready: true, source: "profile", error: null, gpsDiscrepancyKm: null });
+            setState({ status: "fallback", lat: fb.lat, lng: fb.lng, ready: true, source: "profile", error: null, gpsDiscrepancyKm: null, accuracyM: null });
           } else {
-            setState({ status: "denied", lat: null, lng: null, ready: true, source: null, error: err.message, gpsDiscrepancyKm: null });
+            setState({ status: "denied", lat: null, lng: null, ready: true, source: null, error: err.message, gpsDiscrepancyKm: null, accuracyM: null });
           }
         },
         { enableHighAccuracy: true, maximumAge: 60_000, timeout: 10_000 },
