@@ -62,6 +62,7 @@ const RestaurantMenu = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const cart = useCart();
+  const geo = useGeoLocation();
   const [restaurant, setRestaurant] = useState<Restaurant | null>(null);
   const [menuItems, setMenuItems] = useState<DbMenuItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -70,6 +71,15 @@ const RestaurantMenu = () => {
   const [cartOpen, setCartOpen] = useState(false);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
   const [foodNote, setFoodNote] = useState<string | undefined>(undefined);
+
+  // Distance gating: customer must be within DELIVERY_RADIUS_KM of this
+  // restaurant's saved coordinates. Restaurants with no coords are blocked.
+  const distance = restaurant ? geo.distanceTo(restaurant.lat, restaurant.lng) : null;
+  const restaurantHasCoords = !!restaurant && restaurant.lat != null && restaurant.lng != null;
+  const locationBlocked = !geo.ready || !geo.hasCoords;
+  const outOfRange =
+    !locationBlocked && (!restaurantHasCoords || (distance != null && distance > DELIVERY_RADIUS_KM));
+  const canOrder = !locationBlocked && !outOfRange;
 
   useEffect(() => {
     const fetchData = async () => {
