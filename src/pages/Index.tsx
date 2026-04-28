@@ -361,6 +361,18 @@ const Index = () => {
               <p className="mt-2 text-[11px] text-muted-foreground">
                 Pick a suggestion to {manualAddress ? "replace your saved address" : "see restaurants"} within {DELIVERY_RADIUS_KM} km.
               </p>
+              <div className="mt-3 flex justify-end">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setManualOpen(false);
+                    setManualText(manualAddress ? manualAddress.address : "");
+                  }}
+                  className="inline-flex items-center gap-1 rounded-full border border-border bg-card px-3 py-1.5 text-xs font-semibold text-foreground hover:bg-secondary"
+                >
+                  Cancel
+                </button>
+              </div>
             </div>
           )}
 
