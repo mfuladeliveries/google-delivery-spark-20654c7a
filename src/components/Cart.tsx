@@ -241,12 +241,14 @@ const Cart = ({
                 </p>
               </div>
             )}
-            {user && outOfRange && (
+            {user && tooFarFromRestaurant && (
               <div className="mt-3 flex items-start gap-2 rounded-xl border-2 border-destructive/40 bg-destructive/5 p-3 text-xs text-foreground">
                 <AlertTriangle className="mt-0.5 h-4 w-4 flex-shrink-0 text-destructive" />
                 <div>
-                  <p className="font-bold">Delivery not available in your area</p>
-                  <Link to="/profile" className="mt-1 inline-block font-bold text-primary hover:underline">Update address →</Link>
+                  <p className="font-bold">Too far from this restaurant</p>
+                  <p className="mt-0.5 text-muted-foreground">
+                    You're {distanceToRestaurant!.toFixed(1)} km from {restaurantName}. We only deliver within {DELIVERY_RADIUS_LABEL_KM} km of the restaurant.
+                  </p>
                 </div>
               </div>
             )}
