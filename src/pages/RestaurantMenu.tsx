@@ -455,7 +455,9 @@ const RestaurantMenu = () => {
                       {qty === 0 ? (
                         <button
                           onClick={(e) => { e.stopPropagation(); handleAddItem(item); }}
-                          className="flex items-center gap-1 rounded-xl bg-primary px-3 py-1.5 text-xs font-bold text-primary-foreground transition-transform hover:scale-105 active:scale-95"
+                          disabled={!canOrder}
+                          data-testid="menu-add-button"
+                          className="flex items-center gap-1 rounded-xl bg-primary px-3 py-1.5 text-xs font-bold text-primary-foreground transition-transform hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
                         >
                           {hasOptions ? (
                             <>Customize <ChevronRight className="h-3.5 w-3.5" /></>
