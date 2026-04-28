@@ -27,7 +27,13 @@ const PREP_LEAD_MINUTES = 30; // earliest schedule from now
 const checkoutSchema = z.object({
   name: z.string().trim().min(2, "Name must be at least 2 characters").max(100, "Name must be less than 100 characters"),
   contact: z.string().trim().min(7, "Contact number is too short").max(20, "Contact number is too long").regex(/^[0-9\s+()-]+$/, "Invalid phone number format"),
-  address: z.string().trim().min(5, "Address must be at least 5 characters").max(300, "Address must be less than 300 characters"),
+  address: z
+    .string()
+    .trim()
+    .min(8, "Full address must be at least 8 characters")
+    .max(300, "Address must be less than 300 characters")
+    .regex(/[A-Za-z]/, "Address must include a street or suburb name")
+    .regex(/^[A-Za-z0-9\s,.\-/#'’()]+$/, "Address contains invalid characters"),
   notes: z.string().max(500, "Notes must be less than 500 characters").optional(),
   deliveryInstructions: z.string().max(300, "Delivery instructions must be less than 300 characters").optional(),
   tip: z.number().min(0, "Tip cannot be negative").max(10000, "Tip amount is too large"),
