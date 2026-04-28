@@ -101,6 +101,7 @@ export function useGeoLocation(): GeoState & {
     source: cached.current ? "gps" : null,
     error: null,
     gpsDiscrepancyKm: null,
+    accuracyM: null,
   }));
   const watchIdRef = useRef<number | null>(null);
   /** Cached saved-profile coords, kept in a ref so the GPS watcher can sync-check. */
