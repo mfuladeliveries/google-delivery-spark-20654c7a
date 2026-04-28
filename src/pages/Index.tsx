@@ -142,6 +142,37 @@ const Index = () => {
           <div className="absolute right-4 bottom-0 text-6xl opacity-20">🍽️</div>
         </div>
 
+        {/* Location banner */}
+        {geo.ready && (geo.status === "denied" || geo.status === "unsupported") && (
+          <div className="mb-4 flex items-start gap-3 rounded-2xl border-2 border-destructive/40 bg-destructive/5 p-4">
+            <MapPinOff className="mt-0.5 h-5 w-5 flex-shrink-0 text-destructive" />
+            <div className="flex-1">
+              <p className="text-sm font-bold text-foreground">Location is off</p>
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                Please enable location services to see restaurants available near you. Ordering is disabled until location is enabled.
+              </p>
+              <button
+                onClick={() => geo.refresh()}
+                className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-primary px-4 py-1.5 text-xs font-bold text-primary-foreground shadow-orange"
+              >
+                <MapPin className="h-3.5 w-3.5" /> Enable location
+              </button>
+            </div>
+          </div>
+        )}
+        {geo.ready && geo.status === "fallback" && (
+          <div className="mb-4 flex items-start gap-3 rounded-2xl border border-primary/30 bg-primary/5 p-3">
+            <MapPin className="mt-0.5 h-4 w-4 flex-shrink-0 text-primary" />
+            <div className="flex-1 text-xs text-foreground">
+              <span className="font-bold">Using your saved address.</span>{" "}
+              <button onClick={() => geo.refresh()} className="font-bold text-primary hover:underline">
+                Use live location
+              </button>{" "}
+              for more accurate nearby restaurants.
+            </div>
+          </div>
+        )}
+
         {/* Cuisine Categories */}
         <section className="mb-6">
           <h3 className="mb-3 text-base font-bold text-foreground">Cuisines</h3>
@@ -169,7 +200,12 @@ const Index = () => {
             <div className="mb-3 flex items-center justify-between">
               <h3 className="text-base font-bold text-foreground">⭐ Featured Today</h3>
             </div>
-            <RestaurantCard restaurant={featuredOne} variant="featured" />
+            <RestaurantCard
+              restaurant={featuredOne}
+              variant="featured"
+              distanceKm={featuredOne._distance ?? null}
+              nearby={featuredOne._nearby}
+            />
           </section>
         )}
 
@@ -180,7 +216,9 @@ const Index = () => {
               ? `Results for "${search}"`
               : selectedCuisine !== "All"
                 ? `${selectedCuisine} Restaurants`
-                : "🍽️ All Restaurants"}
+                : geo.hasCoords
+                  ? "📍 Restaurants near you"
+                  : "🍽️ All Restaurants"}
           </h3>
 
           {loading ? (
@@ -189,7 +227,7 @@ const Index = () => {
                 <RestaurantCardSkeleton key={i} />
               ))}
             </div>
-          ) : filtered.length === 0 ? (
+          ) : sorted.length === 0 ? (
             <div className="rounded-2xl border border-border bg-card py-16 text-center shadow-card">
               <UtensilsCrossed className="mx-auto mb-3 h-12 w-12 text-muted-foreground/50" />
               <p className="font-semibold text-foreground">No restaurants found</p>
@@ -208,8 +246,14 @@ const Index = () => {
             </div>
           ) : (
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {filtered.map((r) => (
-                <RestaurantCard key={r.id} restaurant={r} variant="standard" />
+              {sorted.map((r) => (
+                <RestaurantCard
+                  key={r.id}
+                  restaurant={r}
+                  variant="standard"
+                  distanceKm={r._distance ?? null}
+                  nearby={r._nearby}
+                />
               ))}
             </div>
           )}
@@ -234,7 +278,12 @@ const Index = () => {
             <div className="-mx-4 flex gap-3 overflow-x-auto px-4 pb-2 scrollbar-hide">
               {topRated.map((r) => (
                 <div key={r.id} className="w-72 flex-shrink-0">
-                  <RestaurantCard restaurant={r} variant="standard" />
+                  <RestaurantCard
+                    restaurant={r}
+                    variant="standard"
+                    distanceKm={r._distance ?? null}
+                    nearby={r._nearby}
+                  />
                 </div>
               ))}
             </div>
