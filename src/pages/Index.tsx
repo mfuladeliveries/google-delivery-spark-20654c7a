@@ -388,6 +388,7 @@ const Index = () => {
               // just moves between children like input → suggestion button).
               const next = e.relatedTarget as Node | null;
               if (next && e.currentTarget.contains(next)) return;
+              if (blurConfirmedRef.current) return;
               const trimmed = manualText.trim();
               if (
                 manualAddress &&
@@ -395,6 +396,7 @@ const Index = () => {
                 trimmed.length > 0 &&
                 !confirmingCancel
               ) {
+                blurConfirmedRef.current = true;
                 setManualOpen(false);
                 setManualUpdatedAt(Date.now());
                 toast.success("Address confirmed", {
