@@ -199,11 +199,11 @@ export function useGeoLocation(): GeoState & {
               const ndist = gpsDistanceFromSaved(nlat, nlng);
               if (shouldRejectGps(nlat, nlng, nacc)) {
                 const pc = profileCoordsRef.current!;
-                setState((s) => ({ ...s, lat: pc.lat, lng: pc.lng, status: "fallback", source: "profile", ready: true, gpsDiscrepancyKm: ndist }));
+                setState((s) => ({ ...s, lat: pc.lat, lng: pc.lng, status: "fallback", source: "profile", ready: true, gpsDiscrepancyKm: ndist, accuracyM: null }));
                 return;
               }
               saveCache(nlat, nlng);
-              setState((s) => ({ ...s, lat: nlat, lng: nlng, status: "granted", source: "gps", ready: true, gpsDiscrepancyKm: null }));
+              setState((s) => ({ ...s, lat: nlat, lng: nlng, status: "granted", source: "gps", ready: true, gpsDiscrepancyKm: null, accuracyM: nacc }));
             },
             () => {/* ignore transient errors */},
             { enableHighAccuracy: true, maximumAge: 30_000, timeout: 20_000 },
