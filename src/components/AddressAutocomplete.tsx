@@ -256,6 +256,7 @@ export const AddressAutocomplete = ({
     clearAllCache();
     setCacheCount(0);
     setFallback(false);
+    setConfirmingClear(false);
     // If we were showing fallback results, drop them and re-run live search.
     if (fallback) {
       setSuggestions([]);
@@ -263,6 +264,11 @@ export const AddressAutocomplete = ({
       setRetryToken((n) => n + 1);
     }
   };
+
+  // Reset confirmation when the dropdown closes.
+  useEffect(() => {
+    if (!open) setConfirmingClear(false);
+  }, [open]);
 
   return (
     <div ref={containerRef} className="relative">
