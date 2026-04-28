@@ -1,9 +1,10 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Star, Clock, Plus, Minus, ShoppingCart, Search, ChevronRight } from "lucide-react";
+import { ArrowLeft, Star, Clock, Plus, Minus, ShoppingCart, Search, ChevronRight, MapPinOff, MapPin } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useCart } from "@/hooks/useCart";
 import { useAuth } from "@/hooks/useAuth";
+import { useGeoLocation, DELIVERY_RADIUS_KM, DELIVERY_RADIUS_LABEL_KM } from "@/hooks/useGeoLocation";
 import { menuItems as staticMenuItems, SizeOption, AddOnOption, CutOption } from "@/data/menu";
 import Cart from "@/components/Cart";
 import CheckoutDialog from "@/components/CheckoutDialog";
@@ -25,6 +26,8 @@ interface Restaurant {
   delivery_time: string;
   min_order: number;
   cuisine: string;
+  lat: number | null;
+  lng: number | null;
 }
 
 interface DbMenuItem {
@@ -59,6 +62,7 @@ const RestaurantMenu = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const cart = useCart();
+  const geo = useGeoLocation();
   const [restaurant, setRestaurant] = useState<Restaurant | null>(null);
   const [menuItems, setMenuItems] = useState<DbMenuItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -67,6 +71,15 @@ const RestaurantMenu = () => {
   const [cartOpen, setCartOpen] = useState(false);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
   const [foodNote, setFoodNote] = useState<string | undefined>(undefined);
+
+  // Distance gating: customer must be within DELIVERY_RADIUS_KM of this
+  // restaurant's saved coordinates. Restaurants with no coords are blocked.
+  const distance = restaurant ? geo.distanceTo(restaurant.lat, restaurant.lng) : null;
+  const restaurantHasCoords = !!restaurant && restaurant.lat != null && restaurant.lng != null;
+  const locationBlocked = !geo.ready || !geo.hasCoords;
+  const outOfRange =
+    !locationBlocked && (!restaurantHasCoords || (distance != null && distance > DELIVERY_RADIUS_KM));
+  const canOrder = !locationBlocked && !outOfRange;
 
   useEffect(() => {
     const fetchData = async () => {
@@ -209,6 +222,16 @@ const RestaurantMenu = () => {
   const [customizeItem, setCustomizeItem] = useState<DbMenuItem | null>(null);
 
   const handleAddItem = (item: DbMenuItem) => {
+    if (locationBlocked) {
+      toast.error("Please enable location services to see restaurants available near you.");
+      return;
+    }
+    if (outOfRange) {
+      toast.error(`This restaurant is outside your delivery range (${DELIVERY_RADIUS_LABEL_KM} km).`, {
+        description: "Please choose a closer restaurant.",
+      });
+      return;
+    }
     if (itemHasOptions(item)) {
       setCustomizeItem(item);
       return;
@@ -218,6 +241,14 @@ const RestaurantMenu = () => {
 
   const handleCheckout = (note?: string) => {
     if (!user) { navigate("/auth"); return; }
+    if (!canOrder) {
+      toast.error(
+        locationBlocked
+          ? "Please enable location services to place an order."
+          : `This restaurant is outside your delivery range (${DELIVERY_RADIUS_LABEL_KM} km).`,
+      );
+      return;
+    }
     setFoodNote(note);
     setCartOpen(false);
     setCheckoutOpen(true);
@@ -273,6 +304,50 @@ const RestaurantMenu = () => {
       </div>
 
       <main className="mx-auto max-w-3xl px-4 pt-4 pb-nav md:pb-8">
+        {/* Location gating banner */}
+        {geo.ready && locationBlocked && (
+          <div className="mb-4 flex items-start gap-3 rounded-2xl border-2 border-destructive/40 bg-destructive/5 p-4">
+            <MapPinOff className="mt-0.5 h-5 w-5 flex-shrink-0 text-destructive" />
+            <div className="flex-1">
+              <p className="text-sm font-bold text-foreground">Location is off</p>
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                Please enable location services to see restaurants available near you. Ordering is disabled until location is enabled.
+              </p>
+              <button
+                onClick={() => geo.refresh()}
+                className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-primary px-4 py-1.5 text-xs font-bold text-primary-foreground shadow-orange"
+              >
+                <MapPin className="h-3.5 w-3.5" /> Enable location
+              </button>
+            </div>
+          </div>
+        )}
+        {geo.ready && outOfRange && (
+          <div className="mb-4 flex items-start gap-3 rounded-2xl border-2 border-destructive/40 bg-destructive/5 p-4">
+            <MapPinOff className="mt-0.5 h-5 w-5 flex-shrink-0 text-destructive" />
+            <div className="flex-1 text-sm text-foreground">
+              <p className="font-bold">
+                This restaurant is outside your delivery range ({DELIVERY_RADIUS_LABEL_KM} km).
+              </p>
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                {restaurantHasCoords && distance != null
+                  ? `You're about ${distance.toFixed(1)} km away. Please choose a closer restaurant.`
+                  : "Please choose a closer restaurant."}
+              </p>
+              <button
+                onClick={() => navigate("/")}
+                className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-primary px-4 py-1.5 text-xs font-bold text-primary-foreground shadow-orange"
+              >
+                See nearby restaurants
+              </button>
+            </div>
+          </div>
+        )}
+        {geo.ready && canOrder && distance != null && (
+          <div className="mb-3 inline-flex items-center gap-1.5 rounded-full bg-emerald-500/15 px-3 py-1 text-[11px] font-bold text-emerald-600 dark:text-emerald-400">
+            <MapPin className="h-3 w-3" /> {distance.toFixed(1)} km away · within delivery range
+          </div>
+        )}
         {/* Gallery */}
         {restaurant.gallery_images && restaurant.gallery_images.length > 0 && (
           <section className="mb-4">
@@ -380,7 +455,9 @@ const RestaurantMenu = () => {
                       {qty === 0 ? (
                         <button
                           onClick={(e) => { e.stopPropagation(); handleAddItem(item); }}
-                          className="flex items-center gap-1 rounded-xl bg-primary px-3 py-1.5 text-xs font-bold text-primary-foreground transition-transform hover:scale-105 active:scale-95"
+                          disabled={!canOrder}
+                          data-testid="menu-add-button"
+                          className="flex items-center gap-1 rounded-xl bg-primary px-3 py-1.5 text-xs font-bold text-primary-foreground transition-transform hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
                         >
                           {hasOptions ? (
                             <>Customize <ChevronRight className="h-3.5 w-3.5" /></>
@@ -407,8 +484,9 @@ const RestaurantMenu = () => {
                           </span>
                           <button
                             onClick={() => handleAddItem(item)}
+                            disabled={!canOrder}
                             aria-label={hasOptions ? "Add another with options" : "Add one"}
-                            className="flex h-7 w-7 items-center justify-center rounded-full bg-primary text-primary-foreground"
+                            className="flex h-7 w-7 items-center justify-center rounded-full bg-primary text-primary-foreground disabled:opacity-50 disabled:cursor-not-allowed"
                           >
                             <Plus className="h-3.5 w-3.5" />
                           </button>

@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { X, Plus, Minus, Package, Trash2, StickyNote, AlertTriangle, Truck } from "lucide-react";
+import { X, Plus, Minus, Package, Trash2, StickyNote, AlertTriangle, Truck, MapPinOff } from "lucide-react";
 import { CartItem } from "@/hooks/useCart";
 import { storeInfo } from "@/data/menu";
 import { useCustomerLocation } from "@/hooks/useCustomerLocation";
+import { useGeoLocation, DELIVERY_RADIUS_LABEL_KM } from "@/hooks/useGeoLocation";
 import { useAuth } from "@/hooks/useAuth";
 import { RestaurantName } from "@/components/RestaurantName";
 
@@ -37,9 +38,12 @@ const Cart = ({
   const [foodNote, setFoodNote] = useState("");
   const { user } = useAuth();
   const { needsAddress, needsCoords, outOfRange } = useCustomerLocation();
+  const geo = useGeoLocation();
+  const geoBlocked = geo.ready && !geo.hasCoords;
   // Personal details + GPS pin are collected in the checkout dialog itself,
-  // so we only block checkout if the saved address is confirmed out of range.
-  const canCheckout = !!user && !outOfRange;
+  // so we only block checkout if the saved address is confirmed out of range
+  // OR live GPS is unavailable.
+  const canCheckout = !!user && !outOfRange && !geoBlocked;
   const needsDetails = !!user && (needsAddress || needsCoords);
   // Cart items carry the restaurant name in `item.category` (set in RestaurantMenu)
   const restaurantName = items[0]?.item.category || "";
@@ -213,6 +217,18 @@ const Cart = ({
                 <div>
                   <p className="font-bold">Delivery not available in your area</p>
                   <Link to="/profile" className="mt-1 inline-block font-bold text-primary hover:underline">Update address →</Link>
+                </div>
+              </div>
+            )}
+            {user && geoBlocked && (
+              <div className="mt-3 flex items-start gap-2 rounded-xl border-2 border-destructive/40 bg-destructive/5 p-3 text-xs text-foreground">
+                <MapPinOff className="mt-0.5 h-4 w-4 flex-shrink-0 text-destructive" />
+                <div>
+                  <p className="font-bold">Location is off</p>
+                  <p className="mt-0.5 text-muted-foreground">
+                    Please enable location services to place an order. We use it to confirm you're within {DELIVERY_RADIUS_LABEL_KM} km of the restaurant.
+                  </p>
+                  <button onClick={() => geo.refresh()} className="mt-1 font-bold text-primary hover:underline">Enable location →</button>
                 </div>
               </div>
             )}

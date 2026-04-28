@@ -17,6 +17,8 @@ export interface RestaurantCardData {
   min_order: number;
   opens_at?: string | null;
   closes_at?: string | null;
+  lat?: number | null;
+  lng?: number | null;
 }
 
 const FALLBACK_IMG = "https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=800&h=400&fit=crop";
@@ -42,9 +44,13 @@ const getImage = (r: RestaurantCardData) =>
 interface Props {
   restaurant: RestaurantCardData;
   variant?: "featured" | "standard" | "horizontal";
+  /** Distance from customer in km. If provided, shown on the card. */
+  distanceKm?: number | null;
+  /** True when within delivery radius — shows a "Within delivery range" badge. */
+  nearby?: boolean;
 }
 
-const RestaurantCard = ({ restaurant: r, variant = "standard" }: Props) => {
+const RestaurantCard = ({ restaurant: r, variant = "standard", distanceKm, nearby }: Props) => {
   const navigate = useNavigate();
   const open = isRestaurantOpen(r.opens_at, r.closes_at);
   const imgUrl = getImage(r);
@@ -184,11 +190,21 @@ const RestaurantCard = ({ restaurant: r, variant = "standard" }: Props) => {
           )}
         </div>
 
-        {/* Tag pill */}
-        <div className="mt-3 flex flex-wrap gap-1.5">
+        {/* Tag pill + nearby/distance */}
+        <div className="mt-3 flex flex-wrap items-center gap-1.5">
           <span className="rounded-full bg-secondary px-2.5 py-1 text-[11px] font-medium text-secondary-foreground">
             {r.cuisine}
           </span>
+          {nearby && (
+            <span className="rounded-full bg-emerald-500/15 px-2.5 py-1 text-[11px] font-bold text-emerald-600 dark:text-emerald-400">
+              ✓ Within delivery range
+            </span>
+          )}
+          {typeof distanceKm === "number" && (
+            <span className="rounded-full bg-muted px-2 py-1 text-[11px] font-semibold text-muted-foreground">
+              {distanceKm.toFixed(1)} km away
+            </span>
+          )}
         </div>
 
         {/* Featured CTA */}
