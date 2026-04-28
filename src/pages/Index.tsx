@@ -57,6 +57,7 @@ const Index = () => {
   });
   const [manualOpen, setManualOpen] = useState(false);
   const [manualText, setManualText] = useState("");
+  const [houseNumber, setHouseNumber] = useState("");
   const [manualUpdatedAt, setManualUpdatedAt] = useState<number | null>(null);
   const [confirmingCancel, setConfirmingCancel] = useState(false);
   // Guards the auto-confirm-on-blur toast so it fires at most once per
