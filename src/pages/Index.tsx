@@ -111,6 +111,7 @@ const Index = () => {
     try {
       if (val) localStorage.setItem("mfula-manual-area-v1", JSON.stringify(val));
       else localStorage.removeItem("mfula-manual-area-v1");
+      window.dispatchEvent(new Event("mfula-manual-area-changed"));
     } catch {/* ignore */}
   };
 

@@ -103,6 +103,33 @@ export function useGeoLocation(): GeoState & {
     gpsDiscrepancyKm: null,
     accuracyM: null,
   }));
+
+  // Manual address override — when the customer has explicitly chosen a
+  // browsing area on the home page, every consumer of useGeoLocation
+  // (RestaurantMenu distance gate, Cart, etc.) should measure distance from
+  // that address instead of live GPS. We read the same localStorage key the
+  // home page writes to and stay in sync via the "storage" event.
+  const readManual = (): { lat: number; lng: number } | null => {
+    try {
+      const raw = localStorage.getItem("mfula-manual-area-v1");
+      if (!raw) return null;
+      const v = JSON.parse(raw);
+      if (typeof v?.lat === "number" && typeof v?.lng === "number") {
+        return { lat: v.lat, lng: v.lng };
+      }
+    } catch {/* ignore */}
+    return null;
+  };
+  const [manualOverride, setManualOverride] = useState<{ lat: number; lng: number } | null>(readManual);
+  useEffect(() => {
+    const sync = () => setManualOverride(readManual());
+    window.addEventListener("storage", sync);
+    window.addEventListener("mfula-manual-area-changed", sync);
+    return () => {
+      window.removeEventListener("storage", sync);
+      window.removeEventListener("mfula-manual-area-changed", sync);
+    };
+  }, []);
   const watchIdRef = useRef<number | null>(null);
   /** Cached saved-profile coords, kept in a ref so the GPS watcher can sync-check. */
   const profileCoordsRef = useRef<{ lat: number; lng: number } | null>(null);
@@ -240,20 +267,30 @@ export function useGeoLocation(): GeoState & {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id]);
 
+  const effectiveLat = manualOverride ? manualOverride.lat : state.lat;
+  const effectiveLng = manualOverride ? manualOverride.lng : state.lng;
+
   const distanceTo = useCallback(
     (lat: number | null | undefined, lng: number | null | undefined) => {
-      if (state.lat == null || state.lng == null) return null;
+      if (effectiveLat == null || effectiveLng == null) return null;
       if (lat == null || lng == null) return null;
-      return distanceKm(state.lat, state.lng, lat, lng);
+      return distanceKm(effectiveLat, effectiveLng, lat, lng);
     },
-    [state.lat, state.lng],
+    [effectiveLat, effectiveLng],
   );
 
   return {
     ...state,
+    lat: effectiveLat,
+    lng: effectiveLng,
+    // When a manual override is active, treat location as ready & granted so
+    // distance-gated UIs don't block ordering.
+    ready: manualOverride ? true : state.ready,
+    status: manualOverride ? "granted" : state.status,
+    source: manualOverride ? "gps" : state.source,
     refresh: requestGps,
     trustGps,
     distanceTo,
-    hasCoords: state.lat != null && state.lng != null,
+    hasCoords: effectiveLat != null && effectiveLng != null,
   };
 }
