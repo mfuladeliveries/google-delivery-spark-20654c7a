@@ -484,8 +484,9 @@ const RestaurantMenu = () => {
                           </span>
                           <button
                             onClick={() => handleAddItem(item)}
+                            disabled={!canOrder}
                             aria-label={hasOptions ? "Add another with options" : "Add one"}
-                            className="flex h-7 w-7 items-center justify-center rounded-full bg-primary text-primary-foreground"
+                            className="flex h-7 w-7 items-center justify-center rounded-full bg-primary text-primary-foreground disabled:opacity-50 disabled:cursor-not-allowed"
                           >
                             <Plus className="h-3.5 w-3.5" />
                           </button>
