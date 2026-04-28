@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, lazy, Suspense } from "react";
-import { X, Package, MapPin, Phone, User, StickyNote, Banknote, CreditCard, Wallet, Clock, Navigation, Truck, AlertTriangle, Map as MapIcon, Check } from "lucide-react";
+import { X, Package, MapPin, Phone, User, StickyNote, Banknote, CreditCard, Wallet, Clock, Navigation, AlertTriangle, Map as MapIcon, Check } from "lucide-react";
 import { CartItem } from "@/hooks/useCart";
 import { storeInfo } from "@/data/menu";
 import { supabase } from "@/integrations/supabase/client";
