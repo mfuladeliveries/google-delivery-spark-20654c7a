@@ -59,6 +59,12 @@ const Index = () => {
   const [manualText, setManualText] = useState("");
   const [manualUpdatedAt, setManualUpdatedAt] = useState<number | null>(null);
   const [confirmingCancel, setConfirmingCancel] = useState(false);
+  // Guards the auto-confirm-on-blur toast so it fires at most once per
+  // panel-open session, even if focus bounces between children.
+  const blurConfirmedRef = useRef(false);
+  useEffect(() => {
+    if (manualOpen) blurConfirmedRef.current = false;
+  }, [manualOpen]);
 
   // Escape key closes the manual address panel — but if the user has typed
   // something they haven't picked yet, surface the same discard-changes
