@@ -304,6 +304,50 @@ const RestaurantMenu = () => {
       </div>
 
       <main className="mx-auto max-w-3xl px-4 pt-4 pb-nav md:pb-8">
+        {/* Location gating banner */}
+        {geo.ready && locationBlocked && (
+          <div className="mb-4 flex items-start gap-3 rounded-2xl border-2 border-destructive/40 bg-destructive/5 p-4">
+            <MapPinOff className="mt-0.5 h-5 w-5 flex-shrink-0 text-destructive" />
+            <div className="flex-1">
+              <p className="text-sm font-bold text-foreground">Location is off</p>
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                Please enable location services to see restaurants available near you. Ordering is disabled until location is enabled.
+              </p>
+              <button
+                onClick={() => geo.refresh()}
+                className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-primary px-4 py-1.5 text-xs font-bold text-primary-foreground shadow-orange"
+              >
+                <MapPin className="h-3.5 w-3.5" /> Enable location
+              </button>
+            </div>
+          </div>
+        )}
+        {geo.ready && outOfRange && (
+          <div className="mb-4 flex items-start gap-3 rounded-2xl border-2 border-destructive/40 bg-destructive/5 p-4">
+            <MapPinOff className="mt-0.5 h-5 w-5 flex-shrink-0 text-destructive" />
+            <div className="flex-1 text-sm text-foreground">
+              <p className="font-bold">
+                This restaurant is outside your delivery range ({DELIVERY_RADIUS_LABEL_KM} km).
+              </p>
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                {restaurantHasCoords && distance != null
+                  ? `You're about ${distance.toFixed(1)} km away. Please choose a closer restaurant.`
+                  : "Please choose a closer restaurant."}
+              </p>
+              <button
+                onClick={() => navigate("/")}
+                className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-primary px-4 py-1.5 text-xs font-bold text-primary-foreground shadow-orange"
+              >
+                See nearby restaurants
+              </button>
+            </div>
+          </div>
+        )}
+        {geo.ready && canOrder && distance != null && (
+          <div className="mb-3 inline-flex items-center gap-1.5 rounded-full bg-emerald-500/15 px-3 py-1 text-[11px] font-bold text-emerald-600 dark:text-emerald-400">
+            <MapPin className="h-3 w-3" /> {distance.toFixed(1)} km away · within delivery range
+          </div>
+        )}
         {/* Gallery */}
         {restaurant.gallery_images && restaurant.gallery_images.length > 0 && (
           <section className="mb-4">
