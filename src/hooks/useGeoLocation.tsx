@@ -103,6 +103,33 @@ export function useGeoLocation(): GeoState & {
     gpsDiscrepancyKm: null,
     accuracyM: null,
   }));
+
+  // Manual address override — when the customer has explicitly chosen a
+  // browsing area on the home page, every consumer of useGeoLocation
+  // (RestaurantMenu distance gate, Cart, etc.) should measure distance from
+  // that address instead of live GPS. We read the same localStorage key the
+  // home page writes to and stay in sync via the "storage" event.
+  const readManual = (): { lat: number; lng: number } | null => {
+    try {
+      const raw = localStorage.getItem("mfula-manual-area-v1");
+      if (!raw) return null;
+      const v = JSON.parse(raw);
+      if (typeof v?.lat === "number" && typeof v?.lng === "number") {
+        return { lat: v.lat, lng: v.lng };
+      }
+    } catch {/* ignore */}
+    return null;
+  };
+  const [manualOverride, setManualOverride] = useState<{ lat: number; lng: number } | null>(readManual);
+  useEffect(() => {
+    const sync = () => setManualOverride(readManual());
+    window.addEventListener("storage", sync);
+    window.addEventListener("mfula-manual-area-changed", sync);
+    return () => {
+      window.removeEventListener("storage", sync);
+      window.removeEventListener("mfula-manual-area-changed", sync);
+    };
+  }, []);
   const watchIdRef = useRef<number | null>(null);
   /** Cached saved-profile coords, kept in a ref so the GPS watcher can sync-check. */
   const profileCoordsRef = useRef<{ lat: number; lng: number } | null>(null);
