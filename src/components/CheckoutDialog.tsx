@@ -759,7 +759,7 @@ const CheckoutDialog = ({
 
           <button
             onClick={handleCheckout}
-            disabled={loading || !name.trim() || !contact.trim() || !address.trim() || !coords}
+            disabled={loading || !name.trim() || !contact.trim() || !addressVerified || !coords || outOfRange}
             data-testid="checkout-place-order-button"
             className="flex w-full items-center justify-center gap-2 rounded-2xl bg-primary py-3.5 font-display font-bold text-primary-foreground transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:hover:scale-100 shadow-orange"
           >
