@@ -204,8 +204,17 @@ const CheckoutDialog = ({
       return;
     }
 
-    if (!coords) {
-      toast.error("Please use the location button so we have your exact GPS coordinates.");
+    if (!addressVerified || !coords) {
+      toast.error("Please pick your delivery address from the suggestions or confirm it on the map.");
+      setValidationErrors((prev) => ({
+        ...prev,
+        address: "Select a valid address from the suggestions.",
+      }));
+      return;
+    }
+
+    if (outOfRange) {
+      toast.error(`Your address is outside the ${MAX_DELIVERY_KM} km delivery range for this restaurant.`);
       return;
     }
 
