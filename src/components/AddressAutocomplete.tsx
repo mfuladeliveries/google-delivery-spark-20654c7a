@@ -97,6 +97,28 @@ function searchCacheFallback(query: string): NominatimSuggestion[] {
   }
 }
 
+/** Count non-expired cache entries. */
+function countCache(): number {
+  try {
+    const raw = localStorage.getItem(CACHE_KEY);
+    if (!raw) return 0;
+    const data = JSON.parse(raw) as Record<string, CacheEntry>;
+    const now = Date.now();
+    return Object.values(data).filter((e) => now - e.ts <= CACHE_TTL_MS).length;
+  } catch {
+    return 0;
+  }
+}
+
+/** Remove all cached suggestions. */
+function clearAllCache() {
+  try {
+    localStorage.removeItem(CACHE_KEY);
+  } catch {
+    /* ignore */
+  }
+}
+
 /**
  * Autocomplete delivery-address input backed by OpenStreetMap Nominatim.
  *
