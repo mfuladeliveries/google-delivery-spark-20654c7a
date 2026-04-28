@@ -40,7 +40,12 @@ interface GeoState {
    * GPS reading was from the saved profile address. Null when no rejection
    * has occurred (or when there is no saved address to compare against).
    */
-  gpsDiscrepancyKm: number | null;
+   gpsDiscrepancyKm: number | null;
+  /**
+   * Reported GPS accuracy in metres for the most recent live fix. Null when
+   * we don't currently have a live GPS reading (e.g. fallback or denied).
+   */
+  accuracyM: number | null;
 }
 
 const STORAGE_KEY = "mfula-geo-cache-v1";
