@@ -143,6 +143,7 @@ export const AddressAutocomplete = ({
   const [fallback, setFallback] = useState(false);
   const [retryToken, setRetryToken] = useState(0);
   const [cacheCount, setCacheCount] = useState<number>(() => countCache());
+  const [confirmingClear, setConfirmingClear] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
 
