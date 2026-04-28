@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { Search, ChevronRight, Flame, Utensils, Pizza, Fish, ShoppingBasket, Trophy, UtensilsCrossed, MapPin, MapPinOff, RefreshCw } from "lucide-react";
+import { Search, ChevronRight, Flame, Utensils, Pizza, Fish, ShoppingBasket, Trophy, UtensilsCrossed, MapPin, MapPinOff, RefreshCw, Pencil, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -13,6 +13,8 @@ import { useCart } from "@/hooks/useCart";
 import { useAuth } from "@/hooks/useAuth";
 import { menuItems } from "@/data/menu";
 import mfulaLogo from "@/assets/mfula-logo.png";
+import AddressAutocomplete, { type ValidatedAddress } from "@/components/AddressAutocomplete";
+import { distanceKm } from "@/lib/serviceArea";
 
 interface Restaurant extends RestaurantCardData {
   is_active: boolean;
