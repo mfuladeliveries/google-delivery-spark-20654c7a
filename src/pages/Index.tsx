@@ -106,7 +106,7 @@ const Index = () => {
     // Hide restaurants outside the delivery radius once we know where the
     // customer is. Without coords (denied/unsupported) we show everything so
     // the user isn't left with an empty list.
-    const withinRange = !geo.hasCoords || r._nearby;
+    const withinRange = !hasEffectiveCoords || r._nearby;
     return matchesCuisine && matchesSearch && withinRange;
   });
 
