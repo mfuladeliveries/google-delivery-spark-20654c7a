@@ -206,6 +206,16 @@ const Index = () => {
               <RefreshCw className={`h-3 w-3 ${geo.status === "prompt" ? "animate-spin" : ""}`} />
               {geo.status === "prompt" ? "Checking…" : "Retry GPS"}
             </button>
+            {geo.source === "profile" && geo.gpsDiscrepancyKm != null && (
+              <button
+                type="button"
+                onClick={() => geo.trustGps()}
+                title="I've travelled away from my saved address — trust GPS for this session"
+                className="inline-flex items-center gap-1 rounded-full border border-emerald-500/40 bg-emerald-500/10 px-2.5 py-1 text-[11px] font-semibold text-emerald-600 transition-colors hover:bg-emerald-500/20 dark:text-emerald-400"
+              >
+                Use my GPS anyway
+              </button>
+            )}
           </div>
         )}
 

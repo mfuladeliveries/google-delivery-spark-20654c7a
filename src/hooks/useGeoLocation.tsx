@@ -75,6 +75,12 @@ function saveCache(lat: number, lng: number) {
 export function useGeoLocation(): GeoState & {
   /** Re-request permission / refresh location. */
   refresh: () => void;
+  /**
+   * Permanently trust GPS for this session, bypassing the saved-address
+   * sanity check. Use when the customer has actually travelled away from
+   * their saved address.
+   */
+  trustGps: () => void;
   /** Compute distance from current location to a restaurant. Returns null if no coords. */
   distanceTo: (lat: number | null | undefined, lng: number | null | undefined) => number | null;
   /** True if we have any coords (live or fallback). */
@@ -121,6 +127,31 @@ export function useGeoLocation(): GeoState & {
     return distanceKm(p.lat, p.lng, lat, lng);
   }, []);
 
+  /**
+   * If true, the user has explicitly told us to trust GPS for this session
+   * (e.g. they tapped "Use my GPS anyway" after travelling away from their
+   * saved address). Skips the distance sanity check entirely.
+   */
+  const trustGpsRef = useRef(false);
+
+  /**
+   * Decide whether a GPS reading should be rejected in favour of the saved
+   * address. We only reject when ALL of these are true:
+   *   - the user hasn't manually opted to trust GPS
+   *   - we actually have a saved address to fall back to
+   *   - the GPS fix is more than GPS_TRUST_RADIUS_KM away from it
+   *   - the reported accuracy is poor (>150 m) — i.e. likely wifi/IP-based,
+   *     not a real GPS lock. A genuine GPS lock at a far-away spot means the
+   *     user has actually travelled there, so we trust it.
+   */
+  const shouldRejectGps = useCallback((lat: number, lng: number, accuracy: number | null): boolean => {
+    if (trustGpsRef.current) return false;
+    const dist = gpsDistanceFromSaved(lat, lng);
+    if (dist == null || dist <= GPS_TRUST_RADIUS_KM) return false;
+    // Far from saved address — only reject if the fix looks unreliable.
+    return accuracy == null || accuracy > 150;
+  }, [gpsDistanceFromSaved]);
+
   const requestGps = useCallback(() => {
     if (typeof navigator === "undefined" || !navigator.geolocation) {
       setState((s) => ({ ...s, status: "unsupported", ready: true }));
@@ -139,10 +170,11 @@ export function useGeoLocation(): GeoState & {
         (pos) => {
           const lat = pos.coords.latitude;
           const lng = pos.coords.longitude;
+          const acc = pos.coords.accuracy ?? null;
           const dist = gpsDistanceFromSaved(lat, lng);
-          const untrusted = dist != null && dist > GPS_TRUST_RADIUS_KM;
+          const reject = shouldRejectGps(lat, lng, acc);
 
-          if (untrusted) {
+          if (reject) {
             const p = profileCoordsRef.current!;
             saveCache(p.lat, p.lng);
             setState({ status: "fallback", lat: p.lat, lng: p.lng, ready: true, source: "profile", error: null, gpsDiscrepancyKm: dist });
@@ -157,9 +189,9 @@ export function useGeoLocation(): GeoState & {
             (p) => {
               const nlat = p.coords.latitude;
               const nlng = p.coords.longitude;
+              const nacc = p.coords.accuracy ?? null;
               const ndist = gpsDistanceFromSaved(nlat, nlng);
-              const nUntrusted = ndist != null && ndist > GPS_TRUST_RADIUS_KM;
-              if (nUntrusted) {
+              if (shouldRejectGps(nlat, nlng, nacc)) {
                 const pc = profileCoordsRef.current!;
                 setState((s) => ({ ...s, lat: pc.lat, lng: pc.lng, status: "fallback", source: "profile", ready: true, gpsDiscrepancyKm: ndist }));
                 return;
@@ -183,7 +215,13 @@ export function useGeoLocation(): GeoState & {
         { enableHighAccuracy: true, maximumAge: 60_000, timeout: 10_000 },
       );
     });
-  }, [loadProfileFallback, gpsDistanceFromSaved]);
+  }, [loadProfileFallback, gpsDistanceFromSaved, shouldRejectGps]);
+
+  /** Bypass the sanity check and trust GPS, then immediately re-acquire. */
+  const trustGps = useCallback(() => {
+    trustGpsRef.current = true;
+    requestGps();
+  }, [requestGps]);
 
   useEffect(() => {
     requestGps();
@@ -208,6 +246,7 @@ export function useGeoLocation(): GeoState & {
   return {
     ...state,
     refresh: requestGps,
+    trustGps,
     distanceTo,
     hasCoords: state.lat != null && state.lng != null,
   };
