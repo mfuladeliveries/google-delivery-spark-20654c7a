@@ -190,11 +190,21 @@ const RestaurantCard = ({ restaurant: r, variant = "standard", distanceKm, nearb
           )}
         </div>
 
-        {/* Tag pill */}
-        <div className="mt-3 flex flex-wrap gap-1.5">
+        {/* Tag pill + nearby/distance */}
+        <div className="mt-3 flex flex-wrap items-center gap-1.5">
           <span className="rounded-full bg-secondary px-2.5 py-1 text-[11px] font-medium text-secondary-foreground">
             {r.cuisine}
           </span>
+          {nearby && (
+            <span className="rounded-full bg-emerald-500/15 px-2.5 py-1 text-[11px] font-bold text-emerald-600 dark:text-emerald-400">
+              ✓ Within delivery range
+            </span>
+          )}
+          {typeof distanceKm === "number" && (
+            <span className="rounded-full bg-muted px-2 py-1 text-[11px] font-semibold text-muted-foreground">
+              {distanceKm.toFixed(1)} km away
+            </span>
+          )}
         </div>
 
         {/* Featured CTA */}
