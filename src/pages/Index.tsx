@@ -65,16 +65,35 @@ const Index = () => {
   useEffect(() => {
     if (!manualOpen) return;
     const handler = (e: KeyboardEvent) => {
-      if (e.key !== "Escape") return;
       const baseline = manualAddress ? manualAddress.address : "";
-      const isDirty = manualText.trim() !== baseline.trim() && manualText.trim().length > 0;
-      e.preventDefault();
-      if (isDirty) {
-        setConfirmingCancel(true);
-      } else {
-        setManualOpen(false);
-        setManualText(baseline);
-        setConfirmingCancel(false);
+      const trimmed = manualText.trim();
+      const isDirty = trimmed !== baseline.trim() && trimmed.length > 0;
+
+      if (e.key === "Escape") {
+        e.preventDefault();
+        if (isDirty) {
+          setConfirmingCancel(true);
+        } else {
+          setManualOpen(false);
+          setManualText(baseline);
+          setConfirmingCancel(false);
+        }
+        return;
+      }
+
+      if (e.key === "Enter") {
+        // If the autocomplete dropdown is open, let it handle Enter
+        // (it has its own list selection). Otherwise, if the text matches
+        // the saved address, treat Enter as "confirm" and close the panel.
+        const target = e.target as HTMLElement | null;
+        const insideAutocomplete = target?.closest('[role="listbox"]');
+        if (insideAutocomplete) return;
+        if (manualAddress && trimmed === baseline.trim() && trimmed.length > 0) {
+          e.preventDefault();
+          setManualOpen(false);
+          setConfirmingCancel(false);
+          setManualUpdatedAt(Date.now());
+        }
       }
     };
     document.addEventListener("keydown", handler);
