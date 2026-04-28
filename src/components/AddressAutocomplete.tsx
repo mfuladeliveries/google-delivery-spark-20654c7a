@@ -66,6 +66,38 @@ function writeCache(query: string, results: NominatimSuggestion[]) {
 }
 
 /**
+ * Search the cache for any previously verified suggestions matching the query.
+ * Used as a fallback when Nominatim is unavailable: matches by cache key
+ * substring OR by result display_name substring, deduped by place_id.
+ */
+function searchCacheFallback(query: string): NominatimSuggestion[] {
+  try {
+    const raw = localStorage.getItem(CACHE_KEY);
+    if (!raw) return [];
+    const data = JSON.parse(raw) as Record<string, CacheEntry>;
+    const needle = query.toLowerCase();
+    const seen = new Set<number>();
+    const out: NominatimSuggestion[] = [];
+    const entries = Object.entries(data).sort((a, b) => b[1].ts - a[1].ts);
+    for (const [key, entry] of entries) {
+      if (Date.now() - entry.ts > CACHE_TTL_MS) continue;
+      const keyMatch = key.includes(needle);
+      for (const s of entry.results) {
+        if (seen.has(s.place_id)) continue;
+        if (keyMatch || s.display_name.toLowerCase().includes(needle)) {
+          seen.add(s.place_id);
+          out.push(s);
+          if (out.length >= 5) return out;
+        }
+      }
+    }
+    return out;
+  } catch {
+    return [];
+  }
+}
+
+/**
  * Autocomplete delivery-address input backed by OpenStreetMap Nominatim.
  *
  * Critical contract: pure-text typing never produces coords — the parent must
@@ -86,6 +118,7 @@ export const AddressAutocomplete = ({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [searched, setSearched] = useState(false);
+  const [fallback, setFallback] = useState(false);
   const [retryToken, setRetryToken] = useState(0);
   const abortRef = useRef<AbortController | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -99,22 +132,25 @@ export const AddressAutocomplete = ({
       setLoading(false);
       setError(null);
       setSearched(false);
+      setFallback(false);
       return;
     }
 
-    // Use cache first.
+    // Use cache first (exact-key hit).
     const cached = readCache(q);
     if (cached) {
       setSuggestions(cached);
       setOpen(true);
       setError(null);
       setSearched(true);
+      setFallback(false);
       setLoading(false);
       return;
     }
 
     setLoading(true);
     setError(null);
+    setFallback(false);
     setOpen(true);
     abortRef.current?.abort();
     const ctrl = new AbortController();
@@ -134,18 +170,29 @@ export const AddressAutocomplete = ({
           setSuggestions(cleaned);
           setOpen(true);
           setSearched(true);
+          setFallback(false);
           writeCache(q, cleaned);
         })
         .catch((err: unknown) => {
           if ((err as Error).name === "AbortError") return;
-          setSuggestions([]);
-          setOpen(false);
+          // Fallback: search across cached suggestions for any partial match.
+          const cachedFallback = searchCacheFallback(q);
           setSearched(true);
-          setError(
-            err instanceof TypeError
-              ? "Address lookup is offline. Check your connection and retry."
-              : "Address lookup is temporarily unavailable. Please try again.",
-          );
+          if (cachedFallback.length > 0) {
+            setSuggestions(cachedFallback);
+            setOpen(true);
+            setFallback(true);
+            setError(null);
+          } else {
+            setSuggestions([]);
+            setOpen(false);
+            setFallback(false);
+            setError(
+              err instanceof TypeError
+                ? "Address lookup is offline and no saved matches were found. Check your connection and retry."
+                : "Address lookup is temporarily unavailable. Please try again.",
+            );
+          }
         })
         .finally(() => setLoading(false));
     }, 350);
@@ -220,6 +267,11 @@ export const AddressAutocomplete = ({
             <div className="flex items-center gap-2 px-3 py-2 text-sm text-muted-foreground">
               <Loader2 className="h-3.5 w-3.5 animate-spin" />
               <span>Searching addresses…</span>
+            </div>
+          )}
+          {!loading && fallback && suggestions.length > 0 && (
+            <div className="mx-1 mt-1 mb-0.5 rounded-md border border-amber-500/30 bg-amber-500/10 px-2.5 py-1.5 text-[11px] text-amber-200">
+              Live address lookup is unavailable. Showing saved matches from your recent searches.
             </div>
           )}
           {!loading && suggestions.length === 0 && searched && (
