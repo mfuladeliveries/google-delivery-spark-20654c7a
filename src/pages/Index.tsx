@@ -393,6 +393,14 @@ const Index = () => {
                 setManualUpdatedAt(Date.now());
                 toast.success("Address confirmed", {
                   description: "Restaurant list refreshed for your saved area.",
+                  action: {
+                    label: "Undo",
+                    onClick: () => {
+                      setManualText(baseline);
+                      setManualOpen(true);
+                      setConfirmingCancel(false);
+                    },
+                  },
                 });
               }
             };
