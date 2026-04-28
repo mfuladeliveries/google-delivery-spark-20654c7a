@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { Search, ChevronRight, Flame, Utensils, Pizza, Fish, ShoppingBasket, Trophy, UtensilsCrossed, MapPin, MapPinOff } from "lucide-react";
+import { Search, ChevronRight, Flame, Utensils, Pizza, Fish, ShoppingBasket, Trophy, UtensilsCrossed, MapPin, MapPinOff, RefreshCw } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -195,6 +195,17 @@ const Index = () => {
                 )}
               </span>
             )}
+            <button
+              type="button"
+              onClick={() => geo.refresh()}
+              disabled={geo.status === "prompt"}
+              title="Retry GPS permission and re-run the 8 km sanity check"
+              aria-label="Retry GPS location"
+              className="inline-flex items-center gap-1 rounded-full border border-border bg-card px-2.5 py-1 text-[11px] font-semibold text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              <RefreshCw className={`h-3 w-3 ${geo.status === "prompt" ? "animate-spin" : ""}`} />
+              {geo.status === "prompt" ? "Checking…" : "Retry GPS"}
+            </button>
           </div>
         )}
 
