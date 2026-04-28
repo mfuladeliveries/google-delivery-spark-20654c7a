@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { Search, ChevronRight, Flame, Utensils, Pizza, Fish, ShoppingBasket, Trophy, UtensilsCrossed, MapPin, MapPinOff, RefreshCw } from "lucide-react";
+import { Search, ChevronRight, Flame, Utensils, Pizza, Fish, ShoppingBasket, Trophy, UtensilsCrossed, MapPin, MapPinOff, RefreshCw, Pencil, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -13,6 +13,8 @@ import { useCart } from "@/hooks/useCart";
 import { useAuth } from "@/hooks/useAuth";
 import { menuItems } from "@/data/menu";
 import mfulaLogo from "@/assets/mfula-logo.png";
+import AddressAutocomplete, { type ValidatedAddress } from "@/components/AddressAutocomplete";
+import { distanceKm } from "@/lib/serviceArea";
 
 interface Restaurant extends RestaurantCardData {
   is_active: boolean;
@@ -41,6 +43,27 @@ const Index = () => {
   const navigate = useNavigate();
   const geo = useGeoLocation();
 
+  // Manual address override — when set, restaurants are filtered/sorted from
+  // these coords instead of the live GPS / saved-address fallback.
+  const [manualAddress, setManualAddress] = useState<ValidatedAddress | null>(() => {
+    try {
+      const raw = localStorage.getItem("mfula-manual-area-v1");
+      if (!raw) return null;
+      const v = JSON.parse(raw);
+      if (typeof v?.lat === "number" && typeof v?.lng === "number" && typeof v?.address === "string") return v;
+    } catch {/* ignore */}
+    return null;
+  });
+  const [manualOpen, setManualOpen] = useState(false);
+  const [manualText, setManualText] = useState("");
+
+  const persistManual = (val: ValidatedAddress | null) => {
+    try {
+      if (val) localStorage.setItem("mfula-manual-area-v1", JSON.stringify(val));
+      else localStorage.removeItem("mfula-manual-area-v1");
+    } catch {/* ignore */}
+  };
+
   // Auth/role gating + redirect to the right dashboard is handled by
   // <RoleGuard allow={["customer"]}> in App.tsx. This page only renders
   // once the viewer is confirmed to be a guest or a customer.
@@ -58,15 +81,24 @@ const Index = () => {
     fetchRestaurants();
   }, []);
 
-  // Annotate every restaurant with distance + nearby flag (live GPS).
+  // Effective coords: manual address override wins, else GPS/profile fallback.
+  const effectiveCoords = manualAddress
+    ? { lat: manualAddress.lat, lng: manualAddress.lng }
+    : geo.hasCoords ? { lat: geo.lat as number, lng: geo.lng as number } : null;
+  const hasEffectiveCoords = effectiveCoords != null;
+
+  // Annotate every restaurant with distance + nearby flag.
   // Restaurants without coords are treated as out of range.
   const annotated = useMemo(() => {
     return restaurants.map((r) => {
-      const d = geo.distanceTo(r.lat ?? null, r.lng ?? null);
+      const d =
+        effectiveCoords && r.lat != null && r.lng != null
+          ? distanceKm(effectiveCoords.lat, effectiveCoords.lng, r.lat, r.lng)
+          : null;
       const nearby = d != null && d <= DELIVERY_RADIUS_KM;
       return { ...r, _distance: d, _nearby: nearby };
     });
-  }, [restaurants, geo.lat, geo.lng]);
+  }, [restaurants, effectiveCoords?.lat, effectiveCoords?.lng]);
 
   const filtered = annotated.filter((r) => {
     const matchesCuisine = selectedCuisine === "All" || r.cuisine === selectedCuisine;
@@ -74,7 +106,7 @@ const Index = () => {
     // Hide restaurants outside the delivery radius once we know where the
     // customer is. Without coords (denied/unsupported) we show everything so
     // the user isn't left with an empty list.
-    const withinRange = !geo.hasCoords || r._nearby;
+    const withinRange = !hasEffectiveCoords || r._nearby;
     return matchesCuisine && matchesSearch && withinRange;
   });
 
@@ -243,6 +275,87 @@ const Index = () => {
           </div>
         )}
 
+        {/* Manual area picker — type an address to browse restaurants in that area */}
+        <div className="mb-4">
+          {manualAddress ? (
+            <div className="flex flex-wrap items-start gap-2 rounded-2xl border border-primary/30 bg-primary/5 p-3">
+              <MapPin className="mt-0.5 h-4 w-4 flex-shrink-0 text-primary" />
+              <div className="min-w-0 flex-1">
+                <p className="text-xs font-bold text-foreground">Browsing area</p>
+                <p className="truncate text-xs text-muted-foreground" title={manualAddress.address}>
+                  {manualAddress.address}
+                </p>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setManualText(manualAddress.address);
+                    setManualOpen(true);
+                  }}
+                  className="inline-flex items-center gap-1 rounded-full border border-border bg-card px-2.5 py-1 text-[11px] font-semibold text-foreground hover:bg-secondary"
+                >
+                  <Pencil className="h-3 w-3" /> Change
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setManualAddress(null);
+                    persistManual(null);
+                    setManualText("");
+                    setManualOpen(false);
+                  }}
+                  className="inline-flex items-center gap-1 rounded-full border border-destructive/30 bg-destructive/5 px-2.5 py-1 text-[11px] font-semibold text-destructive hover:bg-destructive/10"
+                >
+                  <X className="h-3 w-3" /> Use my location
+                </button>
+              </div>
+            </div>
+          ) : !manualOpen ? (
+            <button
+              type="button"
+              onClick={() => setManualOpen(true)}
+              className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1.5 text-xs font-semibold text-foreground hover:bg-secondary"
+            >
+              <Pencil className="h-3 w-3" /> Enter an address manually
+            </button>
+          ) : null}
+
+          {manualOpen && (
+            <div className="mt-2 rounded-2xl border border-border bg-card p-3 shadow-card">
+              <div className="mb-2 flex items-center justify-between">
+                <p className="text-xs font-bold text-foreground">Type your delivery area</p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setManualOpen(false);
+                    if (!manualAddress) setManualText("");
+                  }}
+                  className="rounded-full p-1 text-muted-foreground hover:bg-secondary"
+                  aria-label="Close"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              </div>
+              <AddressAutocomplete
+                value={manualText}
+                hasValidSelection={false}
+                onTextChange={(t) => setManualText(t)}
+                onSelect={(addr) => {
+                  setManualAddress(addr);
+                  persistManual(addr);
+                  setManualText(addr.address);
+                  setManualOpen(false);
+                }}
+                placeholder="Start typing a suburb or street…"
+              />
+              <p className="mt-2 text-[11px] text-muted-foreground">
+                Pick a suggestion to see restaurants within {DELIVERY_RADIUS_KM} km of that area.
+              </p>
+            </div>
+          )}
+        </div>
+
         {/* Cuisine Categories */}
         <section className="mb-6">
           <h3 className="mb-3 text-base font-bold text-foreground">Cuisines</h3>
@@ -286,7 +399,7 @@ const Index = () => {
               ? `Results for "${search}"`
               : selectedCuisine !== "All"
                 ? `${selectedCuisine} Restaurants`
-                : geo.hasCoords
+                : hasEffectiveCoords
                   ? "📍 Restaurants near you"
                   : "🍽️ All Restaurants"}
           </h3>
@@ -310,7 +423,7 @@ const Index = () => {
                   || r.cuisine.toLowerCase().includes(search.toLowerCase());
                 return matchesCuisine && matchesSearch;
               });
-              const outOfRange = geo.hasCoords && matchesFilters.length > 0;
+              const outOfRange = hasEffectiveCoords && matchesFilters.length > 0;
               const nearest = outOfRange
                 ? matchesFilters.reduce<number | null>((min, r) => {
                     if (r._distance == null) return min;
