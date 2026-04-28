@@ -66,6 +66,8 @@ const CheckoutDialog = ({
   const [name, setName] = useState("");
   const [contact, setContact] = useState("");
   const [address, setAddress] = useState("");
+  /** Optional house/unit number prepended to the geocoded street/suburb. */
+  const [houseNumber, setHouseNumber] = useState("");
   const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
   /** True only when address came from autocomplete suggestion OR map confirmation. */
   const [addressVerified, setAddressVerified] = useState(false);
