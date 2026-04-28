@@ -17,6 +17,8 @@ export interface RestaurantCardData {
   min_order: number;
   opens_at?: string | null;
   closes_at?: string | null;
+  lat?: number | null;
+  lng?: number | null;
 }
 
 const FALLBACK_IMG = "https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=800&h=400&fit=crop";
