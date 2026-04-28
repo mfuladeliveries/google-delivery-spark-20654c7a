@@ -118,6 +118,7 @@ export const AddressAutocomplete = ({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [searched, setSearched] = useState(false);
+  const [fallback, setFallback] = useState(false);
   const [retryToken, setRetryToken] = useState(0);
   const abortRef = useRef<AbortController | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -131,22 +132,25 @@ export const AddressAutocomplete = ({
       setLoading(false);
       setError(null);
       setSearched(false);
+      setFallback(false);
       return;
     }
 
-    // Use cache first.
+    // Use cache first (exact-key hit).
     const cached = readCache(q);
     if (cached) {
       setSuggestions(cached);
       setOpen(true);
       setError(null);
       setSearched(true);
+      setFallback(false);
       setLoading(false);
       return;
     }
 
     setLoading(true);
     setError(null);
+    setFallback(false);
     setOpen(true);
     abortRef.current?.abort();
     const ctrl = new AbortController();
@@ -166,18 +170,29 @@ export const AddressAutocomplete = ({
           setSuggestions(cleaned);
           setOpen(true);
           setSearched(true);
+          setFallback(false);
           writeCache(q, cleaned);
         })
         .catch((err: unknown) => {
           if ((err as Error).name === "AbortError") return;
-          setSuggestions([]);
-          setOpen(false);
+          // Fallback: search across cached suggestions for any partial match.
+          const cachedFallback = searchCacheFallback(q);
           setSearched(true);
-          setError(
-            err instanceof TypeError
-              ? "Address lookup is offline. Check your connection and retry."
-              : "Address lookup is temporarily unavailable. Please try again.",
-          );
+          if (cachedFallback.length > 0) {
+            setSuggestions(cachedFallback);
+            setOpen(true);
+            setFallback(true);
+            setError(null);
+          } else {
+            setSuggestions([]);
+            setOpen(false);
+            setFallback(false);
+            setError(
+              err instanceof TypeError
+                ? "Address lookup is offline and no saved matches were found. Check your connection and retry."
+                : "Address lookup is temporarily unavailable. Please try again.",
+            );
+          }
         })
         .finally(() => setLoading(false));
     }, 350);
