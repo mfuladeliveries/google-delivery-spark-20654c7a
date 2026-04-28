@@ -220,7 +220,7 @@ const CheckoutDialog = ({
       toast.error("Please enter your delivery address.");
       setValidationErrors((prev) => ({
         ...prev,
-        address: "Delivery address is required.",
+        address: 'Delivery address is required, e.g. "12 Oak Street, Khayelitsha".',
       }));
       return;
     }
