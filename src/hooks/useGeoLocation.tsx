@@ -246,6 +246,7 @@ export function useGeoLocation(): GeoState & {
   return {
     ...state,
     refresh: requestGps,
+    trustGps,
     distanceTo,
     hasCoords: state.lat != null && state.lng != null,
   };
