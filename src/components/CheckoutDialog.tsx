@@ -67,6 +67,9 @@ const CheckoutDialog = ({
   const [contact, setContact] = useState("");
   const [address, setAddress] = useState("");
   const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
+  /** True only when address came from autocomplete suggestion OR map confirmation. */
+  const [addressVerified, setAddressVerified] = useState(false);
+  const [showMapPicker, setShowMapPicker] = useState(false);
   const [notes, setNotes] = useState("");
   const [deliveryInstructions, setDeliveryInstructions] = useState("");
   const [deliveryWhen, setDeliveryWhen] = useState<"asap" | "schedule">("asap");
@@ -75,17 +78,12 @@ const CheckoutDialog = ({
   const [customTip, setCustomTip] = useState("");
   const [paymentMethod, setPaymentMethod] = useState<"cash" | "online">("cash");
   const [loading, setLoading] = useState(false);
-  const [locating, setLocating] = useState(false);
-  const [locationDenied, setLocationDenied] = useState(false);
   const [profileLoaded, setProfileLoaded] = useState(false);
+  const [restaurantCoords, setRestaurantCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
 
-  // Sync profile coords once they load
-  useEffect(() => {
-    if (profileLat !== null && profileLng !== null && !coords) {
-      setCoords({ lat: profileLat, lng: profileLng });
-    }
-  }, [profileLat, profileLng, coords]);
+  const restaurants = useMemo(() => [...new Set(items.map((ci) => ci.item.category))], [items]);
+  const primaryRestaurantName = restaurants[0] || "";
 
   // Sync incoming food note from cart
   useEffect(() => {
@@ -94,44 +92,66 @@ const CheckoutDialog = ({
     }
   }, [open, initialFoodNote]);
 
-  const requestLocation = (silent = false) => {
-    if (!navigator.geolocation) {
-      if (!silent) toast.error("Location not supported on this device.");
-      return;
-    }
-    setLocating(true);
-    navigator.geolocation.getCurrentPosition(
-      async (pos) => {
-        const lat = pos.coords.latitude;
-        const lng = pos.coords.longitude;
-        setCoords({ lat, lng });
-        setLocationDenied(false);
-        try {
-          const res = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`);
-          const data = await res.json();
-          if (data.display_name) setAddress(data.display_name);
-        } catch { /* ignore */ }
-        setLocating(false);
-      },
-      (err) => {
-        setLocating(false);
-        if (err.code === err.PERMISSION_DENIED) {
-          setLocationDenied(true);
-        } else if (!silent) {
-          toast.error("Couldn't get your location. Please enter your address manually.");
+  // Fetch restaurant coordinates so we can enforce the 8km radius client-side.
+  useEffect(() => {
+    if (!open || !primaryRestaurantName) return;
+    let alive = true;
+    supabase
+      .from("restaurants")
+      .select("lat,lng")
+      .eq("name", primaryRestaurantName)
+      .eq("is_active", true)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (!alive) return;
+        if (data && typeof data.lat === "number" && typeof data.lng === "number") {
+          setRestaurantCoords({ lat: data.lat, lng: data.lng });
+        } else {
+          setRestaurantCoords(null);
         }
-      },
-      { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
-    );
+      });
+    return () => {
+      alive = false;
+    };
+  }, [open, primaryRestaurantName]);
+
+  // Distance from selected delivery address to the restaurant (km), or null if either side missing.
+  const distanceToRestaurant = useMemo(() => {
+    if (!coords || !restaurantCoords) return null;
+    return distanceKm(coords.lat, coords.lng, restaurantCoords.lat, restaurantCoords.lng);
+  }, [coords, restaurantCoords]);
+
+  const outOfRange = distanceToRestaurant != null && distanceToRestaurant > MAX_DELIVERY_KM;
+
+  const handleAddressSelect = (result: ValidatedAddress) => {
+    setAddress(result.address);
+    setCoords({ lat: result.lat, lng: result.lng });
+    setAddressVerified(true);
+    setValidationErrors((prev) => {
+      const { address: _a, ...rest } = prev;
+      return rest;
+    });
   };
 
-  // Auto-trigger GPS once when dialog opens, only if we don't already have coords
-  useEffect(() => {
-    if (!open) return;
-    if (coords || profileLat !== null) return;
-    requestLocation(true);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open]);
+  const handleAddressTextChange = (text: string) => {
+    setAddress(text);
+    // Plain typing invalidates any previously selected coords.
+    if (addressVerified) {
+      setCoords(null);
+      setAddressVerified(false);
+    }
+  };
+
+  const handleMapConfirm = (result: { address: string; lat: number; lng: number }) => {
+    setAddress(result.address);
+    setCoords({ lat: result.lat, lng: result.lng });
+    setAddressVerified(true);
+    setShowMapPicker(false);
+    setValidationErrors((prev) => {
+      const { address: _a, ...rest } = prev;
+      return rest;
+    });
+  };
 
   // Compute valid schedule range for today
   const { minTime, maxTime, todayLabel, isPastClosing } = useMemo(() => {
