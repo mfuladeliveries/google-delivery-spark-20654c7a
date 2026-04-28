@@ -268,7 +268,7 @@ const CheckoutDialog = ({
         .update({
           full_name: name.trim(),
           contact_number: contact.trim(),
-          address: address.trim(),
+          address: fullAddress,
           lat: coords.lat,
           lng: coords.lng,
         })
