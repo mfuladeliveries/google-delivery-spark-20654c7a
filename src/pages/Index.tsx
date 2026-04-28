@@ -298,22 +298,76 @@ const Index = () => {
               ))}
             </div>
           ) : sorted.length === 0 ? (
-            <div className="rounded-2xl border border-border bg-card py-16 text-center shadow-card">
-              <UtensilsCrossed className="mx-auto mb-3 h-12 w-12 text-muted-foreground/50" />
-              <p className="font-semibold text-foreground">No restaurants found</p>
-              <p className="mt-1 text-sm text-muted-foreground">
-                Try a different search or check back later
-              </p>
-              <button
-                onClick={() => {
-                  setSearch("");
-                  setSelectedCuisine("All");
-                }}
-                className="mt-5 inline-flex items-center gap-1.5 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-orange transition-transform hover:scale-105"
-              >
-                Browse All Restaurants
-              </button>
-            </div>
+            (() => {
+              // "Out of range" = we know where the user is, the underlying
+              // restaurant list isn't empty, and at least one restaurant
+              // would have matched the search/cuisine filters but was hidden
+              // because it's farther than DELIVERY_RADIUS_KM.
+              const matchesFilters = annotated.filter((r) => {
+                const matchesCuisine = selectedCuisine === "All" || r.cuisine === selectedCuisine;
+                const matchesSearch = !search.trim()
+                  || r.name.toLowerCase().includes(search.toLowerCase())
+                  || r.cuisine.toLowerCase().includes(search.toLowerCase());
+                return matchesCuisine && matchesSearch;
+              });
+              const outOfRange = geo.hasCoords && matchesFilters.length > 0;
+              const nearest = outOfRange
+                ? matchesFilters.reduce<number | null>((min, r) => {
+                    if (r._distance == null) return min;
+                    return min == null || r._distance < min ? r._distance : min;
+                  }, null)
+                : null;
+
+              if (outOfRange) {
+                return (
+                  <div className="rounded-2xl border border-border bg-card py-16 text-center shadow-card">
+                    <MapPinOff className="mx-auto mb-3 h-12 w-12 text-primary/60" />
+                    <p className="font-semibold text-foreground">No restaurants within {DELIVERY_RADIUS_KM} km</p>
+                    <p className="mx-auto mt-1 max-w-xs text-sm text-muted-foreground">
+                      {nearest != null
+                        ? `The closest restaurant is about ${nearest.toFixed(1)} km away — just outside our delivery range.`
+                        : "We couldn't find any restaurants close enough to deliver to your current location."}
+                      {" "}If your location looks wrong, try refreshing your GPS.
+                    </p>
+                    <div className="mt-5 flex flex-wrap items-center justify-center gap-2">
+                      <button
+                        onClick={() => geo.refresh()}
+                        disabled={geo.status === "prompt"}
+                        className="inline-flex items-center gap-1.5 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-orange transition-transform hover:scale-105 disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        <RefreshCw className={`h-4 w-4 ${geo.status === "prompt" ? "animate-spin" : ""}`} />
+                        {geo.status === "prompt" ? "Checking…" : "Retry GPS"}
+                      </button>
+                      <button
+                        onClick={() => navigate("/profile")}
+                        className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-5 py-2.5 text-sm font-semibold text-foreground transition-colors hover:bg-secondary"
+                      >
+                        Update saved address
+                      </button>
+                    </div>
+                  </div>
+                );
+              }
+
+              return (
+                <div className="rounded-2xl border border-border bg-card py-16 text-center shadow-card">
+                  <UtensilsCrossed className="mx-auto mb-3 h-12 w-12 text-muted-foreground/50" />
+                  <p className="font-semibold text-foreground">No restaurants found</p>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    Try a different search or check back later
+                  </p>
+                  <button
+                    onClick={() => {
+                      setSearch("");
+                      setSelectedCuisine("All");
+                    }}
+                    className="mt-5 inline-flex items-center gap-1.5 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-orange transition-transform hover:scale-105"
+                  >
+                    Browse All Restaurants
+                  </button>
+                </div>
+              );
+            })()
           ) : (
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {sorted.map((r) => (
