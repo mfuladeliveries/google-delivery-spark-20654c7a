@@ -40,7 +40,12 @@ interface GeoState {
    * GPS reading was from the saved profile address. Null when no rejection
    * has occurred (or when there is no saved address to compare against).
    */
-  gpsDiscrepancyKm: number | null;
+   gpsDiscrepancyKm: number | null;
+  /**
+   * Reported GPS accuracy in metres for the most recent live fix. Null when
+   * we don't currently have a live GPS reading (e.g. fallback or denied).
+   */
+  accuracyM: number | null;
 }
 
 const STORAGE_KEY = "mfula-geo-cache-v1";
@@ -96,6 +101,7 @@ export function useGeoLocation(): GeoState & {
     source: cached.current ? "gps" : null,
     error: null,
     gpsDiscrepancyKm: null,
+    accuracyM: null,
   }));
   const watchIdRef = useRef<number | null>(null);
   /** Cached saved-profile coords, kept in a ref so the GPS watcher can sync-check. */
@@ -177,10 +183,10 @@ export function useGeoLocation(): GeoState & {
           if (reject) {
             const p = profileCoordsRef.current!;
             saveCache(p.lat, p.lng);
-            setState({ status: "fallback", lat: p.lat, lng: p.lng, ready: true, source: "profile", error: null, gpsDiscrepancyKm: dist });
+            setState({ status: "fallback", lat: p.lat, lng: p.lng, ready: true, source: "profile", error: null, gpsDiscrepancyKm: dist, accuracyM: null });
           } else {
             saveCache(lat, lng);
-            setState({ status: "granted", lat, lng, ready: true, source: "gps", error: null, gpsDiscrepancyKm: null });
+            setState({ status: "granted", lat, lng, ready: true, source: "gps", error: null, gpsDiscrepancyKm: null, accuracyM: acc });
           }
 
           // Start watching for live updates (always — saved coords may be added later)
@@ -193,11 +199,11 @@ export function useGeoLocation(): GeoState & {
               const ndist = gpsDistanceFromSaved(nlat, nlng);
               if (shouldRejectGps(nlat, nlng, nacc)) {
                 const pc = profileCoordsRef.current!;
-                setState((s) => ({ ...s, lat: pc.lat, lng: pc.lng, status: "fallback", source: "profile", ready: true, gpsDiscrepancyKm: ndist }));
+                setState((s) => ({ ...s, lat: pc.lat, lng: pc.lng, status: "fallback", source: "profile", ready: true, gpsDiscrepancyKm: ndist, accuracyM: null }));
                 return;
               }
               saveCache(nlat, nlng);
-              setState((s) => ({ ...s, lat: nlat, lng: nlng, status: "granted", source: "gps", ready: true, gpsDiscrepancyKm: null }));
+              setState((s) => ({ ...s, lat: nlat, lng: nlng, status: "granted", source: "gps", ready: true, gpsDiscrepancyKm: null, accuracyM: nacc }));
             },
             () => {/* ignore transient errors */},
             { enableHighAccuracy: true, maximumAge: 30_000, timeout: 20_000 },
@@ -207,9 +213,9 @@ export function useGeoLocation(): GeoState & {
           // GPS failed entirely — use whatever profile coords we already have
           const fb = profileCoordsRef.current ?? (await loadProfileFallback());
           if (fb) {
-            setState({ status: "fallback", lat: fb.lat, lng: fb.lng, ready: true, source: "profile", error: null, gpsDiscrepancyKm: null });
+            setState({ status: "fallback", lat: fb.lat, lng: fb.lng, ready: true, source: "profile", error: null, gpsDiscrepancyKm: null, accuracyM: null });
           } else {
-            setState({ status: "denied", lat: null, lng: null, ready: true, source: null, error: err.message, gpsDiscrepancyKm: null });
+            setState({ status: "denied", lat: null, lng: null, ready: true, source: null, error: err.message, gpsDiscrepancyKm: null, accuracyM: null });
           }
         },
         { enableHighAccuracy: true, maximumAge: 60_000, timeout: 10_000 },
