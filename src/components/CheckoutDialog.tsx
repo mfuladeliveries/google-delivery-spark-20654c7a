@@ -1,5 +1,5 @@
-import { useState, useEffect, useMemo } from "react";
-import { X, Package, MapPin, Phone, User, StickyNote, Banknote, CreditCard, Wallet, Clock, Navigation, Truck, AlertTriangle } from "lucide-react";
+import { useState, useEffect, useMemo, lazy, Suspense } from "react";
+import { X, Package, MapPin, Phone, User, StickyNote, Banknote, CreditCard, Wallet, Clock, Navigation, Truck, AlertTriangle, Map as MapIcon, Check } from "lucide-react";
 import { CartItem } from "@/hooks/useCart";
 import { storeInfo } from "@/data/menu";
 import { supabase } from "@/integrations/supabase/client";
@@ -10,6 +10,14 @@ import { z } from "zod";
 import { toast } from "sonner";
 import { dispatchAndNotify } from "@/lib/pushNotify";
 import { useNavigate } from "react-router-dom";
+import { AddressAutocomplete, type ValidatedAddress } from "@/components/AddressAutocomplete";
+import { distanceKm } from "@/lib/serviceArea";
+
+// Per-restaurant max delivery distance enforced server-side too.
+const MAX_DELIVERY_KM = 8;
+
+// Lazy-load the heavy Leaflet map picker only when the user opens it.
+const AddressMapPicker = lazy(() => import("@/components/AddressMapPicker"));
 
 // Same-day delivery cutoff (last time a scheduled order can be requested for)
 const CLOSING_HOUR = 21; // 21:00
