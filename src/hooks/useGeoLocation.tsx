@@ -35,6 +35,12 @@ interface GeoState {
   /** Where the coords came from. */
   source: "gps" | "profile" | null;
   error: string | null;
+  /**
+   * When the GPS sanity check rejected a fix, this is how far (km) that
+   * GPS reading was from the saved profile address. Null when no rejection
+   * has occurred (or when there is no saved address to compare against).
+   */
+  gpsDiscrepancyKm: number | null;
 }
 
 const STORAGE_KEY = "mfula-geo-cache-v1";
