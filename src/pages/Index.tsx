@@ -71,7 +71,11 @@ const Index = () => {
   const filtered = annotated.filter((r) => {
     const matchesCuisine = selectedCuisine === "All" || r.cuisine === selectedCuisine;
     const matchesSearch = !search.trim() || r.name.toLowerCase().includes(search.toLowerCase()) || r.cuisine.toLowerCase().includes(search.toLowerCase());
-    return matchesCuisine && matchesSearch;
+    // Hide restaurants outside the delivery radius once we know where the
+    // customer is. Without coords (denied/unsupported) we show everything so
+    // the user isn't left with an empty list.
+    const withinRange = !geo.hasCoords || r._nearby;
+    return matchesCuisine && matchesSearch && withinRange;
   });
 
   // Sort: nearby first, then by distance asc, then by rating desc as tiebreaker.
