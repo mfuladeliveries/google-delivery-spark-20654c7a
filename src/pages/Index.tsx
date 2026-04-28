@@ -471,6 +471,22 @@ const Index = () => {
                   }}
                   placeholder={manualAddress ? "Search a new street or suburb…" : "Start typing a suburb or street…"}
                 />
+                {(() => {
+                  const unit = houseNumber.trim();
+                  const street = manualText.trim();
+                  if (!unit && !street) return null;
+                  const preview = unit && street ? `${unit} ${street}` : unit || street;
+                  return (
+                    <div className="mt-2 rounded-xl border border-primary/30 bg-primary/5 px-3 py-2">
+                      <p className="text-[10px] font-semibold uppercase tracking-wide text-primary">
+                        Preview
+                      </p>
+                      <p className="mt-0.5 break-words text-xs text-foreground" title={preview}>
+                        {preview}
+                      </p>
+                    </div>
+                  );
+                })()}
                 <p className="mt-2 text-[11px] text-muted-foreground">
                   Add your house number above, then pick a street suggestion to {manualAddress ? "replace your saved address" : "see restaurants"} within {DELIVERY_RADIUS_KM} km.
                 </p>
