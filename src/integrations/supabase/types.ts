@@ -242,6 +242,39 @@ export type Database = {
         }
         Relationships: []
       }
+      invalid_order_attempts: {
+        Row: {
+          created_at: string
+          customer_lat: number | null
+          customer_lng: number | null
+          distance_km: number | null
+          id: string
+          reason: string
+          restaurant_name: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          customer_lat?: number | null
+          customer_lng?: number | null
+          distance_km?: number | null
+          id?: string
+          reason: string
+          restaurant_name?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          customer_lat?: number | null
+          customer_lng?: number | null
+          distance_km?: number | null
+          id?: string
+          reason?: string
+          restaurant_name?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       menu_items: {
         Row: {
           add_ons: Json
@@ -964,6 +997,16 @@ export type Database = {
       is_order_participant: {
         Args: { _order_id: string; _user_id: string }
         Returns: boolean
+      }
+      log_invalid_order_attempt: {
+        Args: {
+          p_distance: number
+          p_lat: number
+          p_lng: number
+          p_reason: string
+          p_restaurant_name: string
+        }
+        Returns: undefined
       }
       request_withdrawal: { Args: { p_amount: number }; Returns: string }
       spend_customer_credits: {

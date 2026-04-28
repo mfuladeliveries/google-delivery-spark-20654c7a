@@ -1,5 +1,5 @@
-import { useState, useEffect, useMemo } from "react";
-import { X, Package, MapPin, Phone, User, StickyNote, Banknote, CreditCard, Wallet, Clock, Navigation, Truck, AlertTriangle } from "lucide-react";
+import { useState, useEffect, useMemo, lazy, Suspense } from "react";
+import { X, Package, MapPin, Phone, User, StickyNote, Banknote, CreditCard, Wallet, Clock, Navigation, AlertTriangle, Map as MapIcon, Check } from "lucide-react";
 import { CartItem } from "@/hooks/useCart";
 import { storeInfo } from "@/data/menu";
 import { supabase } from "@/integrations/supabase/client";
@@ -10,6 +10,14 @@ import { z } from "zod";
 import { toast } from "sonner";
 import { dispatchAndNotify } from "@/lib/pushNotify";
 import { useNavigate } from "react-router-dom";
+import { AddressAutocomplete, type ValidatedAddress } from "@/components/AddressAutocomplete";
+import { distanceKm } from "@/lib/serviceArea";
+
+// Per-restaurant max delivery distance enforced server-side too.
+const MAX_DELIVERY_KM = 8;
+
+// Lazy-load the heavy Leaflet map picker only when the user opens it.
+const AddressMapPicker = lazy(() => import("@/components/AddressMapPicker"));
 
 // Same-day delivery cutoff (last time a scheduled order can be requested for)
 const CLOSING_HOUR = 21; // 21:00
@@ -53,12 +61,15 @@ const CheckoutDialog = ({
   const navigate = useNavigate();
   const { user } = useAuth();
   const { balance: walletBalance, refresh: refreshWallet } = useCustomerCredits();
-  const { lat: profileLat, lng: profileLng, refresh: refreshLocation } = useCustomerLocation();
+  const { refresh: refreshLocation } = useCustomerLocation();
   const [useWallet, setUseWallet] = useState(false);
   const [name, setName] = useState("");
   const [contact, setContact] = useState("");
   const [address, setAddress] = useState("");
   const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
+  /** True only when address came from autocomplete suggestion OR map confirmation. */
+  const [addressVerified, setAddressVerified] = useState(false);
+  const [showMapPicker, setShowMapPicker] = useState(false);
   const [notes, setNotes] = useState("");
   const [deliveryInstructions, setDeliveryInstructions] = useState("");
   const [deliveryWhen, setDeliveryWhen] = useState<"asap" | "schedule">("asap");
@@ -67,17 +78,12 @@ const CheckoutDialog = ({
   const [customTip, setCustomTip] = useState("");
   const [paymentMethod, setPaymentMethod] = useState<"cash" | "online">("cash");
   const [loading, setLoading] = useState(false);
-  const [locating, setLocating] = useState(false);
-  const [locationDenied, setLocationDenied] = useState(false);
   const [profileLoaded, setProfileLoaded] = useState(false);
+  const [restaurantCoords, setRestaurantCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
 
-  // Sync profile coords once they load
-  useEffect(() => {
-    if (profileLat !== null && profileLng !== null && !coords) {
-      setCoords({ lat: profileLat, lng: profileLng });
-    }
-  }, [profileLat, profileLng, coords]);
+  const restaurants = useMemo(() => [...new Set(items.map((ci) => ci.item.category))], [items]);
+  const primaryRestaurantName = restaurants[0] || "";
 
   // Sync incoming food note from cart
   useEffect(() => {
@@ -86,44 +92,66 @@ const CheckoutDialog = ({
     }
   }, [open, initialFoodNote]);
 
-  const requestLocation = (silent = false) => {
-    if (!navigator.geolocation) {
-      if (!silent) toast.error("Location not supported on this device.");
-      return;
-    }
-    setLocating(true);
-    navigator.geolocation.getCurrentPosition(
-      async (pos) => {
-        const lat = pos.coords.latitude;
-        const lng = pos.coords.longitude;
-        setCoords({ lat, lng });
-        setLocationDenied(false);
-        try {
-          const res = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`);
-          const data = await res.json();
-          if (data.display_name) setAddress(data.display_name);
-        } catch { /* ignore */ }
-        setLocating(false);
-      },
-      (err) => {
-        setLocating(false);
-        if (err.code === err.PERMISSION_DENIED) {
-          setLocationDenied(true);
-        } else if (!silent) {
-          toast.error("Couldn't get your location. Please enter your address manually.");
+  // Fetch restaurant coordinates so we can enforce the 8km radius client-side.
+  useEffect(() => {
+    if (!open || !primaryRestaurantName) return;
+    let alive = true;
+    supabase
+      .from("restaurants")
+      .select("lat,lng")
+      .eq("name", primaryRestaurantName)
+      .eq("is_active", true)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (!alive) return;
+        if (data && typeof data.lat === "number" && typeof data.lng === "number") {
+          setRestaurantCoords({ lat: data.lat, lng: data.lng });
+        } else {
+          setRestaurantCoords(null);
         }
-      },
-      { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
-    );
+      });
+    return () => {
+      alive = false;
+    };
+  }, [open, primaryRestaurantName]);
+
+  // Distance from selected delivery address to the restaurant (km), or null if either side missing.
+  const distanceToRestaurant = useMemo(() => {
+    if (!coords || !restaurantCoords) return null;
+    return distanceKm(coords.lat, coords.lng, restaurantCoords.lat, restaurantCoords.lng);
+  }, [coords, restaurantCoords]);
+
+  const outOfRange = distanceToRestaurant != null && distanceToRestaurant > MAX_DELIVERY_KM;
+
+  const handleAddressSelect = (result: ValidatedAddress) => {
+    setAddress(result.address);
+    setCoords({ lat: result.lat, lng: result.lng });
+    setAddressVerified(true);
+    setValidationErrors((prev) => {
+      const { address: _a, ...rest } = prev;
+      return rest;
+    });
   };
 
-  // Auto-trigger GPS once when dialog opens, only if we don't already have coords
-  useEffect(() => {
-    if (!open) return;
-    if (coords || profileLat !== null) return;
-    requestLocation(true);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open]);
+  const handleAddressTextChange = (text: string) => {
+    setAddress(text);
+    // Plain typing invalidates any previously selected coords.
+    if (addressVerified) {
+      setCoords(null);
+      setAddressVerified(false);
+    }
+  };
+
+  const handleMapConfirm = (result: { address: string; lat: number; lng: number }) => {
+    setAddress(result.address);
+    setCoords({ lat: result.lat, lng: result.lng });
+    setAddressVerified(true);
+    setShowMapPicker(false);
+    setValidationErrors((prev) => {
+      const { address: _a, ...rest } = prev;
+      return rest;
+    });
+  };
 
   // Compute valid schedule range for today
   const { minTime, maxTime, todayLabel, isPastClosing } = useMemo(() => {
@@ -145,20 +173,20 @@ const CheckoutDialog = ({
   const creditsToApply = useWallet && walletBalance > 0 ? Math.min(walletBalance, grossTotal) : 0;
   const total = Math.max(0, grossTotal - creditsToApply);
 
-  const restaurants = [...new Set(items.map((ci) => ci.item.category))];
-
+  // Load profile to prefill name + contact. We deliberately do NOT prefill the
+  // delivery address — it must always be re-selected from autocomplete or the
+  // map so the coords are guaranteed valid.
   useEffect(() => {
     if (!user || profileLoaded) return;
     const loadProfile = async () => {
       const { data } = await supabase
         .from("profiles")
-        .select("full_name, contact_number, address")
+        .select("full_name, contact_number")
         .eq("user_id", user.id)
         .single();
       if (data) {
         setName(data.full_name || "");
         setContact(data.contact_number || "");
-        setAddress(data.address || "");
       }
       setProfileLoaded(true);
     };
@@ -176,8 +204,17 @@ const CheckoutDialog = ({
       return;
     }
 
-    if (!coords) {
-      toast.error("Please use the location button so we have your exact GPS coordinates.");
+    if (!addressVerified || !coords) {
+      toast.error("Please pick your delivery address from the suggestions or confirm it on the map.");
+      setValidationErrors((prev) => ({
+        ...prev,
+        address: "Select a valid address from the suggestions.",
+      }));
+      return;
+    }
+
+    if (outOfRange) {
+      toast.error(`Your address is outside the ${MAX_DELIVERY_KM} km delivery range for this restaurant.`);
       return;
     }
 
@@ -414,48 +451,88 @@ const CheckoutDialog = ({
             <label className="mb-1.5 flex items-center gap-1.5 text-sm font-semibold text-foreground">
               <MapPin className="h-3.5 w-3.5 text-primary" /> Delivery Address
             </label>
-            <div className="flex gap-2">
-              <input
-                value={address}
-                onChange={(e) => setAddress(e.target.value)}
-                placeholder="Street address, area"
-                className="flex-1 rounded-xl border border-border bg-card px-4 py-3 text-sm text-card-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
-              />
-              <button
-                type="button"
-                onClick={() => requestLocation(false)}
-                disabled={locating}
-                className="flex items-center justify-center rounded-xl border border-border bg-card px-3 text-primary hover:bg-secondary transition-colors disabled:opacity-50"
-                title="Use my location"
-              >
-                {locating ? (
-                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-                ) : (
-                  <MapPin className="h-4 w-4" />
-                )}
-              </button>
-            </div>
-            {validationErrors.address && <p className="mt-1 text-xs text-destructive">{validationErrors.address}</p>}
-            {locationDenied && !coords && (
+            <AddressAutocomplete
+              value={address}
+              hasValidSelection={addressVerified}
+              onSelect={handleAddressSelect}
+              onTextChange={handleAddressTextChange}
+              placeholder="Start typing your delivery address…"
+            />
+            <button
+              type="button"
+              onClick={() => setShowMapPicker(true)}
+              className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl border border-border bg-card px-3 py-2.5 text-xs font-semibold text-foreground hover:bg-secondary transition-colors"
+            >
+              <MapIcon className="h-3.5 w-3.5 text-primary" />
+              {addressVerified ? "Adjust pin on map" : "Pick on map & confirm location"}
+            </button>
+
+            {validationErrors.address && (
+              <p className="mt-1 text-xs text-destructive">{validationErrors.address}</p>
+            )}
+
+            {!addressVerified && address.trim().length >= 3 && (
               <p className="mt-1.5 flex items-start gap-1.5 text-xs text-amber-600">
                 <AlertTriangle className="h-3.5 w-3.5 flex-shrink-0 mt-0.5" />
-                <span>
-                  Location access is blocked. Enable location for this site in your browser settings to autofill your address, or type it manually below.
-                </span>
+                <span>Please select a valid address from the suggestions or confirm it on the map.</span>
               </p>
             )}
-            {!coords && address.trim() && (
-              <p className="mt-1.5 flex items-start gap-1.5 text-xs text-amber-600">
-                <AlertTriangle className="h-3.5 w-3.5 flex-shrink-0 mt-0.5" />
-                <span>Tap the location button to confirm your exact GPS coordinates before placing the order.</span>
-              </p>
-            )}
-            {coords && (
+
+            {addressVerified && coords && !outOfRange && (
               <p className="mt-1.5 flex items-center gap-1.5 text-xs font-semibold text-primary">
-                <Truck className="h-3.5 w-3.5" /> Location confirmed · GPS captured
+                <Check className="h-3.5 w-3.5" />
+                Address verified
+                {distanceToRestaurant != null && (
+                  <span className="text-muted-foreground font-normal">
+                    · {distanceToRestaurant.toFixed(1)} km from {primaryRestaurantName || "restaurant"}
+                  </span>
+                )}
               </p>
+            )}
+
+            {addressVerified && outOfRange && distanceToRestaurant != null && (
+              <div className="mt-2 flex items-start gap-2 rounded-xl border-2 border-destructive/40 bg-destructive/10 p-3">
+                <AlertTriangle className="h-4 w-4 flex-shrink-0 text-destructive mt-0.5" />
+                <div className="text-xs">
+                  <p className="font-bold text-destructive">Outside delivery range</p>
+                  <p className="mt-0.5 text-foreground">
+                    This address is {distanceToRestaurant.toFixed(1)} km from {primaryRestaurantName || "the restaurant"}.
+                    We deliver up to {MAX_DELIVERY_KM} km. Please pick a closer address.
+                  </p>
+                </div>
+              </div>
             )}
           </div>
+
+          {showMapPicker && (
+            <div className="fixed inset-0 z-[70] bg-black/70 backdrop-blur-sm flex items-center justify-center p-3">
+              <div className="relative w-full max-w-lg max-h-[92vh] overflow-y-auto rounded-3xl border border-border bg-background pt-4 shadow-xl">
+                <div className="flex items-center justify-between px-4 pb-2">
+                  <h3 className="font-display text-base font-bold text-foreground">Confirm delivery location</h3>
+                  <button
+                    onClick={() => setShowMapPicker(false)}
+                    className="rounded-full p-2 text-muted-foreground hover:bg-secondary"
+                    aria-label="Close map"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+                <Suspense
+                  fallback={
+                    <div className="flex h-72 items-center justify-center text-sm text-muted-foreground">
+                      Loading map…
+                    </div>
+                  }
+                >
+                  <AddressMapPicker
+                    onConfirm={handleMapConfirm}
+                    initialAddress={address}
+                    initialCoords={coords}
+                  />
+                </Suspense>
+              </div>
+            </div>
+          )}
 
           {/* Delivery Instructions */}
           <div>
@@ -682,7 +759,7 @@ const CheckoutDialog = ({
 
           <button
             onClick={handleCheckout}
-            disabled={loading || !name.trim() || !contact.trim() || !address.trim() || !coords}
+            disabled={loading || !name.trim() || !contact.trim() || !addressVerified || !coords || outOfRange}
             data-testid="checkout-place-order-button"
             className="flex w-full items-center justify-center gap-2 rounded-2xl bg-primary py-3.5 font-display font-bold text-primary-foreground transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:hover:scale-100 shadow-orange"
           >
