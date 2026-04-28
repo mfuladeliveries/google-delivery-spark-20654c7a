@@ -88,8 +88,9 @@ const RestaurantCard = ({ restaurant: r, variant = "standard", distanceKm, nearb
         data-testid="restaurant-card"
         data-restaurant-id={r.id}
         data-restaurant-open={open ? "true" : "false"}
+        data-out-of-range={tooFar ? "true" : "false"}
         aria-label={`Open ${r.name}`}
-        className={`flex w-full items-center gap-3 rounded-2xl border border-border bg-card p-2.5 text-left transition-all hover:shadow-card shadow-card ${!open ? "opacity-60" : "hover:-translate-y-0.5"}`}
+        className={`flex w-full items-center gap-3 rounded-2xl border border-border bg-card p-2.5 text-left transition-all hover:shadow-card shadow-card ${!open || tooFar ? "opacity-60" : "hover:-translate-y-0.5"}`}
       >
         <div className="relative h-20 w-20 flex-shrink-0 overflow-hidden rounded-xl bg-muted">
           <img
@@ -98,7 +99,7 @@ const RestaurantCard = ({ restaurant: r, variant = "standard", distanceKm, nearb
             className="h-full w-full object-cover"
             onError={(e) => ((e.target as HTMLImageElement).src = FALLBACK_IMG)}
           />
-          {!open && <div className="absolute inset-0 bg-black/50" />}
+          {(!open || tooFar) && <div className="absolute inset-0 bg-black/50" />}
         </div>
         <div className="min-w-0 flex-1">
           <RestaurantName as="h4" size="md" name={r.name} className="truncate" />
@@ -111,6 +112,14 @@ const RestaurantCard = ({ restaurant: r, variant = "standard", distanceKm, nearb
             <span className="flex items-center gap-0.5">
               <Clock className="h-3 w-3" /> {r.delivery_time}
             </span>
+            {distanceLabel && (
+              <>
+                <span>·</span>
+                <span className={`flex items-center gap-0.5 font-semibold ${tooFar ? "text-destructive" : "text-foreground"}`}>
+                  <Navigation className="h-3 w-3" /> {distanceLabel}
+                </span>
+              </>
+            )}
           </div>
         </div>
       </button>
@@ -127,8 +136,9 @@ const RestaurantCard = ({ restaurant: r, variant = "standard", distanceKm, nearb
       data-testid="restaurant-card"
       data-restaurant-id={r.id}
       data-restaurant-open={open ? "true" : "false"}
+      data-out-of-range={tooFar ? "true" : "false"}
       aria-label={`Open ${r.name}`}
-      className={`group relative cursor-pointer overflow-hidden rounded-[20px] border border-border bg-card shadow-card transition-all ${open ? "hover:-translate-y-0.5 hover:shadow-orange/30" : "opacity-70"}`}
+      className={`group relative cursor-pointer overflow-hidden rounded-[20px] border bg-card shadow-card transition-all ${tooFar ? "border-destructive/40 opacity-75" : "border-border"} ${open && !tooFar ? "hover:-translate-y-0.5 hover:shadow-orange/30" : ""} ${!open ? "opacity-70" : ""}`}
       style={{ boxShadow: "0 2px 16px hsl(0 0% 0% / 0.08)" }}
     >
       {/* Image */}
