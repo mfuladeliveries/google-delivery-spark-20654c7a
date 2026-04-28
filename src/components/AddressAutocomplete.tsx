@@ -195,6 +195,7 @@ export const AddressAutocomplete = ({
           setSearched(true);
           setFallback(false);
           writeCache(q, cleaned);
+          setCacheCount(countCache());
         })
         .catch((err: unknown) => {
           if ((err as Error).name === "AbortError") return;
