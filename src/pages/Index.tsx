@@ -43,6 +43,27 @@ const Index = () => {
   const navigate = useNavigate();
   const geo = useGeoLocation();
 
+  // Manual address override — when set, restaurants are filtered/sorted from
+  // these coords instead of the live GPS / saved-address fallback.
+  const [manualAddress, setManualAddress] = useState<ValidatedAddress | null>(() => {
+    try {
+      const raw = localStorage.getItem("mfula-manual-area-v1");
+      if (!raw) return null;
+      const v = JSON.parse(raw);
+      if (typeof v?.lat === "number" && typeof v?.lng === "number" && typeof v?.address === "string") return v;
+    } catch {/* ignore */}
+    return null;
+  });
+  const [manualOpen, setManualOpen] = useState(false);
+  const [manualText, setManualText] = useState("");
+
+  const persistManual = (val: ValidatedAddress | null) => {
+    try {
+      if (val) localStorage.setItem("mfula-manual-area-v1", JSON.stringify(val));
+      else localStorage.removeItem("mfula-manual-area-v1");
+    } catch {/* ignore */}
+  };
+
   // Auth/role gating + redirect to the right dashboard is handled by
   // <RoleGuard allow={["customer"]}> in App.tsx. This page only renders
   // once the viewer is confirmed to be a guest or a customer.
