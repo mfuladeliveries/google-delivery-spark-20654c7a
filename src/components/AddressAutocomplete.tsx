@@ -251,6 +251,18 @@ export const AddressAutocomplete = ({
     setOpen(false);
   };
 
+  const handleClearCache = () => {
+    clearAllCache();
+    setCacheCount(0);
+    setFallback(false);
+    // If we were showing fallback results, drop them and re-run live search.
+    if (fallback) {
+      setSuggestions([]);
+      setSearched(false);
+      setRetryToken((n) => n + 1);
+    }
+  };
+
   return (
     <div ref={containerRef} className="relative">
       <div className="relative">
