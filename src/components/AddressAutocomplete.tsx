@@ -85,6 +85,8 @@ export const AddressAutocomplete = ({
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [searched, setSearched] = useState(false);
+  const [retryToken, setRetryToken] = useState(0);
   const abortRef = useRef<AbortController | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
 
@@ -95,6 +97,8 @@ export const AddressAutocomplete = ({
       setSuggestions([]);
       setOpen(false);
       setLoading(false);
+      setError(null);
+      setSearched(false);
       return;
     }
 
@@ -102,13 +106,16 @@ export const AddressAutocomplete = ({
     const cached = readCache(q);
     if (cached) {
       setSuggestions(cached);
-      setOpen(cached.length > 0);
+      setOpen(true);
       setError(null);
+      setSearched(true);
+      setLoading(false);
       return;
     }
 
     setLoading(true);
     setError(null);
+    setOpen(true);
     abortRef.current?.abort();
     const ctrl = new AbortController();
     abortRef.current = ctrl;
@@ -125,14 +132,20 @@ export const AddressAutocomplete = ({
         .then((data: NominatimSuggestion[]) => {
           const cleaned = Array.isArray(data) ? data.slice(0, 5) : [];
           setSuggestions(cleaned);
-          setOpen(cleaned.length > 0);
+          setOpen(true);
+          setSearched(true);
           writeCache(q, cleaned);
         })
         .catch((err: unknown) => {
           if ((err as Error).name === "AbortError") return;
           setSuggestions([]);
           setOpen(false);
-          setError("Unable to verify address. Please try again.");
+          setSearched(true);
+          setError(
+            err instanceof TypeError
+              ? "Address lookup is offline. Check your connection and retry."
+              : "Address lookup is temporarily unavailable. Please try again.",
+          );
         })
         .finally(() => setLoading(false));
     }, 350);
@@ -141,7 +154,7 @@ export const AddressAutocomplete = ({
       window.clearTimeout(timer);
       ctrl.abort();
     };
-  }, [value, hasValidSelection, countryCode]);
+  }, [value, hasValidSelection, countryCode, retryToken]);
 
   // Close suggestions on outside click.
   useEffect(() => {
