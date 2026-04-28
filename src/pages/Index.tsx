@@ -64,7 +64,10 @@ const Index = () => {
   // panel-open session, even if focus bounces between children.
   const blurConfirmedRef = useRef(false);
   useEffect(() => {
-    if (manualOpen) blurConfirmedRef.current = false;
+    if (manualOpen) {
+      blurConfirmedRef.current = false;
+      setHouseNumber("");
+    }
   }, [manualOpen]);
 
   // Escape key closes the manual address panel — but if the user has typed
