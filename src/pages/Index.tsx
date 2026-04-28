@@ -318,7 +318,7 @@ const Index = () => {
               ? `Results for "${search}"`
               : selectedCuisine !== "All"
                 ? `${selectedCuisine} Restaurants`
-                : geo.hasCoords
+                : hasEffectiveCoords
                   ? "📍 Restaurants near you"
                   : "🍽️ All Restaurants"}
           </h3>
@@ -342,7 +342,7 @@ const Index = () => {
                   || r.cuisine.toLowerCase().includes(search.toLowerCase());
                 return matchesCuisine && matchesSearch;
               });
-              const outOfRange = geo.hasCoords && matchesFilters.length > 0;
+              const outOfRange = hasEffectiveCoords && matchesFilters.length > 0;
               const nearest = outOfRange
                 ? matchesFilters.reduce<number | null>((min, r) => {
                     if (r._distance == null) return min;
