@@ -269,6 +269,11 @@ export const AddressAutocomplete = ({
               <span>Searching addresses…</span>
             </div>
           )}
+          {!loading && fallback && suggestions.length > 0 && (
+            <div className="mx-1 mt-1 mb-0.5 rounded-md border border-amber-500/30 bg-amber-500/10 px-2.5 py-1.5 text-[11px] text-amber-200">
+              Live address lookup is unavailable. Showing saved matches from your recent searches.
+            </div>
+          )}
           {!loading && suggestions.length === 0 && searched && (
             <div className="px-3 py-2 text-sm text-muted-foreground">
               No matching addresses. Try adding a suburb or city.
