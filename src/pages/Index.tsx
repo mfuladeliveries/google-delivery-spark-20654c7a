@@ -183,9 +183,16 @@ const Index = () => {
             ) : (
               <span
                 className="inline-flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary/10 px-2.5 py-1 text-[11px] font-semibold text-primary"
-                title="GPS reported a location far from your saved address, so we're using the saved address instead."
+                title={
+                  geo.gpsDiscrepancyKm != null
+                    ? `GPS reported a location ${geo.gpsDiscrepancyKm.toFixed(1)} km from your saved address (limit ${8} km). Using your saved address instead.`
+                    : "GPS reported a location far from your saved address, so we're using the saved address instead."
+                }
               >
-                <MapPin className="h-3 w-3" /> Saved address (GPS too far)
+                <MapPin className="h-3 w-3" /> Saved address
+                {geo.gpsDiscrepancyKm != null && (
+                  <span className="opacity-80">· GPS off by {geo.gpsDiscrepancyKm.toFixed(1)} km</span>
+                )}
               </span>
             )}
           </div>

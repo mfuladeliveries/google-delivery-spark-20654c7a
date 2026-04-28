@@ -35,6 +35,12 @@ interface GeoState {
   /** Where the coords came from. */
   source: "gps" | "profile" | null;
   error: string | null;
+  /**
+   * When the GPS sanity check rejected a fix, this is how far (km) that
+   * GPS reading was from the saved profile address. Null when no rejection
+   * has occurred (or when there is no saved address to compare against).
+   */
+  gpsDiscrepancyKm: number | null;
 }
 
 const STORAGE_KEY = "mfula-geo-cache-v1";
@@ -83,6 +89,7 @@ export function useGeoLocation(): GeoState & {
     ready: false,
     source: cached.current ? "gps" : null,
     error: null,
+    gpsDiscrepancyKm: null,
   }));
   const watchIdRef = useRef<number | null>(null);
   /** Cached saved-profile coords, kept in a ref so the GPS watcher can sync-check. */
@@ -104,11 +111,14 @@ export function useGeoLocation(): GeoState & {
     return null;
   }, [user]);
 
-  /** True if GPS is too far from the saved profile address to trust. */
-  const isGpsUntrusted = useCallback((lat: number, lng: number) => {
+  /**
+   * Distance (km) from a GPS reading to the saved profile address, or null
+   * if we have no saved address to compare against.
+   */
+  const gpsDistanceFromSaved = useCallback((lat: number, lng: number): number | null => {
     const p = profileCoordsRef.current;
-    if (!p) return false; // no saved address to compare against → trust GPS
-    return distanceKm(p.lat, p.lng, lat, lng) > GPS_TRUST_RADIUS_KM;
+    if (!p) return null;
+    return distanceKm(p.lat, p.lng, lat, lng);
   }, []);
 
   const requestGps = useCallback(() => {
@@ -129,14 +139,16 @@ export function useGeoLocation(): GeoState & {
         (pos) => {
           const lat = pos.coords.latitude;
           const lng = pos.coords.longitude;
+          const dist = gpsDistanceFromSaved(lat, lng);
+          const untrusted = dist != null && dist > GPS_TRUST_RADIUS_KM;
 
-          if (isGpsUntrusted(lat, lng)) {
+          if (untrusted) {
             const p = profileCoordsRef.current!;
             saveCache(p.lat, p.lng);
-            setState({ status: "fallback", lat: p.lat, lng: p.lng, ready: true, source: "profile", error: null });
+            setState({ status: "fallback", lat: p.lat, lng: p.lng, ready: true, source: "profile", error: null, gpsDiscrepancyKm: dist });
           } else {
             saveCache(lat, lng);
-            setState({ status: "granted", lat, lng, ready: true, source: "gps", error: null });
+            setState({ status: "granted", lat, lng, ready: true, source: "gps", error: null, gpsDiscrepancyKm: null });
           }
 
           // Start watching for live updates (always — saved coords may be added later)
@@ -145,13 +157,15 @@ export function useGeoLocation(): GeoState & {
             (p) => {
               const nlat = p.coords.latitude;
               const nlng = p.coords.longitude;
-              if (isGpsUntrusted(nlat, nlng)) {
+              const ndist = gpsDistanceFromSaved(nlat, nlng);
+              const nUntrusted = ndist != null && ndist > GPS_TRUST_RADIUS_KM;
+              if (nUntrusted) {
                 const pc = profileCoordsRef.current!;
-                setState((s) => ({ ...s, lat: pc.lat, lng: pc.lng, status: "fallback", source: "profile", ready: true }));
+                setState((s) => ({ ...s, lat: pc.lat, lng: pc.lng, status: "fallback", source: "profile", ready: true, gpsDiscrepancyKm: ndist }));
                 return;
               }
               saveCache(nlat, nlng);
-              setState((s) => ({ ...s, lat: nlat, lng: nlng, status: "granted", source: "gps", ready: true }));
+              setState((s) => ({ ...s, lat: nlat, lng: nlng, status: "granted", source: "gps", ready: true, gpsDiscrepancyKm: null }));
             },
             () => {/* ignore transient errors */},
             { enableHighAccuracy: true, maximumAge: 30_000, timeout: 20_000 },
@@ -161,15 +175,15 @@ export function useGeoLocation(): GeoState & {
           // GPS failed entirely — use whatever profile coords we already have
           const fb = profileCoordsRef.current ?? (await loadProfileFallback());
           if (fb) {
-            setState({ status: "fallback", lat: fb.lat, lng: fb.lng, ready: true, source: "profile", error: null });
+            setState({ status: "fallback", lat: fb.lat, lng: fb.lng, ready: true, source: "profile", error: null, gpsDiscrepancyKm: null });
           } else {
-            setState({ status: "denied", lat: null, lng: null, ready: true, source: null, error: err.message });
+            setState({ status: "denied", lat: null, lng: null, ready: true, source: null, error: err.message, gpsDiscrepancyKm: null });
           }
         },
         { enableHighAccuracy: true, maximumAge: 60_000, timeout: 10_000 },
       );
     });
-  }, [loadProfileFallback, isGpsUntrusted]);
+  }, [loadProfileFallback, gpsDistanceFromSaved]);
 
   useEffect(() => {
     requestGps();
