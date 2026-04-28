@@ -215,7 +215,13 @@ export function useGeoLocation(): GeoState & {
         { enableHighAccuracy: true, maximumAge: 60_000, timeout: 10_000 },
       );
     });
-  }, [loadProfileFallback, gpsDistanceFromSaved]);
+  }, [loadProfileFallback, gpsDistanceFromSaved, shouldRejectGps]);
+
+  /** Bypass the sanity check and trust GPS, then immediately re-acquire. */
+  const trustGps = useCallback(() => {
+    trustGpsRef.current = true;
+    requestGps();
+  }, [requestGps]);
 
   useEffect(() => {
     requestGps();
