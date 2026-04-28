@@ -222,6 +222,16 @@ const RestaurantMenu = () => {
   const [customizeItem, setCustomizeItem] = useState<DbMenuItem | null>(null);
 
   const handleAddItem = (item: DbMenuItem) => {
+    if (locationBlocked) {
+      toast.error("Please enable location services to see restaurants available near you.");
+      return;
+    }
+    if (outOfRange) {
+      toast.error(`This restaurant is outside your delivery range (${DELIVERY_RADIUS_LABEL_KM} km).`, {
+        description: "Please choose a closer restaurant.",
+      });
+      return;
+    }
     if (itemHasOptions(item)) {
       setCustomizeItem(item);
       return;
@@ -231,6 +241,14 @@ const RestaurantMenu = () => {
 
   const handleCheckout = (note?: string) => {
     if (!user) { navigate("/auth"); return; }
+    if (!canOrder) {
+      toast.error(
+        locationBlocked
+          ? "Please enable location services to place an order."
+          : `This restaurant is outside your delivery range (${DELIVERY_RADIUS_LABEL_KM} km).`,
+      );
+      return;
+    }
     setFoodNote(note);
     setCartOpen(false);
     setCheckoutOpen(true);
