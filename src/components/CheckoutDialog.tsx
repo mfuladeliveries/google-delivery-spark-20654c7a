@@ -66,6 +66,8 @@ const CheckoutDialog = ({
   const [name, setName] = useState("");
   const [contact, setContact] = useState("");
   const [address, setAddress] = useState("");
+  /** Optional house/unit number prepended to the geocoded street/suburb. */
+  const [houseNumber, setHouseNumber] = useState("");
   const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
   /** True only when address came from autocomplete suggestion OR map confirmation. */
   const [addressVerified, setAddressVerified] = useState(false);
@@ -218,8 +220,12 @@ const CheckoutDialog = ({
       return;
     }
 
+    const fullAddress = houseNumber.trim()
+      ? `${houseNumber.trim()} ${address.trim()}`
+      : address.trim();
+
     const result = checkoutSchema.safeParse({
-      name, contact, address, notes, deliveryInstructions, tip: actualTip,
+      name, contact, address: fullAddress, notes, deliveryInstructions, tip: actualTip,
     });
 
     if (!result.success) {
@@ -262,7 +268,7 @@ const CheckoutDialog = ({
         .update({
           full_name: name.trim(),
           contact_number: contact.trim(),
-          address: address.trim(),
+          address: fullAddress,
           lat: coords.lat,
           lng: coords.lng,
         })
@@ -312,7 +318,7 @@ const CheckoutDialog = ({
         p_restaurant_name: restaurants[0] || "",
         p_customer_name: name.trim(),
         p_customer_contact: contact.trim(),
-        p_customer_address: address.trim(),
+        p_customer_address: fullAddress,
         p_customer_lat: coords.lat,
         p_customer_lng: coords.lng,
         p_special_notes: combinedNotes,
@@ -451,13 +457,31 @@ const CheckoutDialog = ({
             <label className="mb-1.5 flex items-center gap-1.5 text-sm font-semibold text-foreground">
               <MapPin className="h-3.5 w-3.5 text-primary" /> Delivery Address
             </label>
+            <input
+              type="text"
+              inputMode="text"
+              value={houseNumber}
+              onChange={(e) => setHouseNumber(e.target.value.slice(0, 20))}
+              placeholder="House / unit number (optional)"
+              aria-label="House or unit number"
+              className="mb-2 w-full rounded-xl border border-border bg-card px-4 py-2.5 text-sm text-card-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+            />
             <AddressAutocomplete
               value={address}
               hasValidSelection={addressVerified}
               onSelect={handleAddressSelect}
               onTextChange={handleAddressTextChange}
-              placeholder="Start typing your delivery address…"
+              placeholder="Start typing your street and suburb…"
             />
+            {(houseNumber.trim() || address.trim()) && (
+              <p className="mt-1.5 break-words text-[11px] text-muted-foreground">
+                Full address:{" "}
+                <span className="font-semibold text-foreground">
+                  {houseNumber.trim() ? `${houseNumber.trim()} ` : ""}
+                  {address.trim() || "—"}
+                </span>
+              </p>
+            )}
             <button
               type="button"
               onClick={() => setShowMapPicker(true)}
