@@ -318,7 +318,7 @@ const CheckoutDialog = ({
         p_restaurant_name: restaurants[0] || "",
         p_customer_name: name.trim(),
         p_customer_contact: contact.trim(),
-        p_customer_address: address.trim(),
+        p_customer_address: fullAddress,
         p_customer_lat: coords.lat,
         p_customer_lng: coords.lng,
         p_special_notes: combinedNotes,
