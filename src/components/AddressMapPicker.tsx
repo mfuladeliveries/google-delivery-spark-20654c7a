@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import {
   DEFAULT_SERVICE_AREA,
+  distanceKm,
   evaluateServiceArea,
   getServiceArea,
   type ServiceAreaConfig,
@@ -32,6 +33,13 @@ interface AddressMapPickerProps {
   initialAddress?: string;
   /** Optional initial coordinates (skips the geocode round-trip). */
   initialCoords?: { lat: number; lng: number } | null;
+  /** Optional per-restaurant delivery validation target. */
+  validationTarget?: {
+    lat: number;
+    lng: number;
+    maxDistanceKm: number;
+    label?: string;
+  };
 }
 
 const RecenterMap = ({ position }: { position: [number, number] }) => {
@@ -51,10 +59,19 @@ const ClickHandler = ({ onPick }: { onPick: (lat: number, lng: number) => void }
   return null;
 };
 
-export const AddressMapPicker = ({ onConfirm, initialAddress, initialCoords }: AddressMapPickerProps) => {
+export const AddressMapPicker = ({
+  onConfirm,
+  initialAddress,
+  initialCoords,
+  validationTarget,
+}: AddressMapPickerProps) => {
   const [config, setConfig] = useState<ServiceAreaConfig>(DEFAULT_SERVICE_AREA);
   const [position, setPosition] = useState<[number, number]>(
-    initialCoords ? [initialCoords.lat, initialCoords.lng] : [DEFAULT_SERVICE_AREA.center_lat, DEFAULT_SERVICE_AREA.center_lng],
+    initialCoords
+      ? [initialCoords.lat, initialCoords.lng]
+      : validationTarget
+        ? [validationTarget.lat, validationTarget.lng]
+        : [DEFAULT_SERVICE_AREA.center_lat, DEFAULT_SERVICE_AREA.center_lng],
   );
   const [address, setAddress] = useState<string>("");
   const [search, setSearch] = useState<string>("");
@@ -66,6 +83,7 @@ export const AddressMapPicker = ({ onConfirm, initialAddress, initialCoords }: A
 
   // Load admin-configured service area once
   useEffect(() => {
+    if (validationTarget) return;
     let alive = true;
     getServiceArea().then((cfg) => {
       if (alive) setConfig(cfg);
@@ -73,7 +91,7 @@ export const AddressMapPicker = ({ onConfirm, initialAddress, initialCoords }: A
     return () => {
       alive = false;
     };
-  }, []);
+  }, [validationTarget]);
 
   // Reverse-geocode only after the pin has settled (debounced) so the
   // house number stays accurate while the user is still adjusting.
@@ -158,6 +176,23 @@ export const AddressMapPicker = ({ onConfirm, initialAddress, initialCoords }: A
     [position, config],
   );
 
+  const distanceToTarget = useMemo(() => {
+    if (!validationTarget) return null;
+    return distanceKm(position[0], position[1], validationTarget.lat, validationTarget.lng);
+  }, [position, validationTarget]);
+
+  const inRange = validationTarget
+    ? distanceToTarget != null && distanceToTarget <= validationTarget.maxDistanceKm
+    : service.in_range;
+
+  const outOfRangeTitle = validationTarget
+    ? "Outside delivery range"
+    : "Delivery not available in your area";
+
+  const outOfRangeDescription = validationTarget
+    ? `This spot is ${distanceToTarget?.toFixed(1)} km from ${validationTarget.label || "this restaurant"}. Delivery is available within ${validationTarget.maxDistanceKm} km.`
+    : "Please pick a spot closer to the centre of our service area.";
+
   return (
     <div className="flex h-full flex-col">
       {/* Search bar */}
@@ -190,8 +225,8 @@ export const AddressMapPicker = ({ onConfirm, initialAddress, initialCoords }: A
           />
           {/* Subtle service-area ring (no labels — customer never sees "zones") */}
           <Circle
-            center={[config.center_lat, config.center_lng]}
-            radius={config.outer_radius_km * 1000}
+            center={validationTarget ? [validationTarget.lat, validationTarget.lng] : [config.center_lat, config.center_lng]}
+            radius={(validationTarget ? validationTarget.maxDistanceKm : config.outer_radius_km) * 1000}
             pathOptions={{
               color: "hsl(24 95% 53%)",
               weight: 1.5,
@@ -248,7 +283,7 @@ export const AddressMapPicker = ({ onConfirm, initialAddress, initialCoords }: A
           </div>
         </div>
 
-        {!service.in_range && address && !loadingAddress && (
+        {!inRange && address && !loadingAddress && (
           <div
             role="alert"
             className="flex items-start gap-3 rounded-2xl border-2 border-destructive/40 bg-destructive/10 p-3 animate-in fade-in slide-in-from-top-1"
@@ -257,9 +292,9 @@ export const AddressMapPicker = ({ onConfirm, initialAddress, initialCoords }: A
               <AlertTriangle className="h-4 w-4" />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-bold text-destructive">Delivery not available in your area</p>
+              <p className="text-sm font-bold text-destructive">{outOfRangeTitle}</p>
               <p className="mt-0.5 text-[11px] leading-relaxed text-foreground">
-                Please pick a spot closer to the centre of our service area.
+                {outOfRangeDescription}
               </p>
             </div>
           </div>
@@ -269,10 +304,10 @@ export const AddressMapPicker = ({ onConfirm, initialAddress, initialCoords }: A
           <Button
             type="button"
             onClick={() => setConfirming(true)}
-            disabled={!address || loadingAddress || !service.in_range}
+            disabled={!address || loadingAddress || !inRange}
             className={cn("h-12 w-full rounded-full text-sm font-bold")}
           >
-            {!service.in_range && address && !loadingAddress
+            {!inRange && address && !loadingAddress
               ? "Outside delivery range"
               : "Use this address"}
           </Button>
