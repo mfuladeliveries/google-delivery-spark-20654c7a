@@ -59,6 +59,28 @@ const Index = () => {
   const [manualUpdatedAt, setManualUpdatedAt] = useState<number | null>(null);
   const [confirmingCancel, setConfirmingCancel] = useState(false);
 
+  // Escape key closes the manual address panel — but if the user has typed
+  // something they haven't picked yet, surface the same discard-changes
+  // confirmation as the Cancel button instead of dropping their edits.
+  useEffect(() => {
+    if (!manualOpen) return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.key !== "Escape") return;
+      const baseline = manualAddress ? manualAddress.address : "";
+      const isDirty = manualText.trim() !== baseline.trim() && manualText.trim().length > 0;
+      e.preventDefault();
+      if (isDirty) {
+        setConfirmingCancel(true);
+      } else {
+        setManualOpen(false);
+        setManualText(baseline);
+        setConfirmingCancel(false);
+      }
+    };
+    document.addEventListener("keydown", handler);
+    return () => document.removeEventListener("keydown", handler);
+  }, [manualOpen, manualText, manualAddress]);
+
   const persistManual = (val: ValidatedAddress | null) => {
     try {
       if (val) localStorage.setItem("mfula-manual-area-v1", JSON.stringify(val));
