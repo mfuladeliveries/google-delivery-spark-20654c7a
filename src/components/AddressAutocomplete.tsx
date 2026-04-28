@@ -210,14 +210,27 @@ export const AddressAutocomplete = ({
         )}
       </div>
 
-      {open && suggestions.length > 0 && (
-        <ul
+      {open && !hasValidSelection && (loading || suggestions.length > 0 || (searched && !error)) && (
+        <div
           role="listbox"
+          aria-busy={loading}
           className="absolute left-0 right-0 top-full z-50 mt-1 max-h-64 overflow-y-auto rounded-xl border border-border bg-popover p-1 shadow-lg"
         >
-          {suggestions.map((s) => (
-            <li key={s.place_id}>
+          {loading && (
+            <div className="flex items-center gap-2 px-3 py-2 text-sm text-muted-foreground">
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              <span>Searching addresses…</span>
+            </div>
+          )}
+          {!loading && suggestions.length === 0 && searched && (
+            <div className="px-3 py-2 text-sm text-muted-foreground">
+              No matching addresses. Try adding a suburb or city.
+            </div>
+          )}
+          {!loading &&
+            suggestions.map((s) => (
               <button
+                key={s.place_id}
                 type="button"
                 onClick={() => handlePick(s)}
                 className="flex w-full items-start gap-2 rounded-lg px-3 py-2 text-left text-sm text-popover-foreground hover:bg-accent"
@@ -225,12 +238,32 @@ export const AddressAutocomplete = ({
                 <MapPin className="mt-0.5 h-3.5 w-3.5 flex-shrink-0 text-primary" />
                 <span className="break-words">{s.display_name}</span>
               </button>
-            </li>
-          ))}
-        </ul>
+            ))}
+        </div>
       )}
 
-      {error && <p className="mt-1 text-xs text-destructive">{error}</p>}
+      {loading && !open && (
+        <p className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground">
+          <Loader2 className="h-3 w-3 animate-spin" />
+          Searching addresses…
+        </p>
+      )}
+
+      {error && (
+        <div
+          role="alert"
+          className="mt-1 flex items-start justify-between gap-2 rounded-lg border border-destructive/30 bg-destructive/5 px-2.5 py-1.5 text-xs text-destructive"
+        >
+          <span className="break-words">{error}</span>
+          <button
+            type="button"
+            onClick={() => setRetryToken((n) => n + 1)}
+            className="flex-shrink-0 font-medium underline underline-offset-2 hover:no-underline"
+          >
+            Retry
+          </button>
+        </div>
+      )}
     </div>
   );
 };
