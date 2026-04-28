@@ -475,7 +475,17 @@ const Index = () => {
                   const unit = houseNumber.trim();
                   const street = manualText.trim();
                   if (!unit && !street) return null;
-                  const preview = unit && street ? `${unit} ${street}` : unit || street;
+                  // ZA postcodes are 4 digits — pull the first match from the
+                  // selected suggestion text so we can surface it on its own.
+                  const postcodeMatch = street.match(/\b\d{4}\b/);
+                  const postcode = postcodeMatch ? postcodeMatch[0] : null;
+                  const streetSansPostcode = postcode
+                    ? street.replace(postcode, "").replace(/,\s*,/g, ",").replace(/,\s*$/, "").trim()
+                    : street;
+                  const parts = [unit, streetSansPostcode, postcode].filter(Boolean);
+                  const preview = unit && streetSansPostcode
+                    ? `${unit} ${streetSansPostcode}${postcode ? `, ${postcode}` : ""}`
+                    : parts.join(", ");
                   return (
                     <div className="mt-2 rounded-xl border border-primary/30 bg-primary/5 px-3 py-2">
                       <p className="text-[10px] font-semibold uppercase tracking-wide text-primary">
@@ -484,6 +494,21 @@ const Index = () => {
                       <p className="mt-0.5 break-words text-xs text-foreground" title={preview}>
                         {preview}
                       </p>
+                      <div className="mt-1.5 flex flex-wrap gap-1">
+                        {unit && (
+                          <span className="rounded-full bg-card px-1.5 py-0.5 text-[10px] text-muted-foreground">
+                            House #: <span className="font-semibold text-foreground">{unit}</span>
+                          </span>
+                        )}
+                        {streetSansPostcode && (
+                          <span className="rounded-full bg-card px-1.5 py-0.5 text-[10px] text-muted-foreground">
+                            Street/suburb: <span className="font-semibold text-foreground">{streetSansPostcode.length > 40 ? streetSansPostcode.slice(0, 40) + "…" : streetSansPostcode}</span>
+                          </span>
+                        )}
+                        <span className="rounded-full bg-card px-1.5 py-0.5 text-[10px] text-muted-foreground">
+                          Postcode: <span className="font-semibold text-foreground">{postcode ?? "—"}</span>
+                        </span>
+                      </div>
                     </div>
                   );
                 })()}
