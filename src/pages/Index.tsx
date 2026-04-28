@@ -56,6 +56,7 @@ const Index = () => {
   });
   const [manualOpen, setManualOpen] = useState(false);
   const [manualText, setManualText] = useState("");
+  const [manualUpdatedAt, setManualUpdatedAt] = useState<number | null>(null);
 
   const persistManual = (val: ValidatedAddress | null) => {
     try {
@@ -324,12 +325,14 @@ const Index = () => {
           {manualOpen && (
             <div className="mt-2 rounded-2xl border border-border bg-card p-3 shadow-card">
               <div className="mb-2 flex items-center justify-between">
-                <p className="text-xs font-bold text-foreground">Type your delivery area</p>
+                <p className="text-xs font-bold text-foreground">
+                  {manualAddress ? "Update your saved address" : "Type your delivery area"}
+                </p>
                 <button
                   type="button"
                   onClick={() => {
                     setManualOpen(false);
-                    if (!manualAddress) setManualText("");
+                    setManualText(manualAddress ? manualAddress.address : "");
                   }}
                   className="rounded-full p-1 text-muted-foreground hover:bg-secondary"
                   aria-label="Close"
@@ -337,6 +340,11 @@ const Index = () => {
                   <X className="h-3.5 w-3.5" />
                 </button>
               </div>
+              {manualAddress && (
+                <p className="mb-2 truncate text-[11px] text-muted-foreground" title={manualAddress.address}>
+                  Current: <span className="font-medium text-foreground">{manualAddress.address}</span>
+                </p>
+              )}
               <AddressAutocomplete
                 value={manualText}
                 hasValidSelection={false}
@@ -346,12 +354,19 @@ const Index = () => {
                   persistManual(addr);
                   setManualText(addr.address);
                   setManualOpen(false);
+                  setManualUpdatedAt(Date.now());
                 }}
-                placeholder="Start typing a suburb or street…"
+                placeholder={manualAddress ? "Search a new address…" : "Start typing a suburb or street…"}
               />
               <p className="mt-2 text-[11px] text-muted-foreground">
-                Pick a suggestion to see restaurants within {DELIVERY_RADIUS_KM} km of that area.
+                Pick a suggestion to {manualAddress ? "replace your saved address" : "see restaurants"} within {DELIVERY_RADIUS_KM} km.
               </p>
+            </div>
+          )}
+
+          {manualUpdatedAt && Date.now() - manualUpdatedAt < 3500 && (
+            <div className="mt-2 inline-flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-1 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
+              <MapPin className="h-3 w-3" /> Address updated — restaurant list refreshed
             </div>
           )}
         </div>
