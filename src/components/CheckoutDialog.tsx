@@ -528,6 +528,12 @@ const CheckoutDialog = ({
                     onConfirm={handleMapConfirm}
                     initialAddress={address}
                     initialCoords={coords}
+                    validationTarget={restaurantCoords ? {
+                      lat: restaurantCoords.lat,
+                      lng: restaurantCoords.lng,
+                      maxDistanceKm: MAX_DELIVERY_KM,
+                      label: primaryRestaurantName || "this restaurant",
+                    } : undefined}
                   />
                 </Suspense>
               </div>
