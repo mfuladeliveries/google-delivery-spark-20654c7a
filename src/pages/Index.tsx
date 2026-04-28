@@ -15,6 +15,7 @@ import { menuItems } from "@/data/menu";
 import mfulaLogo from "@/assets/mfula-logo.png";
 import AddressAutocomplete, { type ValidatedAddress } from "@/components/AddressAutocomplete";
 import { distanceKm } from "@/lib/serviceArea";
+import { toast } from "sonner";
 
 interface Restaurant extends RestaurantCardData {
   is_active: boolean;
