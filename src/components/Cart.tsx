@@ -38,9 +38,12 @@ const Cart = ({
   const [foodNote, setFoodNote] = useState("");
   const { user } = useAuth();
   const { needsAddress, needsCoords, outOfRange } = useCustomerLocation();
+  const geo = useGeoLocation();
+  const geoBlocked = geo.ready && !geo.hasCoords;
   // Personal details + GPS pin are collected in the checkout dialog itself,
-  // so we only block checkout if the saved address is confirmed out of range.
-  const canCheckout = !!user && !outOfRange;
+  // so we only block checkout if the saved address is confirmed out of range
+  // OR live GPS is unavailable.
+  const canCheckout = !!user && !outOfRange && !geoBlocked;
   const needsDetails = !!user && (needsAddress || needsCoords);
   // Cart items carry the restaurant name in `item.category` (set in RestaurantMenu)
   const restaurantName = items[0]?.item.category || "";
