@@ -391,6 +391,9 @@ const Index = () => {
               ) {
                 setManualOpen(false);
                 setManualUpdatedAt(Date.now());
+                toast.success("Address confirmed", {
+                  description: "Restaurant list refreshed for your saved area.",
+                });
               }
             };
             return (
