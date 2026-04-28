@@ -57,6 +57,7 @@ const Index = () => {
   const [manualOpen, setManualOpen] = useState(false);
   const [manualText, setManualText] = useState("");
   const [manualUpdatedAt, setManualUpdatedAt] = useState<number | null>(null);
+  const [confirmingCancel, setConfirmingCancel] = useState(false);
 
   const persistManual = (val: ValidatedAddress | null) => {
     try {
