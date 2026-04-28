@@ -451,48 +451,88 @@ const CheckoutDialog = ({
             <label className="mb-1.5 flex items-center gap-1.5 text-sm font-semibold text-foreground">
               <MapPin className="h-3.5 w-3.5 text-primary" /> Delivery Address
             </label>
-            <div className="flex gap-2">
-              <input
-                value={address}
-                onChange={(e) => setAddress(e.target.value)}
-                placeholder="Street address, area"
-                className="flex-1 rounded-xl border border-border bg-card px-4 py-3 text-sm text-card-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
-              />
-              <button
-                type="button"
-                onClick={() => requestLocation(false)}
-                disabled={locating}
-                className="flex items-center justify-center rounded-xl border border-border bg-card px-3 text-primary hover:bg-secondary transition-colors disabled:opacity-50"
-                title="Use my location"
-              >
-                {locating ? (
-                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-                ) : (
-                  <MapPin className="h-4 w-4" />
-                )}
-              </button>
-            </div>
-            {validationErrors.address && <p className="mt-1 text-xs text-destructive">{validationErrors.address}</p>}
-            {locationDenied && !coords && (
+            <AddressAutocomplete
+              value={address}
+              hasValidSelection={addressVerified}
+              onSelect={handleAddressSelect}
+              onTextChange={handleAddressTextChange}
+              placeholder="Start typing your delivery address…"
+            />
+            <button
+              type="button"
+              onClick={() => setShowMapPicker(true)}
+              className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl border border-border bg-card px-3 py-2.5 text-xs font-semibold text-foreground hover:bg-secondary transition-colors"
+            >
+              <MapIcon className="h-3.5 w-3.5 text-primary" />
+              {addressVerified ? "Adjust pin on map" : "Pick on map & confirm location"}
+            </button>
+
+            {validationErrors.address && (
+              <p className="mt-1 text-xs text-destructive">{validationErrors.address}</p>
+            )}
+
+            {!addressVerified && address.trim().length >= 3 && (
               <p className="mt-1.5 flex items-start gap-1.5 text-xs text-amber-600">
                 <AlertTriangle className="h-3.5 w-3.5 flex-shrink-0 mt-0.5" />
-                <span>
-                  Location access is blocked. Enable location for this site in your browser settings to autofill your address, or type it manually below.
-                </span>
+                <span>Please select a valid address from the suggestions or confirm it on the map.</span>
               </p>
             )}
-            {!coords && address.trim() && (
-              <p className="mt-1.5 flex items-start gap-1.5 text-xs text-amber-600">
-                <AlertTriangle className="h-3.5 w-3.5 flex-shrink-0 mt-0.5" />
-                <span>Tap the location button to confirm your exact GPS coordinates before placing the order.</span>
-              </p>
-            )}
-            {coords && (
+
+            {addressVerified && coords && !outOfRange && (
               <p className="mt-1.5 flex items-center gap-1.5 text-xs font-semibold text-primary">
-                <Truck className="h-3.5 w-3.5" /> Location confirmed · GPS captured
+                <Check className="h-3.5 w-3.5" />
+                Address verified
+                {distanceToRestaurant != null && (
+                  <span className="text-muted-foreground font-normal">
+                    · {distanceToRestaurant.toFixed(1)} km from {primaryRestaurantName || "restaurant"}
+                  </span>
+                )}
               </p>
+            )}
+
+            {addressVerified && outOfRange && distanceToRestaurant != null && (
+              <div className="mt-2 flex items-start gap-2 rounded-xl border-2 border-destructive/40 bg-destructive/10 p-3">
+                <AlertTriangle className="h-4 w-4 flex-shrink-0 text-destructive mt-0.5" />
+                <div className="text-xs">
+                  <p className="font-bold text-destructive">Outside delivery range</p>
+                  <p className="mt-0.5 text-foreground">
+                    This address is {distanceToRestaurant.toFixed(1)} km from {primaryRestaurantName || "the restaurant"}.
+                    We deliver up to {MAX_DELIVERY_KM} km. Please pick a closer address.
+                  </p>
+                </div>
+              </div>
             )}
           </div>
+
+          {showMapPicker && (
+            <div className="fixed inset-0 z-[70] bg-black/70 backdrop-blur-sm flex items-center justify-center p-3">
+              <div className="relative w-full max-w-lg max-h-[92vh] overflow-y-auto rounded-3xl border border-border bg-background pt-4 shadow-xl">
+                <div className="flex items-center justify-between px-4 pb-2">
+                  <h3 className="font-display text-base font-bold text-foreground">Confirm delivery location</h3>
+                  <button
+                    onClick={() => setShowMapPicker(false)}
+                    className="rounded-full p-2 text-muted-foreground hover:bg-secondary"
+                    aria-label="Close map"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+                <Suspense
+                  fallback={
+                    <div className="flex h-72 items-center justify-center text-sm text-muted-foreground">
+                      Loading map…
+                    </div>
+                  }
+                >
+                  <AddressMapPicker
+                    onConfirm={handleMapConfirm}
+                    initialAddress={address}
+                    initialCoords={coords}
+                  />
+                </Suspense>
+              </div>
+            </div>
+          )}
 
           {/* Delivery Instructions */}
           <div>
