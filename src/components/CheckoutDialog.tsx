@@ -173,20 +173,20 @@ const CheckoutDialog = ({
   const creditsToApply = useWallet && walletBalance > 0 ? Math.min(walletBalance, grossTotal) : 0;
   const total = Math.max(0, grossTotal - creditsToApply);
 
-  const restaurants = [...new Set(items.map((ci) => ci.item.category))];
-
+  // Load profile to prefill name + contact. We deliberately do NOT prefill the
+  // delivery address — it must always be re-selected from autocomplete or the
+  // map so the coords are guaranteed valid.
   useEffect(() => {
     if (!user || profileLoaded) return;
     const loadProfile = async () => {
       const { data } = await supabase
         .from("profiles")
-        .select("full_name, contact_number, address")
+        .select("full_name, contact_number")
         .eq("user_id", user.id)
         .single();
       if (data) {
         setName(data.full_name || "");
         setContact(data.contact_number || "");
-        setAddress(data.address || "");
       }
       setProfileLoaded(true);
     };
