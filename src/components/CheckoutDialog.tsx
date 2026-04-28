@@ -499,13 +499,23 @@ const CheckoutDialog = ({
               placeholder='e.g. "Oak Street, Khayelitsha"'
             />
             {(houseNumber.trim() || address.trim()) && (
-              <p className="mt-1.5 break-words text-[11px] text-muted-foreground">
-                Full address:{" "}
-                <span className="font-semibold text-foreground">
+              <div className="mt-2 rounded-xl border border-primary/30 bg-primary/5 px-3 py-2">
+                <p className="text-[10px] font-semibold uppercase tracking-wide text-primary">
+                  Delivering to {addressVerified ? "(verified)" : "(not yet verified)"}
+                </p>
+                <p className="mt-0.5 break-words text-sm font-semibold text-foreground">
                   {houseNumber.trim() ? `${houseNumber.trim()} ` : ""}
                   {address.trim() || "—"}
-                </span>
-              </p>
+                </p>
+                <div className="mt-1.5 flex flex-wrap gap-1">
+                  <span className="rounded-full bg-card px-1.5 py-0.5 text-[10px] text-muted-foreground">
+                    House #: <span className="font-semibold text-foreground">{houseNumber.trim() || "—"}</span>
+                  </span>
+                  <span className="rounded-full bg-card px-1.5 py-0.5 text-[10px] text-muted-foreground">
+                    Street &amp; suburb: <span className="font-semibold text-foreground">{address.trim() || "—"}</span>
+                  </span>
+                </div>
+              </div>
             )}
             <button
               type="button"
