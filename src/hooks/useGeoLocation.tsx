@@ -11,11 +11,18 @@ export const DELIVERY_RADIUS_KM = 8;
 /** Copy used in the user-facing "out of range" message. */
 export const DELIVERY_RADIUS_LABEL_KM = 8;
 
+/**
+ * If GPS reports a position more than this many km away from the customer's
+ * saved profile address, treat the GPS reading as untrustworthy (VPN, wifi
+ * positioning error, etc.) and silently fall back to the saved address.
+ */
+const GPS_TRUST_RADIUS_KM = DELIVERY_RADIUS_KM;
+
 export type GeoStatus =
   | "idle"        // not asked yet
   | "prompt"      // asking the browser for permission
   | "granted"    // live GPS available
-  | "fallback"    // GPS unavailable, using saved profile coords
+  | "fallback"    // GPS unavailable / untrusted, using saved profile coords
   | "denied"      // user denied & no fallback
   | "unsupported";
 
@@ -56,6 +63,8 @@ function saveCache(lat: number, lng: number) {
  * - Asks the browser for geolocation
  * - Keeps a watch so the user's position updates in real time
  * - If GPS is denied/unavailable, falls back to the user's saved profile lat/lng
+ * - If GPS reports a position > GPS_TRUST_RADIUS_KM from the saved address,
+ *   the reading is rejected and we fall back to the saved address instead.
  */
 export function useGeoLocation(): GeoState & {
   /** Re-request permission / refresh location. */
@@ -76,6 +85,8 @@ export function useGeoLocation(): GeoState & {
     error: null,
   }));
   const watchIdRef = useRef<number | null>(null);
+  /** Cached saved-profile coords, kept in a ref so the GPS watcher can sync-check. */
+  const profileCoordsRef = useRef<{ lat: number; lng: number } | null>(null);
 
   const loadProfileFallback = useCallback(async (): Promise<{ lat: number; lng: number } | null> => {
     if (!user) return null;
@@ -85,10 +96,20 @@ export function useGeoLocation(): GeoState & {
       .eq("user_id", user.id)
       .maybeSingle();
     if (typeof data?.lat === "number" && typeof data?.lng === "number") {
-      return { lat: data.lat, lng: data.lng };
+      const coords = { lat: data.lat, lng: data.lng };
+      profileCoordsRef.current = coords;
+      return coords;
     }
+    profileCoordsRef.current = null;
     return null;
   }, [user]);
+
+  /** True if GPS is too far from the saved profile address to trust. */
+  const isGpsUntrusted = useCallback((lat: number, lng: number) => {
+    const p = profileCoordsRef.current;
+    if (!p) return false; // no saved address to compare against → trust GPS
+    return distanceKm(p.lat, p.lng, lat, lng) > GPS_TRUST_RADIUS_KM;
+  }, []);
 
   const requestGps = useCallback(() => {
     if (typeof navigator === "undefined" || !navigator.geolocation) {
@@ -102,38 +123,53 @@ export function useGeoLocation(): GeoState & {
 
     setState((s) => ({ ...s, status: "prompt" }));
 
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        const lat = pos.coords.latitude;
-        const lng = pos.coords.longitude;
-        saveCache(lat, lng);
-        setState({ status: "granted", lat, lng, ready: true, source: "gps", error: null });
+    // Preload saved profile coords so we can validate the very first GPS fix.
+    loadProfileFallback().then(() => {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          const lat = pos.coords.latitude;
+          const lng = pos.coords.longitude;
 
-        // Start watching for live updates
-        if (watchIdRef.current !== null) navigator.geolocation.clearWatch(watchIdRef.current);
-        watchIdRef.current = navigator.geolocation.watchPosition(
-          (p) => {
-            const nlat = p.coords.latitude;
-            const nlng = p.coords.longitude;
-            saveCache(nlat, nlng);
-            setState((s) => ({ ...s, lat: nlat, lng: nlng, status: "granted", source: "gps", ready: true }));
-          },
-          () => {/* ignore transient errors */},
-          { enableHighAccuracy: true, maximumAge: 30_000, timeout: 20_000 },
-        );
-      },
-      async (err) => {
-        // Try profile fallback
-        const fb = await loadProfileFallback();
-        if (fb) {
-          setState({ status: "fallback", lat: fb.lat, lng: fb.lng, ready: true, source: "profile", error: null });
-        } else {
-          setState({ status: "denied", lat: null, lng: null, ready: true, source: null, error: err.message });
-        }
-      },
-      { enableHighAccuracy: true, maximumAge: 60_000, timeout: 10_000 },
-    );
-  }, [loadProfileFallback]);
+          if (isGpsUntrusted(lat, lng)) {
+            const p = profileCoordsRef.current!;
+            saveCache(p.lat, p.lng);
+            setState({ status: "fallback", lat: p.lat, lng: p.lng, ready: true, source: "profile", error: null });
+          } else {
+            saveCache(lat, lng);
+            setState({ status: "granted", lat, lng, ready: true, source: "gps", error: null });
+          }
+
+          // Start watching for live updates (always — saved coords may be added later)
+          if (watchIdRef.current !== null) navigator.geolocation.clearWatch(watchIdRef.current);
+          watchIdRef.current = navigator.geolocation.watchPosition(
+            (p) => {
+              const nlat = p.coords.latitude;
+              const nlng = p.coords.longitude;
+              if (isGpsUntrusted(nlat, nlng)) {
+                const pc = profileCoordsRef.current!;
+                setState((s) => ({ ...s, lat: pc.lat, lng: pc.lng, status: "fallback", source: "profile", ready: true }));
+                return;
+              }
+              saveCache(nlat, nlng);
+              setState((s) => ({ ...s, lat: nlat, lng: nlng, status: "granted", source: "gps", ready: true }));
+            },
+            () => {/* ignore transient errors */},
+            { enableHighAccuracy: true, maximumAge: 30_000, timeout: 20_000 },
+          );
+        },
+        async (err) => {
+          // GPS failed entirely — use whatever profile coords we already have
+          const fb = profileCoordsRef.current ?? (await loadProfileFallback());
+          if (fb) {
+            setState({ status: "fallback", lat: fb.lat, lng: fb.lng, ready: true, source: "profile", error: null });
+          } else {
+            setState({ status: "denied", lat: null, lng: null, ready: true, source: null, error: err.message });
+          }
+        },
+        { enableHighAccuracy: true, maximumAge: 60_000, timeout: 10_000 },
+      );
+    });
+  }, [loadProfileFallback, isGpsUntrusted]);
 
   useEffect(() => {
     requestGps();
