@@ -183,10 +183,10 @@ export function useGeoLocation(): GeoState & {
           if (reject) {
             const p = profileCoordsRef.current!;
             saveCache(p.lat, p.lng);
-            setState({ status: "fallback", lat: p.lat, lng: p.lng, ready: true, source: "profile", error: null, gpsDiscrepancyKm: dist });
+            setState({ status: "fallback", lat: p.lat, lng: p.lng, ready: true, source: "profile", error: null, gpsDiscrepancyKm: dist, accuracyM: null });
           } else {
             saveCache(lat, lng);
-            setState({ status: "granted", lat, lng, ready: true, source: "gps", error: null, gpsDiscrepancyKm: null });
+            setState({ status: "granted", lat, lng, ready: true, source: "gps", error: null, gpsDiscrepancyKm: null, accuracyM: acc });
           }
 
           // Start watching for live updates (always — saved coords may be added later)
