@@ -30,10 +30,10 @@ const checkoutSchema = z.object({
   address: z
     .string()
     .trim()
-    .min(8, "Full address must be at least 8 characters")
+    .min(8, 'Full address looks too short. Try e.g. "12 Oak Street, Khayelitsha".')
     .max(300, "Address must be less than 300 characters")
-    .regex(/[A-Za-z]/, "Address must include a street or suburb name")
-    .regex(/^[A-Za-z0-9\s,.\-/#'’()]+$/, "Address contains invalid characters"),
+    .regex(/[A-Za-z]/, 'Address needs a street or suburb name, e.g. "12 Oak Street, Khayelitsha".')
+    .regex(/^[A-Za-z0-9\s,.\-/#'’()]+$/, 'Address has invalid characters. Use letters, numbers, and , . - / # only (e.g. "12A Oak St, Mfuleni").'),
   notes: z.string().max(500, "Notes must be less than 500 characters").optional(),
   deliveryInstructions: z.string().max(300, "Delivery instructions must be less than 300 characters").optional(),
   tip: z.number().min(0, "Tip cannot be negative").max(10000, "Tip amount is too large"),
@@ -220,7 +220,7 @@ const CheckoutDialog = ({
       toast.error("Please enter your delivery address.");
       setValidationErrors((prev) => ({
         ...prev,
-        address: "Delivery address is required.",
+        address: 'Delivery address is required, e.g. "12 Oak Street, Khayelitsha".',
       }));
       return;
     }
@@ -230,7 +230,7 @@ const CheckoutDialog = ({
       toast.error("House/unit number contains invalid characters.");
       setValidationErrors((prev) => ({
         ...prev,
-        address: "House/unit number can only contain letters, numbers, spaces, and - / #.",
+        address: 'House/unit number can only contain letters, numbers, spaces, and - / # (e.g. "12A", "Unit 3", "B-4").',
       }));
       return;
     }
