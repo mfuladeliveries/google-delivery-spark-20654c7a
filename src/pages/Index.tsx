@@ -195,6 +195,26 @@ const Index = () => {
                 )}
               </span>
             )}
+            {geo.source === "gps" && geo.accuracyM != null && (
+              <span
+                title={
+                  geo.accuracyM <= 30
+                    ? `Excellent GPS accuracy (~${Math.round(geo.accuracyM)} m). Trustworthy.`
+                    : geo.accuracyM <= 100
+                      ? `Decent GPS accuracy (~${Math.round(geo.accuracyM)} m). Usually fine.`
+                      : `Low GPS accuracy (~${Math.round(geo.accuracyM)} m). Likely wifi/IP based — may be unreliable.`
+                }
+                className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-semibold ${
+                  geo.accuracyM <= 30
+                    ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+                    : geo.accuracyM <= 100
+                      ? "border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400"
+                      : "border-destructive/30 bg-destructive/10 text-destructive"
+                }`}
+              >
+                ±{Math.round(geo.accuracyM)} m
+              </span>
+            )}
             <button
               type="button"
               onClick={() => geo.refresh()}
