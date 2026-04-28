@@ -220,8 +220,12 @@ const CheckoutDialog = ({
       return;
     }
 
+    const fullAddress = houseNumber.trim()
+      ? `${houseNumber.trim()} ${address.trim()}`
+      : address.trim();
+
     const result = checkoutSchema.safeParse({
-      name, contact, address, notes, deliveryInstructions, tip: actualTip,
+      name, contact, address: fullAddress, notes, deliveryInstructions, tip: actualTip,
     });
 
     if (!result.success) {
