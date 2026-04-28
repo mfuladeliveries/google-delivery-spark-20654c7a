@@ -7,7 +7,7 @@ import { distanceKm } from "@/lib/serviceArea";
  * Per-restaurant delivery radius (km). Customer must be within this distance
  * of a restaurant's saved coordinates to order from it.
  */
-export const DELIVERY_RADIUS_KM = 6;
+export const DELIVERY_RADIUS_KM = 8;
 /** Copy used in the user-facing "out of range" message. */
 export const DELIVERY_RADIUS_LABEL_KM = 8;
 
