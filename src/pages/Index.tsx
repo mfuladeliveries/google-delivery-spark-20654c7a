@@ -173,6 +173,24 @@ const Index = () => {
           </div>
         )}
 
+        {/* Location source pill — shows GPS vs saved-address sanity-check fallback */}
+        {geo.ready && geo.hasCoords && (
+          <div className="mb-3 flex items-center gap-2">
+            {geo.source === "gps" ? (
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-1 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
+                <MapPin className="h-3 w-3" /> Live GPS location
+              </span>
+            ) : (
+              <span
+                className="inline-flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary/10 px-2.5 py-1 text-[11px] font-semibold text-primary"
+                title="GPS reported a location far from your saved address, so we're using the saved address instead."
+              >
+                <MapPin className="h-3 w-3" /> Saved address (GPS too far)
+              </span>
+            )}
+          </div>
+        )}
+
         {/* Cuisine Categories */}
         <section className="mb-6">
           <h3 className="mb-3 text-base font-bold text-foreground">Cuisines</h3>
