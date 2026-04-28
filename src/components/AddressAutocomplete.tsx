@@ -334,19 +334,43 @@ export const AddressAutocomplete = ({
                 <span className="break-words">{s.display_name}</span>
               </button>
             ))}
-          {!loading && cacheCount > 0 && (
+          {!loading && cacheCount > 0 && !confirmingClear && (
             <div className="mt-1 flex items-center justify-between border-t border-border/60 px-3 py-1.5">
               <span className="text-[11px] text-muted-foreground">
                 {cacheCount} saved {cacheCount === 1 ? "search" : "searches"}
               </span>
               <button
                 type="button"
-                onClick={handleClearCache}
+                onClick={() => setConfirmingClear(true)}
                 className="flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[11px] text-muted-foreground hover:bg-secondary hover:text-foreground"
               >
                 <Trash2 className="h-3 w-3" />
                 Clear saved searches
               </button>
+            </div>
+          )}
+          {!loading && cacheCount > 0 && confirmingClear && (
+            <div className="mt-1 flex items-center justify-between gap-2 border-t border-border/60 bg-destructive/5 px-3 py-1.5">
+              <span className="text-[11px] text-destructive">
+                Clear all {cacheCount} saved {cacheCount === 1 ? "search" : "searches"}?
+              </span>
+              <div className="flex items-center gap-1">
+                <button
+                  type="button"
+                  onClick={() => setConfirmingClear(false)}
+                  className="rounded-md px-1.5 py-0.5 text-[11px] text-muted-foreground hover:bg-secondary hover:text-foreground"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleClearCache}
+                  className="flex items-center gap-1 rounded-md bg-destructive px-1.5 py-0.5 text-[11px] font-medium text-destructive-foreground hover:bg-destructive/90"
+                >
+                  <Trash2 className="h-3 w-3" />
+                  Clear
+                </button>
+              </div>
             </div>
           )}
         </div>
