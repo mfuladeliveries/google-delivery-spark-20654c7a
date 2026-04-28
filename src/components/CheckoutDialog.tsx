@@ -212,6 +212,29 @@ const CheckoutDialog = ({
       return;
     }
 
+    const trimmedUnit = houseNumber.trim();
+    const trimmedStreet = address.trim();
+    const fullAddress = trimmedUnit ? `${trimmedUnit} ${trimmedStreet}` : trimmedStreet;
+
+    if (!fullAddress) {
+      toast.error("Please enter your delivery address.");
+      setValidationErrors((prev) => ({
+        ...prev,
+        address: "Delivery address is required.",
+      }));
+      return;
+    }
+
+    // House/unit number must be alphanumeric (allows things like "12A", "Unit 3", "B-4").
+    if (trimmedUnit && !/^[A-Za-z0-9\s\-/#]{1,20}$/.test(trimmedUnit)) {
+      toast.error("House/unit number contains invalid characters.");
+      setValidationErrors((prev) => ({
+        ...prev,
+        address: "House/unit number can only contain letters, numbers, spaces, and - / #.",
+      }));
+      return;
+    }
+
     if (!addressVerified || !coords) {
       toast.error("Please pick your delivery address from the suggestions or confirm it on the map.");
       setValidationErrors((prev) => ({
@@ -225,10 +248,6 @@ const CheckoutDialog = ({
       toast.error(`Your address is outside the ${MAX_DELIVERY_KM} km delivery range for this restaurant.`);
       return;
     }
-
-    const fullAddress = houseNumber.trim()
-      ? `${houseNumber.trim()} ${address.trim()}`
-      : address.trim();
 
     const result = checkoutSchema.safeParse({
       name, contact, address: fullAddress, notes, deliveryInstructions, tip: actualTip,
