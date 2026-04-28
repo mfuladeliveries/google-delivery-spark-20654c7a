@@ -496,7 +496,7 @@ const CheckoutDialog = ({
               hasValidSelection={addressVerified}
               onSelect={handleAddressSelect}
               onTextChange={handleAddressTextChange}
-              placeholder="Start typing your street and suburb…"
+              placeholder='e.g. "Oak Street, Khayelitsha"'
             />
             {(houseNumber.trim() || address.trim()) && (
               <p className="mt-1.5 break-words text-[11px] text-muted-foreground">
