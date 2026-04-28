@@ -75,6 +75,12 @@ function saveCache(lat: number, lng: number) {
 export function useGeoLocation(): GeoState & {
   /** Re-request permission / refresh location. */
   refresh: () => void;
+  /**
+   * Permanently trust GPS for this session, bypassing the saved-address
+   * sanity check. Use when the customer has actually travelled away from
+   * their saved address.
+   */
+  trustGps: () => void;
   /** Compute distance from current location to a restaurant. Returns null if no coords. */
   distanceTo: (lat: number | null | undefined, lng: number | null | undefined) => number | null;
   /** True if we have any coords (live or fallback). */
