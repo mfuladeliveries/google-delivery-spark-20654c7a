@@ -27,7 +27,13 @@ const PREP_LEAD_MINUTES = 30; // earliest schedule from now
 const checkoutSchema = z.object({
   name: z.string().trim().min(2, "Name must be at least 2 characters").max(100, "Name must be less than 100 characters"),
   contact: z.string().trim().min(7, "Contact number is too short").max(20, "Contact number is too long").regex(/^[0-9\s+()-]+$/, "Invalid phone number format"),
-  address: z.string().trim().min(5, "Address must be at least 5 characters").max(300, "Address must be less than 300 characters"),
+  address: z
+    .string()
+    .trim()
+    .min(8, "Full address must be at least 8 characters")
+    .max(300, "Address must be less than 300 characters")
+    .regex(/[A-Za-z]/, "Address must include a street or suburb name")
+    .regex(/^[A-Za-z0-9\s,.\-/#'’()]+$/, "Address contains invalid characters"),
   notes: z.string().max(500, "Notes must be less than 500 characters").optional(),
   deliveryInstructions: z.string().max(300, "Delivery instructions must be less than 300 characters").optional(),
   tip: z.number().min(0, "Tip cannot be negative").max(10000, "Tip amount is too large"),
@@ -206,6 +212,29 @@ const CheckoutDialog = ({
       return;
     }
 
+    const trimmedUnit = houseNumber.trim();
+    const trimmedStreet = address.trim();
+    const fullAddress = trimmedUnit ? `${trimmedUnit} ${trimmedStreet}` : trimmedStreet;
+
+    if (!fullAddress) {
+      toast.error("Please enter your delivery address.");
+      setValidationErrors((prev) => ({
+        ...prev,
+        address: "Delivery address is required.",
+      }));
+      return;
+    }
+
+    // House/unit number must be alphanumeric (allows things like "12A", "Unit 3", "B-4").
+    if (trimmedUnit && !/^[A-Za-z0-9\s\-/#]{1,20}$/.test(trimmedUnit)) {
+      toast.error("House/unit number contains invalid characters.");
+      setValidationErrors((prev) => ({
+        ...prev,
+        address: "House/unit number can only contain letters, numbers, spaces, and - / #.",
+      }));
+      return;
+    }
+
     if (!addressVerified || !coords) {
       toast.error("Please pick your delivery address from the suggestions or confirm it on the map.");
       setValidationErrors((prev) => ({
@@ -219,10 +248,6 @@ const CheckoutDialog = ({
       toast.error(`Your address is outside the ${MAX_DELIVERY_KM} km delivery range for this restaurant.`);
       return;
     }
-
-    const fullAddress = houseNumber.trim()
-      ? `${houseNumber.trim()} ${address.trim()}`
-      : address.trim();
 
     const result = checkoutSchema.safeParse({
       name, contact, address: fullAddress, notes, deliveryInstructions, tip: actualTip,
