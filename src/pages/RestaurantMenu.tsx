@@ -1,9 +1,10 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Star, Clock, Plus, Minus, ShoppingCart, Search, ChevronRight } from "lucide-react";
+import { ArrowLeft, Star, Clock, Plus, Minus, ShoppingCart, Search, ChevronRight, MapPinOff, MapPin } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useCart } from "@/hooks/useCart";
 import { useAuth } from "@/hooks/useAuth";
+import { useGeoLocation, DELIVERY_RADIUS_KM, DELIVERY_RADIUS_LABEL_KM } from "@/hooks/useGeoLocation";
 import { menuItems as staticMenuItems, SizeOption, AddOnOption, CutOption } from "@/data/menu";
 import Cart from "@/components/Cart";
 import CheckoutDialog from "@/components/CheckoutDialog";
