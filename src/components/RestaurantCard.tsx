@@ -220,17 +220,35 @@ const RestaurantCard = ({ restaurant: r, variant = "standard", distanceKm, nearb
           <span className="rounded-full bg-secondary px-2.5 py-1 text-[11px] font-medium text-secondary-foreground">
             {r.cuisine}
           </span>
-          {nearby && (
-            <span className="rounded-full bg-emerald-500/15 px-2.5 py-1 text-[11px] font-bold text-emerald-600 dark:text-emerald-400">
-              ✓ Within delivery range
+          {distanceLabel && (
+            <span
+              className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-bold ${
+                tooFar
+                  ? "bg-destructive/15 text-destructive"
+                  : nearby
+                    ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400"
+                    : "bg-muted text-foreground"
+              }`}
+            >
+              <Navigation className="h-3 w-3" /> {distanceLabel}
             </span>
           )}
-          {typeof distanceKm === "number" && (
-            <span className="rounded-full bg-muted px-2 py-1 text-[11px] font-semibold text-muted-foreground">
-              {distanceKm.toFixed(1)} km away
+          {nearby && !tooFar && (
+            <span className="rounded-full bg-emerald-500/15 px-2.5 py-1 text-[11px] font-bold text-emerald-600 dark:text-emerald-400">
+              ✓ In range
             </span>
           )}
         </div>
+
+        {/* Out-of-range explanation */}
+        {tooFar && (
+          <div className="mt-3 flex items-start gap-2 rounded-xl border border-destructive/30 bg-destructive/5 p-2.5 text-[11px] text-destructive">
+            <Ban className="mt-0.5 h-3.5 w-3.5 flex-shrink-0" />
+            <span>
+              Outside delivery range. We only deliver within {DELIVERY_RADIUS_KM} km of your location.
+            </span>
+          </div>
+        )}
 
         {/* Featured CTA */}
         {isFeatured && (
@@ -239,10 +257,12 @@ const RestaurantCard = ({ restaurant: r, variant = "standard", distanceKm, nearb
               e.stopPropagation();
               handleClick();
             }}
-            disabled={!open}
-            className="mt-4 inline-flex w-full items-center justify-center gap-1.5 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-orange transition-transform hover:scale-[1.02] disabled:opacity-50"
+            disabled={!open || tooFar}
+            className="mt-4 inline-flex w-full items-center justify-center gap-1.5 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-orange transition-transform hover:scale-[1.02] disabled:opacity-50 disabled:hover:scale-100"
           >
-            {open ? (
+            {tooFar ? (
+              <>Out of delivery range</>
+            ) : open ? (
               <>
                 Order Now <ArrowRight className="h-4 w-4" />
               </>
