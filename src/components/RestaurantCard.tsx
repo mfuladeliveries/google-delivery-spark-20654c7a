@@ -56,7 +56,21 @@ const RestaurantCard = ({ restaurant: r, variant = "standard", distanceKm, nearb
   const open = isRestaurantOpen(r.opens_at, r.closes_at);
   const imgUrl = getImage(r);
 
+  const tooFar = typeof distanceKm === "number" && distanceKm > DELIVERY_RADIUS_KM;
+  const distanceLabel =
+    typeof distanceKm === "number"
+      ? distanceKm < 1
+        ? `${Math.round(distanceKm * 1000)} m away`
+        : `${distanceKm.toFixed(1)} km away`
+      : null;
+
   const handleClick = () => {
+    if (tooFar) {
+      toast.error("Outside delivery range", {
+        description: `This restaurant is ${distanceKm!.toFixed(1)} km away. We only deliver within ${DELIVERY_RADIUS_KM} km of your location.`,
+      });
+      return;
+    }
     if (!open) {
       toast(`${r.name} is currently closed.`, {
         description: r.opens_at ? `Opens at ${formatOpensAt(r.opens_at)}` : "Please check back later.",
