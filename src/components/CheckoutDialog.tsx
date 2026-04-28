@@ -457,13 +457,31 @@ const CheckoutDialog = ({
             <label className="mb-1.5 flex items-center gap-1.5 text-sm font-semibold text-foreground">
               <MapPin className="h-3.5 w-3.5 text-primary" /> Delivery Address
             </label>
+            <input
+              type="text"
+              inputMode="text"
+              value={houseNumber}
+              onChange={(e) => setHouseNumber(e.target.value.slice(0, 20))}
+              placeholder="House / unit number (optional)"
+              aria-label="House or unit number"
+              className="mb-2 w-full rounded-xl border border-border bg-card px-4 py-2.5 text-sm text-card-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+            />
             <AddressAutocomplete
               value={address}
               hasValidSelection={addressVerified}
               onSelect={handleAddressSelect}
               onTextChange={handleAddressTextChange}
-              placeholder="Start typing your delivery address…"
+              placeholder="Start typing your street and suburb…"
             />
+            {(houseNumber.trim() || address.trim()) && (
+              <p className="mt-1.5 break-words text-[11px] text-muted-foreground">
+                Full address:{" "}
+                <span className="font-semibold text-foreground">
+                  {houseNumber.trim() ? `${houseNumber.trim()} ` : ""}
+                  {address.trim() || "—"}
+                </span>
+              </p>
+            )}
             <button
               type="button"
               onClick={() => setShowMapPicker(true)}
