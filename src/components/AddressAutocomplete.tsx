@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Loader2, MapPin, Search, X } from "lucide-react";
+import { Loader2, MapPin, Search, Trash2, X } from "lucide-react";
 
 export interface ValidatedAddress {
   /** Full formatted address as returned by the geocoder. */
