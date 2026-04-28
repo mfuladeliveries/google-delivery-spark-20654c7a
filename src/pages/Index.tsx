@@ -57,13 +57,17 @@ const Index = () => {
   });
   const [manualOpen, setManualOpen] = useState(false);
   const [manualText, setManualText] = useState("");
+  const [houseNumber, setHouseNumber] = useState("");
   const [manualUpdatedAt, setManualUpdatedAt] = useState<number | null>(null);
   const [confirmingCancel, setConfirmingCancel] = useState(false);
   // Guards the auto-confirm-on-blur toast so it fires at most once per
   // panel-open session, even if focus bounces between children.
   const blurConfirmedRef = useRef(false);
   useEffect(() => {
-    if (manualOpen) blurConfirmedRef.current = false;
+    if (manualOpen) {
+      blurConfirmedRef.current = false;
+      setHouseNumber("");
+    }
   }, [manualOpen]);
 
   // Escape key closes the manual address panel — but if the user has typed
@@ -436,6 +440,15 @@ const Index = () => {
                     Current: <span className="font-medium text-foreground">{manualAddress.address}</span>
                   </p>
                 )}
+                <input
+                  type="text"
+                  inputMode="text"
+                  value={houseNumber}
+                  onChange={(e) => setHouseNumber(e.target.value.slice(0, 20))}
+                  placeholder="House / unit number (optional)"
+                  aria-label="House or unit number"
+                  className="mb-2 w-full rounded-xl border border-border bg-card px-3 py-2.5 text-sm text-card-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                />
                 <AddressAutocomplete
                   value={manualText}
                   hasValidSelection={false}
@@ -444,17 +457,22 @@ const Index = () => {
                     if (confirmingCancel) setConfirmingCancel(false);
                   }}
                   onSelect={(addr) => {
-                    setManualAddress(addr);
-                    persistManual(addr);
-                    setManualText(addr.address);
+                    const unit = houseNumber.trim();
+                    const finalAddress = unit
+                      ? `${unit} ${addr.address}`
+                      : addr.address;
+                    const merged = { ...addr, address: finalAddress };
+                    setManualAddress(merged);
+                    persistManual(merged);
+                    setManualText(finalAddress);
                     setManualOpen(false);
                     setManualUpdatedAt(Date.now());
                     setConfirmingCancel(false);
                   }}
-                  placeholder={manualAddress ? "Search a new address…" : "Start typing a suburb or street…"}
+                  placeholder={manualAddress ? "Search a new street or suburb…" : "Start typing a suburb or street…"}
                 />
                 <p className="mt-2 text-[11px] text-muted-foreground">
-                  Pick a suggestion to {manualAddress ? "replace your saved address" : "see restaurants"} within {DELIVERY_RADIUS_KM} km.
+                  Add your house number above, then pick a street suggestion to {manualAddress ? "replace your saved address" : "see restaurants"} within {DELIVERY_RADIUS_KM} km.
                 </p>
                 {confirmingCancel ? (
                   <div className="mt-3 rounded-xl border border-amber-500/30 bg-amber-500/10 p-2.5">
