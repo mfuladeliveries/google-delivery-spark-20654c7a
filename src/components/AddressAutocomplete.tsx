@@ -66,6 +66,38 @@ function writeCache(query: string, results: NominatimSuggestion[]) {
 }
 
 /**
+ * Search the cache for any previously verified suggestions matching the query.
+ * Used as a fallback when Nominatim is unavailable: matches by cache key
+ * substring OR by result display_name substring, deduped by place_id.
+ */
+function searchCacheFallback(query: string): NominatimSuggestion[] {
+  try {
+    const raw = localStorage.getItem(CACHE_KEY);
+    if (!raw) return [];
+    const data = JSON.parse(raw) as Record<string, CacheEntry>;
+    const needle = query.toLowerCase();
+    const seen = new Set<number>();
+    const out: NominatimSuggestion[] = [];
+    const entries = Object.entries(data).sort((a, b) => b[1].ts - a[1].ts);
+    for (const [key, entry] of entries) {
+      if (Date.now() - entry.ts > CACHE_TTL_MS) continue;
+      const keyMatch = key.includes(needle);
+      for (const s of entry.results) {
+        if (seen.has(s.place_id)) continue;
+        if (keyMatch || s.display_name.toLowerCase().includes(needle)) {
+          seen.add(s.place_id);
+          out.push(s);
+          if (out.length >= 5) return out;
+        }
+      }
+    }
+    return out;
+  } catch {
+    return [];
+  }
+}
+
+/**
  * Autocomplete delivery-address input backed by OpenStreetMap Nominatim.
  *
  * Critical contract: pure-text typing never produces coords — the parent must
