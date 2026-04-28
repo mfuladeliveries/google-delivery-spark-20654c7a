@@ -26,6 +26,8 @@ interface Restaurant {
   delivery_time: string;
   min_order: number;
   cuisine: string;
+  lat: number | null;
+  lng: number | null;
 }
 
 interface DbMenuItem {
