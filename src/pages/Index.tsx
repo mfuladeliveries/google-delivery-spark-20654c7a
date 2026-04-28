@@ -81,15 +81,24 @@ const Index = () => {
     fetchRestaurants();
   }, []);
 
-  // Annotate every restaurant with distance + nearby flag (live GPS).
+  // Effective coords: manual address override wins, else GPS/profile fallback.
+  const effectiveCoords = manualAddress
+    ? { lat: manualAddress.lat, lng: manualAddress.lng }
+    : geo.hasCoords ? { lat: geo.lat as number, lng: geo.lng as number } : null;
+  const hasEffectiveCoords = effectiveCoords != null;
+
+  // Annotate every restaurant with distance + nearby flag.
   // Restaurants without coords are treated as out of range.
   const annotated = useMemo(() => {
     return restaurants.map((r) => {
-      const d = geo.distanceTo(r.lat ?? null, r.lng ?? null);
+      const d =
+        effectiveCoords && r.lat != null && r.lng != null
+          ? distanceKm(effectiveCoords.lat, effectiveCoords.lng, r.lat, r.lng)
+          : null;
       const nearby = d != null && d <= DELIVERY_RADIUS_KM;
       return { ...r, _distance: d, _nearby: nearby };
     });
-  }, [restaurants, geo.lat, geo.lng]);
+  }, [restaurants, effectiveCoords?.lat, effectiveCoords?.lng]);
 
   const filtered = annotated.filter((r) => {
     const matchesCuisine = selectedCuisine === "All" || r.cuisine === selectedCuisine;
