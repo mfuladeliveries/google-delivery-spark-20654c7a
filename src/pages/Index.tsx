@@ -275,6 +275,87 @@ const Index = () => {
           </div>
         )}
 
+        {/* Manual area picker — type an address to browse restaurants in that area */}
+        <div className="mb-4">
+          {manualAddress ? (
+            <div className="flex flex-wrap items-start gap-2 rounded-2xl border border-primary/30 bg-primary/5 p-3">
+              <MapPin className="mt-0.5 h-4 w-4 flex-shrink-0 text-primary" />
+              <div className="min-w-0 flex-1">
+                <p className="text-xs font-bold text-foreground">Browsing area</p>
+                <p className="truncate text-xs text-muted-foreground" title={manualAddress.address}>
+                  {manualAddress.address}
+                </p>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setManualText(manualAddress.address);
+                    setManualOpen(true);
+                  }}
+                  className="inline-flex items-center gap-1 rounded-full border border-border bg-card px-2.5 py-1 text-[11px] font-semibold text-foreground hover:bg-secondary"
+                >
+                  <Pencil className="h-3 w-3" /> Change
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setManualAddress(null);
+                    persistManual(null);
+                    setManualText("");
+                    setManualOpen(false);
+                  }}
+                  className="inline-flex items-center gap-1 rounded-full border border-destructive/30 bg-destructive/5 px-2.5 py-1 text-[11px] font-semibold text-destructive hover:bg-destructive/10"
+                >
+                  <X className="h-3 w-3" /> Use my location
+                </button>
+              </div>
+            </div>
+          ) : !manualOpen ? (
+            <button
+              type="button"
+              onClick={() => setManualOpen(true)}
+              className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1.5 text-xs font-semibold text-foreground hover:bg-secondary"
+            >
+              <Pencil className="h-3 w-3" /> Enter an address manually
+            </button>
+          ) : null}
+
+          {manualOpen && (
+            <div className="mt-2 rounded-2xl border border-border bg-card p-3 shadow-card">
+              <div className="mb-2 flex items-center justify-between">
+                <p className="text-xs font-bold text-foreground">Type your delivery area</p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setManualOpen(false);
+                    if (!manualAddress) setManualText("");
+                  }}
+                  className="rounded-full p-1 text-muted-foreground hover:bg-secondary"
+                  aria-label="Close"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              </div>
+              <AddressAutocomplete
+                value={manualText}
+                hasValidSelection={false}
+                onTextChange={(t) => setManualText(t)}
+                onSelect={(addr) => {
+                  setManualAddress(addr);
+                  persistManual(addr);
+                  setManualText(addr.address);
+                  setManualOpen(false);
+                }}
+                placeholder="Start typing a suburb or street…"
+              />
+              <p className="mt-2 text-[11px] text-muted-foreground">
+                Pick a suggestion to see restaurants within {DELIVERY_RADIUS_KM} km of that area.
+              </p>
+            </div>
+          )}
+        </div>
+
         {/* Cuisine Categories */}
         <section className="mb-6">
           <h3 className="mb-3 text-base font-bold text-foreground">Cuisines</h3>
