@@ -267,20 +267,30 @@ export function useGeoLocation(): GeoState & {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id]);
 
+  const effectiveLat = manualOverride ? manualOverride.lat : state.lat;
+  const effectiveLng = manualOverride ? manualOverride.lng : state.lng;
+
   const distanceTo = useCallback(
     (lat: number | null | undefined, lng: number | null | undefined) => {
-      if (state.lat == null || state.lng == null) return null;
+      if (effectiveLat == null || effectiveLng == null) return null;
       if (lat == null || lng == null) return null;
-      return distanceKm(state.lat, state.lng, lat, lng);
+      return distanceKm(effectiveLat, effectiveLng, lat, lng);
     },
-    [state.lat, state.lng],
+    [effectiveLat, effectiveLng],
   );
 
   return {
     ...state,
+    lat: effectiveLat,
+    lng: effectiveLng,
+    // When a manual override is active, treat location as ready & granted so
+    // distance-gated UIs don't block ordering.
+    ready: manualOverride ? true : state.ready,
+    status: manualOverride ? "granted" : state.status,
+    source: manualOverride ? "gps" : state.source,
     refresh: requestGps,
     trustGps,
     distanceTo,
-    hasCoords: state.lat != null && state.lng != null,
+    hasCoords: effectiveLat != null && effectiveLng != null,
   };
 }
