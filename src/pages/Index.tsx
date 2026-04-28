@@ -39,6 +39,7 @@ const Index = () => {
   const cart = useCart();
   const { user } = useAuth();
   const navigate = useNavigate();
+  const geo = useGeoLocation();
 
   // Auth/role gating + redirect to the right dashboard is handled by
   // <RoleGuard allow={["customer"]}> in App.tsx. This page only renders
@@ -57,15 +58,38 @@ const Index = () => {
     fetchRestaurants();
   }, []);
 
-  const filtered = restaurants.filter((r) => {
+  // Annotate every restaurant with distance + nearby flag (live GPS).
+  // Restaurants without coords are treated as out of range.
+  const annotated = useMemo(() => {
+    return restaurants.map((r) => {
+      const d = geo.distanceTo(r.lat ?? null, r.lng ?? null);
+      const nearby = d != null && d <= DELIVERY_RADIUS_KM;
+      return { ...r, _distance: d, _nearby: nearby };
+    });
+  }, [restaurants, geo.lat, geo.lng]);
+
+  const filtered = annotated.filter((r) => {
     const matchesCuisine = selectedCuisine === "All" || r.cuisine === selectedCuisine;
     const matchesSearch = !search.trim() || r.name.toLowerCase().includes(search.toLowerCase()) || r.cuisine.toLowerCase().includes(search.toLowerCase());
     return matchesCuisine && matchesSearch;
   });
 
-  // Featured = highest-rated restaurant; Top-rated = others with 4.5+
-  const featuredOne = restaurants[0];
-  const topRated = restaurants.filter((r) => r.rating >= 4.5 && r.id !== featuredOne?.id).slice(0, 6);
+  // Sort: nearby first, then by distance asc, then by rating desc as tiebreaker.
+  const sorted = useMemo(() => {
+    const arr = [...filtered];
+    arr.sort((a, b) => {
+      if (a._nearby !== b._nearby) return a._nearby ? -1 : 1;
+      const da = a._distance ?? Number.POSITIVE_INFINITY;
+      const db = b._distance ?? Number.POSITIVE_INFINITY;
+      if (da !== db) return da - db;
+      return (b.rating ?? 0) - (a.rating ?? 0);
+    });
+    return arr;
+  }, [filtered]);
+
+  // Featured = closest open nearby restaurant (or highest-rated if no GPS).
+  const featuredOne = sorted[0];
+  const topRated = sorted.filter((r) => r.rating >= 4.5 && r.id !== featuredOne?.id).slice(0, 6);
 
   const [foodNote, setFoodNote] = useState<string | undefined>(undefined);
   const handleCheckout = (note?: string) => {
