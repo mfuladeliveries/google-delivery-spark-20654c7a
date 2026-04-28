@@ -57,6 +57,7 @@ const Index = () => {
   const [manualOpen, setManualOpen] = useState(false);
   const [manualText, setManualText] = useState("");
   const [manualUpdatedAt, setManualUpdatedAt] = useState<number | null>(null);
+  const [confirmingCancel, setConfirmingCancel] = useState(false);
 
   const persistManual = (val: ValidatedAddress | null) => {
     try {
@@ -322,59 +323,94 @@ const Index = () => {
             </button>
           ) : null}
 
-          {manualOpen && (
-            <div className="mt-2 rounded-2xl border border-border bg-card p-3 shadow-card">
-              <div className="mb-2 flex items-center justify-between">
-                <p className="text-xs font-bold text-foreground">
-                  {manualAddress ? "Update your saved address" : "Type your delivery area"}
-                </p>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setManualOpen(false);
-                    setManualText(manualAddress ? manualAddress.address : "");
+          {manualOpen && (() => {
+            const baseline = manualAddress ? manualAddress.address : "";
+            const isDirty = manualText.trim() !== baseline.trim() && manualText.trim().length > 0;
+            const closeWithoutSaving = () => {
+              setManualOpen(false);
+              setManualText(baseline);
+              setConfirmingCancel(false);
+            };
+            const requestCancel = () => {
+              if (isDirty) setConfirmingCancel(true);
+              else closeWithoutSaving();
+            };
+            return (
+              <div className="mt-2 rounded-2xl border border-border bg-card p-3 shadow-card">
+                <div className="mb-2 flex items-center justify-between">
+                  <p className="text-xs font-bold text-foreground">
+                    {manualAddress ? "Update your saved address" : "Type your delivery area"}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={requestCancel}
+                    className="rounded-full p-1 text-muted-foreground hover:bg-secondary"
+                    aria-label="Close"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+                {manualAddress && (
+                  <p className="mb-2 truncate text-[11px] text-muted-foreground" title={manualAddress.address}>
+                    Current: <span className="font-medium text-foreground">{manualAddress.address}</span>
+                  </p>
+                )}
+                <AddressAutocomplete
+                  value={manualText}
+                  hasValidSelection={false}
+                  onTextChange={(t) => {
+                    setManualText(t);
+                    if (confirmingCancel) setConfirmingCancel(false);
                   }}
-                  className="rounded-full p-1 text-muted-foreground hover:bg-secondary"
-                  aria-label="Close"
-                >
-                  <X className="h-3.5 w-3.5" />
-                </button>
-              </div>
-              {manualAddress && (
-                <p className="mb-2 truncate text-[11px] text-muted-foreground" title={manualAddress.address}>
-                  Current: <span className="font-medium text-foreground">{manualAddress.address}</span>
-                </p>
-              )}
-              <AddressAutocomplete
-                value={manualText}
-                hasValidSelection={false}
-                onTextChange={(t) => setManualText(t)}
-                onSelect={(addr) => {
-                  setManualAddress(addr);
-                  persistManual(addr);
-                  setManualText(addr.address);
-                  setManualOpen(false);
-                  setManualUpdatedAt(Date.now());
-                }}
-                placeholder={manualAddress ? "Search a new address…" : "Start typing a suburb or street…"}
-              />
-              <p className="mt-2 text-[11px] text-muted-foreground">
-                Pick a suggestion to {manualAddress ? "replace your saved address" : "see restaurants"} within {DELIVERY_RADIUS_KM} km.
-              </p>
-              <div className="mt-3 flex justify-end">
-                <button
-                  type="button"
-                  onClick={() => {
+                  onSelect={(addr) => {
+                    setManualAddress(addr);
+                    persistManual(addr);
+                    setManualText(addr.address);
                     setManualOpen(false);
-                    setManualText(manualAddress ? manualAddress.address : "");
+                    setManualUpdatedAt(Date.now());
+                    setConfirmingCancel(false);
                   }}
-                  className="inline-flex items-center gap-1 rounded-full border border-border bg-card px-3 py-1.5 text-xs font-semibold text-foreground hover:bg-secondary"
-                >
-                  Cancel
-                </button>
+                  placeholder={manualAddress ? "Search a new address…" : "Start typing a suburb or street…"}
+                />
+                <p className="mt-2 text-[11px] text-muted-foreground">
+                  Pick a suggestion to {manualAddress ? "replace your saved address" : "see restaurants"} within {DELIVERY_RADIUS_KM} km.
+                </p>
+                {confirmingCancel ? (
+                  <div className="mt-3 rounded-xl border border-amber-500/30 bg-amber-500/10 p-2.5">
+                    <p className="text-[11px] font-semibold text-amber-700 dark:text-amber-300">
+                      Discard your changes? You haven't picked a suggestion yet, so nothing will be saved.
+                    </p>
+                    <div className="mt-2 flex justify-end gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => setConfirmingCancel(false)}
+                        className="inline-flex items-center gap-1 rounded-full border border-border bg-card px-3 py-1.5 text-[11px] font-semibold text-foreground hover:bg-secondary"
+                      >
+                        Keep editing
+                      </button>
+                      <button
+                        type="button"
+                        onClick={closeWithoutSaving}
+                        className="inline-flex items-center gap-1 rounded-full bg-destructive px-3 py-1.5 text-[11px] font-semibold text-destructive-foreground hover:bg-destructive/90"
+                      >
+                        Discard changes
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="mt-3 flex justify-end">
+                    <button
+                      type="button"
+                      onClick={requestCancel}
+                      className="inline-flex items-center gap-1 rounded-full border border-border bg-card px-3 py-1.5 text-xs font-semibold text-foreground hover:bg-secondary"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                )}
               </div>
-            </div>
-          )}
+            );
+          })()}
 
           {manualUpdatedAt && Date.now() - manualUpdatedAt < 3500 && (
             <div className="mt-2 inline-flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-1 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
