@@ -376,8 +376,27 @@ const Index = () => {
               if (isDirty) setConfirmingCancel(true);
               else closeWithoutSaving();
             };
+            const handlePanelBlur: React.FocusEventHandler<HTMLDivElement> = (e) => {
+              // Only fire when focus leaves the panel entirely (not when it
+              // just moves between children like input → suggestion button).
+              const next = e.relatedTarget as Node | null;
+              if (next && e.currentTarget.contains(next)) return;
+              const trimmed = manualText.trim();
+              if (
+                manualAddress &&
+                trimmed === baseline.trim() &&
+                trimmed.length > 0 &&
+                !confirmingCancel
+              ) {
+                setManualOpen(false);
+                setManualUpdatedAt(Date.now());
+              }
+            };
             return (
-              <div className="mt-2 rounded-2xl border border-border bg-card p-3 shadow-card">
+              <div
+                className="mt-2 rounded-2xl border border-border bg-card p-3 shadow-card"
+                onBlur={handlePanelBlur}
+              >
                 <div className="mb-2 flex items-center justify-between">
                   <p className="text-xs font-bold text-foreground">
                     {manualAddress ? "Update your saved address" : "Type your delivery area"}
