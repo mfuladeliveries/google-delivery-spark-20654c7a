@@ -44,9 +44,13 @@ const getImage = (r: RestaurantCardData) =>
 interface Props {
   restaurant: RestaurantCardData;
   variant?: "featured" | "standard" | "horizontal";
+  /** Distance from customer in km. If provided, shown on the card. */
+  distanceKm?: number | null;
+  /** True when within delivery radius — shows a "Within delivery range" badge. */
+  nearby?: boolean;
 }
 
-const RestaurantCard = ({ restaurant: r, variant = "standard" }: Props) => {
+const RestaurantCard = ({ restaurant: r, variant = "standard", distanceKm, nearby }: Props) => {
   const navigate = useNavigate();
   const open = isRestaurantOpen(r.opens_at, r.closes_at);
   const imgUrl = getImage(r);
