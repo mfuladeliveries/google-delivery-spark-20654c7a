@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { X, Plus, Minus, Package, Trash2, StickyNote, AlertTriangle, Truck } from "lucide-react";
+import { X, Plus, Minus, Package, Trash2, StickyNote, AlertTriangle, Truck, MapPinOff } from "lucide-react";
 import { CartItem } from "@/hooks/useCart";
 import { storeInfo } from "@/data/menu";
 import { useCustomerLocation } from "@/hooks/useCustomerLocation";
+import { useGeoLocation, DELIVERY_RADIUS_LABEL_KM } from "@/hooks/useGeoLocation";
 import { useAuth } from "@/hooks/useAuth";
 import { RestaurantName } from "@/components/RestaurantName";
 
