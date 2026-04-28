@@ -230,7 +230,7 @@ const CheckoutDialog = ({
       toast.error("House/unit number contains invalid characters.");
       setValidationErrors((prev) => ({
         ...prev,
-        address: "House/unit number can only contain letters, numbers, spaces, and - / #.",
+        address: 'House/unit number can only contain letters, numbers, spaces, and - / # (e.g. "12A", "Unit 3", "B-4").',
       }));
       return;
     }
