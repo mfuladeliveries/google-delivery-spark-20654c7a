@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Loader2, MapPin, Search, X } from "lucide-react";
+import { Loader2, MapPin, Search, Trash2, X } from "lucide-react";
 
 export interface ValidatedAddress {
   /** Full formatted address as returned by the geocoder. */
@@ -97,6 +97,28 @@ function searchCacheFallback(query: string): NominatimSuggestion[] {
   }
 }
 
+/** Count non-expired cache entries. */
+function countCache(): number {
+  try {
+    const raw = localStorage.getItem(CACHE_KEY);
+    if (!raw) return 0;
+    const data = JSON.parse(raw) as Record<string, CacheEntry>;
+    const now = Date.now();
+    return Object.values(data).filter((e) => now - e.ts <= CACHE_TTL_MS).length;
+  } catch {
+    return 0;
+  }
+}
+
+/** Remove all cached suggestions. */
+function clearAllCache() {
+  try {
+    localStorage.removeItem(CACHE_KEY);
+  } catch {
+    /* ignore */
+  }
+}
+
 /**
  * Autocomplete delivery-address input backed by OpenStreetMap Nominatim.
  *
@@ -120,6 +142,7 @@ export const AddressAutocomplete = ({
   const [searched, setSearched] = useState(false);
   const [fallback, setFallback] = useState(false);
   const [retryToken, setRetryToken] = useState(0);
+  const [cacheCount, setCacheCount] = useState<number>(() => countCache());
   const abortRef = useRef<AbortController | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
 
@@ -172,6 +195,7 @@ export const AddressAutocomplete = ({
           setSearched(true);
           setFallback(false);
           writeCache(q, cleaned);
+          setCacheCount(countCache());
         })
         .catch((err: unknown) => {
           if ((err as Error).name === "AbortError") return;
@@ -225,6 +249,18 @@ export const AddressAutocomplete = ({
     onTextChange("");
     setSuggestions([]);
     setOpen(false);
+  };
+
+  const handleClearCache = () => {
+    clearAllCache();
+    setCacheCount(0);
+    setFallback(false);
+    // If we were showing fallback results, drop them and re-run live search.
+    if (fallback) {
+      setSuggestions([]);
+      setSearched(false);
+      setRetryToken((n) => n + 1);
+    }
   };
 
   return (
@@ -291,6 +327,21 @@ export const AddressAutocomplete = ({
                 <span className="break-words">{s.display_name}</span>
               </button>
             ))}
+          {!loading && cacheCount > 0 && (
+            <div className="mt-1 flex items-center justify-between border-t border-border/60 px-3 py-1.5">
+              <span className="text-[11px] text-muted-foreground">
+                {cacheCount} saved {cacheCount === 1 ? "search" : "searches"}
+              </span>
+              <button
+                type="button"
+                onClick={handleClearCache}
+                className="flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[11px] text-muted-foreground hover:bg-secondary hover:text-foreground"
+              >
+                <Trash2 className="h-3 w-3" />
+                Clear saved searches
+              </button>
+            </div>
+          )}
         </div>
       )}
 
