@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Search, ChevronRight, Flame, Utensils, Pizza, Fish, ShoppingBasket, Trophy, UtensilsCrossed, MapPin, MapPinOff, RefreshCw, Pencil, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -59,6 +59,12 @@ const Index = () => {
   const [manualText, setManualText] = useState("");
   const [manualUpdatedAt, setManualUpdatedAt] = useState<number | null>(null);
   const [confirmingCancel, setConfirmingCancel] = useState(false);
+  // Guards the auto-confirm-on-blur toast so it fires at most once per
+  // panel-open session, even if focus bounces between children.
+  const blurConfirmedRef = useRef(false);
+  useEffect(() => {
+    if (manualOpen) blurConfirmedRef.current = false;
+  }, [manualOpen]);
 
   // Escape key closes the manual address panel — but if the user has typed
   // something they haven't picked yet, surface the same discard-changes
@@ -382,6 +388,7 @@ const Index = () => {
               // just moves between children like input → suggestion button).
               const next = e.relatedTarget as Node | null;
               if (next && e.currentTarget.contains(next)) return;
+              if (blurConfirmedRef.current) return;
               const trimmed = manualText.trim();
               if (
                 manualAddress &&
@@ -389,6 +396,7 @@ const Index = () => {
                 trimmed.length > 0 &&
                 !confirmingCancel
               ) {
+                blurConfirmedRef.current = true;
                 setManualOpen(false);
                 setManualUpdatedAt(Date.now());
                 toast.success("Address confirmed", {
