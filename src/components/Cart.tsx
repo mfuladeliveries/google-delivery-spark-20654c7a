@@ -220,6 +220,18 @@ const Cart = ({
                 </div>
               </div>
             )}
+            {user && geoBlocked && (
+              <div className="mt-3 flex items-start gap-2 rounded-xl border-2 border-destructive/40 bg-destructive/5 p-3 text-xs text-foreground">
+                <MapPinOff className="mt-0.5 h-4 w-4 flex-shrink-0 text-destructive" />
+                <div>
+                  <p className="font-bold">Location is off</p>
+                  <p className="mt-0.5 text-muted-foreground">
+                    Please enable location services to place an order. We use it to confirm you're within {DELIVERY_RADIUS_LABEL_KM} km of the restaurant.
+                  </p>
+                  <button onClick={() => geo.refresh()} className="mt-1 font-bold text-primary hover:underline">Enable location →</button>
+                </div>
+              </div>
+            )}
 
             {/* Special note for food */}
             <div className="mt-3">
