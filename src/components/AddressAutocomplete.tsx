@@ -327,6 +327,21 @@ export const AddressAutocomplete = ({
                 <span className="break-words">{s.display_name}</span>
               </button>
             ))}
+          {!loading && cacheCount > 0 && (
+            <div className="mt-1 flex items-center justify-between border-t border-border/60 px-3 py-1.5">
+              <span className="text-[11px] text-muted-foreground">
+                {cacheCount} saved {cacheCount === 1 ? "search" : "searches"}
+              </span>
+              <button
+                type="button"
+                onClick={handleClearCache}
+                className="flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[11px] text-muted-foreground hover:bg-secondary hover:text-foreground"
+              >
+                <Trash2 className="h-3 w-3" />
+                Clear saved searches
+              </button>
+            </div>
+          )}
         </div>
       )}
 
