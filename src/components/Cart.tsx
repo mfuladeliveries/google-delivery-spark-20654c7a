@@ -1,12 +1,13 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { X, Plus, Minus, Package, Trash2, StickyNote, AlertTriangle, Truck, MapPinOff } from "lucide-react";
 import { CartItem } from "@/hooks/useCart";
 import { storeInfo } from "@/data/menu";
 import { useCustomerLocation } from "@/hooks/useCustomerLocation";
-import { useGeoLocation, DELIVERY_RADIUS_LABEL_KM } from "@/hooks/useGeoLocation";
+import { useGeoLocation, DELIVERY_RADIUS_KM, DELIVERY_RADIUS_LABEL_KM } from "@/hooks/useGeoLocation";
 import { useAuth } from "@/hooks/useAuth";
 import { RestaurantName } from "@/components/RestaurantName";
+import { supabase } from "@/integrations/supabase/client";
 
 interface CartProps {
   open: boolean;
@@ -37,17 +38,46 @@ const Cart = ({
 }: CartProps) => {
   const [foodNote, setFoodNote] = useState("");
   const { user } = useAuth();
-  const { needsAddress, needsCoords, outOfRange } = useCustomerLocation();
+  const { needsAddress, needsCoords } = useCustomerLocation();
   const geo = useGeoLocation();
   const geoBlocked = geo.ready && !geo.hasCoords;
-  // Personal details + GPS pin are collected in the checkout dialog itself,
-  // so we only block checkout if the saved address is confirmed out of range
-  // OR live GPS is unavailable.
-  const canCheckout = !!user && !outOfRange && !geoBlocked;
-  const needsDetails = !!user && (needsAddress || needsCoords);
+
   // Cart items carry the restaurant name in `item.category` (set in RestaurantMenu)
   const restaurantName = items[0]?.item.category || "";
+
+  // Per-restaurant 8 km gate: look up the cart restaurant's coords and compare
+  // to the customer's live GPS. This matches the rule used on home / menu /
+  // checkout / server RPC, replacing the legacy global service-area check.
+  const [restaurantCoords, setRestaurantCoords] = useState<{ lat: number; lng: number } | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    if (!restaurantName) { setRestaurantCoords(null); return; }
+    (async () => {
+      const { data } = await supabase
+        .from("restaurants")
+        .select("lat,lng")
+        .eq("name", restaurantName)
+        .maybeSingle();
+      if (cancelled) return;
+      if (typeof data?.lat === "number" && typeof data?.lng === "number") {
+        setRestaurantCoords({ lat: data.lat, lng: data.lng });
+      } else {
+        setRestaurantCoords(null);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [restaurantName]);
+
+  const distanceToRestaurant = restaurantCoords
+    ? geo.distanceTo(restaurantCoords.lat, restaurantCoords.lng)
+    : null;
+  const tooFarFromRestaurant =
+    distanceToRestaurant != null && distanceToRestaurant > DELIVERY_RADIUS_KM;
+
+  const canCheckout = !!user && !tooFarFromRestaurant && !geoBlocked;
+  const needsDetails = !!user && (needsAddress || needsCoords);
   if (!open) return null;
+
 
   return (
     <>
@@ -211,12 +241,14 @@ const Cart = ({
                 </p>
               </div>
             )}
-            {user && outOfRange && (
+            {user && tooFarFromRestaurant && (
               <div className="mt-3 flex items-start gap-2 rounded-xl border-2 border-destructive/40 bg-destructive/5 p-3 text-xs text-foreground">
                 <AlertTriangle className="mt-0.5 h-4 w-4 flex-shrink-0 text-destructive" />
                 <div>
-                  <p className="font-bold">Delivery not available in your area</p>
-                  <Link to="/profile" className="mt-1 inline-block font-bold text-primary hover:underline">Update address →</Link>
+                  <p className="font-bold">Too far from this restaurant</p>
+                  <p className="mt-0.5 text-muted-foreground">
+                    You're {distanceToRestaurant!.toFixed(1)} km from {restaurantName}. We only deliver within {DELIVERY_RADIUS_LABEL_KM} km of the restaurant.
+                  </p>
                 </div>
               </div>
             )}
