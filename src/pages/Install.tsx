@@ -404,6 +404,113 @@ const Install = () => {
           </>
         )}
 
+        {/* Shareable install links — Driver & Customer */}
+        <section className="mt-8 rounded-2xl border border-border bg-card p-4 shadow-card">
+          <h3 className="font-display text-base font-bold text-foreground">
+            Share install links
+          </h3>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Send these links to drivers or customers so they can install the right app.
+          </p>
+
+          <div className="mt-4 space-y-3">
+            {[
+              {
+                label: "Driver App",
+                tagline: "For drivers — accept & deliver orders",
+                icon: Truck,
+                path: "/install/driver",
+              },
+              {
+                label: "Customer App",
+                tagline: "For customers — order food & track delivery",
+                icon: ShoppingBag,
+                path: "/install/customer",
+              },
+            ].map((item) => {
+              const url = `${window.location.origin}${item.path}`;
+              const Icon = item.icon;
+              return (
+                <div
+                  key={item.path}
+                  className="rounded-xl border border-border bg-background p-3"
+                >
+                  <div className="flex items-center gap-2.5">
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10">
+                      <Icon className="h-4 w-4 text-primary" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-bold text-foreground">{item.label}</p>
+                      <p className="text-[11px] text-muted-foreground truncate">{item.tagline}</p>
+                    </div>
+                  </div>
+
+                  <div className="mt-2.5 flex items-center gap-2 rounded-lg border border-border bg-card px-2.5 py-2">
+                    <code className="flex-1 truncate text-[11px] text-muted-foreground">{url}</code>
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        try {
+                          await navigator.clipboard.writeText(url);
+                          toast.success(`${item.label} link copied`);
+                        } catch {
+                          toast.error("Could not copy link");
+                        }
+                      }}
+                      aria-label={`Copy ${item.label} link`}
+                      className="shrink-0 rounded-md p-1.5 text-primary hover:bg-primary/10"
+                    >
+                      <Copy className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+
+                  <div className="mt-2 grid grid-cols-2 gap-2">
+                    <a
+                      href={`https://wa.me/?text=${encodeURIComponent(
+                        `Install the Mfula ${item.label}: ${url}`
+                      )}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center justify-center gap-1.5 rounded-lg bg-primary py-2 text-xs font-bold text-primary-foreground transition-transform hover:scale-[1.01] active:scale-[0.98]"
+                    >
+                      <Send className="h-3.5 w-3.5" />
+                      Share on WhatsApp
+                    </a>
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        const shareData = {
+                          title: `Mfula ${item.label}`,
+                          text: `Install the Mfula ${item.label}`,
+                          url,
+                        };
+                        if (navigator.share) {
+                          try {
+                            await navigator.share(shareData);
+                          } catch {
+                            /* user cancelled */
+                          }
+                        } else {
+                          try {
+                            await navigator.clipboard.writeText(url);
+                            toast.success("Link copied — paste anywhere to share");
+                          } catch {
+                            toast.error("Sharing not supported");
+                          }
+                        }
+                      }}
+                      className="flex items-center justify-center gap-1.5 rounded-lg border border-border bg-background py-2 text-xs font-bold text-foreground hover:bg-secondary"
+                    >
+                      <Share className="h-3.5 w-3.5" />
+                      Share…
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+
         <p className="mt-6 text-center text-[10px] text-muted-foreground px-4">
           Each app installs as a separate icon with its own scope. Customer opens on the food menu, Driver opens on the dashboard, Restaurant opens on the orders board, and Admin opens on the admin console.
         </p>
