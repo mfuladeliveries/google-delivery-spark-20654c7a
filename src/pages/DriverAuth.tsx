@@ -5,6 +5,32 @@ import { useAuth } from "@/hooks/useAuth";
 import { Truck, Mail, Lock, ArrowLeft, Eye, EyeOff } from "lucide-react";
 import { shouldNudgeInstall, markInstallNudged } from "@/lib/installRedirect";
 import RequestDriverAccess from "@/components/RequestDriverAccess";
+import DriverInstallBanner from "@/components/DriverInstallBanner";
+
+const FIRST_VISIT_REDIRECT_KEY = "mfula_driver_install_first_visit";
+
+const isStandaloneDisplay = () => {
+  if (typeof window === "undefined") return false;
+  return (
+    window.matchMedia?.("(display-mode: standalone)").matches ||
+    (window.navigator as { standalone?: boolean }).standalone === true
+  );
+};
+
+const isPreviewOrIframe = () => {
+  if (typeof window === "undefined") return true;
+  try {
+    if (window.self !== window.top) return true;
+  } catch {
+    return true;
+  }
+  const host = window.location.hostname;
+  return host.includes("id-preview--") || host.includes("lovableproject.com");
+};
+
+const isMobileUA = () =>
+  typeof navigator !== "undefined" &&
+  /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
 
 type View = "login" | "signup" | "otp" | "forgot";
 
