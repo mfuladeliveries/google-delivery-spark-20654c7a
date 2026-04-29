@@ -277,6 +277,133 @@ const Install = () => {
           </div>
         </div>
 
+        {/* Driver-specific: full step-by-step + FAQ */}
+        {focusedApp?.variant === "driver" && (
+          <>
+            <section className="mt-8 rounded-2xl border border-border bg-card p-4 shadow-card">
+              <h3 className="font-display text-base font-bold text-foreground">
+                Step-by-step: install the Driver App
+              </h3>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Follow the steps for your phone. It takes less than a minute.
+              </p>
+
+              {/* Android steps */}
+              <div className="mt-4">
+                <div className="mb-2 inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-primary">
+                  📱 Android (Chrome)
+                </div>
+                <ol className="space-y-2.5">
+                  {[
+                    "Open this page in Chrome (not Facebook/WhatsApp browser).",
+                    "Tap the orange Install Driver button above.",
+                    "If a popup appears, tap Install or Add to Home Screen.",
+                    "If no popup appears, tap the ⋮ menu (top-right) → Install app.",
+                    "Find the Mfula Driver icon on your home screen and open it.",
+                    "Sign in with your driver email and password to start delivering.",
+                  ].map((step, i) => (
+                    <li key={i} className="flex items-start gap-3">
+                      <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/15 text-[11px] font-bold text-primary">
+                        {i + 1}
+                      </div>
+                      <p className="text-xs text-muted-foreground leading-relaxed">{step}</p>
+                    </li>
+                  ))}
+                </ol>
+              </div>
+
+              {/* iOS steps */}
+              <div className="mt-5 border-t border-border pt-4">
+                <div className="mb-2 inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-primary">
+                  🍎 iPhone (Safari)
+                </div>
+                <ol className="space-y-2.5">
+                  {[
+                    "Open this page in Safari (other browsers don't support install on iOS).",
+                    "Tap the Share icon at the bottom of Safari.",
+                    "Scroll down and tap Add to Home Screen.",
+                    "Tap Add in the top-right corner.",
+                    "Find the Mfula Driver icon on your home screen and open it.",
+                    "Sign in with your driver email and password to start delivering.",
+                  ].map((step, i) => (
+                    <li key={i} className="flex items-start gap-3">
+                      <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/15 text-[11px] font-bold text-primary">
+                        {i + 1}
+                      </div>
+                      <p className="text-xs text-muted-foreground leading-relaxed">{step}</p>
+                    </li>
+                  ))}
+                </ol>
+              </div>
+            </section>
+
+            {/* FAQ */}
+            <section className="mt-6">
+              <h3 className="font-display text-base font-bold text-foreground mb-3">
+                Frequently asked questions
+              </h3>
+              <div className="space-y-2">
+                {[
+                  {
+                    q: "Is the Driver App free?",
+                    a: "Yes — it's 100% free to install. You only need an internet connection (mobile data or Wi-Fi) to receive and deliver orders.",
+                  },
+                  {
+                    q: "Do I need an account before installing?",
+                    a: "No. You can install the app first. After opening it, sign in with your driver email and password. New drivers must be approved by an admin before going online.",
+                  },
+                  {
+                    q: "Why don't I see an Install button?",
+                    a: "On iPhone you must use Safari and add it via Share → Add to Home Screen. On Android, use Chrome — if you opened the link from Facebook or WhatsApp, tap ⋮ → Open in Chrome first.",
+                  },
+                  {
+                    q: "Will the app use a lot of data?",
+                    a: "No. The app is lightweight and only sends your GPS location while you're online with an active delivery (about every 10 seconds). Maps load on demand.",
+                  },
+                  {
+                    q: "Will I receive notifications for new orders?",
+                    a: "Yes. After installing, allow notifications when prompted. You'll get an alert and sound for every new order assigned to you.",
+                  },
+                  {
+                    q: "How do I update the app?",
+                    a: "Updates happen automatically. Just close and reopen the app — the latest version loads on the next cold start.",
+                  },
+                  {
+                    q: "How do I uninstall?",
+                    a: "Long-press the Mfula Driver icon on your home screen and tap Remove or Uninstall, just like any other app.",
+                  },
+                  {
+                    q: "I'm stuck — who do I contact?",
+                    a: "Contact the Admin on WhatsApp at +27 68 676 8409 for help with installation, login, or driver approval.",
+                  },
+                ].map((item, i) => (
+                  <details
+                    key={i}
+                    className="group rounded-xl border border-border bg-card p-3 shadow-card open:bg-primary/5"
+                  >
+                    <summary className="flex cursor-pointer items-center justify-between gap-3 text-sm font-bold text-foreground marker:hidden [&::-webkit-details-marker]:hidden">
+                      <span className="flex-1">{item.q}</span>
+                      <span className="text-primary transition-transform group-open:rotate-45 text-lg leading-none">
+                        +
+                      </span>
+                    </summary>
+                    <p className="mt-2 text-xs text-muted-foreground leading-relaxed">{item.a}</p>
+                  </details>
+                ))}
+              </div>
+
+              <a
+                href="https://wa.me/27686768409"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl border border-primary/30 bg-primary/5 py-3 text-sm font-bold text-primary hover:bg-primary/10 transition-colors"
+              >
+                Still need help? Contact Admin on WhatsApp
+              </a>
+            </section>
+          </>
+        )}
+
         <p className="mt-6 text-center text-[10px] text-muted-foreground px-4">
           Each app installs as a separate icon with its own scope. Customer opens on the food menu, Driver opens on the dashboard, Restaurant opens on the orders board, and Admin opens on the admin console.
         </p>
