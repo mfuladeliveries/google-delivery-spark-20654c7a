@@ -5,6 +5,32 @@ import { useAuth } from "@/hooks/useAuth";
 import { Truck, Mail, Lock, ArrowLeft, Eye, EyeOff } from "lucide-react";
 import { shouldNudgeInstall, markInstallNudged } from "@/lib/installRedirect";
 import RequestDriverAccess from "@/components/RequestDriverAccess";
+import DriverInstallBanner from "@/components/DriverInstallBanner";
+
+const FIRST_VISIT_REDIRECT_KEY = "mfula_driver_install_first_visit";
+
+const isStandaloneDisplay = () => {
+  if (typeof window === "undefined") return false;
+  return (
+    window.matchMedia?.("(display-mode: standalone)").matches ||
+    (window.navigator as { standalone?: boolean }).standalone === true
+  );
+};
+
+const isPreviewOrIframe = () => {
+  if (typeof window === "undefined") return true;
+  try {
+    if (window.self !== window.top) return true;
+  } catch {
+    return true;
+  }
+  const host = window.location.hostname;
+  return host.includes("id-preview--") || host.includes("lovableproject.com");
+};
+
+const isMobileUA = () =>
+  typeof navigator !== "undefined" &&
+  /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
 
 type View = "login" | "signup" | "otp" | "forgot";
 
@@ -42,6 +68,25 @@ const DriverAuth = () => {
     }
     navigate("/driver", { replace: true });
   }, [user, roles, authLoading, navigate]);
+
+  // First-visit auto-redirect to /install/driver for unauthenticated mobile
+  // visitors so new drivers download the dedicated app instead of using the
+  // browser tab. Runs once per device (localStorage flag).
+  useEffect(() => {
+    if (authLoading) return;
+    if (user) return;
+    if (typeof window === "undefined") return;
+    if (isStandaloneDisplay()) return;
+    if (isPreviewOrIframe()) return;
+    if (!isMobileUA()) return;
+    try {
+      if (localStorage.getItem(FIRST_VISIT_REDIRECT_KEY) === "1") return;
+      localStorage.setItem(FIRST_VISIT_REDIRECT_KEY, "1");
+    } catch {
+      return;
+    }
+    navigate("/install/driver", { replace: true });
+  }, [authLoading, user, navigate]);
 
   const resetState = () => {
     setError("");
@@ -291,6 +336,7 @@ const DriverAuth = () => {
           {/* Login / Signup Views */}
           {(view === "login" || view === "signup") && (
             <>
+              <DriverInstallBanner />
               {/* Tab switcher */}
               <div className="mb-6 flex rounded-2xl border border-border bg-card p-1 shadow-card">
                 <button
