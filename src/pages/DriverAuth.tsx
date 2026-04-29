@@ -69,6 +69,25 @@ const DriverAuth = () => {
     navigate("/driver", { replace: true });
   }, [user, roles, authLoading, navigate]);
 
+  // First-visit auto-redirect to /install/driver for unauthenticated mobile
+  // visitors so new drivers download the dedicated app instead of using the
+  // browser tab. Runs once per device (localStorage flag).
+  useEffect(() => {
+    if (authLoading) return;
+    if (user) return;
+    if (typeof window === "undefined") return;
+    if (isStandaloneDisplay()) return;
+    if (isPreviewOrIframe()) return;
+    if (!isMobileUA()) return;
+    try {
+      if (localStorage.getItem(FIRST_VISIT_REDIRECT_KEY) === "1") return;
+      localStorage.setItem(FIRST_VISIT_REDIRECT_KEY, "1");
+    } catch {
+      return;
+    }
+    navigate("/install/driver", { replace: true });
+  }, [authLoading, user, navigate]);
+
   const resetState = () => {
     setError("");
     setMessage("");
