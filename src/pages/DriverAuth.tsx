@@ -336,6 +336,7 @@ const DriverAuth = () => {
           {/* Login / Signup Views */}
           {(view === "login" || view === "signup") && (
             <>
+              <DriverInstallBanner />
               {/* Tab switcher */}
               <div className="mb-6 flex rounded-2xl border border-border bg-card p-1 shadow-card">
                 <button
