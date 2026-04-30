@@ -301,7 +301,7 @@ const DriverServiceArea = ({ onSaved }: { onSaved?: () => void }) => {
                 initialCoords={
                   data.service_lat != null && data.service_lng != null
                     ? { lat: data.service_lat, lng: data.service_lng }
-                    : null
+                    : readLastCentre()
                 }
               />
             </Suspense>
