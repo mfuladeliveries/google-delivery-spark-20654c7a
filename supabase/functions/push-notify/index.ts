@@ -308,6 +308,15 @@ Deno.serve(async (req) => {
       data: { url: "/admin", order_number, kind: "escalation" },
     });
 
+    const noDriverPayload = JSON.stringify({
+      title: `🛵 No driver available yet for #${order_number}`,
+      body: `We couldn't find a driver in your area right now. We'll keep trying and notify you as soon as one accepts.`,
+      icon: "/notification-logo.png",
+      badge: "/favicon.ico",
+      tag: `no-driver-${order_number}`,
+      data: { url: "/orders", order_number, kind: "no_driver_available" },
+    });
+
     let sent = 0;
     const expired: string[] = [];
 
