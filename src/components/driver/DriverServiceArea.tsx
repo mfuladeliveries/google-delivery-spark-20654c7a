@@ -35,6 +35,7 @@ const DriverServiceArea = ({ onSaved }: { onSaved?: () => void }) => {
   const [saving, setSaving] = useState(false);
   const [showPicker, setShowPicker] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
+  const [errors, setErrors] = useState<{ centre?: string; radius?: string }>({});
 
   useEffect(() => {
     if (!user) return;
@@ -56,16 +57,35 @@ const DriverServiceArea = ({ onSaved }: { onSaved?: () => void }) => {
       service_lng: r.lng,
       service_area_label: d.service_area_label || r.address.split(",").slice(0, 2).join(",").trim(),
     }));
+    setErrors((e) => ({ ...e, centre: undefined }));
     setShowPicker(false);
   };
 
-  const requestSave = () => {
-    if (data.service_lat == null || data.service_lng == null) {
-      toast.error("Please pick your working area on the map first");
-      return;
+  const validate = (d: ServiceArea) => {
+    const next: { centre?: string; radius?: string } = {};
+    if (d.service_lat == null || d.service_lng == null) {
+      next.centre = "Pick your area centre on the map before saving.";
+    } else if (
+      Math.abs(d.service_lat) > 90 ||
+      Math.abs(d.service_lng) > 180
+    ) {
+      next.centre = "The selected coordinates are invalid. Please pick again.";
     }
-    if (!data.service_radius_km || data.service_radius_km < 1) {
-      toast.error("Radius must be at least 1 km");
+    if (d.service_radius_km == null || Number.isNaN(d.service_radius_km)) {
+      next.radius = "Choose a radius between 1 and 20 km.";
+    } else if (d.service_radius_km < 1) {
+      next.radius = "Radius must be at least 1 km.";
+    } else if (d.service_radius_km > 20) {
+      next.radius = "Radius cannot exceed 20 km.";
+    }
+    return next;
+  };
+
+  const requestSave = () => {
+    const next = validate(data);
+    setErrors(next);
+    if (next.centre || next.radius) {
+      toast.error("Please fix the highlighted fields before saving");
       return;
     }
     setShowConfirm(true);
@@ -135,18 +155,30 @@ const DriverServiceArea = ({ onSaved }: { onSaved?: () => void }) => {
         <label className="text-xs font-semibold text-muted-foreground mb-1 block">Centre point</label>
         <button
           onClick={() => setShowPicker(true)}
-          className="w-full flex items-center justify-center gap-2 rounded-xl border-2 border-dashed border-border py-3 text-sm font-medium text-foreground hover:border-primary hover:bg-primary/5 transition-colors"
+          aria-invalid={!!errors.centre}
+          aria-describedby={errors.centre ? "centre-error" : undefined}
+          className={`w-full flex items-center justify-center gap-2 rounded-xl border-2 border-dashed py-3 text-sm font-medium text-foreground transition-colors ${
+            errors.centre
+              ? "border-destructive bg-destructive/5 hover:border-destructive"
+              : "border-border hover:border-primary hover:bg-primary/5"
+          }`}
         >
-          <Crosshair className="h-4 w-4 text-primary" />
+          <Crosshair className={`h-4 w-4 ${errors.centre ? "text-destructive" : "text-primary"}`} />
           {isSet
             ? `Pinned: ${data.service_lat!.toFixed(4)}, ${data.service_lng!.toFixed(4)} — tap to change`
             : "Pick your area centre on the map"}
         </button>
+        {errors.centre && (
+          <p id="centre-error" className="mt-1.5 flex items-start gap-1 text-xs font-medium text-destructive">
+            <AlertTriangle className="h-3.5 w-3.5 flex-shrink-0 mt-0.5" />
+            <span>{errors.centre}</span>
+          </p>
+        )}
       </div>
 
       <div>
         <label className="text-xs font-semibold text-muted-foreground mb-1 block">
-          Working radius: <span className="text-primary">{data.service_radius_km} km</span>
+          Working radius: <span className={errors.radius ? "text-destructive" : "text-primary"}>{data.service_radius_km} km</span>
         </label>
         <input
           type="range"
@@ -154,12 +186,24 @@ const DriverServiceArea = ({ onSaved }: { onSaved?: () => void }) => {
           max={20}
           step={1}
           value={data.service_radius_km}
-          onChange={(e) => setData((d) => ({ ...d, service_radius_km: Number(e.target.value) }))}
-          className="w-full accent-primary"
+          onChange={(e) => {
+            const v = Number(e.target.value);
+            setData((d) => ({ ...d, service_radius_km: v }));
+            setErrors((er) => ({ ...er, radius: undefined }));
+          }}
+          aria-invalid={!!errors.radius}
+          aria-describedby={errors.radius ? "radius-error" : undefined}
+          className={`w-full ${errors.radius ? "accent-destructive" : "accent-primary"}`}
         />
         <div className="flex justify-between text-[10px] text-muted-foreground mt-1">
           <span>1 km</span><span>10 km</span><span>20 km</span>
         </div>
+        {errors.radius && (
+          <p id="radius-error" className="mt-1.5 flex items-start gap-1 text-xs font-medium text-destructive">
+            <AlertTriangle className="h-3.5 w-3.5 flex-shrink-0 mt-0.5" />
+            <span>{errors.radius}</span>
+          </p>
+        )}
       </div>
 
       <button
