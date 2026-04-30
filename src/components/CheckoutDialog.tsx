@@ -548,26 +548,40 @@ const CheckoutDialog = ({
               </p>
             )}
 
-            {addressVerified && coords && !outOfRange && (
-              <p className="mt-1.5 flex items-center gap-1.5 text-xs font-semibold text-primary">
-                <Check className="h-3.5 w-3.5" />
-                Address verified
-                {distanceToRestaurant != null && (
+            {addressVerified && coords && !outOfRange && zoneMatch && (
+              <div className="mt-1.5 space-y-1">
+                <p className="flex items-center gap-1.5 text-xs font-semibold text-primary">
+                  <Check className="h-3.5 w-3.5" />
+                  Address verified
                   <span className="text-muted-foreground font-normal">
-                    · {distanceToRestaurant.toFixed(1)} km from {primaryRestaurantName || "restaurant"}
+                    · {zoneMatch.distance_km.toFixed(1)} km from {zoneMatch.zone.name} centre
                   </span>
-                )}
-              </p>
+                </p>
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="inline-flex items-center gap-1 rounded-full border border-primary/40 bg-primary/10 px-2.5 py-1 text-xs font-bold text-primary">
+                    <MapPin className="h-3 w-3" />
+                    {zoneMatch.zone.name}
+                  </span>
+                  {zoneFee != null && (
+                    <span className="inline-flex items-center gap-1 rounded-full bg-secondary px-2.5 py-1 text-xs font-semibold text-secondary-foreground">
+                      Delivery fee: {storeInfo.currency}{zoneFee.toFixed(2)}
+                    </span>
+                  )}
+                </div>
+              </div>
             )}
 
-            {addressVerified && outOfRange && distanceToRestaurant != null && (
+            {addressVerified && outOfRange && (
               <div className="mt-2 flex items-start gap-2 rounded-xl border-2 border-destructive/40 bg-destructive/10 p-3">
                 <AlertTriangle className="h-4 w-4 flex-shrink-0 text-destructive mt-0.5" />
                 <div className="text-xs">
                   <p className="font-bold text-destructive">Outside delivery range</p>
                   <p className="mt-0.5 text-foreground">
-                    This address is {distanceToRestaurant.toFixed(1)} km from {primaryRestaurantName || "the restaurant"}.
-                    We deliver up to {MAX_DELIVERY_KM} km. Please pick a closer address.
+                    {OUT_OF_ZONE_MESSAGE} Please pick an address within {DEFAULT_ZONE_RADIUS_KM} km of one of our active zones
+                    {zones.length > 0 && (
+                      <> ({zones.map((z) => z.name).join(", ")})</>
+                    )}
+                    .
                   </p>
                 </div>
               </div>
