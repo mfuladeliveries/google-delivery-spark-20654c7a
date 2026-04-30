@@ -481,6 +481,18 @@ const DriverDashboard = () => {
 
         {tab === "withdraw" && <DriverWithdrawals />}
 
+        {tab === "area" && (
+          <div className="space-y-3">
+            <div>
+              <h2 className="font-display text-xl font-bold text-foreground">Working Area</h2>
+              <p className="text-xs text-muted-foreground">
+                Update the centre point and radius where you want to receive deliveries.
+              </p>
+            </div>
+            <DriverServiceArea onSaved={fetchDriverProfile} />
+          </div>
+        )}
+
         {tab === "profile" && <DriverProfileTab />}
       </main>
 
