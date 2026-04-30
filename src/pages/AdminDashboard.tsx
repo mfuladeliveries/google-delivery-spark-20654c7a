@@ -1030,6 +1030,7 @@ const RestaurantsTab = ({
         owner_user_id: null,
         lat: coords?.lat ?? null,
         lng: coords?.lng ?? null,
+        area_id: areaId || null,
       }).select("id").single();
       if (error) throw error;
 
@@ -1054,6 +1055,7 @@ const RestaurantsTab = ({
 
       setShowForm(false);
       setName(""); setCuisine(""); setLocation(""); setDescription(""); setMinOrder("0");
+      setAreaId("");
       setOwnerEmail(""); setOwnerPassword(""); setOwnerName(""); setOwnerContact("");
       setManualLat(""); setManualLng("");
       onRestaurantChanged();
