@@ -92,7 +92,10 @@ const CheckoutDialog = ({
   const [restaurantCoords, setRestaurantCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
 
-  const restaurants = useMemo(() => [...new Set(items.map((ci) => ci.item.category))], [items]);
+  const restaurants = useMemo(
+    () => [...new Set(items.map((ci) => ci.item.restaurantName || ci.item.category).filter(Boolean))],
+    [items]
+  );
   const primaryRestaurantName = restaurants[0] || "";
 
   // Sync incoming food note from cart
