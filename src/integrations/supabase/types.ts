@@ -91,6 +91,7 @@ export type Database = {
       }
       delivery_areas: {
         Row: {
+          base_fee: number
           created_at: string
           created_by: string | null
           delivery_fee: number
@@ -98,12 +99,16 @@ export type Database = {
           is_active: boolean
           lat: number | null
           lng: number | null
+          max_fee: number | null
+          min_fee: number | null
           name: string
+          price_per_km: number
           radius_km: number
           suburb: string
           updated_at: string
         }
         Insert: {
+          base_fee?: number
           created_at?: string
           created_by?: string | null
           delivery_fee?: number
@@ -111,12 +116,16 @@ export type Database = {
           is_active?: boolean
           lat?: number | null
           lng?: number | null
+          max_fee?: number | null
+          min_fee?: number | null
           name: string
+          price_per_km?: number
           radius_km?: number
           suburb?: string
           updated_at?: string
         }
         Update: {
+          base_fee?: number
           created_at?: string
           created_by?: string | null
           delivery_fee?: number
@@ -124,7 +133,10 @@ export type Database = {
           is_active?: boolean
           lat?: number | null
           lng?: number | null
+          max_fee?: number | null
+          min_fee?: number | null
           name?: string
+          price_per_km?: number
           radius_km?: number
           suburb?: string
           updated_at?: string
@@ -1108,6 +1120,20 @@ export type Database = {
         Returns: undefined
       }
       auto_cancel_stale_orders: { Args: never; Returns: number }
+      calc_delivery_fee: {
+        Args: { p_lat: number; p_lng: number; p_restaurant_name?: string }
+        Returns: Json
+      }
+      calc_zone_fee: {
+        Args: {
+          p_base: number
+          p_distance_km: number
+          p_max: number
+          p_min: number
+          p_per_km: number
+        }
+        Returns: number
+      }
       check_area_coverage:
         | { Args: { p_lat: number; p_lng: number }; Returns: Json }
         | {
@@ -1184,10 +1210,17 @@ export type Database = {
         Returns: undefined
       }
       expire_stale_pending_payments: { Args: never; Returns: number }
-      find_nearest_zone: {
-        Args: { p_lat: number; p_lng: number }
-        Returns: Json
-      }
+      find_nearest_zone:
+        | { Args: { p_lat: number; p_lng: number }; Returns: Json }
+        | {
+            Args: {
+              p_lat: number
+              p_lng: number
+              p_restaurant_lat?: number
+              p_restaurant_lng?: number
+            }
+            Returns: Json
+          }
       get_customer_balance: { Args: { p_user_id?: string }; Returns: number }
       get_driver_balance: { Args: { p_driver_id: string }; Returns: number }
       has_role: {
