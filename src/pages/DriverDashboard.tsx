@@ -12,7 +12,9 @@ import DriverActiveDelivery from "@/components/driver/DriverActiveDelivery";
 import DriverEarnings from "@/components/driver/DriverEarnings";
 import DriverWithdrawals from "@/components/driver/DriverWithdrawals";
 import DriverProfileTab from "@/components/driver/DriverProfile";
+import DriverServiceArea from "@/components/driver/DriverServiceArea";
 import AuthLoadingScreen from "@/components/AuthLoadingScreen";
+import { MapPin } from "lucide-react";
 
 interface Order {
   id: string;
