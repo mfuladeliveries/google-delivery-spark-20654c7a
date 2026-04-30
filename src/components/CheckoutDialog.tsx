@@ -145,7 +145,7 @@ const CheckoutDialog = ({
       if (!cancelled && data) setCoverage(data as any);
     })();
     return () => { cancelled = true; };
-  }, [coords]);
+  }, [coords, address]);
 
   const handleAddressSelect = (result: ValidatedAddress) => {
     setAddress(result.address);
