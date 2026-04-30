@@ -163,13 +163,36 @@ const DriverServiceArea = ({ onSaved }: { onSaved?: () => void }) => {
       </div>
 
       <button
-        onClick={handleSave}
+        onClick={requestSave}
         disabled={saving}
         className="w-full rounded-2xl bg-primary py-3 text-sm font-bold text-primary-foreground disabled:opacity-50 transition-all hover:scale-[1.01] active:scale-[0.99] shadow-orange flex items-center justify-center gap-2"
       >
         <Save className="h-4 w-4" />
         {saving ? "Saving..." : "Save Working Area"}
       </button>
+
+      <AlertDialog open={showConfirm} onOpenChange={setShowConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirm your working area</AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-2 text-sm">
+                <p>You'll only receive delivery offers inside this zone:</p>
+                <div className="rounded-xl bg-secondary/60 p-3 space-y-1">
+                  <div className="flex justify-between"><span className="text-muted-foreground">Area</span><span className="font-semibold text-foreground">{data.service_area_label || "Unnamed area"}</span></div>
+                  <div className="flex justify-between"><span className="text-muted-foreground">Centre</span><span className="font-mono text-xs text-foreground">{data.service_lat?.toFixed(4)}, {data.service_lng?.toFixed(4)}</span></div>
+                  <div className="flex justify-between"><span className="text-muted-foreground">Radius</span><span className="font-semibold text-primary">{data.service_radius_km} km</span></div>
+                </div>
+                <p className="text-xs text-muted-foreground">You can change this anytime from the Area tab.</p>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleSave}>Confirm & Save</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {showPicker && (
         <div className="fixed inset-0 z-[70] bg-black/70 backdrop-blur-sm flex items-center justify-center p-3">
