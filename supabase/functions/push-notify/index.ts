@@ -123,6 +123,7 @@ Deno.serve(async (req) => {
     const isOfferPending = status === "offer_pending";
     const isOfferMissed = status === "offer_missed";
     const isDispatchBroadcast = status === "dispatch_broadcast";
+    const isNoDriverAvailable = status === "no_driver_available";
 
     // Detect refund-choice cancellations
     let refundChoiceAmount: number | null = null;
@@ -202,6 +203,23 @@ Deno.serve(async (req) => {
     ) {
       if (!targetUserIds.includes(user_id)) {
         targetUserIds.push(user_id);
+      }
+    }
+
+    // No-driver-available: notify the customer (resolve user_id from order if needed)
+    let noDriverCustomerId: string | null = null;
+    if (isNoDriverAvailable) {
+      noDriverCustomerId = user_id || null;
+      if (!noDriverCustomerId && order_id) {
+        const { data: ord } = await supabase
+          .from("orders")
+          .select("user_id")
+          .eq("id", order_id)
+          .maybeSingle();
+        noDriverCustomerId = ord?.user_id || null;
+      }
+      if (noDriverCustomerId && !targetUserIds.includes(noDriverCustomerId)) {
+        targetUserIds.push(noDriverCustomerId);
       }
     }
 
@@ -290,6 +308,15 @@ Deno.serve(async (req) => {
       data: { url: "/admin", order_number, kind: "escalation" },
     });
 
+    const noDriverPayload = JSON.stringify({
+      title: `🛵 No driver available yet for #${order_number}`,
+      body: `We couldn't find a driver in your area right now. We'll keep trying and notify you as soon as one accepts.`,
+      icon: "/notification-logo.png",
+      badge: "/favicon.ico",
+      tag: `no-driver-${order_number}`,
+      data: { url: "/orders", order_number, kind: "no_driver_available" },
+    });
+
     let sent = 0;
     const expired: string[] = [];
 
@@ -321,7 +348,9 @@ Deno.serve(async (req) => {
         ? "customer_cancelled"
         : status === "out_for_delivery"
           ? "customer_out_for_delivery"
-          : null;
+          : isNoDriverAvailable
+            ? "customer_no_driver_available"
+            : null;
 
     // Driver-facing notification kinds — logged against the order's customer so the
     // customer's Orders page can render a "driver was notified" status log.
@@ -355,6 +384,9 @@ Deno.serve(async (req) => {
           payload = offerMissedPayload;
         } else if (isDispatchBroadcast) {
           payload = adminUserIds.has(sub.user_id) ? adminBroadcastPayload : driverBroadcastPayload;
+        } else if (isNoDriverAvailable && sub.user_id === noDriverCustomerId) {
+          payload = noDriverPayload;
+          isCustomerOneShot = true;
         } else if (sub.user_id === restaurantOwnerId) {
           payload = restaurantPayload;
         } else if (dedupeKind && order_id && sub.user_id === user_id) {

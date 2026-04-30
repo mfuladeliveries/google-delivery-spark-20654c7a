@@ -90,11 +90,11 @@ Deno.serve(async (req) => {
       });
     }
 
-    // For each broadcasted order: notify all online drivers + admins
+    // For each broadcasted order: notify all online drivers + admins, and tell the customer no driver was available yet
     if (broadcastOrderIds.length > 0) {
       const { data: broadcastRows } = await supabase
         .from("orders")
-        .select("id, order_number, restaurant, total")
+        .select("id, order_number, restaurant, total, user_id")
         .in("id", broadcastOrderIds);
 
       (broadcastRows || []).forEach((o) => {
@@ -106,6 +106,18 @@ Deno.serve(async (req) => {
               status: "dispatch_broadcast",
               restaurant: o.restaurant,
               total: o.total,
+            },
+          })
+        );
+        pushInvocations.push(
+          supabase.functions.invoke("push-notify", {
+            body: {
+              order_id: o.id,
+              order_number: o.order_number,
+              status: "no_driver_available",
+              restaurant: o.restaurant,
+              total: o.total,
+              user_id: o.user_id,
             },
           })
         );

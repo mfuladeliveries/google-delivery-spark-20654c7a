@@ -44,7 +44,14 @@ export const dispatchAndNotify = async (
         target_user_id: result.offered_to,
       });
     } else if (result?.phase === "waiting") {
-      // No driver in range — broadcast immediately so all online drivers see it
+      // No driver in the customer's area is available — tell the customer + broadcast to any online drivers as fallback
+      sendPushNotification({
+        order_id: orderId,
+        order_number: orderNumber,
+        status: "no_driver_available",
+        restaurant,
+        total,
+      });
       sendPushNotification({
         order_id: orderId,
         order_number: orderNumber,
