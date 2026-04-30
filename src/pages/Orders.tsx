@@ -14,6 +14,7 @@ import { RestaurantName } from "@/components/RestaurantName";
 import { RatingDialog } from "@/components/RatingDialog";
 import { stashReorder } from "@/lib/reorder";
 import { OrderChat } from "@/components/OrderChat";
+import { distanceKm } from "@/lib/serviceArea";
 
 interface OrderItem {
   id?: string;
