@@ -763,7 +763,9 @@ const RestaurantDashboard = () => {
               </div>
             )}
           </div>
-        ) : (
+        )}
+
+        {tab === "menu" && (
           /* Menu Tab */
           <>
             <div className="flex items-center justify-between mb-4">
