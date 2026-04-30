@@ -57,6 +57,29 @@ const DriverServiceArea = ({ onSaved }: { onSaved?: () => void }) => {
   const [showPicker, setShowPicker] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [errors, setErrors] = useState<{ centre?: string; radius?: string }>({});
+  const [useDefaultCentre, setUseDefaultCentre] = useState(false);
+  const [hasRemembered, setHasRemembered] = useState(false);
+
+  useEffect(() => {
+    setHasRemembered(readLastCentre() != null);
+  }, []);
+
+  const handleResetToDefault = () => {
+    try {
+      localStorage.removeItem(LAST_CENTRE_KEY);
+    } catch {
+      /* ignore */
+    }
+    setHasRemembered(false);
+    setData((d) => ({ ...d, service_lat: null, service_lng: null }));
+    setErrors((e) => ({ ...e, centre: undefined }));
+    setUseDefaultCentre(true);
+    setShowPicker(true);
+    toast.info("Reset to default", {
+      description: "Pick a new centre on the map.",
+      duration: 3000,
+    });
+  };
 
   useEffect(() => {
     if (!user) return;
