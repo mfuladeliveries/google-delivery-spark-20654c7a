@@ -47,3 +47,4 @@ Closed onboarding for providers (admin-led). Customer self-service.
 - [Location Gating](mem://features/location-gating) — Live GPS, 6km per-restaurant radius, sort/filter nearby on home
 - [Coordinate Validation](mem://security/coordinate-validation) — Autocomplete-only addresses, map confirm, 8km server-enforced radius, invalid_order_attempts log
 - [Driver Service Areas](mem://features/driver-service-areas) — Driver-set centre+radius; dispatch only matches drivers covering the customer location; checkout warns when no online driver covers the area
+- [Delivery Pricing](mem://features/delivery-pricing) — Per-zone base + per-km, clamped by min/max; computed from restaurant→customer distance; authoritative inside create_verified_order

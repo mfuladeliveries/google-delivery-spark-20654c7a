@@ -1,6 +1,8 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useMemo } from "react";
 import { MenuItem, SizeOption, AddOnOption, CutOption, storeInfo } from "@/data/menu";
 import { useCustomerLocation } from "@/hooks/useCustomerLocation";
+import { supabase } from "@/integrations/supabase/client";
+import { calcZoneFee, distanceKm } from "@/lib/serviceArea";
 
 export interface CartItem {
   /** Stable per-line key — same dish with different cut/size/sauces/pieces becomes a separate line. */
@@ -73,7 +75,7 @@ export function useCart() {
   // Lazy initializer rehydrates the cart from localStorage so the user's
   // selections survive minimize/relaunch and full app restarts.
   const [items, setItems] = useState<CartItem[]>(() => loadPersistedCart());
-  const { zone } = useCustomerLocation();
+  const { zone, lat, lng } = useCustomerLocation();
 
   // Persist cart on every change. localStorage is synchronous but tiny here.
   useEffect(() => {
@@ -83,6 +85,44 @@ export function useCart() {
       /* quota / private mode — ignore */
     }
   }, [items]);
+
+  // Look up the primary restaurant's coords so we can compute the dynamic
+  // delivery fee = base + (km from restaurant × per-km), clamped by min/max.
+  const primaryRestaurantName = useMemo(() => {
+    const names = items
+      .map((ci) => ci.item.restaurantName || ci.item.category)
+      .filter(Boolean) as string[];
+    return names[0] || "";
+  }, [items]);
+
+  const [restaurantCoords, setRestaurantCoords] = useState<{
+    lat: number;
+    lng: number;
+  } | null>(null);
+  useEffect(() => {
+    if (!primaryRestaurantName) {
+      setRestaurantCoords(null);
+      return;
+    }
+    let alive = true;
+    supabase
+      .from("restaurants")
+      .select("lat,lng")
+      .eq("name", primaryRestaurantName)
+      .eq("is_active", true)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (!alive) return;
+        if (data && typeof data.lat === "number" && typeof data.lng === "number") {
+          setRestaurantCoords({ lat: data.lat, lng: data.lng });
+        } else {
+          setRestaurantCoords(null);
+        }
+      });
+    return () => {
+      alive = false;
+    };
+  }, [primaryRestaurantName]);
 
   /** Add a fully-configured line. If an identical line exists, increment qty. */
   const addItemWithOptions = useCallback(
@@ -155,7 +195,17 @@ export function useCart() {
 
   const subtotal = items.reduce((sum, ci) => sum + ci.unitPrice * ci.quantity, 0);
   const tax = subtotal * storeInfo.tax;
-  const deliveryFee = zone?.zone.delivery_fee ?? 65;
+
+  // Dynamic per-zone fee: base + per-km × distance(restaurant, customer), clamped.
+  // Falls back to zone-centre distance when restaurant coords aren't loaded yet.
+  let deliveryFee = 65;
+  if (zone) {
+    const pricingDistance =
+      restaurantCoords && lat != null && lng != null
+        ? distanceKm(restaurantCoords.lat, restaurantCoords.lng, lat, lng)
+        : zone.pricing_distance_km;
+    deliveryFee = calcZoneFee(zone.zone, pricingDistance);
+  }
   const delivery = items.length > 0 ? deliveryFee : 0;
   const total = subtotal + tax + delivery;
   const totalItems = items.reduce((sum, ci) => sum + ci.quantity, 0);
@@ -172,5 +222,6 @@ export function useCart() {
     delivery,
     total,
     totalItems,
+    zoneName: zone?.zone.name ?? null,
   };
 }
