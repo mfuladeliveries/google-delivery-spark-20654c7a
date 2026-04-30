@@ -317,7 +317,7 @@ const DriverServiceArea = ({ onSaved }: { onSaved?: () => void }) => {
             <div className="flex items-center justify-between px-4 pb-2">
               <h3 className="font-display text-base font-bold text-foreground">Pick your working area</h3>
               <button
-                onClick={() => setShowPicker(false)}
+                onClick={() => { setShowPicker(false); setUseDefaultCentre(false); }}
                 className="rounded-full px-3 py-1 text-xs font-semibold text-muted-foreground hover:bg-secondary"
               >
                 Close
