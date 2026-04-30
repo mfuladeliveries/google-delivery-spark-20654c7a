@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, lazy, Suspense } from "react";
-import { X, Package, MapPin, Phone, User, StickyNote, Banknote, CreditCard, Wallet, Clock, Navigation, AlertTriangle, Map as MapIcon, Check } from "lucide-react";
+import { X, Package, MapPin, Phone, User, StickyNote, CreditCard, Wallet, Clock, Navigation, AlertTriangle, Map as MapIcon, Check } from "lucide-react";
 import { CartItem } from "@/hooks/useCart";
 import { storeInfo } from "@/data/menu";
 import { supabase } from "@/integrations/supabase/client";
@@ -751,46 +751,18 @@ const CheckoutDialog = ({
             </div>
           )}
 
-          {/* Payment Method */}
+          {/* Payment Method — PayFast only */}
           <div>
             <label className="mb-2 block text-sm font-semibold text-foreground">💳 Payment Method</label>
-            <div className="grid grid-cols-2 gap-3">
-              <button
-                onClick={() => setPaymentMethod("cash")}
-                className={`flex items-center gap-2.5 rounded-xl border-2 p-3.5 text-sm font-semibold transition-all ${
-                  paymentMethod === "cash"
-                    ? "border-primary bg-primary/5 text-foreground shadow-sm"
-                    : "border-border bg-card text-muted-foreground hover:border-muted-foreground/30"
-                }`}
-              >
-                <div className={`flex h-9 w-9 items-center justify-center rounded-lg ${
-                  paymentMethod === "cash" ? "bg-primary/10" : "bg-secondary"
-                }`}>
-                  <Banknote className={`h-4.5 w-4.5 ${paymentMethod === "cash" ? "text-primary" : ""}`} />
-                </div>
-                <div className="text-left">
-                  <p className="font-bold text-xs">Cash</p>
-                  <p className="text-[10px] text-muted-foreground">Pay on delivery</p>
-                </div>
-              </button>
-              <button
-                onClick={() => setPaymentMethod("online")}
-                className={`flex items-center gap-2.5 rounded-xl border-2 p-3.5 text-sm font-semibold transition-all ${
-                  paymentMethod === "online"
-                    ? "border-primary bg-primary/5 text-foreground shadow-sm"
-                    : "border-border bg-card text-muted-foreground hover:border-muted-foreground/30"
-                }`}
-              >
-                <div className={`flex h-9 w-9 items-center justify-center rounded-lg ${
-                  paymentMethod === "online" ? "bg-primary/10" : "bg-secondary"
-                }`}>
-                  <CreditCard className={`h-4.5 w-4.5 ${paymentMethod === "online" ? "text-primary" : ""}`} />
-                </div>
-                <div className="text-left">
-                  <p className="font-bold text-xs">Online</p>
-                  <p className="text-[10px] text-muted-foreground">Pay now</p>
-                </div>
-              </button>
+            <div className="flex items-center gap-3 rounded-xl border-2 border-primary bg-primary/5 p-3.5 text-sm">
+              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10">
+                <CreditCard className="h-4.5 w-4.5 text-primary" />
+              </div>
+              <div className="text-left flex-1">
+                <p className="font-bold text-xs text-foreground">Pay online with PayFast</p>
+                <p className="text-[10px] text-muted-foreground">Card · Instant EFT · QR · SnapScan</p>
+              </div>
+              <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-bold text-primary">Secure</span>
             </div>
           </div>
 
@@ -854,10 +826,8 @@ const CheckoutDialog = ({
             </div>
             <div className="flex items-center justify-between pt-1">
               <p className="text-xs text-muted-foreground">🍽️ {restaurants.join(", ")}</p>
-              <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${
-                paymentMethod === "cash" ? "bg-green-100 text-green-700" : "bg-blue-100 text-blue-700"
-              }`}>
-                {paymentMethod === "cash" ? "💵 Cash" : "💳 Online"}
+              <span className="rounded-full bg-blue-100 px-2 py-0.5 text-[10px] font-bold text-blue-700">
+                💳 Pay online
               </span>
             </div>
           </div>
