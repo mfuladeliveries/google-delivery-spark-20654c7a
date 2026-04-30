@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import FoodImageUpload from "@/components/FoodImageUpload";
 import InstallAppButton from "@/components/InstallAppButton";
+import RestaurantEarnings from "@/components/restaurant/RestaurantEarnings";
 
 interface Order {
   id: string;
@@ -73,7 +74,7 @@ const statusFlow = ["confirmed", "preparing", "ready"];
 const RestaurantDashboard = () => {
   const { user, role, loading: authLoading } = useAuth();
   const navigate = useNavigate();
-  const [tab, setTab] = useState<"orders" | "menu">("orders");
+  const [tab, setTab] = useState<"orders" | "menu" | "earnings">("orders");
   const [orders, setOrders] = useState<Order[]>([]);
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [restaurant, setRestaurant] = useState<Restaurant | null>(null);
@@ -441,7 +442,7 @@ const RestaurantDashboard = () => {
           </div>
           <div className="flex items-center gap-2">
             <InstallAppButton variant="restaurant" compact />
-            {(["orders", "menu"] as const).map(t => (
+            {(["orders", "menu", "earnings"] as const).map(t => (
               <button
                 key={t}
                 onClick={() => setTab(t)}
@@ -449,7 +450,7 @@ const RestaurantDashboard = () => {
                   tab === t ? "gradient-orange text-primary-foreground shadow-orange" : "text-muted-foreground hover:bg-secondary"
                 }`}
               >
-                {t === "orders" ? "Orders" : "Menu"}
+                {t === "orders" ? "Orders" : t === "menu" ? "Menu" : "Earnings"}
               </button>
             ))}
           </div>
@@ -457,7 +458,7 @@ const RestaurantDashboard = () => {
       </header>
 
       <main className="mx-auto max-w-6xl px-4 py-4 pb-nav md:pb-8">
-        {tab === "orders" ? (
+        {tab === "orders" && (
           <div className="space-y-4">
             {/* Metrics Grid */}
             <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
@@ -763,7 +764,9 @@ const RestaurantDashboard = () => {
               </div>
             )}
           </div>
-        ) : (
+        )}
+
+        {tab === "menu" && (
           /* Menu Tab */
           <>
             <div className="flex items-center justify-between mb-4">
@@ -893,6 +896,10 @@ const RestaurantDashboard = () => {
               </div>
             )}
           </>
+        )}
+
+        {tab === "earnings" && restaurant?.id && (
+          <RestaurantEarnings restaurantId={restaurant.id} />
         )}
       </main>
       <BottomNav />
