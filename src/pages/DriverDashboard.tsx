@@ -35,6 +35,8 @@ interface DriverProfile {
   is_online: boolean;
   total_earnings: number;
   total_deliveries: number;
+  service_lat?: number | null;
+  service_lng?: number | null;
 }
 
 type DriverTab = "orders" | "earnings" | "withdraw" | "profile";
