@@ -1531,6 +1531,33 @@ const RestaurantCard = ({
 
       {editing && (
         <div className="border-t border-border bg-secondary/30 p-4 space-y-4">
+          {/* Delivery area assignment */}
+          <div className="space-y-2">
+            <h4 className="font-bold text-xs text-foreground">🗺️ Delivery Area</h4>
+            <p className="text-[10px] text-muted-foreground">Customers in this area will see this restaurant on their home page.</p>
+            <div className="flex gap-2">
+              <select
+                value={editAreaId}
+                onChange={e => setEditAreaId(e.target.value)}
+                className="flex-1 rounded-xl border border-border bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+              >
+                <option value="">— No area assigned —</option>
+                {areas.map(a => (
+                  <option key={a.id} value={a.id}>
+                    {a.name}{a.is_active ? "" : " (inactive)"}
+                  </option>
+                ))}
+              </select>
+              <button
+                onClick={handleSaveArea}
+                disabled={savingArea || (editAreaId === (r.area_id ?? ""))}
+                className="rounded-xl bg-primary px-3 py-2 text-xs font-bold text-primary-foreground disabled:opacity-50 hover:opacity-90"
+              >
+                <Save className="inline h-3 w-3 mr-1" />{savingArea ? "Saving…" : "Save"}
+              </button>
+            </div>
+          </div>
+
           {/* Coordinates editor — always available */}
           <div className="space-y-2">
             <div className="flex items-center justify-between">
