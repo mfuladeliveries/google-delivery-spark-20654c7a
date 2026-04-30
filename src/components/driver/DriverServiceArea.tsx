@@ -170,10 +170,16 @@ const DriverServiceArea = ({ onSaved }: { onSaved?: () => void }) => {
             ? `Pinned: ${data.service_lat!.toFixed(4)}, ${data.service_lng!.toFixed(4)} — tap to change`
             : "Pick your area centre on the map"}
         </button>
+        {!isSet && !errors.centre && (
+          <p className="mt-1.5 flex items-start gap-1 text-xs font-medium text-primary">
+            <Crosshair className="h-3.5 w-3.5 flex-shrink-0 mt-0.5" />
+            <span>Next: tap the button above, then tap the map to pin your centre point.</span>
+          </p>
+        )}
         {errors.centre && (
           <p id="centre-error" className="mt-1.5 flex items-start gap-1 text-xs font-medium text-destructive">
             <AlertTriangle className="h-3.5 w-3.5 flex-shrink-0 mt-0.5" />
-            <span>{errors.centre}</span>
+            <span>{errors.centre} Tap the button above and drop a pin on the map.</span>
           </p>
         )}
       </div>
