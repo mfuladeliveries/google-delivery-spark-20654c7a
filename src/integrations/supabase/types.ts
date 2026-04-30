@@ -983,10 +983,12 @@ export type Database = {
         Returns: undefined
       }
       auto_cancel_stale_orders: { Args: never; Returns: number }
-      check_area_coverage: {
-        Args: { p_lat: number; p_lng: number }
-        Returns: Json
-      }
+      check_area_coverage:
+        | { Args: { p_lat: number; p_lng: number }; Returns: Json }
+        | {
+            Args: { p_address?: string; p_lat: number; p_lng: number }
+            Returns: Json
+          }
       check_rate_limit: {
         Args: {
           p_action: string
