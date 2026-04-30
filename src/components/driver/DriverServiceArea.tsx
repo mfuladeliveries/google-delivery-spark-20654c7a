@@ -120,6 +120,8 @@ const DriverServiceArea = ({ onSaved }: { onSaved?: () => void }) => {
   if (loading) return null;
 
   const isSet = data.service_lat != null && data.service_lng != null;
+  const isValid = Object.keys(validate(data)).length === 0;
+  const canSave = isValid && !saving;
 
   return (
     <div className="rounded-2xl border border-border bg-card p-4 shadow-card space-y-3">
@@ -208,11 +210,13 @@ const DriverServiceArea = ({ onSaved }: { onSaved?: () => void }) => {
 
       <button
         onClick={requestSave}
-        disabled={saving}
-        className="w-full rounded-2xl bg-primary py-3 text-sm font-bold text-primary-foreground disabled:opacity-50 transition-all hover:scale-[1.01] active:scale-[0.99] shadow-orange flex items-center justify-center gap-2"
+        disabled={!canSave}
+        aria-disabled={!canSave}
+        title={!isSet ? "Pin your area centre on the map first" : undefined}
+        className="w-full rounded-2xl bg-primary py-3 text-sm font-bold text-primary-foreground disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 transition-all hover:scale-[1.01] active:scale-[0.99] shadow-orange flex items-center justify-center gap-2"
       >
         <Save className="h-4 w-4" />
-        {saving ? "Saving..." : "Save Working Area"}
+        {saving ? "Saving..." : !isSet ? "Pin centre to enable save" : "Save Working Area"}
       </button>
 
       <AlertDialog open={showConfirm} onOpenChange={setShowConfirm}>
@@ -233,7 +237,7 @@ const DriverServiceArea = ({ onSaved }: { onSaved?: () => void }) => {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleSave}>Confirm & Save</AlertDialogAction>
+            <AlertDialogAction onClick={handleSave} disabled={!isValid}>Confirm & Save</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
