@@ -140,7 +140,7 @@ Deno.serve(async (req) => {
       if (!fields[k]) delete fields[k];
     }
 
-    const signature = buildPayfastSignature(fields, PASSPHRASE);
+    const signature = await buildPayfastSignature(fields, PASSPHRASE);
     fields.signature = signature;
 
     return new Response(
