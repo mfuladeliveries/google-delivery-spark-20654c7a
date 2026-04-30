@@ -14,11 +14,12 @@ import { useAuth } from "@/hooks/useAuth";
 import { menuItems } from "@/data/menu";
 import mfulaLogo from "@/assets/mfula-logo.png";
 import AddressAutocomplete, { type ValidatedAddress } from "@/components/AddressAutocomplete";
-import { distanceKm } from "@/lib/serviceArea";
+import { distanceKm, getActiveZones, findNearestZone, type DeliveryZone, type ZoneMatch } from "@/lib/serviceArea";
 import { toast } from "sonner";
 
 interface Restaurant extends RestaurantCardData {
   is_active: boolean;
+  area_id: string | null;
 }
 
 const cuisineCategories = [
@@ -123,6 +124,8 @@ const Index = () => {
   // <RoleGuard allow={["customer"]}> in App.tsx. This page only renders
   // once the viewer is confirmed to be a guest or a customer.
 
+  const [zones, setZones] = useState<DeliveryZone[]>([]);
+
   useEffect(() => {
     const fetchRestaurants = async () => {
       const { data } = await supabase.
@@ -134,6 +137,7 @@ const Index = () => {
       setLoading(false);
     };
     fetchRestaurants();
+    getActiveZones().then(setZones).catch(() => setZones([]));
   }, []);
 
   // Effective coords: manual address override wins, else GPS/profile fallback.
