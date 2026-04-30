@@ -28,7 +28,36 @@ interface NewOrderModalProps {
 
 const NewOrderModal = ({ open, offer, distanceKm, accepting, rejecting, onAccept, onReject }: NewOrderModalProps) => {
   const [secondsLeft, setSecondsLeft] = useState<number | null>(null);
+  const [dismissed, setDismissed] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  // Reset dismissed flag whenever a new offer arrives
+  useEffect(() => {
+    setDismissed(false);
+  }, [offer?.id]);
+
+  const handleAcceptClick = () => {
+    if (dismissed || accepting || rejecting) return;
+    setDismissed(true);
+    // Stop sound/vibration immediately for instant feedback
+    audioRef.current?.pause();
+    if (audioRef.current) audioRef.current.currentTime = 0;
+    if (typeof navigator !== "undefined" && "vibrate" in navigator) {
+      try { navigator.vibrate(0); } catch { /* noop */ }
+    }
+    onAccept();
+  };
+
+  const handleRejectClick = () => {
+    if (dismissed || accepting || rejecting) return;
+    setDismissed(true);
+    audioRef.current?.pause();
+    if (audioRef.current) audioRef.current.currentTime = 0;
+    if (typeof navigator !== "undefined" && "vibrate" in navigator) {
+      try { navigator.vibrate(0); } catch { /* noop */ }
+    }
+    onReject();
+  };
 
   // Play custom alert sound + vibrate on open, loop for ~10 seconds, then stop
   useEffect(() => {
