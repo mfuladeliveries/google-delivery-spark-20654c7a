@@ -1,7 +1,7 @@
 import { useEffect, useState, lazy, Suspense } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { MapPin, Save, Crosshair, AlertTriangle, CheckCircle2 } from "lucide-react";
+import { MapPin, Save, Crosshair, AlertTriangle, CheckCircle2, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
 import {
   AlertDialog,
@@ -57,6 +57,29 @@ const DriverServiceArea = ({ onSaved }: { onSaved?: () => void }) => {
   const [showPicker, setShowPicker] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [errors, setErrors] = useState<{ centre?: string; radius?: string }>({});
+  const [useDefaultCentre, setUseDefaultCentre] = useState(false);
+  const [hasRemembered, setHasRemembered] = useState(false);
+
+  useEffect(() => {
+    setHasRemembered(readLastCentre() != null);
+  }, []);
+
+  const handleResetToDefault = () => {
+    try {
+      localStorage.removeItem(LAST_CENTRE_KEY);
+    } catch {
+      /* ignore */
+    }
+    setHasRemembered(false);
+    setData((d) => ({ ...d, service_lat: null, service_lng: null }));
+    setErrors((e) => ({ ...e, centre: undefined }));
+    setUseDefaultCentre(true);
+    setShowPicker(true);
+    toast.info("Reset to default", {
+      description: "Pick a new centre on the map.",
+      duration: 3000,
+    });
+  };
 
   useEffect(() => {
     if (!user) return;
@@ -80,6 +103,7 @@ const DriverServiceArea = ({ onSaved }: { onSaved?: () => void }) => {
     }));
     setErrors((e) => ({ ...e, centre: undefined }));
     setShowPicker(false);
+    setUseDefaultCentre(false);
   };
 
   const validate = (d: ServiceArea) => {
@@ -211,6 +235,16 @@ const DriverServiceArea = ({ onSaved }: { onSaved?: () => void }) => {
             <span>{errors.centre} Tap the button above and drop a pin on the map.</span>
           </p>
         )}
+        {(isSet || hasRemembered) && (
+          <button
+            type="button"
+            onClick={handleResetToDefault}
+            className="mt-2 inline-flex items-center gap-1.5 text-xs font-semibold text-muted-foreground hover:text-destructive transition-colors"
+          >
+            <RotateCcw className="h-3.5 w-3.5" />
+            Reset to default
+          </button>
+        )}
       </div>
 
       <div>
@@ -283,7 +317,7 @@ const DriverServiceArea = ({ onSaved }: { onSaved?: () => void }) => {
             <div className="flex items-center justify-between px-4 pb-2">
               <h3 className="font-display text-base font-bold text-foreground">Pick your working area</h3>
               <button
-                onClick={() => setShowPicker(false)}
+                onClick={() => { setShowPicker(false); setUseDefaultCentre(false); }}
                 className="rounded-full px-3 py-1 text-xs font-semibold text-muted-foreground hover:bg-secondary"
               >
                 Close
@@ -299,9 +333,11 @@ const DriverServiceArea = ({ onSaved }: { onSaved?: () => void }) => {
               <AddressMapPicker
                 onConfirm={handleConfirm}
                 initialCoords={
-                  data.service_lat != null && data.service_lng != null
-                    ? { lat: data.service_lat, lng: data.service_lng }
-                    : readLastCentre()
+                  useDefaultCentre
+                    ? null
+                    : data.service_lat != null && data.service_lng != null
+                      ? { lat: data.service_lat, lng: data.service_lng }
+                      : readLastCentre()
                 }
               />
             </Suspense>
