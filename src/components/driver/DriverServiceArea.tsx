@@ -235,6 +235,16 @@ const DriverServiceArea = ({ onSaved }: { onSaved?: () => void }) => {
             <span>{errors.centre} Tap the button above and drop a pin on the map.</span>
           </p>
         )}
+        {(isSet || hasRemembered) && (
+          <button
+            type="button"
+            onClick={handleResetToDefault}
+            className="mt-2 inline-flex items-center gap-1.5 text-xs font-semibold text-muted-foreground hover:text-destructive transition-colors"
+          >
+            <RotateCcw className="h-3.5 w-3.5" />
+            Reset to default
+          </button>
+        )}
       </div>
 
       <div>
