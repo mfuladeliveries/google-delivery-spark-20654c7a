@@ -1450,6 +1450,14 @@ const RestaurantCard = ({
             {r.gallery_images?.length > 0 && (
               <p className="text-[10px] text-muted-foreground font-medium">🖼️ {r.gallery_images.length} gallery</p>
             )}
+            {(() => {
+              const a = areas.find(x => x.id === r.area_id);
+              return a ? (
+                <p className="text-[10px] text-primary font-semibold">🗺️ {a.name}</p>
+              ) : (
+                <p className="text-[10px] text-amber-600 font-semibold">🗺️ No area</p>
+              );
+            })()}
           </div>
         </div>
         <div className="flex items-center gap-1.5 shrink-0">
