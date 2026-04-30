@@ -8,14 +8,16 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import {
-  DEFAULT_SERVICE_AREA,
   distanceKm,
-  evaluateServiceArea,
-  getServiceArea,
-  type ServiceAreaConfig,
+  findNearestZone,
+  getActiveZones,
+  OUT_OF_ZONE_MESSAGE,
+  type DeliveryZone,
 } from "@/lib/serviceArea";
 
-// Fix default marker icon paths (Leaflet + bundlers).
+// Default centre when we have nothing to anchor on (Cape Town).
+const FALLBACK_CENTRE: [number, number] = [-33.9249, 18.4241];
+
 const markerIcon = L.icon({
   iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
   iconRetinaUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
@@ -27,25 +29,15 @@ const markerIcon = L.icon({
 });
 
 interface AddressMapPickerProps {
-  /** Called when the user confirms a picked location. */
   onConfirm: (result: { address: string; lat: number; lng: number }) => void;
-  /** Optional initial address to centre on. */
   initialAddress?: string;
-  /** Optional initial coordinates (skips the geocode round-trip). */
   initialCoords?: { lat: number; lng: number } | null;
-  /** Optional per-restaurant delivery validation target. */
-  validationTarget?: {
-    lat: number;
-    lng: number;
-    maxDistanceKm: number;
-    label?: string;
-  };
 }
 
 const RecenterMap = ({ position }: { position: [number, number] }) => {
   const map = useMap();
   useEffect(() => {
-    map.setView(position, Math.max(map.getZoom(), 16), { animate: true });
+    map.setView(position, Math.max(map.getZoom(), 14), { animate: true });
   }, [map, position]);
   return null;
 };
@@ -63,15 +55,10 @@ export const AddressMapPicker = ({
   onConfirm,
   initialAddress,
   initialCoords,
-  validationTarget,
 }: AddressMapPickerProps) => {
-  const [config, setConfig] = useState<ServiceAreaConfig>(DEFAULT_SERVICE_AREA);
+  const [zones, setZones] = useState<DeliveryZone[]>([]);
   const [position, setPosition] = useState<[number, number]>(
-    initialCoords
-      ? [initialCoords.lat, initialCoords.lng]
-      : validationTarget
-        ? [validationTarget.lat, validationTarget.lng]
-        : [DEFAULT_SERVICE_AREA.center_lat, DEFAULT_SERVICE_AREA.center_lng],
+    initialCoords ? [initialCoords.lat, initialCoords.lng] : FALLBACK_CENTRE,
   );
   const [address, setAddress] = useState<string>("");
   const [search, setSearch] = useState<string>("");
@@ -81,20 +68,18 @@ export const AddressMapPicker = ({
   const [confirming, setConfirming] = useState(false);
   const reverseAbort = useRef<AbortController | null>(null);
 
-  // Load admin-configured service area once
+  // Load zones for the visualisation circles.
   useEffect(() => {
-    if (validationTarget) return;
     let alive = true;
-    getServiceArea().then((cfg) => {
-      if (alive) setConfig(cfg);
+    getActiveZones().then((z) => {
+      if (alive) setZones(z);
     });
     return () => {
       alive = false;
     };
-  }, [validationTarget]);
+  }, []);
 
-  // Reverse-geocode only after the pin has settled (debounced) so the
-  // house number stays accurate while the user is still adjusting.
+  // Reverse-geocode the pin (debounced).
   useEffect(() => {
     reverseAbort.current?.abort();
     setLoadingAddress(true);
@@ -120,7 +105,7 @@ export const AddressMapPicker = ({
     };
   }, [position]);
 
-  // On first mount, try to centre on initial address (if no coords given)
+  // On first mount, try to centre on initial address (if no coords given).
   useEffect(() => {
     if (initialCoords) return;
     const q = initialAddress?.trim();
@@ -171,31 +156,26 @@ export const AddressMapPicker = ({
     }
   };
 
-  const service = useMemo(
-    () => evaluateServiceArea(position[0], position[1], config),
-    [position, config],
+  const matchedZone = useMemo(
+    () => findNearestZone(position[0], position[1], zones),
+    [position, zones],
   );
+  const inRange = matchedZone !== null;
 
-  const distanceToTarget = useMemo(() => {
-    if (!validationTarget) return null;
-    return distanceKm(position[0], position[1], validationTarget.lat, validationTarget.lng);
-  }, [position, validationTarget]);
-
-  const inRange = validationTarget
-    ? distanceToTarget != null && distanceToTarget <= validationTarget.maxDistanceKm
-    : service.in_range;
-
-  const outOfRangeTitle = validationTarget
-    ? "Outside delivery range"
-    : "Delivery not available in your area";
-
-  const outOfRangeDescription = validationTarget
-    ? `This spot is ${distanceToTarget?.toFixed(1)} km from ${validationTarget.label || "this restaurant"}. Delivery is available within ${validationTarget.maxDistanceKm} km.`
-    : "Please pick a spot closer to the centre of our service area.";
+  // Distance to nearest zone centre (even if out of range), for hint copy.
+  const nearestCentreDistance = useMemo(() => {
+    if (zones.length === 0) return null;
+    let min = Infinity;
+    for (const z of zones) {
+      if (z.lat == null || z.lng == null) continue;
+      const d = distanceKm(z.lat, z.lng, position[0], position[1]);
+      if (d < min) min = d;
+    }
+    return Number.isFinite(min) ? min : null;
+  }, [position, zones]);
 
   return (
     <div className="flex h-full flex-col">
-      {/* Search bar */}
       <form onSubmit={handleSearch} className="flex gap-2 px-4 pb-2">
         <div className="relative flex-1">
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -211,11 +191,10 @@ export const AddressMapPicker = ({
         </Button>
       </form>
 
-      {/* Map */}
       <div className="relative mx-4 overflow-hidden rounded-2xl border border-border" style={{ height: 280 }}>
         <MapContainer
           center={position}
-          zoom={16}
+          zoom={14}
           scrollWheelZoom
           style={{ height: "100%", width: "100%" }}
         >
@@ -223,18 +202,23 @@ export const AddressMapPicker = ({
             attribution='&copy; <a href="https://osm.org/copyright">OpenStreetMap</a>'
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           />
-          {/* Subtle service-area ring (no labels — customer never sees "zones") */}
-          <Circle
-            center={validationTarget ? [validationTarget.lat, validationTarget.lng] : [config.center_lat, config.center_lng]}
-            radius={(validationTarget ? validationTarget.maxDistanceKm : config.outer_radius_km) * 1000}
-            pathOptions={{
-              color: "hsl(24 95% 53%)",
-              weight: 1.5,
-              fillColor: "hsl(24 95% 53%)",
-              fillOpacity: 0.05,
-              dashArray: "4 6",
-            }}
-          />
+          {/* Show a circle for each delivery zone */}
+          {zones.map((z) =>
+            z.lat != null && z.lng != null ? (
+              <Circle
+                key={z.id}
+                center={[z.lat, z.lng]}
+                radius={Number(z.radius_km) * 1000}
+                pathOptions={{
+                  color: matchedZone?.zone.id === z.id ? "hsl(24 95% 53%)" : "hsl(24 95% 53% / 0.6)",
+                  weight: matchedZone?.zone.id === z.id ? 2 : 1.2,
+                  fillColor: "hsl(24 95% 53%)",
+                  fillOpacity: matchedZone?.zone.id === z.id ? 0.08 : 0.04,
+                  dashArray: matchedZone?.zone.id === z.id ? undefined : "4 6",
+                }}
+              />
+            ) : null,
+          )}
           <Marker
             position={position}
             icon={markerIcon}
@@ -251,7 +235,6 @@ export const AddressMapPicker = ({
           <RecenterMap position={position} />
         </MapContainer>
 
-        {/* Use my location FAB */}
         <button
           type="button"
           onClick={handleUseMyLocation}
@@ -264,10 +247,9 @@ export const AddressMapPicker = ({
       </div>
 
       <p className="px-4 pt-2 text-[11px] text-muted-foreground">
-        Tap the map or drag the pin to your exact spot.
+        Tap the map or drag the pin to your exact spot. Orange circles are delivery zones.
       </p>
 
-      {/* Selected address */}
       <div className="mt-3 space-y-2 px-4 pb-4">
         <div className="rounded-2xl border border-border bg-card p-3">
           <div className="flex items-start gap-2">
@@ -279,6 +261,11 @@ export const AddressMapPicker = ({
               <p className="mt-0.5 text-sm text-foreground">
                 {loadingAddress ? "Finding address…" : address || "Move the pin to pick an address"}
               </p>
+              {matchedZone && (
+                <p className="mt-1 text-[11px] font-bold text-primary">
+                  ✓ Inside {matchedZone.zone.name} · R{matchedZone.zone.delivery_fee} delivery
+                </p>
+              )}
             </div>
           </div>
         </div>
@@ -292,10 +279,12 @@ export const AddressMapPicker = ({
               <AlertTriangle className="h-4 w-4" />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-bold text-destructive">{outOfRangeTitle}</p>
-              <p className="mt-0.5 text-[11px] leading-relaxed text-foreground">
-                {outOfRangeDescription}
-              </p>
+              <p className="text-sm font-bold text-destructive">{OUT_OF_ZONE_MESSAGE}</p>
+              {nearestCentreDistance != null && (
+                <p className="mt-0.5 text-[11px] leading-relaxed text-foreground">
+                  Nearest zone centre is {nearestCentreDistance.toFixed(1)} km away.
+                </p>
+              )}
             </div>
           </div>
         )}
@@ -308,7 +297,7 @@ export const AddressMapPicker = ({
             className={cn("h-12 w-full rounded-full text-sm font-bold")}
           >
             {!inRange && address && !loadingAddress
-              ? "Outside delivery range"
+              ? "Outside delivery zone"
               : "Use this address"}
           </Button>
         ) : (
