@@ -139,6 +139,7 @@ const AdminDashboard = () => {
   const [allOrders, setAllOrders] = useState<RecentOrder[]>([]);
   const [users, setUsers] = useState<UserRecord[]>([]);
   const [restaurants, setRestaurants] = useState<RestaurantRecord[]>([]);
+  const [areas, setAreas] = useState<DeliveryAreaOption[]>([]);
   const [drivers, setDrivers] = useState<DriverRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -170,8 +171,16 @@ const AdminDashboard = () => {
   }, [user, role]);
 
   const fetchAll = async () => {
-    await Promise.all([fetchStats(), fetchUsers(), fetchRestaurants(), fetchDrivers()]);
+    await Promise.all([fetchStats(), fetchUsers(), fetchRestaurants(), fetchDrivers(), fetchAreas()]);
     setLoading(false);
+  };
+
+  const fetchAreas = async () => {
+    const { data } = await supabase
+      .from("delivery_areas")
+      .select("id, name, is_active")
+      .order("name");
+    setAreas((data || []) as DeliveryAreaOption[]);
   };
 
   const fetchStats = async () => {
@@ -483,6 +492,7 @@ const AdminDashboard = () => {
         {tab === "restaurants" && (
           <RestaurantsTab
             restaurants={restaurants}
+            areas={areas}
             onToggleActive={toggleRestaurantActive}
             onRestaurantChanged={() => { fetchRestaurants(); fetchStats(); }}
           />
