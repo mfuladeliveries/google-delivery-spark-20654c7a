@@ -333,9 +333,11 @@ const DriverServiceArea = ({ onSaved }: { onSaved?: () => void }) => {
               <AddressMapPicker
                 onConfirm={handleConfirm}
                 initialCoords={
-                  data.service_lat != null && data.service_lng != null
-                    ? { lat: data.service_lat, lng: data.service_lng }
-                    : readLastCentre()
+                  useDefaultCentre
+                    ? null
+                    : data.service_lat != null && data.service_lng != null
+                      ? { lat: data.service_lat, lng: data.service_lng }
+                      : readLastCentre()
                 }
               />
             </Suspense>
