@@ -483,6 +483,9 @@ const AdminDashboard = () => {
           </>
         )}
 
+        {/* Delivery Areas */}
+        {tab === "areas" && <AdminDeliveryAreas />}
+
         {/* About Page Editor */}
         {tab === "about" && (
           <>
