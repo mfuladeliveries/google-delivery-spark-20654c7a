@@ -734,6 +734,49 @@ const Orders = () => {
                       return null;
                     })()}
 
+                    {/* Live ETA banner — shows once a driver is assigned and updates each time their GPS pings */}
+                    {order.driver_id &&
+                      ["driver_assigned", "picking_up", "arrived_at_restaurant", "out_for_delivery"].includes(order.status) &&
+                      (() => {
+                        const eta = computeEtaMinutes(order);
+                        if (eta == null) return null;
+                        const phaseLabel =
+                          order.status === "out_for_delivery"
+                            ? "Driver heading to you"
+                            : order.status === "arrived_at_restaurant"
+                              ? "Driver picking up your order"
+                              : order.status === "picking_up"
+                                ? "Driver heading to restaurant"
+                                : "Driver on the way";
+                        return (
+                          <div
+                            role="status"
+                            aria-live="polite"
+                            className="mb-3 flex items-center gap-3 rounded-xl border-2 border-primary/30 bg-gradient-to-r from-primary/10 to-primary/5 px-3 py-2.5"
+                          >
+                            <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-orange">
+                              <Clock className="h-4 w-4" />
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
+                                Estimated arrival
+                              </p>
+                              <p className="text-base font-extrabold leading-tight text-primary">
+                                {formatEta(eta)}
+                              </p>
+                            </div>
+                            <div className="hidden sm:block min-w-0 text-right">
+                              <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                                Status
+                              </p>
+                              <p className="truncate text-xs font-semibold text-foreground">
+                                {phaseLabel}
+                              </p>
+                            </div>
+                          </div>
+                        );
+                      })()}
+
                     {/* Delivery PIN shown directly under order number until delivered */}
                     {(deliveryPins[order.id] || order.delivery_code) && order.status !== "delivered" && !isCancelled && (
                       <div className="mb-3 flex items-center gap-2 rounded-lg border border-primary/20 bg-primary/5 px-3 py-1.5">
