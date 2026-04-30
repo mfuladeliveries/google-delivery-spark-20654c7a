@@ -398,6 +398,34 @@ const DriverDashboard = () => {
     return <AuthLoadingScreen label="Loading driver dashboard…" />;
   }
 
+  // First-time setup gate: a driver MUST pick their working area before they can
+  // use the dashboard. Admins onboard the driver, but the driver chooses their area.
+  const needsAreaSetup =
+    !roles.includes("admin") &&
+    driverProfile != null &&
+    (driverProfile.service_lat == null || driverProfile.service_lng == null);
+
+  if (needsAreaSetup) {
+    return (
+      <div className="min-h-screen bg-background">
+        <div className="mx-auto max-w-lg px-4 pt-8 pb-24">
+          <div className="mb-6 text-center">
+            <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10">
+              <MapPin className="h-7 w-7 text-primary" />
+            </div>
+            <h1 className="font-display text-2xl font-bold text-foreground">
+              Welcome! Set your working area
+            </h1>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Before you can go online and receive deliveries, please tell us where you'll be working.
+              You can change this anytime from your Profile.
+            </p>
+          </div>
+          <DriverServiceArea onSaved={fetchDriverProfile} />
+        </div>
+      </div>
+    );
+  }
 
   const isOnline = driverProfile?.is_online ?? false;
 
