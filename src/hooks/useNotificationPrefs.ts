@@ -3,10 +3,15 @@ import { useEffect, useState, useCallback } from "react";
 export type NotificationPrefs = {
   out_for_delivery: boolean;
   cancelled: boolean;
+  driver_action_sounds: boolean;
 };
 
 const STORAGE_KEY = "notification_prefs";
-const DEFAULTS: NotificationPrefs = { out_for_delivery: true, cancelled: true };
+const DEFAULTS: NotificationPrefs = {
+  out_for_delivery: true,
+  cancelled: true,
+  driver_action_sounds: true,
+};
 const EVENT_NAME = "notification-prefs-change";
 
 const read = (): NotificationPrefs => {

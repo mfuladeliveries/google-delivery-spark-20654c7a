@@ -1,8 +1,10 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { Camera, Upload, Save, Car, FileText, CreditCard, LogOut, User, Star } from "lucide-react";
+import { Camera, Upload, Save, Car, FileText, CreditCard, LogOut, User, Star, Volume2, VolumeX } from "lucide-react";
 import { toast } from "sonner";
+import { useNotificationPrefs } from "@/hooks/useNotificationPrefs";
+import { Switch } from "@/components/ui/switch";
 
 interface ProfileData {
   full_name: string;
@@ -19,6 +21,7 @@ interface DriverProfileData {
 
 const DriverProfileTab = () => {
   const { user, signOut } = useAuth();
+  const { prefs, update: updatePrefs } = useNotificationPrefs();
   const [profile, setProfile] = useState<ProfileData>({ full_name: "", contact_number: "", address: "" });
   const [driverData, setDriverData] = useState<DriverProfileData>({ vehicle_type: "", license_plate: "", license_url: "", id_document_url: "" });
   const [saving, setSaving] = useState(false);
@@ -241,6 +244,32 @@ const DriverProfileTab = () => {
         <Save className="h-4 w-4" />
         {saving ? "Saving..." : "Save Profile"}
       </button>
+
+      {/* Sound preferences */}
+      <div className="rounded-2xl border border-border bg-card p-4 shadow-card">
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex items-start gap-3 min-w-0">
+            <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-primary/10">
+              {prefs.driver_action_sounds ? (
+                <Volume2 className="h-4 w-4 text-primary" />
+              ) : (
+                <VolumeX className="h-4 w-4 text-muted-foreground" />
+              )}
+            </div>
+            <div className="min-w-0">
+              <p className="text-sm font-bold text-foreground">Accept / Decline sounds</p>
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                Play a short chime when you tap Accept or Decline on a new order.
+              </p>
+            </div>
+          </div>
+          <Switch
+            checked={prefs.driver_action_sounds}
+            onCheckedChange={(v) => updatePrefs({ driver_action_sounds: v })}
+            aria-label="Toggle accept and decline feedback sounds"
+          />
+        </div>
+      </div>
 
       {/* Sign out */}
       <button

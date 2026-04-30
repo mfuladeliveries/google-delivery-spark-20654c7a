@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { MapPin, Store, Clock, Package, Check, X } from "lucide-react";
 import { driverPayoutForFee } from "@/lib/serviceArea";
+import { getNotificationPrefs } from "@/hooks/useNotificationPrefs";
 
 interface NewOrderOffer {
   id: string;
@@ -49,6 +50,7 @@ const NewOrderModal = ({ open, offer, distanceKm, accepting, rejecting, onAccept
   // variant "accept" = bright rising major third (E5 -> A5)
   // variant "decline" = muted descending minor (A4 -> D4)
   const playFeedback = (variant: "accept" | "decline") => {
+    if (!getNotificationPrefs().driver_action_sounds) return;
     try {
       const Ctx = (window.AudioContext || (window as any).webkitAudioContext);
       if (!Ctx) return;
