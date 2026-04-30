@@ -1,8 +1,10 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { Camera, Upload, Save, Car, FileText, CreditCard, LogOut, User, Star } from "lucide-react";
+import { Camera, Upload, Save, Car, FileText, CreditCard, LogOut, User, Star, Volume2, VolumeX } from "lucide-react";
 import { toast } from "sonner";
+import { useNotificationPrefs } from "@/hooks/useNotificationPrefs";
+import { Switch } from "@/components/ui/switch";
 
 interface ProfileData {
   full_name: string;
