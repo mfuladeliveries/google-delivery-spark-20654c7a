@@ -16,6 +16,27 @@ import {
 
 const AddressMapPicker = lazy(() => import("@/components/AddressMapPicker"));
 
+const LAST_CENTRE_KEY = "driver:lastServiceCentre";
+
+const readLastCentre = (): { lat: number; lng: number } | null => {
+  try {
+    const raw = localStorage.getItem(LAST_CENTRE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (
+      typeof parsed?.lat === "number" &&
+      typeof parsed?.lng === "number" &&
+      Math.abs(parsed.lat) <= 90 &&
+      Math.abs(parsed.lng) <= 180
+    ) {
+      return { lat: parsed.lat, lng: parsed.lng };
+    }
+  } catch {
+    /* ignore */
+  }
+  return null;
+};
+
 interface ServiceArea {
   service_lat: number | null;
   service_lng: number | null;
@@ -114,6 +135,14 @@ const DriverServiceArea = ({ onSaved }: { onSaved?: () => void }) => {
       icon: <CheckCircle2 className="h-4 w-4 text-primary" />,
       duration: 5000,
     });
+    try {
+      localStorage.setItem(
+        LAST_CENTRE_KEY,
+        JSON.stringify({ lat: data.service_lat, lng: data.service_lng }),
+      );
+    } catch {
+      /* ignore */
+    }
     onSaved?.();
   };
 
@@ -272,7 +301,7 @@ const DriverServiceArea = ({ onSaved }: { onSaved?: () => void }) => {
                 initialCoords={
                   data.service_lat != null && data.service_lng != null
                     ? { lat: data.service_lat, lng: data.service_lng }
-                    : null
+                    : readLastCentre()
                 }
               />
             </Suspense>
