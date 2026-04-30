@@ -80,6 +80,9 @@ interface DriverRecord {
   total_deliveries: number;
   vehicle_type?: string;
   license_plate?: string;
+  service_area_id?: string | null;
+  service_area_name?: string | null;
+  service_area_suburb?: string | null;
   profile?: { full_name: string; contact_number: string };
 }
 
@@ -261,15 +264,27 @@ const AdminDashboard = () => {
   };
 
   const fetchDrivers = async () => {
-    const { data: driverProfiles } = await supabase.from("driver_profiles").select("user_id, is_online, total_earnings, total_deliveries, vehicle_type, license_plate");
+    const { data: driverProfiles } = await supabase.from("driver_profiles").select("user_id, is_online, total_earnings, total_deliveries, vehicle_type, license_plate, service_area_id");
     if (driverProfiles) {
       const userIds = driverProfiles.map(d => d.user_id);
-      const { data: profiles } = await supabase.from("profiles").select("user_id, full_name, contact_number").in("user_id", userIds);
+      const areaIds = Array.from(new Set(driverProfiles.map(d => d.service_area_id).filter(Boolean))) as string[];
+      const [{ data: profiles }, { data: areas }] = await Promise.all([
+        supabase.from("profiles").select("user_id, full_name, contact_number").in("user_id", userIds),
+        areaIds.length
+          ? supabase.from("delivery_areas").select("id, name, suburb").in("id", areaIds)
+          : Promise.resolve({ data: [] as any[] }),
+      ]);
       const profileMap = new Map(profiles?.map(p => [p.user_id, p]) || []);
-      setDrivers(driverProfiles.map(d => ({
-        ...d,
-        profile: profileMap.get(d.user_id) as any,
-      })));
+      const areaMap = new Map((areas || []).map((a: any) => [a.id, a]));
+      setDrivers(driverProfiles.map(d => {
+        const area = d.service_area_id ? areaMap.get(d.service_area_id) : null;
+        return {
+          ...d,
+          profile: profileMap.get(d.user_id) as any,
+          service_area_name: area?.name ?? null,
+          service_area_suburb: area?.suburb ?? null,
+        };
+      }));
     }
   };
 
@@ -574,6 +589,27 @@ const DriversTab = ({ drivers, onDriverAdded }: { drivers: DriverRecord[]; onDri
   const [licensePlate, setLicensePlate] = useState("");
   const [registering, setRegistering] = useState(false);
   const [editing, setEditing] = useState<DriverRecord | null>(null);
+  const [removing, setRemoving] = useState<DriverRecord | null>(null);
+  const [removeMode, setRemoveMode] = useState<"revoke" | "delete">("revoke");
+  const [removingBusy, setRemovingBusy] = useState(false);
+
+  const handleRemoveDriver = async () => {
+    if (!removing) return;
+    setRemovingBusy(true);
+    try {
+      const res = await supabase.functions.invoke("admin-delete-driver", {
+        body: { user_id: removing.user_id, mode: removeMode },
+      });
+      if (res.error) throw new Error(res.error.message || "Failed to remove driver");
+      if ((res.data as any)?.error) throw new Error((res.data as any).error);
+      toast.success(removeMode === "delete" ? "Driver account deleted" : "Driver access revoked");
+      setRemoving(null);
+      onDriverAdded();
+    } catch (err: any) {
+      toast.error(err.message || "Failed to remove driver");
+    }
+    setRemovingBusy(false);
+  };
 
   const handleRegisterDriver = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -664,34 +700,68 @@ const DriversTab = ({ drivers, onDriverAdded }: { drivers: DriverRecord[]; onDri
           <p className="text-sm mt-1">Click "Register Driver" to add one</p>
         </div>
       ) : (
-        <div className="space-y-3">
-          {drivers.map(d => (
-            <div key={d.user_id} className="rounded-2xl border border-border bg-card p-4 shadow-card">
-              <div className="flex items-center justify-between gap-2">
-                <div className="min-w-0 flex-1">
-                  <h3 className="font-bold text-sm text-foreground truncate">{d.profile?.full_name || "Unknown"}</h3>
-                  <p className="text-xs text-muted-foreground">{d.profile?.contact_number || "—"}</p>
+        <div className="space-y-5">
+          {(() => {
+            const groups = new Map<string, { label: string; suburb: string | null; drivers: DriverRecord[] }>();
+            for (const d of drivers) {
+              const key = d.service_area_name || "__unassigned__";
+              const label = d.service_area_name || "No working area";
+              if (!groups.has(key)) groups.set(key, { label, suburb: d.service_area_suburb || null, drivers: [] });
+              groups.get(key)!.drivers.push(d);
+            }
+            const sorted = Array.from(groups.values()).sort((a, b) => {
+              if (a.label === "No working area") return 1;
+              if (b.label === "No working area") return -1;
+              return a.label.localeCompare(b.label);
+            });
+            return sorted.map(group => (
+              <div key={group.label} className="space-y-2">
+                <div className="flex items-center gap-2 px-1">
+                  <MapPin className="h-3.5 w-3.5 text-primary" />
+                  <h3 className="text-xs font-bold uppercase tracking-wide text-foreground">
+                    {group.label}
+                    {group.suburb && <span className="ml-1 text-muted-foreground normal-case font-medium">· {group.suburb}</span>}
+                  </h3>
+                  <span className="text-[10px] font-bold text-muted-foreground">({group.drivers.length})</span>
                 </div>
-                <span className={`rounded-full px-2.5 py-1 text-[10px] font-bold ${
-                  d.is_online ? "bg-green-100 text-green-700" : "bg-red-100 text-red-600"
-                }`}>
-                  {d.is_online ? "🟢 Online" : "🔴 Offline"}
-                </span>
-                <button
-                  onClick={() => setEditing(d)}
-                  className="flex items-center gap-1 rounded-lg border border-border bg-background px-2.5 py-1.5 text-xs font-bold text-foreground hover:bg-secondary transition-colors"
-                >
-                  <Pencil className="h-3 w-3" /> Edit
-                </button>
+                <div className="space-y-3">
+                  {group.drivers.map(d => (
+                    <div key={d.user_id} className="rounded-2xl border border-border bg-card p-4 shadow-card">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="min-w-0 flex-1">
+                          <h3 className="font-bold text-sm text-foreground truncate">{d.profile?.full_name || "Unknown"}</h3>
+                          <p className="text-xs text-muted-foreground">{d.profile?.contact_number || "—"}</p>
+                        </div>
+                        <span className={`rounded-full px-2.5 py-1 text-[10px] font-bold ${
+                          d.is_online ? "bg-green-100 text-green-700" : "bg-red-100 text-red-600"
+                        }`}>
+                          {d.is_online ? "🟢 Online" : "🔴 Offline"}
+                        </span>
+                        <button
+                          onClick={() => setEditing(d)}
+                          className="flex items-center gap-1 rounded-lg border border-border bg-background px-2.5 py-1.5 text-xs font-bold text-foreground hover:bg-secondary transition-colors"
+                        >
+                          <Pencil className="h-3 w-3" /> Edit
+                        </button>
+                        <button
+                          onClick={() => setRemoving(d)}
+                          className="flex items-center gap-1 rounded-lg border border-destructive/40 bg-background px-2.5 py-1.5 text-xs font-bold text-destructive hover:bg-destructive/10 transition-colors"
+                        >
+                          <Trash2 className="h-3 w-3" /> Remove
+                        </button>
+                      </div>
+                      <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
+                        <span>💰 R{d.total_earnings.toFixed(0)} earned</span>
+                        <span>📦 {d.total_deliveries} deliveries</span>
+                        {d.vehicle_type && <span>🚗 {d.vehicle_type}</span>}
+                        {d.license_plate && <span>🔢 {d.license_plate}</span>}
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
-              <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
-                <span>💰 R{d.total_earnings.toFixed(0)} earned</span>
-                <span>📦 {d.total_deliveries} deliveries</span>
-                {d.vehicle_type && <span>🚗 {d.vehicle_type}</span>}
-                {d.license_plate && <span>🔢 {d.license_plate}</span>}
-              </div>
-            </div>
-          ))}
+            ));
+          })()}
         </div>
       )}
 
@@ -700,6 +770,48 @@ const DriversTab = ({ drivers, onDriverAdded }: { drivers: DriverRecord[]; onDri
         onClose={() => setEditing(null)}
         onSaved={() => { setEditing(null); onDriverAdded(); }}
       />
+
+      <Dialog open={!!removing} onOpenChange={(open) => { if (!open) setRemoving(null); }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Remove driver</DialogTitle>
+            <DialogDescription>
+              {removing?.profile?.full_name || "This driver"} will lose access. Choose how to proceed:
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            <label className={`flex items-start gap-2 rounded-xl border-2 p-3 cursor-pointer ${removeMode === "revoke" ? "border-primary bg-primary/5" : "border-border"}`}>
+              <input type="radio" name="removeMode" value="revoke" checked={removeMode === "revoke"} onChange={() => setRemoveMode("revoke")} className="mt-1" />
+              <div>
+                <p className="text-sm font-bold text-foreground">Revoke driver access</p>
+                <p className="text-xs text-muted-foreground">Removes the driver role and forces them offline. Account, history and earnings stay intact.</p>
+              </div>
+            </label>
+            <label className={`flex items-start gap-2 rounded-xl border-2 p-3 cursor-pointer ${removeMode === "delete" ? "border-destructive bg-destructive/5" : "border-border"}`}>
+              <input type="radio" name="removeMode" value="delete" checked={removeMode === "delete"} onChange={() => setRemoveMode("delete")} className="mt-1" />
+              <div>
+                <p className="text-sm font-bold text-destructive">Delete account permanently</p>
+                <p className="text-xs text-muted-foreground">Removes the auth account, profile and driver record. Cannot be undone.</p>
+              </div>
+            </label>
+          </div>
+          <DialogFooter>
+            <button
+              onClick={() => setRemoving(null)}
+              className="rounded-xl border border-border bg-background px-4 py-2 text-sm font-bold text-foreground hover:bg-secondary transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleRemoveDriver}
+              disabled={removingBusy}
+              className="rounded-xl bg-destructive px-4 py-2 text-sm font-bold text-destructive-foreground disabled:opacity-50 hover:opacity-90 transition-opacity"
+            >
+              {removingBusy ? "Removing..." : removeMode === "delete" ? "Delete account" : "Revoke access"}
+            </button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 };
