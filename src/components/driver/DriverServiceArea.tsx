@@ -103,6 +103,7 @@ const DriverServiceArea = ({ onSaved }: { onSaved?: () => void }) => {
     }));
     setErrors((e) => ({ ...e, centre: undefined }));
     setShowPicker(false);
+    setUseDefaultCentre(false);
   };
 
   const validate = (d: ServiceArea) => {
