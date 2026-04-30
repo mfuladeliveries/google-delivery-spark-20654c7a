@@ -131,6 +131,22 @@ const CheckoutDialog = ({
 
   const outOfRange = distanceToRestaurant != null && distanceToRestaurant > MAX_DELIVERY_KM;
 
+  // Driver-coverage check: when the customer's coords change, ask the server whether any
+  // online driver covers this delivery location. Non-blocking — we only warn the customer.
+  const [coverage, setCoverage] = useState<{ covered: boolean; online_in_area: number; total_online: number } | null>(null);
+  useEffect(() => {
+    if (!coords) {
+      setCoverage(null);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase.rpc("check_area_coverage", { p_lat: coords.lat, p_lng: coords.lng });
+      if (!cancelled && data) setCoverage(data as any);
+    })();
+    return () => { cancelled = true; };
+  }, [coords]);
+
   const handleAddressSelect = (result: ValidatedAddress) => {
     setAddress(result.address);
     setCoords({ lat: result.lat, lng: result.lng });
