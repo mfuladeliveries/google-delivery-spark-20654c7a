@@ -41,7 +41,7 @@ interface DriverProfile {
   service_lng?: number | null;
 }
 
-type DriverTab = "orders" | "earnings" | "withdraw" | "profile";
+type DriverTab = "orders" | "earnings" | "withdraw" | "area" | "profile";
 
 const DriverDashboard = () => {
   const { user, roles, loading: authLoading } = useAuth();
