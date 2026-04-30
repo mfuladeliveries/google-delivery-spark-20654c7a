@@ -134,6 +134,36 @@ const PayFastRedirect = () => {
             Tap if not redirected automatically
           </button>
         )}
+
+        {/* Sandbox test card info — visible while running against PayFast sandbox */}
+        <div className="mt-5 rounded-2xl border border-dashed border-border bg-muted/40 p-4 text-left">
+          <p className="text-[11px] font-bold uppercase tracking-wide text-primary">
+            Sandbox test details
+          </p>
+          <p className="mt-1 text-[11px] text-muted-foreground">
+            Use these on the PayFast sandbox checkout — no real money is charged.
+          </p>
+          <dl className="mt-3 space-y-1.5 text-xs">
+            <div className="flex justify-between gap-3">
+              <dt className="text-muted-foreground">Card number</dt>
+              <dd className="font-mono font-semibold text-foreground">
+                4000 0000 0000 0002
+              </dd>
+            </div>
+            <div className="flex justify-between gap-3">
+              <dt className="text-muted-foreground">Expiry</dt>
+              <dd className="font-mono font-semibold text-foreground">12/30</dd>
+            </div>
+            <div className="flex justify-between gap-3">
+              <dt className="text-muted-foreground">CVV</dt>
+              <dd className="font-mono font-semibold text-foreground">123</dd>
+            </div>
+            <div className="flex justify-between gap-3">
+              <dt className="text-muted-foreground">3D Secure password</dt>
+              <dd className="font-mono font-semibold text-foreground">12345</dd>
+            </div>
+          </dl>
+        </div>
       </div>
     </div>
   );
