@@ -179,9 +179,6 @@ const DriverProfileTab = () => {
         </div>
       </div>
 
-      {/* Working Area */}
-      <DriverServiceArea />
-
       {/* Documents */}
       <div className="rounded-2xl border border-border bg-card p-4 shadow-card space-y-3">
         <h3 className="font-bold text-foreground flex items-center gap-2">
