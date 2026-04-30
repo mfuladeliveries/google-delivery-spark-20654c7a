@@ -954,10 +954,12 @@ const EditDriverDialog = ({
 // Restaurant management component
 const RestaurantsTab = ({
   restaurants,
+  areas,
   onToggleActive,
   onRestaurantChanged,
 }: {
   restaurants: RestaurantRecord[];
+  areas: DeliveryAreaOption[];
   onToggleActive: (id: string, isActive: boolean) => void;
   onRestaurantChanged: () => void;
 }) => {
@@ -967,6 +969,7 @@ const RestaurantsTab = ({
   const [location, setLocation] = useState("");
   const [description, setDescription] = useState("");
   const [minOrder, setMinOrder] = useState("0");
+  const [areaId, setAreaId] = useState<string>("");
   const [ownerEmail, setOwnerEmail] = useState("");
   const [ownerPassword, setOwnerPassword] = useState("");
   const [ownerName, setOwnerName] = useState("");
