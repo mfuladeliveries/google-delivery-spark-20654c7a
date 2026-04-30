@@ -1,8 +1,18 @@
 import { useEffect, useState, lazy, Suspense } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { MapPin, Save, Crosshair, AlertTriangle } from "lucide-react";
+import { MapPin, Save, Crosshair, AlertTriangle, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 const AddressMapPicker = lazy(() => import("@/components/AddressMapPicker"));
 
@@ -24,6 +34,7 @@ const DriverServiceArea = ({ onSaved }: { onSaved?: () => void }) => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [showPicker, setShowPicker] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -48,8 +59,7 @@ const DriverServiceArea = ({ onSaved }: { onSaved?: () => void }) => {
     setShowPicker(false);
   };
 
-  const handleSave = async () => {
-    if (!user) return;
+  const requestSave = () => {
     if (data.service_lat == null || data.service_lng == null) {
       toast.error("Please pick your working area on the map first");
       return;
@@ -58,6 +68,12 @@ const DriverServiceArea = ({ onSaved }: { onSaved?: () => void }) => {
       toast.error("Radius must be at least 1 km");
       return;
     }
+    setShowConfirm(true);
+  };
+
+  const handleSave = async () => {
+    if (!user) return;
+    setShowConfirm(false);
     setSaving(true);
     const { error } = await supabase
       .from("driver_profiles")
@@ -73,7 +89,11 @@ const DriverServiceArea = ({ onSaved }: { onSaved?: () => void }) => {
       toast.error(error.message);
       return;
     }
-    toast.success("Working area saved!");
+    toast.success("Working area saved!", {
+      description: `${data.service_area_label || "Your area"} • ${data.service_radius_km} km radius — you'll now receive offers in this zone.`,
+      icon: <CheckCircle2 className="h-4 w-4 text-primary" />,
+      duration: 5000,
+    });
     onSaved?.();
   };
 
@@ -143,13 +163,36 @@ const DriverServiceArea = ({ onSaved }: { onSaved?: () => void }) => {
       </div>
 
       <button
-        onClick={handleSave}
+        onClick={requestSave}
         disabled={saving}
         className="w-full rounded-2xl bg-primary py-3 text-sm font-bold text-primary-foreground disabled:opacity-50 transition-all hover:scale-[1.01] active:scale-[0.99] shadow-orange flex items-center justify-center gap-2"
       >
         <Save className="h-4 w-4" />
         {saving ? "Saving..." : "Save Working Area"}
       </button>
+
+      <AlertDialog open={showConfirm} onOpenChange={setShowConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirm your working area</AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-2 text-sm">
+                <p>You'll only receive delivery offers inside this zone:</p>
+                <div className="rounded-xl bg-secondary/60 p-3 space-y-1">
+                  <div className="flex justify-between"><span className="text-muted-foreground">Area</span><span className="font-semibold text-foreground">{data.service_area_label || "Unnamed area"}</span></div>
+                  <div className="flex justify-between"><span className="text-muted-foreground">Centre</span><span className="font-mono text-xs text-foreground">{data.service_lat?.toFixed(4)}, {data.service_lng?.toFixed(4)}</span></div>
+                  <div className="flex justify-between"><span className="text-muted-foreground">Radius</span><span className="font-semibold text-primary">{data.service_radius_km} km</span></div>
+                </div>
+                <p className="text-xs text-muted-foreground">You can change this anytime from the Area tab.</p>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleSave}>Confirm & Save</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {showPicker && (
         <div className="fixed inset-0 z-[70] bg-black/70 backdrop-blur-sm flex items-center justify-center p-3">
