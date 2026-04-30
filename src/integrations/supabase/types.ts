@@ -903,6 +903,7 @@ export type Database = {
       }
       restaurants: {
         Row: {
+          area_id: string | null
           banner_url: string | null
           closes_at: string | null
           contact_number: string | null
@@ -929,6 +930,7 @@ export type Database = {
           total_reviews: number
         }
         Insert: {
+          area_id?: string | null
           banner_url?: string | null
           closes_at?: string | null
           contact_number?: string | null
@@ -955,6 +957,7 @@ export type Database = {
           total_reviews?: number
         }
         Update: {
+          area_id?: string | null
           banner_url?: string | null
           closes_at?: string | null
           contact_number?: string | null
@@ -980,7 +983,15 @@ export type Database = {
           rating?: number
           total_reviews?: number
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "restaurants_area_id_fkey"
+            columns: ["area_id"]
+            isOneToOne: false
+            referencedRelation: "delivery_areas"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_roles: {
         Row: {

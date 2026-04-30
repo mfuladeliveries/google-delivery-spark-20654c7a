@@ -70,6 +70,13 @@ interface RestaurantRecord {
   gallery_images: string[];
   opens_at: string | null;
   closes_at: string | null;
+  area_id: string | null;
+}
+
+interface DeliveryAreaOption {
+  id: string;
+  name: string;
+  is_active: boolean;
 }
 
 interface DriverRecord {
@@ -132,6 +139,7 @@ const AdminDashboard = () => {
   const [allOrders, setAllOrders] = useState<RecentOrder[]>([]);
   const [users, setUsers] = useState<UserRecord[]>([]);
   const [restaurants, setRestaurants] = useState<RestaurantRecord[]>([]);
+  const [areas, setAreas] = useState<DeliveryAreaOption[]>([]);
   const [drivers, setDrivers] = useState<DriverRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -163,8 +171,16 @@ const AdminDashboard = () => {
   }, [user, role]);
 
   const fetchAll = async () => {
-    await Promise.all([fetchStats(), fetchUsers(), fetchRestaurants(), fetchDrivers()]);
+    await Promise.all([fetchStats(), fetchUsers(), fetchRestaurants(), fetchDrivers(), fetchAreas()]);
     setLoading(false);
+  };
+
+  const fetchAreas = async () => {
+    const { data } = await supabase
+      .from("delivery_areas")
+      .select("id, name, is_active")
+      .order("name");
+    setAreas((data || []) as DeliveryAreaOption[]);
   };
 
   const fetchStats = async () => {
@@ -258,7 +274,7 @@ const AdminDashboard = () => {
   };
 
   const fetchRestaurants = async () => {
-    const { data } = await supabase.from("restaurants").select("id, name, cuisine, is_active, owner_user_id, rating, location, lat, lng, logo_url, banner_url, gallery_images, opens_at, closes_at").order("name");
+    const { data } = await supabase.from("restaurants").select("id, name, cuisine, is_active, owner_user_id, rating, location, lat, lng, logo_url, banner_url, gallery_images, opens_at, closes_at, area_id").order("name");
     if (data) setRestaurants(data as RestaurantRecord[]);
   };
 
@@ -476,6 +492,7 @@ const AdminDashboard = () => {
         {tab === "restaurants" && (
           <RestaurantsTab
             restaurants={restaurants}
+            areas={areas}
             onToggleActive={toggleRestaurantActive}
             onRestaurantChanged={() => { fetchRestaurants(); fetchStats(); }}
           />
@@ -937,10 +954,12 @@ const EditDriverDialog = ({
 // Restaurant management component
 const RestaurantsTab = ({
   restaurants,
+  areas,
   onToggleActive,
   onRestaurantChanged,
 }: {
   restaurants: RestaurantRecord[];
+  areas: DeliveryAreaOption[];
   onToggleActive: (id: string, isActive: boolean) => void;
   onRestaurantChanged: () => void;
 }) => {
@@ -950,6 +969,7 @@ const RestaurantsTab = ({
   const [location, setLocation] = useState("");
   const [description, setDescription] = useState("");
   const [minOrder, setMinOrder] = useState("0");
+  const [areaId, setAreaId] = useState<string>("");
   const [ownerEmail, setOwnerEmail] = useState("");
   const [ownerPassword, setOwnerPassword] = useState("");
   const [ownerName, setOwnerName] = useState("");
@@ -1010,6 +1030,7 @@ const RestaurantsTab = ({
         owner_user_id: null,
         lat: coords?.lat ?? null,
         lng: coords?.lng ?? null,
+        area_id: areaId || null,
       }).select("id").single();
       if (error) throw error;
 
@@ -1034,6 +1055,7 @@ const RestaurantsTab = ({
 
       setShowForm(false);
       setName(""); setCuisine(""); setLocation(""); setDescription(""); setMinOrder("0");
+      setAreaId("");
       setOwnerEmail(""); setOwnerPassword(""); setOwnerName(""); setOwnerContact("");
       setManualLat(""); setManualLng("");
       onRestaurantChanged();
@@ -1100,6 +1122,23 @@ const RestaurantsTab = ({
               <label className="block text-xs font-semibold text-muted-foreground mb-1">Description</label>
               <input value={description} onChange={e => setDescription(e.target.value)} placeholder="Short description"
                 className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20" />
+            </div>
+            <div className="sm:col-span-2">
+              <label className="block text-xs font-semibold text-muted-foreground mb-1">
+                🗺️ Delivery Area <span className="text-muted-foreground">(customers in this area will see this restaurant)</span>
+              </label>
+              <select
+                value={areaId}
+                onChange={e => setAreaId(e.target.value)}
+                className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+              >
+                <option value="">— No area assigned —</option>
+                {areas.map(a => (
+                  <option key={a.id} value={a.id}>
+                    {a.name}{a.is_active ? "" : " (inactive)"}
+                  </option>
+                ))}
+              </select>
             </div>
           </div>
 
@@ -1169,6 +1208,7 @@ const RestaurantsTab = ({
           <RestaurantCard
             key={r.id}
             restaurant={r}
+            areas={areas}
             onToggleActive={onToggleActive}
             onDelete={handleDelete}
             deleting={deleting}
@@ -1183,12 +1223,14 @@ const RestaurantsTab = ({
 // Individual restaurant card with inline edit
 const RestaurantCard = ({
   restaurant: r,
+  areas,
   onToggleActive,
   onDelete,
   deleting,
   onRestaurantChanged,
 }: {
   restaurant: RestaurantRecord;
+  areas: DeliveryAreaOption[];
   onToggleActive: (id: string, isActive: boolean) => void;
   onDelete: (id: string, name: string) => void;
   deleting: string | null;
@@ -1199,6 +1241,8 @@ const RestaurantCard = ({
   const [editPassword, setEditPassword] = useState("");
   const [editName, setEditName] = useState("");
   const [editContact, setEditContact] = useState("");
+  const [editAreaId, setEditAreaId] = useState<string>(r.area_id ?? "");
+  const [savingArea, setSavingArea] = useState(false);
   const [savingEdit, setSavingEdit] = useState(false);
   const [ownerInfo, setOwnerInfo] = useState<{ email: string; full_name: string; contact_number: string } | null>(null);
   const [loadingOwner, setLoadingOwner] = useState(false);
@@ -1260,6 +1304,23 @@ const RestaurantCard = ({
       toast.error(err.message || "Failed to save coordinates");
     }
     setSavingCoords(false);
+  };
+
+  const handleSaveArea = async () => {
+    setSavingArea(true);
+    try {
+      const { error } = await supabase
+        .from("restaurants")
+        .update({ area_id: editAreaId || null })
+        .eq("id", r.id);
+      if (error) throw error;
+      const label = areas.find(a => a.id === editAreaId)?.name || "no area";
+      toast.success(`🗺️ ${r.name} assigned to ${label}`);
+      onRestaurantChanged();
+    } catch (err: any) {
+      toast.error(err.message || "Failed to update area");
+    }
+    setSavingArea(false);
   };
 
   const hasCoords = r.lat !== null && r.lng !== null;
@@ -1406,6 +1467,14 @@ const RestaurantCard = ({
             {r.gallery_images?.length > 0 && (
               <p className="text-[10px] text-muted-foreground font-medium">🖼️ {r.gallery_images.length} gallery</p>
             )}
+            {(() => {
+              const a = areas.find(x => x.id === r.area_id);
+              return a ? (
+                <p className="text-[10px] text-primary font-semibold">🗺️ {a.name}</p>
+              ) : (
+                <p className="text-[10px] text-amber-600 font-semibold">🗺️ No area</p>
+              );
+            })()}
           </div>
         </div>
         <div className="flex items-center gap-1.5 shrink-0">
@@ -1462,6 +1531,33 @@ const RestaurantCard = ({
 
       {editing && (
         <div className="border-t border-border bg-secondary/30 p-4 space-y-4">
+          {/* Delivery area assignment */}
+          <div className="space-y-2">
+            <h4 className="font-bold text-xs text-foreground">🗺️ Delivery Area</h4>
+            <p className="text-[10px] text-muted-foreground">Customers in this area will see this restaurant on their home page.</p>
+            <div className="flex gap-2">
+              <select
+                value={editAreaId}
+                onChange={e => setEditAreaId(e.target.value)}
+                className="flex-1 rounded-xl border border-border bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+              >
+                <option value="">— No area assigned —</option>
+                {areas.map(a => (
+                  <option key={a.id} value={a.id}>
+                    {a.name}{a.is_active ? "" : " (inactive)"}
+                  </option>
+                ))}
+              </select>
+              <button
+                onClick={handleSaveArea}
+                disabled={savingArea || (editAreaId === (r.area_id ?? ""))}
+                className="rounded-xl bg-primary px-3 py-2 text-xs font-bold text-primary-foreground disabled:opacity-50 hover:opacity-90"
+              >
+                <Save className="inline h-3 w-3 mr-1" />{savingArea ? "Saving…" : "Save"}
+              </button>
+            </div>
+          </div>
+
           {/* Coordinates editor — always available */}
           <div className="space-y-2">
             <div className="flex items-center justify-between">
