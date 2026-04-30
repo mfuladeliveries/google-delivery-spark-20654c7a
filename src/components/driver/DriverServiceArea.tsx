@@ -59,8 +59,7 @@ const DriverServiceArea = ({ onSaved }: { onSaved?: () => void }) => {
     setShowPicker(false);
   };
 
-  const handleSave = async () => {
-    if (!user) return;
+  const requestSave = () => {
     if (data.service_lat == null || data.service_lng == null) {
       toast.error("Please pick your working area on the map first");
       return;
@@ -69,6 +68,12 @@ const DriverServiceArea = ({ onSaved }: { onSaved?: () => void }) => {
       toast.error("Radius must be at least 1 km");
       return;
     }
+    setShowConfirm(true);
+  };
+
+  const handleSave = async () => {
+    if (!user) return;
+    setShowConfirm(false);
     setSaving(true);
     const { error } = await supabase
       .from("driver_profiles")
@@ -84,7 +89,11 @@ const DriverServiceArea = ({ onSaved }: { onSaved?: () => void }) => {
       toast.error(error.message);
       return;
     }
-    toast.success("Working area saved!");
+    toast.success("Working area saved!", {
+      description: `${data.service_area_label || "Your area"} • ${data.service_radius_km} km radius — you'll now receive offers in this zone.`,
+      icon: <CheckCircle2 className="h-4 w-4 text-primary" />,
+      duration: 5000,
+    });
     onSaved?.();
   };
 
