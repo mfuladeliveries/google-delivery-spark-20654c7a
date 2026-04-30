@@ -1,6 +1,8 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useMemo } from "react";
 import { MenuItem, SizeOption, AddOnOption, CutOption, storeInfo } from "@/data/menu";
 import { useCustomerLocation } from "@/hooks/useCustomerLocation";
+import { supabase } from "@/integrations/supabase/client";
+import { calcZoneFee, distanceKm } from "@/lib/serviceArea";
 
 export interface CartItem {
   /** Stable per-line key — same dish with different cut/size/sauces/pieces becomes a separate line. */
