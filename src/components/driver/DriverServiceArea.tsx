@@ -1,7 +1,7 @@
 import { useEffect, useState, lazy, Suspense } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { MapPin, Save, Crosshair, AlertTriangle, CheckCircle2 } from "lucide-react";
+import { MapPin, Save, Crosshair, AlertTriangle, CheckCircle2, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
 import {
   AlertDialog,
