@@ -11,10 +11,7 @@ import { toast } from "sonner";
 // dispatchAndNotify removed — dispatch is now triggered server-side after PayFast ITN confirms payment.
 import { useNavigate } from "react-router-dom";
 import { AddressAutocomplete, type ValidatedAddress } from "@/components/AddressAutocomplete";
-import { distanceKm } from "@/lib/serviceArea";
-
-// Per-restaurant max delivery distance enforced server-side too.
-const MAX_DELIVERY_KM = 8;
+import { findNearestZone, OUT_OF_ZONE_MESSAGE, DEFAULT_ZONE_RADIUS_KM } from "@/lib/serviceArea";
 
 // Lazy-load the heavy Leaflet map picker only when the user opens it.
 const AddressMapPicker = lazy(() => import("@/components/AddressMapPicker"));
@@ -67,7 +64,7 @@ const CheckoutDialog = ({
   const navigate = useNavigate();
   const { user } = useAuth();
   const { balance: walletBalance, refresh: refreshWallet } = useCustomerCredits();
-  const { refresh: refreshLocation } = useCustomerLocation();
+  const { refresh: refreshLocation, zones } = useCustomerLocation();
   const [useWallet, setUseWallet] = useState(false);
   const [name, setName] = useState("");
   const [contact, setContact] = useState("");
@@ -128,13 +125,15 @@ const CheckoutDialog = ({
     };
   }, [open, primaryRestaurantName]);
 
-  // Distance from selected delivery address to the restaurant (km), or null if either side missing.
-  const distanceToRestaurant = useMemo(() => {
-    if (!coords || !restaurantCoords) return null;
-    return distanceKm(coords.lat, coords.lng, restaurantCoords.lat, restaurantCoords.lng);
-  }, [coords, restaurantCoords]);
+  // Match the customer's verified coords against the active delivery zones.
+  // A delivery is allowed only if the address falls within ANY zone's radius.
+  const zoneMatch = useMemo(() => {
+    if (!coords) return null;
+    return findNearestZone(coords.lat, coords.lng, zones);
+  }, [coords, zones]);
 
-  const outOfRange = distanceToRestaurant != null && distanceToRestaurant > MAX_DELIVERY_KM;
+  const outOfRange = !!coords && zoneMatch === null;
+  const zoneFee = zoneMatch ? Number(zoneMatch.zone.delivery_fee) : null;
 
   // Driver-coverage check: when the customer's coords change, ask the server whether any
   // online driver covers this delivery location. Non-blocking — we only warn the customer.
@@ -266,7 +265,7 @@ const CheckoutDialog = ({
     }
 
     if (outOfRange) {
-      toast.error(`Your address is outside the ${MAX_DELIVERY_KM} km delivery range for this restaurant.`);
+      toast.error(OUT_OF_ZONE_MESSAGE);
       return;
     }
 
@@ -549,26 +548,40 @@ const CheckoutDialog = ({
               </p>
             )}
 
-            {addressVerified && coords && !outOfRange && (
-              <p className="mt-1.5 flex items-center gap-1.5 text-xs font-semibold text-primary">
-                <Check className="h-3.5 w-3.5" />
-                Address verified
-                {distanceToRestaurant != null && (
+            {addressVerified && coords && !outOfRange && zoneMatch && (
+              <div className="mt-1.5 space-y-1">
+                <p className="flex items-center gap-1.5 text-xs font-semibold text-primary">
+                  <Check className="h-3.5 w-3.5" />
+                  Address verified
                   <span className="text-muted-foreground font-normal">
-                    · {distanceToRestaurant.toFixed(1)} km from {primaryRestaurantName || "restaurant"}
+                    · {zoneMatch.distance_km.toFixed(1)} km from {zoneMatch.zone.name} centre
                   </span>
-                )}
-              </p>
+                </p>
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="inline-flex items-center gap-1 rounded-full border border-primary/40 bg-primary/10 px-2.5 py-1 text-xs font-bold text-primary">
+                    <MapPin className="h-3 w-3" />
+                    {zoneMatch.zone.name}
+                  </span>
+                  {zoneFee != null && (
+                    <span className="inline-flex items-center gap-1 rounded-full bg-secondary px-2.5 py-1 text-xs font-semibold text-secondary-foreground">
+                      Delivery fee: {storeInfo.currency}{zoneFee.toFixed(2)}
+                    </span>
+                  )}
+                </div>
+              </div>
             )}
 
-            {addressVerified && outOfRange && distanceToRestaurant != null && (
+            {addressVerified && outOfRange && (
               <div className="mt-2 flex items-start gap-2 rounded-xl border-2 border-destructive/40 bg-destructive/10 p-3">
                 <AlertTriangle className="h-4 w-4 flex-shrink-0 text-destructive mt-0.5" />
                 <div className="text-xs">
                   <p className="font-bold text-destructive">Outside delivery range</p>
                   <p className="mt-0.5 text-foreground">
-                    This address is {distanceToRestaurant.toFixed(1)} km from {primaryRestaurantName || "the restaurant"}.
-                    We deliver up to {MAX_DELIVERY_KM} km. Please pick a closer address.
+                    {OUT_OF_ZONE_MESSAGE} Please pick an address within {DEFAULT_ZONE_RADIUS_KM} km of one of our active zones
+                    {zones.length > 0 && (
+                      <> ({zones.map((z) => z.name).join(", ")})</>
+                    )}
+                    .
                   </p>
                 </div>
               </div>
