@@ -75,7 +75,7 @@ export function useCart() {
   // Lazy initializer rehydrates the cart from localStorage so the user's
   // selections survive minimize/relaunch and full app restarts.
   const [items, setItems] = useState<CartItem[]>(() => loadPersistedCart());
-  const { zone } = useCustomerLocation();
+  const { zone, lat, lng } = useCustomerLocation();
 
   // Persist cart on every change. localStorage is synchronous but tiny here.
   useEffect(() => {
@@ -85,6 +85,44 @@ export function useCart() {
       /* quota / private mode — ignore */
     }
   }, [items]);
+
+  // Look up the primary restaurant's coords so we can compute the dynamic
+  // delivery fee = base + (km from restaurant × per-km), clamped by min/max.
+  const primaryRestaurantName = useMemo(() => {
+    const names = items
+      .map((ci) => ci.item.restaurantName || ci.item.category)
+      .filter(Boolean) as string[];
+    return names[0] || "";
+  }, [items]);
+
+  const [restaurantCoords, setRestaurantCoords] = useState<{
+    lat: number;
+    lng: number;
+  } | null>(null);
+  useEffect(() => {
+    if (!primaryRestaurantName) {
+      setRestaurantCoords(null);
+      return;
+    }
+    let alive = true;
+    supabase
+      .from("restaurants")
+      .select("lat,lng")
+      .eq("name", primaryRestaurantName)
+      .eq("is_active", true)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (!alive) return;
+        if (data && typeof data.lat === "number" && typeof data.lng === "number") {
+          setRestaurantCoords({ lat: data.lat, lng: data.lng });
+        } else {
+          setRestaurantCoords(null);
+        }
+      });
+    return () => {
+      alive = false;
+    };
+  }, [primaryRestaurantName]);
 
   /** Add a fully-configured line. If an identical line exists, increment qty. */
   const addItemWithOptions = useCallback(
