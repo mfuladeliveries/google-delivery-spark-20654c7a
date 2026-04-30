@@ -195,7 +195,17 @@ export function useCart() {
 
   const subtotal = items.reduce((sum, ci) => sum + ci.unitPrice * ci.quantity, 0);
   const tax = subtotal * storeInfo.tax;
-  const deliveryFee = zone?.zone.delivery_fee ?? 65;
+
+  // Dynamic per-zone fee: base + per-km × distance(restaurant, customer), clamped.
+  // Falls back to zone-centre distance when restaurant coords aren't loaded yet.
+  let deliveryFee = 65;
+  if (zone) {
+    const pricingDistance =
+      restaurantCoords && lat != null && lng != null
+        ? distanceKm(restaurantCoords.lat, restaurantCoords.lng, lat, lng)
+        : zone.pricing_distance_km;
+    deliveryFee = calcZoneFee(zone.zone, pricingDistance);
+  }
   const delivery = items.length > 0 ? deliveryFee : 0;
   const total = subtotal + tax + delivery;
   const totalItems = items.reduce((sum, ci) => sum + ci.quantity, 0);
@@ -212,5 +222,6 @@ export function useCart() {
     delivery,
     total,
     totalItems,
+    zoneName: zone?.zone.name ?? null,
   };
 }
