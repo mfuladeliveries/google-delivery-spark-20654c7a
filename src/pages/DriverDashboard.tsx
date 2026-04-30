@@ -37,8 +37,7 @@ interface DriverProfile {
   is_online: boolean;
   total_earnings: number;
   total_deliveries: number;
-  service_lat?: number | null;
-  service_lng?: number | null;
+  service_area_id?: string | null;
 }
 
 type DriverTab = "orders" | "earnings" | "withdraw" | "area" | "profile";
@@ -270,7 +269,7 @@ const DriverDashboard = () => {
 
   const fetchDriverProfile = async () => {
     const { data } = await supabase
-      .from("driver_profiles").select("is_online, total_earnings, total_deliveries, service_lat, service_lng")
+      .from("driver_profiles").select("is_online, total_earnings, total_deliveries, service_area_id")
       .eq("user_id", user!.id).maybeSingle();
     if (data) setDriverProfile(data);
     else {
@@ -286,11 +285,11 @@ const DriverDashboard = () => {
     if (newStatus) {
       const { data: row } = await supabase
         .from("driver_profiles")
-        .select("service_lat, service_lng")
+        .select("service_area_id")
         .eq("user_id", user!.id)
         .maybeSingle();
-      if (!row?.service_lat || !row?.service_lng) {
-        toast.error("Set your working area in Profile before going online");
+      if (!row?.service_area_id) {
+        toast.error("Pick your working area in the Area tab before going online");
         return;
       }
     }
@@ -403,7 +402,7 @@ const DriverDashboard = () => {
   const needsAreaSetup =
     !roles.includes("admin") &&
     driverProfile != null &&
-    (driverProfile.service_lat == null || driverProfile.service_lng == null);
+    !driverProfile.service_area_id;
 
   if (needsAreaSetup) {
     return (

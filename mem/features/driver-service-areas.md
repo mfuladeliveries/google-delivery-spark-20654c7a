@@ -1,12 +1,11 @@
 ---
 name: Driver Service Areas
-description: Per-driver working radius around a chosen point; mandatory at first login; dispatch and checkout coverage rules
+description: Admin-managed delivery_areas (name + suburb) replace per-driver radius. Each driver picks one area; dispatch matches by area name/suburb in customer address.
 type: feature
 ---
-
-- Each driver picks a centre point (`service_lat`, `service_lng`) and a `service_radius_km` (default 5, slider 1–20). Optional `service_area_label` for display.
-- Stored on `driver_profiles`. Edited from `DriverProfile.tsx` via `DriverServiceArea.tsx` (lazy `AddressMapPicker`).
-- **Mandatory at first login (admin-led onboarding)**: `DriverDashboard` shows a full-screen "Welcome! Set your working area" gate (`DriverServiceArea` only) until the driver saves `service_lat`/`service_lng`. Admins viewing as themselves bypass the gate.
-- Drivers without `service_lat`/`service_lng` set are **hidden from dispatch** — `dispatch_assign_next` excludes them. Going online is also blocked in `DriverDashboard.toggleOnline` as a defence in depth.
-- Dispatch matches the driver's service area against the **customer's** delivery coordinate (`distance_km(driver.service_*, order.customer_*) <= service_radius_km`). The existing 10 km restaurant-pickup constraint still applies as a secondary filter.
-- Checkout calls `check_area_coverage(lat, lng)` RPC whenever the customer's coords change. If `covered=false`, an amber non-blocking warning is shown — the customer can still place the order; it sits in dispatch waiting for a driver to come online.
+- Table `delivery_areas` (id, name, suburb, is_active) — admin CRUD via AdminDeliveryAreas tab in AdminDashboard.
+- `driver_profiles.service_area_id` references the chosen area (one per driver).
+- `dispatch_assign_next` only offers an order to drivers whose chosen active area's name OR suburb appears (case-insensitive) in `orders.customer_address`. Restaurant-distance 10 km soft preference still applies for ranking.
+- `check_area_coverage(p_lat, p_lng, p_address)` reports coverage by matching online drivers' chosen area names/suburbs against the customer's address. CheckoutDialog passes the address.
+- Drivers must pick an area before going online; gate enforced in DriverDashboard. Picker UI is in `src/components/driver/DriverServiceArea.tsx` (Area tab) — list of admin areas, single-select, confirm dialog.
+- Old per-driver fields (service_lat, service_lng, service_radius_km, service_area_label) still exist in the column set but are no longer used by dispatch or UI.

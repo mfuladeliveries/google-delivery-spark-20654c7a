@@ -89,6 +89,36 @@ export type Database = {
         }
         Relationships: []
       }
+      delivery_areas: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          is_active: boolean
+          name: string
+          suburb: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          suburb?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          suburb?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       driver_access_requests: {
         Row: {
           admin_notes: string | null
@@ -171,6 +201,7 @@ export type Database = {
           license_plate: string
           license_url: string
           location_updated_at: string | null
+          service_area_id: string | null
           service_area_label: string
           service_lat: number | null
           service_lng: number | null
@@ -196,6 +227,7 @@ export type Database = {
           license_plate?: string
           license_url?: string
           location_updated_at?: string | null
+          service_area_id?: string | null
           service_area_label?: string
           service_lat?: number | null
           service_lng?: number | null
@@ -221,6 +253,7 @@ export type Database = {
           license_plate?: string
           license_url?: string
           location_updated_at?: string | null
+          service_area_id?: string | null
           service_area_label?: string
           service_lat?: number | null
           service_lng?: number | null
@@ -231,7 +264,15 @@ export type Database = {
           user_id?: string
           vehicle_type?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "driver_profiles_service_area_id_fkey"
+            columns: ["service_area_id"]
+            isOneToOne: false
+            referencedRelation: "delivery_areas"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       driver_rejected_orders: {
         Row: {
@@ -942,10 +983,12 @@ export type Database = {
         Returns: undefined
       }
       auto_cancel_stale_orders: { Args: never; Returns: number }
-      check_area_coverage: {
-        Args: { p_lat: number; p_lng: number }
-        Returns: Json
-      }
+      check_area_coverage:
+        | { Args: { p_lat: number; p_lng: number }; Returns: Json }
+        | {
+            Args: { p_address?: string; p_lat: number; p_lng: number }
+            Returns: Json
+          }
       check_rate_limit: {
         Args: {
           p_action: string
