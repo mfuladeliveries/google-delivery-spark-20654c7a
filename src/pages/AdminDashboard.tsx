@@ -1306,6 +1306,23 @@ const RestaurantCard = ({
     setSavingCoords(false);
   };
 
+  const handleSaveArea = async () => {
+    setSavingArea(true);
+    try {
+      const { error } = await supabase
+        .from("restaurants")
+        .update({ area_id: editAreaId || null })
+        .eq("id", r.id);
+      if (error) throw error;
+      const label = areas.find(a => a.id === editAreaId)?.name || "no area";
+      toast.success(`🗺️ ${r.name} assigned to ${label}`);
+      onRestaurantChanged();
+    } catch (err: any) {
+      toast.error(err.message || "Failed to update area");
+    }
+    setSavingArea(false);
+  };
+
   const hasCoords = r.lat !== null && r.lng !== null;
 
   const handleGeocode = async () => {
