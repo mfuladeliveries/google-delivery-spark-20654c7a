@@ -1,17 +1,23 @@
-import { Md5 } from "https://deno.land/std@0.224.0/crypto/md5.ts";
+import { crypto } from "jsr:@std/crypto/crypto";
+import { encodeHex } from "jsr:@std/encoding/hex";
 
 export function pfEncode(value: string): string {
   return encodeURIComponent(value).replace(/%20/g, "+");
 }
 
-export function md5(input: string): string {
-  return new Md5().update(input).toString();
+export async function md5(input: string): Promise<string> {
+  const digest = await crypto.subtle.digest(
+    "MD5",
+    new TextEncoder().encode(input),
+  );
+
+  return encodeHex(digest);
 }
 
-export function buildPayfastSignature(
+export async function buildPayfastSignature(
   fields: Record<string, string>,
   passphrase: string,
-): string {
+): Promise<string> {
   const parts: string[] = [];
 
   for (const [key, value] of Object.entries(fields)) {
@@ -25,5 +31,5 @@ export function buildPayfastSignature(
     queryString += `&passphrase=${pfEncode(passphrase.trim())}`;
   }
 
-  return md5(queryString);
+  return await md5(queryString);
 }
