@@ -141,7 +141,7 @@ const CheckoutDialog = ({
     }
     let cancelled = false;
     (async () => {
-      const { data } = await supabase.rpc("check_area_coverage", { p_lat: coords.lat, p_lng: coords.lng });
+      const { data } = await supabase.rpc("check_area_coverage", { p_lat: coords.lat, p_lng: coords.lng, p_address: address });
       if (!cancelled && data) setCoverage(data as any);
     })();
     return () => { cancelled = true; };
