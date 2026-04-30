@@ -16,6 +16,27 @@ import {
 
 const AddressMapPicker = lazy(() => import("@/components/AddressMapPicker"));
 
+const LAST_CENTRE_KEY = "driver:lastServiceCentre";
+
+const readLastCentre = (): { lat: number; lng: number } | null => {
+  try {
+    const raw = localStorage.getItem(LAST_CENTRE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (
+      typeof parsed?.lat === "number" &&
+      typeof parsed?.lng === "number" &&
+      Math.abs(parsed.lat) <= 90 &&
+      Math.abs(parsed.lng) <= 180
+    ) {
+      return { lat: parsed.lat, lng: parsed.lng };
+    }
+  } catch {
+    /* ignore */
+  }
+  return null;
+};
+
 interface ServiceArea {
   service_lat: number | null;
   service_lng: number | null;
