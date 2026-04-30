@@ -11,10 +11,7 @@ import { toast } from "sonner";
 // dispatchAndNotify removed — dispatch is now triggered server-side after PayFast ITN confirms payment.
 import { useNavigate } from "react-router-dom";
 import { AddressAutocomplete, type ValidatedAddress } from "@/components/AddressAutocomplete";
-import { distanceKm } from "@/lib/serviceArea";
-
-// Per-restaurant max delivery distance enforced server-side too.
-const MAX_DELIVERY_KM = 8;
+import { findNearestZone, OUT_OF_ZONE_MESSAGE, DEFAULT_ZONE_RADIUS_KM } from "@/lib/serviceArea";
 
 // Lazy-load the heavy Leaflet map picker only when the user opens it.
 const AddressMapPicker = lazy(() => import("@/components/AddressMapPicker"));
