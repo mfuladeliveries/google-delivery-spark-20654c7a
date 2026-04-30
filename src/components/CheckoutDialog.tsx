@@ -265,7 +265,7 @@ const CheckoutDialog = ({
     }
 
     if (outOfRange) {
-      toast.error(`Your address is outside the ${MAX_DELIVERY_KM} km delivery range for this restaurant.`);
+      toast.error(OUT_OF_ZONE_MESSAGE);
       return;
     }
 
