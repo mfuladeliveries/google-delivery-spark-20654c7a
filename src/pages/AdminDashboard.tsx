@@ -679,34 +679,68 @@ const DriversTab = ({ drivers, onDriverAdded }: { drivers: DriverRecord[]; onDri
           <p className="text-sm mt-1">Click "Register Driver" to add one</p>
         </div>
       ) : (
-        <div className="space-y-3">
-          {drivers.map(d => (
-            <div key={d.user_id} className="rounded-2xl border border-border bg-card p-4 shadow-card">
-              <div className="flex items-center justify-between gap-2">
-                <div className="min-w-0 flex-1">
-                  <h3 className="font-bold text-sm text-foreground truncate">{d.profile?.full_name || "Unknown"}</h3>
-                  <p className="text-xs text-muted-foreground">{d.profile?.contact_number || "—"}</p>
+        <div className="space-y-5">
+          {(() => {
+            const groups = new Map<string, { label: string; suburb: string | null; drivers: DriverRecord[] }>();
+            for (const d of drivers) {
+              const key = d.service_area_name || "__unassigned__";
+              const label = d.service_area_name || "No working area";
+              if (!groups.has(key)) groups.set(key, { label, suburb: d.service_area_suburb || null, drivers: [] });
+              groups.get(key)!.drivers.push(d);
+            }
+            const sorted = Array.from(groups.values()).sort((a, b) => {
+              if (a.label === "No working area") return 1;
+              if (b.label === "No working area") return -1;
+              return a.label.localeCompare(b.label);
+            });
+            return sorted.map(group => (
+              <div key={group.label} className="space-y-2">
+                <div className="flex items-center gap-2 px-1">
+                  <MapPin className="h-3.5 w-3.5 text-primary" />
+                  <h3 className="text-xs font-bold uppercase tracking-wide text-foreground">
+                    {group.label}
+                    {group.suburb && <span className="ml-1 text-muted-foreground normal-case font-medium">· {group.suburb}</span>}
+                  </h3>
+                  <span className="text-[10px] font-bold text-muted-foreground">({group.drivers.length})</span>
                 </div>
-                <span className={`rounded-full px-2.5 py-1 text-[10px] font-bold ${
-                  d.is_online ? "bg-green-100 text-green-700" : "bg-red-100 text-red-600"
-                }`}>
-                  {d.is_online ? "🟢 Online" : "🔴 Offline"}
-                </span>
-                <button
-                  onClick={() => setEditing(d)}
-                  className="flex items-center gap-1 rounded-lg border border-border bg-background px-2.5 py-1.5 text-xs font-bold text-foreground hover:bg-secondary transition-colors"
-                >
-                  <Pencil className="h-3 w-3" /> Edit
-                </button>
+                <div className="space-y-3">
+                  {group.drivers.map(d => (
+                    <div key={d.user_id} className="rounded-2xl border border-border bg-card p-4 shadow-card">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="min-w-0 flex-1">
+                          <h3 className="font-bold text-sm text-foreground truncate">{d.profile?.full_name || "Unknown"}</h3>
+                          <p className="text-xs text-muted-foreground">{d.profile?.contact_number || "—"}</p>
+                        </div>
+                        <span className={`rounded-full px-2.5 py-1 text-[10px] font-bold ${
+                          d.is_online ? "bg-green-100 text-green-700" : "bg-red-100 text-red-600"
+                        }`}>
+                          {d.is_online ? "🟢 Online" : "🔴 Offline"}
+                        </span>
+                        <button
+                          onClick={() => setEditing(d)}
+                          className="flex items-center gap-1 rounded-lg border border-border bg-background px-2.5 py-1.5 text-xs font-bold text-foreground hover:bg-secondary transition-colors"
+                        >
+                          <Pencil className="h-3 w-3" /> Edit
+                        </button>
+                        <button
+                          onClick={() => setRemoving(d)}
+                          className="flex items-center gap-1 rounded-lg border border-destructive/40 bg-background px-2.5 py-1.5 text-xs font-bold text-destructive hover:bg-destructive/10 transition-colors"
+                        >
+                          <Trash2 className="h-3 w-3" /> Remove
+                        </button>
+                      </div>
+                      <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
+                        <span>💰 R{d.total_earnings.toFixed(0)} earned</span>
+                        <span>📦 {d.total_deliveries} deliveries</span>
+                        {d.vehicle_type && <span>🚗 {d.vehicle_type}</span>}
+                        {d.license_plate && <span>🔢 {d.license_plate}</span>}
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
-              <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
-                <span>💰 R{d.total_earnings.toFixed(0)} earned</span>
-                <span>📦 {d.total_deliveries} deliveries</span>
-                {d.vehicle_type && <span>🚗 {d.vehicle_type}</span>}
-                {d.license_plate && <span>🔢 {d.license_plate}</span>}
-              </div>
-            </div>
-          ))}
+            ));
+          })()}
         </div>
       )}
 
