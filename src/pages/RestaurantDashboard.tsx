@@ -457,7 +457,7 @@ const RestaurantDashboard = () => {
       </header>
 
       <main className="mx-auto max-w-6xl px-4 py-4 pb-nav md:pb-8">
-        {tab === "orders" ? (
+        {tab === "orders" && (
           <div className="space-y-4">
             {/* Metrics Grid */}
             <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
