@@ -116,6 +116,11 @@ Deno.serve(async (req) => {
     const itnUrl = `${SUPABASE_URL}/functions/v1/payfast-itn`;
 
     // Field order matters for the signature — use PayFast's documented order.
+    const sandboxBuyerEmailBlocked =
+      MODE === "sandbox" &&
+      userEmail &&
+      userEmail.trim().toLowerCase() === MERCHANT_ID.trim().toLowerCase();
+
     const fields: Record<string, string> = {
       merchant_id: MERCHANT_ID,
       merchant_key: MERCHANT_KEY,
@@ -124,7 +129,10 @@ Deno.serve(async (req) => {
       notify_url: itnUrl,
       name_first: firstName.slice(0, 100),
       name_last: lastName.slice(0, 100),
-      email_address: userEmail.slice(0, 255),
+      // In sandbox, PayFast rejects the handoff when the buyer email matches the
+      // merchant sandbox account. Omitting the email lets the tester continue
+      // with a separate sandbox buyer account instead of failing immediately.
+      email_address: sandboxBuyerEmailBlocked ? "" : userEmail.slice(0, 255),
       cell_number: String(order.customer_contact || "")
         .replace(/[^\d]/g, "")
         .slice(0, 15),
