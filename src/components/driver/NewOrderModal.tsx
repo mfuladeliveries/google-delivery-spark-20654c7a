@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { MapPin, Store, Clock, Package, Check, X } from "lucide-react";
 import { driverPayoutForFee } from "@/lib/serviceArea";
+import { getNotificationPrefs } from "@/hooks/useNotificationPrefs";
 
 interface NewOrderOffer {
   id: string;
