@@ -58,7 +58,11 @@ export const AddressMapPicker = ({
 }: AddressMapPickerProps) => {
   const [zones, setZones] = useState<DeliveryZone[]>([]);
   const [position, setPosition] = useState<[number, number]>(
-    initialCoords ? [initialCoords.lat, initialCoords.lng] : FALLBACK_CENTRE,
+    initialCoords &&
+      Number.isFinite(initialCoords.lat) &&
+      Number.isFinite(initialCoords.lng)
+      ? [initialCoords.lat, initialCoords.lng]
+      : FALLBACK_CENTRE,
   );
   const [address, setAddress] = useState<string>("");
   const [search, setSearch] = useState<string>("");

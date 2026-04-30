@@ -449,11 +449,13 @@ const AdminDeliveryAreas = () => {
               <AddressMapPicker
                 onConfirm={handleMapConfirm}
                 initialAddress={form.name}
-                initialCoords={
-                  form.lat && form.lng
-                    ? { lat: Number(form.lat), lng: Number(form.lng) }
-                    : null
-                }
+                initialCoords={(() => {
+                  const la = Number(form.lat);
+                  const ln = Number(form.lng);
+                  return Number.isFinite(la) && Number.isFinite(ln)
+                    ? { lat: la, lng: ln }
+                    : null;
+                })()}
               />
             </Suspense>
           </div>
