@@ -5,6 +5,7 @@
 // 4. POST the payload back to PayFast for server-to-server validation
 // 5. Update the order via SECURITY DEFINER RPCs
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.95.0";
+import { buildPayfastSignature } from "../_shared/payfast-signature.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -21,37 +22,6 @@ const VALIDATE_URL =
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-
-function pfEncode(v: string) {
-  return encodeURIComponent(v).replace(/%20/g, "+");
-}
-
-async function md5(input: string) {
-  const buf = await crypto.subtle.digest(
-    "MD5",
-    new TextEncoder().encode(input),
-  );
-  return Array.from(new Uint8Array(buf))
-    .map((b) => b.toString(16).padStart(2, "0"))
-    .join("");
-}
-
-async function buildSignature(
-  fields: Record<string, string>,
-  passphrase: string,
-) {
-  // Use the field order as posted by PayFast (preserve insertion order),
-  // skip the signature field itself.
-  const parts: string[] = [];
-  for (const [k, v] of Object.entries(fields)) {
-    if (k === "signature") continue;
-    if (v === null || v === undefined || v === "") continue;
-    parts.push(`${k}=${pfEncode(String(v).trim())}`);
-  }
-  let qs = parts.join("&");
-  if (passphrase) qs += `&passphrase=${pfEncode(passphrase.trim())}`;
-  return await md5(qs);
-}
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -90,7 +60,7 @@ Deno.serve(async (req) => {
     }
 
     // 1. Signature check
-    const expectedSig = await buildSignature(fields, PASSPHRASE);
+    const expectedSig = buildPayfastSignature(fields, PASSPHRASE);
     const sigOk =
       typeof fields.signature === "string" &&
       fields.signature.toLowerCase() === expectedSig.toLowerCase();
