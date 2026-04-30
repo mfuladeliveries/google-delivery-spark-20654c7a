@@ -206,6 +206,23 @@ Deno.serve(async (req) => {
       }
     }
 
+    // No-driver-available: notify the customer (resolve user_id from order if needed)
+    let noDriverCustomerId: string | null = null;
+    if (isNoDriverAvailable) {
+      noDriverCustomerId = user_id || null;
+      if (!noDriverCustomerId && order_id) {
+        const { data: ord } = await supabase
+          .from("orders")
+          .select("user_id")
+          .eq("id", order_id)
+          .maybeSingle();
+        noDriverCustomerId = ord?.user_id || null;
+      }
+      if (noDriverCustomerId && !targetUserIds.includes(noDriverCustomerId)) {
+        targetUserIds.push(noDriverCustomerId);
+      }
+    }
+
     if (targetUserIds.length === 0) {
       return new Response(JSON.stringify({ sent: 0 }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
