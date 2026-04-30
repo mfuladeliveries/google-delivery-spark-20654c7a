@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import FoodImageUpload from "@/components/FoodImageUpload";
 import InstallAppButton from "@/components/InstallAppButton";
+import RestaurantEarnings from "@/components/restaurant/RestaurantEarnings";
 
 interface Order {
   id: string;
