@@ -93,27 +93,39 @@ export type Database = {
         Row: {
           created_at: string
           created_by: string | null
+          delivery_fee: number
           id: string
           is_active: boolean
+          lat: number | null
+          lng: number | null
           name: string
+          radius_km: number
           suburb: string
           updated_at: string
         }
         Insert: {
           created_at?: string
           created_by?: string | null
+          delivery_fee?: number
           id?: string
           is_active?: boolean
+          lat?: number | null
+          lng?: number | null
           name: string
+          radius_km?: number
           suburb?: string
           updated_at?: string
         }
         Update: {
           created_at?: string
           created_by?: string | null
+          delivery_fee?: number
           id?: string
           is_active?: boolean
+          lat?: number | null
+          lng?: number | null
           name?: string
+          radius_km?: number
           suburb?: string
           updated_at?: string
         }
@@ -294,6 +306,35 @@ export type Database = {
           order_id?: string
         }
         Relationships: []
+      }
+      driver_service_areas: {
+        Row: {
+          area_id: string
+          created_at: string
+          driver_id: string
+          id: string
+        }
+        Insert: {
+          area_id: string
+          created_at?: string
+          driver_id: string
+          id?: string
+        }
+        Update: {
+          area_id?: string
+          created_at?: string
+          driver_id?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "driver_service_areas_area_id_fkey"
+            columns: ["area_id"]
+            isOneToOne: false
+            referencedRelation: "delivery_areas"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       invalid_order_attempts: {
         Row: {
@@ -1143,6 +1184,10 @@ export type Database = {
         Returns: undefined
       }
       expire_stale_pending_payments: { Args: never; Returns: number }
+      find_nearest_zone: {
+        Args: { p_lat: number; p_lng: number }
+        Returns: Json
+      }
       get_customer_balance: { Args: { p_user_id?: string }; Returns: number }
       get_driver_balance: { Args: { p_driver_id: string }; Returns: number }
       has_role: {

@@ -2,10 +2,10 @@ import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import {
-  evaluateServiceArea,
-  getServiceArea,
-  type ServiceAreaConfig,
-  type ServiceAreaResult,
+  findNearestZone,
+  getActiveZones,
+  type DeliveryZone,
+  type ZoneMatch,
 } from "@/lib/serviceArea";
 
 interface UseCustomerLocationResult {
@@ -13,23 +13,20 @@ interface UseCustomerLocationResult {
   address: string | null;
   lat: number | null;
   lng: number | null;
-  /** Result of evaluating the saved coords against the service area, or null if no coords. */
-  service: ServiceAreaResult | null;
-  /** Service area config (centre point, radii, fees). */
-  config: ServiceAreaConfig | null;
-  /** True when user is logged in but has no saved address yet. */
+  /** Closest active zone covering the saved coords, or null if none. */
+  zone: ZoneMatch | null;
+  /** All active zones (for map circles, hints, etc.). */
+  zones: DeliveryZone[];
   needsAddress: boolean;
-  /** True when address is set but coords are missing — must re-pick on map. */
   needsCoords: boolean;
-  /** True when we have coords but they're outside the service area. */
-  outOfRange: boolean;
-  /** Refresh after a profile update. */
+  /** True when we have coords but they're outside every zone. */
+  outOfZone: boolean;
   refresh: () => Promise<void>;
 }
 
 /**
  * Loads the customer's saved profile (address + lat/lng) and tells us whether
- * they're inside the (admin-configurable) delivery radius. Replaces useDeliveryZone.
+ * they're inside any active delivery zone. Replaces the old service-area circle.
  */
 export const useCustomerLocation = (): UseCustomerLocationResult => {
   const { user, loading: authLoading } = useAuth();
@@ -37,11 +34,11 @@ export const useCustomerLocation = (): UseCustomerLocationResult => {
   const [address, setAddress] = useState<string | null>(null);
   const [lat, setLat] = useState<number | null>(null);
   const [lng, setLng] = useState<number | null>(null);
-  const [config, setConfig] = useState<ServiceAreaConfig | null>(null);
+  const [zones, setZones] = useState<DeliveryZone[]>([]);
 
   const load = useCallback(async () => {
-    const cfg = await getServiceArea();
-    setConfig(cfg);
+    const z = await getActiveZones();
+    setZones(z);
     if (!user) {
       setAddress(null);
       setLat(null);
@@ -67,25 +64,25 @@ export const useCustomerLocation = (): UseCustomerLocationResult => {
     load();
   }, [authLoading, load]);
 
-  const service =
-    config && typeof lat === "number" && typeof lng === "number"
-      ? evaluateServiceArea(lat, lng, config)
+  const zone =
+    typeof lat === "number" && typeof lng === "number"
+      ? findNearestZone(lat, lng, zones)
       : null;
 
   const needsAddress = !!user && !loading && !address;
   const needsCoords = !!user && !loading && !!address && (lat === null || lng === null);
-  const outOfRange = !!service && !service.in_range;
+  const outOfZone = !!user && lat != null && lng != null && zone === null;
 
   return {
     loading: authLoading || loading,
     address,
     lat,
     lng,
-    service,
-    config,
+    zone,
+    zones,
     needsAddress,
     needsCoords,
-    outOfRange,
+    outOfZone,
     refresh: load,
   };
 };

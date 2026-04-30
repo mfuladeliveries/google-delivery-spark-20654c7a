@@ -1,51 +1,22 @@
-// Distance-based serviceability — replaces the old zone system.
-// Customers never see "zones" — only a yes/no serviceability and a delivery fee.
+// Coordinate-based delivery zones — replaces the old global service-area circle.
+// Each zone has a centre (lat/lng), a radius (default 5km) and a flat delivery fee.
+// A customer can order if their delivery coords fall inside ANY active zone.
 
 import { supabase } from "@/integrations/supabase/client";
 
-export interface ServiceAreaConfig {
-  center_lat: number;
-  center_lng: number;
-  inner_radius_km: number;
-  outer_radius_km: number;
-  inner_fee: number;
-  outer_fee: number;
+export interface DeliveryZone {
+  id: string;
+  name: string;
+  suburb: string;
+  lat: number | null;
+  lng: number | null;
+  radius_km: number;
+  delivery_fee: number;
+  is_active: boolean;
 }
 
-export const DEFAULT_SERVICE_AREA: ServiceAreaConfig = {
-  center_lat: -34.0233, // Mfuleni, Cape Town
-  center_lng: 18.6781,
-  inner_radius_km: 5,
-  outer_radius_km: 10,
-  inner_fee: 65,
-  outer_fee: 75,
-};
-
-let cached: ServiceAreaConfig | null = null;
-let cachePromise: Promise<ServiceAreaConfig> | null = null;
-
-/** Load (and cache) the service area config from app_settings. */
-export const getServiceArea = async (): Promise<ServiceAreaConfig> => {
-  if (cached) return cached;
-  if (cachePromise) return cachePromise;
-  cachePromise = (async () => {
-    const { data } = await supabase
-      .from("app_settings")
-      .select("value")
-      .eq("key", "service_area")
-      .maybeSingle();
-    const v = (data?.value ?? null) as Partial<ServiceAreaConfig> | null;
-    cached = { ...DEFAULT_SERVICE_AREA, ...(v ?? {}) };
-    return cached;
-  })();
-  return cachePromise;
-};
-
-/** Force-reload the service area (after admin updates it). */
-export const refreshServiceArea = (): void => {
-  cached = null;
-  cachePromise = null;
-};
+/** Default radius shown to customers in error copy. */
+export const DEFAULT_ZONE_RADIUS_KM = 5;
 
 /** Haversine distance in kilometres. */
 export const distanceKm = (
@@ -64,32 +35,59 @@ export const distanceKm = (
   return 2 * R * Math.asin(Math.sqrt(s));
 };
 
-export interface ServiceAreaResult {
-  in_range: boolean;
-  fee: number;
+let zoneCache: DeliveryZone[] | null = null;
+let zonePromise: Promise<DeliveryZone[]> | null = null;
+
+/** Load active zones (with coords). Cached for the session. */
+export const getActiveZones = async (): Promise<DeliveryZone[]> => {
+  if (zoneCache) return zoneCache;
+  if (zonePromise) return zonePromise;
+  zonePromise = (async () => {
+    const { data } = await supabase
+      .from("delivery_areas")
+      .select("id, name, suburb, lat, lng, radius_km, delivery_fee, is_active")
+      .eq("is_active", true)
+      .not("lat", "is", null)
+      .not("lng", "is", null);
+    zoneCache = (data ?? []) as DeliveryZone[];
+    return zoneCache;
+  })();
+  return zonePromise;
+};
+
+export const refreshZones = (): void => {
+  zoneCache = null;
+  zonePromise = null;
+};
+
+export interface ZoneMatch {
+  zone: DeliveryZone;
   distance_km: number;
 }
 
-/** Decide if a coordinate is serviceable and what the delivery fee is. */
-export const evaluateServiceArea = (
+/** Closest zone whose radius covers the point, or null. */
+export const findNearestZone = (
   lat: number,
   lng: number,
-  cfg: ServiceAreaConfig,
-): ServiceAreaResult => {
-  const d = distanceKm(cfg.center_lat, cfg.center_lng, lat, lng);
-  if (d <= cfg.inner_radius_km) return { in_range: true, fee: cfg.inner_fee, distance_km: d };
-  if (d <= cfg.outer_radius_km) return { in_range: true, fee: cfg.outer_fee, distance_km: d };
-  return { in_range: false, fee: 0, distance_km: d };
+  zones: DeliveryZone[],
+): ZoneMatch | null => {
+  let best: ZoneMatch | null = null;
+  for (const z of zones) {
+    if (z.lat == null || z.lng == null) continue;
+    const d = distanceKm(z.lat, z.lng, lat, lng);
+    if (d <= Number(z.radius_km) && (!best || d < best.distance_km)) {
+      best = { zone: z, distance_km: d };
+    }
+  }
+  return best;
 };
 
-/**
- * Driver payout per delivery, derived from the saved delivery_fee on the order.
- * Mirrors the public.update_driver_earnings trigger (R65 → R45, R75 → R55).
- * For any other / legacy fee we fall back to the historical 70% split.
- */
+/** Driver payout: 70% of the per-zone delivery fee, rounded to rand. */
 export const driverPayoutForFee = (deliveryFee: number | null | undefined): number => {
   const fee = Number(deliveryFee ?? 0);
-  if (fee >= 75) return 55;
-  if (fee >= 65) return 45;
   return Math.round(fee * 0.7);
 };
+
+/** Out-of-zone error message shown to customers. */
+export const OUT_OF_ZONE_MESSAGE =
+  "Sorry, delivery is only available within 5km of this area.";
