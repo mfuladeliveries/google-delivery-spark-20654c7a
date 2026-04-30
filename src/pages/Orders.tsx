@@ -47,6 +47,11 @@ interface Order {
   refund_amount?: number | null;
   dispatch_phase?: "offer_a" | "offer_b" | "waiting" | "broadcast" | null;
   address_tag?: string | null;
+  driver_lat?: number | null;
+  driver_lng?: number | null;
+  customer_lat?: number | null;
+  customer_lng?: number | null;
+  driver_location_updated_at?: string | null;
 }
 
 interface RatingTarget {
