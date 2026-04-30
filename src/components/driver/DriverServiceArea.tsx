@@ -34,6 +34,7 @@ const DriverServiceArea = ({ onSaved }: { onSaved?: () => void }) => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [showPicker, setShowPicker] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
 
   useEffect(() => {
     if (!user) return;
