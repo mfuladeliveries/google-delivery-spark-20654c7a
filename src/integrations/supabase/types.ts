@@ -498,6 +498,7 @@ export type Database = {
       orders: {
         Row: {
           accepted_at: string | null
+          address_tag: string | null
           admin_delivery_code: string | null
           arrived_at: string | null
           cancel_reason: string | null
@@ -547,6 +548,7 @@ export type Database = {
         }
         Insert: {
           accepted_at?: string | null
+          address_tag?: string | null
           admin_delivery_code?: string | null
           arrived_at?: string | null
           cancel_reason?: string | null
@@ -596,6 +598,7 @@ export type Database = {
         }
         Update: {
           accepted_at?: string | null
+          address_tag?: string | null
           admin_delivery_code?: string | null
           arrived_at?: string | null
           cancel_reason?: string | null
@@ -1023,6 +1026,7 @@ export type Database = {
         Args: { p_method: string; p_order_id: string }
         Returns: Json
       }
+      derive_address_tag: { Args: { p_address: string }; Returns: string }
       dispatch_assign_next: { Args: { p_order_id: string }; Returns: Json }
       dispatch_tick: { Args: never; Returns: Json }
       distance_km: {
