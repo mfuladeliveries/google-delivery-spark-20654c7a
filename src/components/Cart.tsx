@@ -42,8 +42,7 @@ const Cart = ({
   const geo = useGeoLocation();
   const geoBlocked = geo.ready && !geo.hasCoords;
 
-  // Cart items carry the restaurant name in `item.category` (set in RestaurantMenu)
-  const restaurantName = items[0]?.item.category || "";
+  const restaurantName = items[0]?.item.restaurantName || items[0]?.item.category || "";
 
   // Per-restaurant 8 km gate: look up the cart restaurant's coords and compare
   // to the customer's live GPS. This matches the rule used on home / menu /

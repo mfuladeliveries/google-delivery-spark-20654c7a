@@ -206,7 +206,8 @@ const RestaurantMenu = () => {
   const toMenuItem = (item: DbMenuItem) => ({
     id: item.id,
     name: item.name,
-    category: restaurant?.name || item.category,
+    category: item.category,
+    restaurantName: restaurant?.name || "",
     caption: item.description,
     image: item.image,
     price: item.price,
