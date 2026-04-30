@@ -12,6 +12,7 @@ import ResetPassword from "./pages/ResetPassword";
 import ForgotPassword from "./pages/ForgotPassword";
 import Orders from "./pages/Orders";
 import OrderConfirmation from "./pages/OrderConfirmation";
+import PayFastRedirect from "./pages/PayFastRedirect";
 import NotFound from "./pages/NotFound";
 import RestaurantMenu from "./pages/RestaurantMenu";
 import RestaurantDashboard from "./pages/RestaurantDashboard";
@@ -67,6 +68,14 @@ const App = () => (
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/orders" element={<Orders />} />
             <Route path="/order-confirmation" element={<OrderConfirmation />} />
+            <Route
+              path="/pay/payfast"
+              element={
+                <RoleGuard allow={["customer", "admin"]} requireAuth redirectUnauthedTo="/auth">
+                  <PayFastRedirect />
+                </RoleGuard>
+              }
+            />
             <Route
               path="/restaurant/dashboard"
               element={

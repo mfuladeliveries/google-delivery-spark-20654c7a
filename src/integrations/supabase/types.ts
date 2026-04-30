@@ -527,7 +527,13 @@ export type Database = {
           offer_expires_at: string | null
           offered_to_driver_id: string | null
           order_number: number
+          payment_completed_at: string | null
+          payment_failed_at: string | null
+          payment_failure_reason: string | null
+          payment_initiated_at: string | null
           payment_method: string
+          payment_provider: string | null
+          payment_provider_txn_id: string | null
           payment_status: string
           picked_up_at: string | null
           picking_up_at: string | null
@@ -577,7 +583,13 @@ export type Database = {
           offer_expires_at?: string | null
           offered_to_driver_id?: string | null
           order_number?: number
+          payment_completed_at?: string | null
+          payment_failed_at?: string | null
+          payment_failure_reason?: string | null
+          payment_initiated_at?: string | null
           payment_method?: string
+          payment_provider?: string | null
+          payment_provider_txn_id?: string | null
           payment_status?: string
           picked_up_at?: string | null
           picking_up_at?: string | null
@@ -627,7 +639,13 @@ export type Database = {
           offer_expires_at?: string | null
           offered_to_driver_id?: string | null
           order_number?: number
+          payment_completed_at?: string | null
+          payment_failed_at?: string | null
+          payment_failure_reason?: string | null
+          payment_initiated_at?: string | null
           payment_method?: string
+          payment_provider?: string | null
+          payment_provider_txn_id?: string | null
           payment_status?: string
           picked_up_at?: string | null
           picking_up_at?: string | null
@@ -652,6 +670,69 @@ export type Database = {
             columns: ["restaurant_id"]
             isOneToOne: false
             referencedRelation: "restaurants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payment_transactions: {
+        Row: {
+          amount_fee: number | null
+          amount_gross: number | null
+          amount_net: number | null
+          created_at: string
+          id: string
+          order_id: string
+          payment_method: string | null
+          payment_status: string
+          provider: string
+          provider_txn_id: string | null
+          raw_payload: Json
+          signature_valid: boolean
+          source_ip: string | null
+        }
+        Insert: {
+          amount_fee?: number | null
+          amount_gross?: number | null
+          amount_net?: number | null
+          created_at?: string
+          id?: string
+          order_id: string
+          payment_method?: string | null
+          payment_status: string
+          provider?: string
+          provider_txn_id?: string | null
+          raw_payload?: Json
+          signature_valid?: boolean
+          source_ip?: string | null
+        }
+        Update: {
+          amount_fee?: number | null
+          amount_gross?: number | null
+          amount_net?: number | null
+          created_at?: string
+          id?: string
+          order_id?: string
+          payment_method?: string | null
+          payment_status?: string
+          provider?: string
+          provider_txn_id?: string | null
+          raw_payload?: Json
+          signature_valid?: boolean
+          source_ip?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_transactions_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "driver_job_board"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_transactions_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
             referencedColumns: ["id"]
           },
         ]
@@ -1006,6 +1087,19 @@ export type Database = {
         Returns: Json
       }
       claim_order: { Args: { p_order_id: string }; Returns: boolean }
+      confirm_payfast_payment: {
+        Args: {
+          p_amount_fee: number
+          p_amount_gross: number
+          p_amount_net: number
+          p_order_id: string
+          p_payment_method: string
+          p_provider_txn_id: string
+          p_raw_payload: Json
+          p_source_ip?: string
+        }
+        Returns: Json
+      }
       create_verified_order: {
         Args: {
           p_customer_address: string
@@ -1048,6 +1142,7 @@ export type Database = {
         }
         Returns: undefined
       }
+      expire_stale_pending_payments: { Args: never; Returns: number }
       get_customer_balance: { Args: { p_user_id?: string }; Returns: number }
       get_driver_balance: { Args: { p_driver_id: string }; Returns: number }
       has_role: {
@@ -1068,6 +1163,17 @@ export type Database = {
           p_lng: number
           p_reason: string
           p_restaurant_name: string
+        }
+        Returns: undefined
+      }
+      mark_payfast_payment_failed: {
+        Args: {
+          p_order_id: string
+          p_provider_txn_id: string
+          p_raw_payload: Json
+          p_reason: string
+          p_source_ip?: string
+          p_status: string
         }
         Returns: undefined
       }
