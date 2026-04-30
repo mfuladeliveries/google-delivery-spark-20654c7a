@@ -35,6 +35,7 @@ const DriverServiceArea = ({ onSaved }: { onSaved?: () => void }) => {
   const [saving, setSaving] = useState(false);
   const [showPicker, setShowPicker] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
+  const [errors, setErrors] = useState<{ centre?: string; radius?: string }>({});
 
   useEffect(() => {
     if (!user) return;
