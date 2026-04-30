@@ -8,7 +8,7 @@ import { useCustomerCredits } from "@/hooks/useCustomerCredits";
 import { useCustomerLocation } from "@/hooks/useCustomerLocation";
 import { z } from "zod";
 import { toast } from "sonner";
-import { dispatchAndNotify } from "@/lib/pushNotify";
+// dispatchAndNotify removed — dispatch is now triggered server-side after PayFast ITN confirms payment.
 import { useNavigate } from "react-router-dom";
 import { AddressAutocomplete, type ValidatedAddress } from "@/components/AddressAutocomplete";
 import { distanceKm } from "@/lib/serviceArea";
