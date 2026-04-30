@@ -577,6 +577,18 @@ const CheckoutDialog = ({
                 </div>
               </div>
             )}
+
+            {addressVerified && coords && !outOfRange && coverage && !coverage.covered && (
+              <div className="mt-2 flex items-start gap-2 rounded-xl border-2 border-amber-500/40 bg-amber-500/10 p-3">
+                <AlertTriangle className="h-4 w-4 flex-shrink-0 text-amber-600 mt-0.5" />
+                <div className="text-xs">
+                  <p className="font-bold text-amber-700">No drivers online in your area right now</p>
+                  <p className="mt-0.5 text-foreground">
+                    You can still place this order, but it may take longer than usual to be picked up while we wait for a driver to come online nearby.
+                  </p>
+                </div>
+              </div>
+            )}
           </div>
 
           {showMapPicker && (
