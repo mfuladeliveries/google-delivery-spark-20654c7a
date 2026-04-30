@@ -129,11 +129,11 @@ const CheckoutDialog = ({
   // A delivery is allowed only if the address falls within ANY zone's radius.
   const zoneMatch = useMemo(() => {
     if (!coords) return null;
-    return findNearestZone(coords.lat, coords.lng, zones);
-  }, [coords, zones]);
+    return findNearestZone(coords.lat, coords.lng, zones, restaurantCoords);
+  }, [coords, zones, restaurantCoords]);
 
   const outOfRange = !!coords && zoneMatch === null;
-  const zoneFee = zoneMatch ? Number(zoneMatch.zone.delivery_fee) : null;
+  const zoneFee = zoneMatch ? zoneMatch.delivery_fee : null;
 
   // Driver-coverage check: when the customer's coords change, ask the server whether any
   // online driver covers this delivery location. Non-blocking — we only warn the customer.
