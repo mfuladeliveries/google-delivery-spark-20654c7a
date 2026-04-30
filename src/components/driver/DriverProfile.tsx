@@ -21,6 +21,7 @@ interface DriverProfileData {
 
 const DriverProfileTab = () => {
   const { user, signOut } = useAuth();
+  const { prefs, update: updatePrefs } = useNotificationPrefs();
   const [profile, setProfile] = useState<ProfileData>({ full_name: "", contact_number: "", address: "" });
   const [driverData, setDriverData] = useState<DriverProfileData>({ vehicle_type: "", license_plate: "", license_url: "", id_document_url: "" });
   const [saving, setSaving] = useState(false);
