@@ -80,6 +80,9 @@ interface DriverRecord {
   total_deliveries: number;
   vehicle_type?: string;
   license_plate?: string;
+  service_area_id?: string | null;
+  service_area_name?: string | null;
+  service_area_suburb?: string | null;
   profile?: { full_name: string; contact_number: string };
 }
 
