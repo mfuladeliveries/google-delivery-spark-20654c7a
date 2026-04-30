@@ -614,9 +614,11 @@ const Index = () => {
               ? `Results for "${search}"`
               : selectedCuisine !== "All"
                 ? `${selectedCuisine} Restaurants`
-                : hasEffectiveCoords
-                  ? "📍 Restaurants near you"
-                  : "🍽️ All Restaurants"}
+                : currentZone
+                  ? `📍 Restaurants in ${currentZone.zone.name}`
+                  : hasEffectiveCoords
+                    ? "📍 Restaurants near you"
+                    : "🍽️ All Restaurants"}
           </h3>
 
           {loading ? (
@@ -627,10 +629,10 @@ const Index = () => {
             </div>
           ) : sorted.length === 0 ? (
             (() => {
-              // "Out of range" = we know where the user is, the underlying
-              // restaurant list isn't empty, and at least one restaurant
-              // would have matched the search/cuisine filters but was hidden
-              // because it's farther than DELIVERY_RADIUS_KM.
+              // Decide which empty state to show. Three cases:
+              //   1) Customer is outside every active delivery area → "not in service area".
+              //   2) Customer is inside an area but no restaurants are assigned to it yet → "no restaurants in <area> yet".
+              //   3) Otherwise → generic "no results" for the current search/cuisine filter.
               const matchesFilters = annotated.filter((r) => {
                 const matchesCuisine = selectedCuisine === "All" || r.cuisine === selectedCuisine;
                 const matchesSearch = !search.trim()
@@ -638,24 +640,14 @@ const Index = () => {
                   || r.cuisine.toLowerCase().includes(search.toLowerCase());
                 return matchesCuisine && matchesSearch;
               });
-              const outOfRange = hasEffectiveCoords && matchesFilters.length > 0;
-              const nearest = outOfRange
-                ? matchesFilters.reduce<number | null>((min, r) => {
-                    if (r._distance == null) return min;
-                    return min == null || r._distance < min ? r._distance : min;
-                  }, null)
-                : null;
 
-              if (outOfRange) {
+              if (hasEffectiveCoords && currentZone == null) {
                 return (
                   <div className="rounded-2xl border border-border bg-card py-16 text-center shadow-card">
                     <MapPinOff className="mx-auto mb-3 h-12 w-12 text-primary/60" />
-                    <p className="font-semibold text-foreground">No restaurants within {DELIVERY_RADIUS_KM} km</p>
+                    <p className="font-semibold text-foreground">Not available in your area yet</p>
                     <p className="mx-auto mt-1 max-w-xs text-sm text-muted-foreground">
-                      {nearest != null
-                        ? `The closest restaurant is about ${nearest.toFixed(1)} km away — just outside our delivery range.`
-                        : "We couldn't find any restaurants close enough to deliver to your current location."}
-                      {" "}If your location looks wrong, try refreshing your GPS.
+                      We don't currently deliver to your location. We're expanding fast — check back soon, or update your address if it looks wrong.
                     </p>
                     <div className="mt-5 flex flex-wrap items-center justify-center gap-2">
                       <button
@@ -673,6 +665,18 @@ const Index = () => {
                         Update saved address
                       </button>
                     </div>
+                  </div>
+                );
+              }
+
+              if (currentZone && matchesFilters.length === 0 && !search.trim() && selectedCuisine === "All") {
+                return (
+                  <div className="rounded-2xl border border-border bg-card py-16 text-center shadow-card">
+                    <UtensilsCrossed className="mx-auto mb-3 h-12 w-12 text-muted-foreground/50" />
+                    <p className="font-semibold text-foreground">No restaurants in {currentZone.zone.name} yet</p>
+                    <p className="mx-auto mt-1 max-w-xs text-sm text-muted-foreground">
+                      We're onboarding restaurants in your area. Check back soon!
+                    </p>
                   </div>
                 );
               }
