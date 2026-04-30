@@ -264,15 +264,27 @@ const AdminDashboard = () => {
   };
 
   const fetchDrivers = async () => {
-    const { data: driverProfiles } = await supabase.from("driver_profiles").select("user_id, is_online, total_earnings, total_deliveries, vehicle_type, license_plate");
+    const { data: driverProfiles } = await supabase.from("driver_profiles").select("user_id, is_online, total_earnings, total_deliveries, vehicle_type, license_plate, service_area_id");
     if (driverProfiles) {
       const userIds = driverProfiles.map(d => d.user_id);
-      const { data: profiles } = await supabase.from("profiles").select("user_id, full_name, contact_number").in("user_id", userIds);
+      const areaIds = Array.from(new Set(driverProfiles.map(d => d.service_area_id).filter(Boolean))) as string[];
+      const [{ data: profiles }, { data: areas }] = await Promise.all([
+        supabase.from("profiles").select("user_id, full_name, contact_number").in("user_id", userIds),
+        areaIds.length
+          ? supabase.from("delivery_areas").select("id, name, suburb").in("id", areaIds)
+          : Promise.resolve({ data: [] as any[] }),
+      ]);
       const profileMap = new Map(profiles?.map(p => [p.user_id, p]) || []);
-      setDrivers(driverProfiles.map(d => ({
-        ...d,
-        profile: profileMap.get(d.user_id) as any,
-      })));
+      const areaMap = new Map((areas || []).map((a: any) => [a.id, a]));
+      setDrivers(driverProfiles.map(d => {
+        const area = d.service_area_id ? areaMap.get(d.service_area_id) : null;
+        return {
+          ...d,
+          profile: profileMap.get(d.user_id) as any,
+          service_area_name: area?.name ?? null,
+          service_area_suburb: area?.suburb ?? null,
+        };
+      }));
     }
   };
 
