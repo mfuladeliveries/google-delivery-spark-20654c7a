@@ -1,0 +1,189 @@
+import { useEffect, useState, lazy, Suspense } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
+import { MapPin, Save, Crosshair, AlertTriangle } from "lucide-react";
+import { toast } from "sonner";
+
+const AddressMapPicker = lazy(() => import("@/components/AddressMapPicker"));
+
+interface ServiceArea {
+  service_lat: number | null;
+  service_lng: number | null;
+  service_radius_km: number;
+  service_area_label: string;
+}
+
+const DriverServiceArea = ({ onSaved }: { onSaved?: () => void }) => {
+  const { user } = useAuth();
+  const [data, setData] = useState<ServiceArea>({
+    service_lat: null,
+    service_lng: null,
+    service_radius_km: 5,
+    service_area_label: "",
+  });
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [showPicker, setShowPicker] = useState(false);
+
+  useEffect(() => {
+    if (!user) return;
+    (async () => {
+      const { data: row } = await supabase
+        .from("driver_profiles")
+        .select("service_lat, service_lng, service_radius_km, service_area_label")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      if (row) setData(row as ServiceArea);
+      setLoading(false);
+    })();
+  }, [user]);
+
+  const handleConfirm = (r: { address: string; lat: number; lng: number }) => {
+    setData((d) => ({
+      ...d,
+      service_lat: r.lat,
+      service_lng: r.lng,
+      service_area_label: d.service_area_label || r.address.split(",").slice(0, 2).join(",").trim(),
+    }));
+    setShowPicker(false);
+  };
+
+  const handleSave = async () => {
+    if (!user) return;
+    if (data.service_lat == null || data.service_lng == null) {
+      toast.error("Please pick your working area on the map first");
+      return;
+    }
+    if (!data.service_radius_km || data.service_radius_km < 1) {
+      toast.error("Radius must be at least 1 km");
+      return;
+    }
+    setSaving(true);
+    const { error } = await supabase
+      .from("driver_profiles")
+      .update({
+        service_lat: data.service_lat,
+        service_lng: data.service_lng,
+        service_radius_km: data.service_radius_km,
+        service_area_label: data.service_area_label,
+      })
+      .eq("user_id", user.id);
+    setSaving(false);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    toast.success("Working area saved!");
+    onSaved?.();
+  };
+
+  if (loading) return null;
+
+  const isSet = data.service_lat != null && data.service_lng != null;
+
+  return (
+    <div className="rounded-2xl border border-border bg-card p-4 shadow-card space-y-3">
+      <h3 className="font-bold text-foreground flex items-center gap-2">
+        <MapPin className="h-4 w-4 text-primary" /> Working Area
+      </h3>
+      <p className="text-xs text-muted-foreground">
+        You'll only receive offers for orders inside this area. Pick the centre point (e.g. your home or
+        township) and how far you're willing to drive from there.
+      </p>
+
+      {!isSet && (
+        <div className="flex items-start gap-2 rounded-xl border-2 border-amber-500/40 bg-amber-500/10 p-3">
+          <AlertTriangle className="h-4 w-4 flex-shrink-0 text-amber-600 mt-0.5" />
+          <p className="text-xs text-foreground">
+            <span className="font-bold text-amber-700">No working area set.</span> You won't receive any
+            delivery offers until you save one.
+          </p>
+        </div>
+      )}
+
+      <div>
+        <label className="text-xs font-semibold text-muted-foreground mb-1 block">Area name (e.g. Mfuleni)</label>
+        <input
+          value={data.service_area_label}
+          onChange={(e) => setData((d) => ({ ...d, service_area_label: e.target.value }))}
+          placeholder="Mfuleni, Khayelitsha…"
+          className="w-full rounded-xl border border-border bg-background px-4 py-3 text-sm text-foreground focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none"
+        />
+      </div>
+
+      <div>
+        <label className="text-xs font-semibold text-muted-foreground mb-1 block">Centre point</label>
+        <button
+          onClick={() => setShowPicker(true)}
+          className="w-full flex items-center justify-center gap-2 rounded-xl border-2 border-dashed border-border py-3 text-sm font-medium text-foreground hover:border-primary hover:bg-primary/5 transition-colors"
+        >
+          <Crosshair className="h-4 w-4 text-primary" />
+          {isSet
+            ? `Pinned: ${data.service_lat!.toFixed(4)}, ${data.service_lng!.toFixed(4)} — tap to change`
+            : "Pick your area centre on the map"}
+        </button>
+      </div>
+
+      <div>
+        <label className="text-xs font-semibold text-muted-foreground mb-1 block">
+          Working radius: <span className="text-primary">{data.service_radius_km} km</span>
+        </label>
+        <input
+          type="range"
+          min={1}
+          max={20}
+          step={1}
+          value={data.service_radius_km}
+          onChange={(e) => setData((d) => ({ ...d, service_radius_km: Number(e.target.value) }))}
+          className="w-full accent-primary"
+        />
+        <div className="flex justify-between text-[10px] text-muted-foreground mt-1">
+          <span>1 km</span><span>10 km</span><span>20 km</span>
+        </div>
+      </div>
+
+      <button
+        onClick={handleSave}
+        disabled={saving}
+        className="w-full rounded-2xl bg-primary py-3 text-sm font-bold text-primary-foreground disabled:opacity-50 transition-all hover:scale-[1.01] active:scale-[0.99] shadow-orange flex items-center justify-center gap-2"
+      >
+        <Save className="h-4 w-4" />
+        {saving ? "Saving..." : "Save Working Area"}
+      </button>
+
+      {showPicker && (
+        <div className="fixed inset-0 z-[70] bg-black/70 backdrop-blur-sm flex items-center justify-center p-3">
+          <div className="relative w-full max-w-lg max-h-[92vh] overflow-y-auto rounded-3xl border border-border bg-background pt-4 shadow-xl">
+            <div className="flex items-center justify-between px-4 pb-2">
+              <h3 className="font-display text-base font-bold text-foreground">Pick your working area</h3>
+              <button
+                onClick={() => setShowPicker(false)}
+                className="rounded-full px-3 py-1 text-xs font-semibold text-muted-foreground hover:bg-secondary"
+              >
+                Close
+              </button>
+            </div>
+            <Suspense
+              fallback={
+                <div className="flex h-72 items-center justify-center text-sm text-muted-foreground">
+                  Loading map…
+                </div>
+              }
+            >
+              <AddressMapPicker
+                onConfirm={handleConfirm}
+                initialCoords={
+                  data.service_lat != null && data.service_lng != null
+                    ? { lat: data.service_lat, lng: data.service_lng }
+                    : null
+                }
+              />
+            </Suspense>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default DriverServiceArea;
