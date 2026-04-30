@@ -84,7 +84,9 @@ const CheckoutDialog = ({
   const [scheduleTime, setScheduleTime] = useState("");
   const [tip, setTip] = useState(0);
   const [customTip, setCustomTip] = useState("");
-  const [paymentMethod, setPaymentMethod] = useState<"cash" | "online">("cash");
+  // PayFast-only — kept as a constant to minimise churn through the rest of the file.
+  const paymentMethod: "online" = "online";
+  const setPaymentMethod = (_: "online") => {}; // no-op kept for legacy refs
   const [loading, setLoading] = useState(false);
   const [profileLoaded, setProfileLoaded] = useState(false);
   const [restaurantCoords, setRestaurantCoords] = useState<{ lat: number; lng: number } | null>(null);
@@ -416,34 +418,25 @@ const CheckoutDialog = ({
         localStorage.setItem("delivery_pins", JSON.stringify(pins));
       }
 
-      // Orders auto-accept to "ready" — start the targeted dispatch chain and
-      // immediately push the first offered driver (works even if their app is closed).
-      if (orderId) {
-        const orderTotal = Number(orderResult?.total) || 0;
-        void dispatchAndNotify(orderId, Number(orderNum) || 0, restaurants[0] || "", orderTotal);
-      }
-
+      // Order is created in `pending_payment` — do NOT dispatch yet.
+      // Hand off to PayFast; ITN webhook will flip status to `ready` and
+      // start dispatch once payment is confirmed.
       const orderTotalNum = Number(orderResult?.total) || 0;
 
-      toast.success("Order placed! 🎉", {
-        description: `Order #${orderNum} confirmed.`,
-        duration: 4000,
+      toast.success("Redirecting to secure payment…", {
+        description: `Order #${orderNum} · R${orderTotalNum.toFixed(2)}`,
+        duration: 3000,
       });
 
       setLoading(false);
       onOrderPlaced();
       onClose();
 
-      // Navigate to dedicated confirmation page with full details
-      navigate("/order-confirmation", {
+      navigate("/pay/payfast", {
         state: {
+          orderId,
           orderNumber: orderNum,
-          deliveryPin: deliveryCode,
-          scheduledLabel: scheduledLabel || undefined,
-          foodNote: notes.trim() || undefined,
-          deliveryInstructions: deliveryInstructions.trim() || undefined,
           total: orderTotalNum,
-          paymentMethod,
           restaurant: restaurants[0] || undefined,
         },
         replace: true,
