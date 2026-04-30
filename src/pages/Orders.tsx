@@ -149,6 +149,8 @@ const Orders = () => {
             customer_address: o.customer_address || "",
             restaurant_id: o.restaurant_id ?? null,
             driver_id: o.driver_id ?? null,
+            dispatch_phase: o.dispatch_phase ?? null,
+            address_tag: o.address_tag ?? null,
           }))
         );
         const deliveredIds = data.filter(o => o.status === "delivered" || o.status === "cancelled" || o.status === "rejected").map(o => o.id);
