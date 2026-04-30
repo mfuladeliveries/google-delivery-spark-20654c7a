@@ -11,6 +11,7 @@ import AdminRefunds from "@/components/admin/AdminRefunds";
 import AdminDriverRequests from "@/components/admin/AdminDriverRequests";
 import AdminAboutEditor from "@/components/admin/AdminAboutEditor";
 import AdminDeliveryFees from "@/components/admin/AdminDeliveryFees";
+import AdminDeliveryAreas from "@/components/admin/AdminDeliveryAreas";
 import AdminMenuManager from "@/components/admin/AdminMenuManager";
 import { toast } from "sonner";
 import { geocodeAddress } from "@/lib/geocode";
