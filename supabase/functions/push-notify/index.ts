@@ -348,7 +348,9 @@ Deno.serve(async (req) => {
         ? "customer_cancelled"
         : status === "out_for_delivery"
           ? "customer_out_for_delivery"
-          : null;
+          : isNoDriverAvailable
+            ? "customer_no_driver_available"
+            : null;
 
     // Driver-facing notification kinds — logged against the order's customer so the
     // customer's Orders page can render a "driver was notified" status log.
