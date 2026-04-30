@@ -285,11 +285,11 @@ const DriverDashboard = () => {
     if (newStatus) {
       const { data: row } = await supabase
         .from("driver_profiles")
-        .select("service_lat, service_lng")
+        .select("service_area_id")
         .eq("user_id", user!.id)
         .maybeSingle();
-      if (!row?.service_lat || !row?.service_lng) {
-        toast.error("Set your working area in Profile before going online");
+      if (!row?.service_area_id) {
+        toast.error("Pick your working area in the Area tab before going online");
         return;
       }
     }
