@@ -283,7 +283,7 @@ const OrderConfirmation = () => {
                   ? "bg-green-100 text-green-700"
                   : "bg-blue-100 text-blue-700"
               }`}>
-                {paymentMethod === "cash" ? "💵 Cash on delivery" : "💳 Paid online"}
+                {paymentMethod === "cash" ? "💵 Cash on delivery" : "💳 Paid online (PayFast)"}
               </span>
             )}
           </div>
