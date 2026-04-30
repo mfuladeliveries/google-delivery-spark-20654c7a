@@ -135,6 +135,14 @@ const DriverServiceArea = ({ onSaved }: { onSaved?: () => void }) => {
       icon: <CheckCircle2 className="h-4 w-4 text-primary" />,
       duration: 5000,
     });
+    try {
+      localStorage.setItem(
+        LAST_CENTRE_KEY,
+        JSON.stringify({ lat: data.service_lat, lng: data.service_lng }),
+      );
+    } catch {
+      /* ignore */
+    }
     onSaved?.();
   };
 
