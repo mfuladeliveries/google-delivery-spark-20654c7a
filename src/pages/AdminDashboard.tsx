@@ -589,6 +589,27 @@ const DriversTab = ({ drivers, onDriverAdded }: { drivers: DriverRecord[]; onDri
   const [licensePlate, setLicensePlate] = useState("");
   const [registering, setRegistering] = useState(false);
   const [editing, setEditing] = useState<DriverRecord | null>(null);
+  const [removing, setRemoving] = useState<DriverRecord | null>(null);
+  const [removeMode, setRemoveMode] = useState<"revoke" | "delete">("revoke");
+  const [removingBusy, setRemovingBusy] = useState(false);
+
+  const handleRemoveDriver = async () => {
+    if (!removing) return;
+    setRemovingBusy(true);
+    try {
+      const res = await supabase.functions.invoke("admin-delete-driver", {
+        body: { user_id: removing.user_id, mode: removeMode },
+      });
+      if (res.error) throw new Error(res.error.message || "Failed to remove driver");
+      if ((res.data as any)?.error) throw new Error((res.data as any).error);
+      toast.success(removeMode === "delete" ? "Driver account deleted" : "Driver access revoked");
+      setRemoving(null);
+      onDriverAdded();
+    } catch (err: any) {
+      toast.error(err.message || "Failed to remove driver");
+    }
+    setRemovingBusy(false);
+  };
 
   const handleRegisterDriver = async (e: React.FormEvent) => {
     e.preventDefault();
