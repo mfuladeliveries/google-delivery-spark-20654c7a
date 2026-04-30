@@ -2,6 +2,7 @@
 // The frontend POSTs the order_id; we look up the order, verify it belongs
 // to the caller, then return the form fields + the PayFast process URL.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.95.0";
+import { buildPayfastSignature } from "../_shared/payfast-signature.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -22,32 +23,6 @@ const PROCESS_URL =
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_ANON = Deno.env.get("SUPABASE_ANON_KEY")!;
-
-// PayFast signature: URL-encode each value, join k=v pairs in field order,
-// append &passphrase=..., MD5. Spaces encoded as '+'.
-function pfEncode(v: string): string {
-  return encodeURIComponent(v).replace(/%20/g, "+");
-}
-
-async function md5(input: string): Promise<string> {
-  const data = new TextEncoder().encode(input);
-  const buf = await crypto.subtle.digest("MD5", data);
-  return Array.from(new Uint8Array(buf))
-    .map((b) => b.toString(16).padStart(2, "0"))
-    .join("");
-}
-
-async function buildSignature(
-  fields: Record<string, string>,
-  passphrase: string,
-): Promise<string> {
-  const parts = Object.entries(fields)
-    .filter(([, v]) => v !== undefined && v !== null && String(v).length > 0)
-    .map(([k, v]) => `${k}=${pfEncode(String(v).trim())}`);
-  let qs = parts.join("&");
-  if (passphrase) qs += `&passphrase=${pfEncode(passphrase.trim())}`;
-  return await md5(qs);
-}
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -165,7 +140,7 @@ Deno.serve(async (req) => {
       if (!fields[k]) delete fields[k];
     }
 
-    const signature = await buildSignature(fields, PASSPHRASE);
+    const signature = buildPayfastSignature(fields, PASSPHRASE);
     fields.signature = signature;
 
     return new Response(
