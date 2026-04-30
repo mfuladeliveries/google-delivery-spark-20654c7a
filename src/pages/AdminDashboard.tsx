@@ -770,6 +770,48 @@ const DriversTab = ({ drivers, onDriverAdded }: { drivers: DriverRecord[]; onDri
         onClose={() => setEditing(null)}
         onSaved={() => { setEditing(null); onDriverAdded(); }}
       />
+
+      <Dialog open={!!removing} onOpenChange={(open) => { if (!open) setRemoving(null); }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Remove driver</DialogTitle>
+            <DialogDescription>
+              {removing?.profile?.full_name || "This driver"} will lose access. Choose how to proceed:
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            <label className={`flex items-start gap-2 rounded-xl border-2 p-3 cursor-pointer ${removeMode === "revoke" ? "border-primary bg-primary/5" : "border-border"}`}>
+              <input type="radio" name="removeMode" value="revoke" checked={removeMode === "revoke"} onChange={() => setRemoveMode("revoke")} className="mt-1" />
+              <div>
+                <p className="text-sm font-bold text-foreground">Revoke driver access</p>
+                <p className="text-xs text-muted-foreground">Removes the driver role and forces them offline. Account, history and earnings stay intact.</p>
+              </div>
+            </label>
+            <label className={`flex items-start gap-2 rounded-xl border-2 p-3 cursor-pointer ${removeMode === "delete" ? "border-destructive bg-destructive/5" : "border-border"}`}>
+              <input type="radio" name="removeMode" value="delete" checked={removeMode === "delete"} onChange={() => setRemoveMode("delete")} className="mt-1" />
+              <div>
+                <p className="text-sm font-bold text-destructive">Delete account permanently</p>
+                <p className="text-xs text-muted-foreground">Removes the auth account, profile and driver record. Cannot be undone.</p>
+              </div>
+            </label>
+          </div>
+          <DialogFooter>
+            <button
+              onClick={() => setRemoving(null)}
+              className="rounded-xl border border-border bg-background px-4 py-2 text-sm font-bold text-foreground hover:bg-secondary transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleRemoveDriver}
+              disabled={removingBusy}
+              className="rounded-xl bg-destructive px-4 py-2 text-sm font-bold text-destructive-foreground disabled:opacity-50 hover:opacity-90 transition-opacity"
+            >
+              {removingBusy ? "Removing..." : removeMode === "delete" ? "Delete account" : "Revoke access"}
+            </button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 };
