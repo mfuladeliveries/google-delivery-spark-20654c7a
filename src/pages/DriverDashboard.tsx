@@ -266,7 +266,7 @@ const DriverDashboard = () => {
 
   const fetchDriverProfile = async () => {
     const { data } = await supabase
-      .from("driver_profiles").select("is_online, total_earnings, total_deliveries")
+      .from("driver_profiles").select("is_online, total_earnings, total_deliveries, service_lat, service_lng")
       .eq("user_id", user!.id).maybeSingle();
     if (data) setDriverProfile(data);
     else {
@@ -277,8 +277,20 @@ const DriverDashboard = () => {
 
   const toggleOnline = async () => {
     if (!driverProfile) return;
-    setTogglingOnline(true);
     const newStatus = !driverProfile.is_online;
+    // Going online requires a saved working area — otherwise dispatch will skip the driver.
+    if (newStatus) {
+      const { data: row } = await supabase
+        .from("driver_profiles")
+        .select("service_lat, service_lng")
+        .eq("user_id", user!.id)
+        .maybeSingle();
+      if (!row?.service_lat || !row?.service_lng) {
+        toast.error("Set your working area in Profile before going online");
+        return;
+      }
+    }
+    setTogglingOnline(true);
     await supabase.from("driver_profiles").update({ is_online: newStatus }).eq("user_id", user!.id);
     setDriverProfile((prev) => (prev ? { ...prev, is_online: newStatus } : prev));
     toast.success(newStatus ? "You're now online! 🟢" : "You're now offline 🔴");
