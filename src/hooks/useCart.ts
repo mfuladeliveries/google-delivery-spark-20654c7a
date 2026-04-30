@@ -73,7 +73,7 @@ export function useCart() {
   // Lazy initializer rehydrates the cart from localStorage so the user's
   // selections survive minimize/relaunch and full app restarts.
   const [items, setItems] = useState<CartItem[]>(() => loadPersistedCart());
-  const { service } = useCustomerLocation();
+  const { zone } = useCustomerLocation();
 
   // Persist cart on every change. localStorage is synchronous but tiny here.
   useEffect(() => {
@@ -155,7 +155,7 @@ export function useCart() {
 
   const subtotal = items.reduce((sum, ci) => sum + ci.unitPrice * ci.quantity, 0);
   const tax = subtotal * storeInfo.tax;
-  const deliveryFee = service?.fee ?? 65;
+  const deliveryFee = zone?.zone.delivery_fee ?? 65;
   const delivery = items.length > 0 ? deliveryFee : 0;
   const total = subtotal + tax + delivery;
   const totalItems = items.reduce((sum, ci) => sum + ci.quantity, 0);

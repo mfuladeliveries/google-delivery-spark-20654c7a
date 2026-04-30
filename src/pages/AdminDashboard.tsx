@@ -10,7 +10,6 @@ import AdminWithdrawals from "@/components/admin/AdminWithdrawals";
 import AdminRefunds from "@/components/admin/AdminRefunds";
 import AdminDriverRequests from "@/components/admin/AdminDriverRequests";
 import AdminAboutEditor from "@/components/admin/AdminAboutEditor";
-import AdminDeliveryFees from "@/components/admin/AdminDeliveryFees";
 import AdminDeliveryAreas from "@/components/admin/AdminDeliveryAreas";
 import AdminMenuManager from "@/components/admin/AdminMenuManager";
 import { toast } from "sonner";
@@ -124,7 +123,7 @@ const getDelayInfo = (order: { status: string; created_at: string }) => {
 const AdminDashboard = () => {
   const { user, role, loading: authLoading } = useAuth();
   const navigate = useNavigate();
-  const [tab, setTab] = useState<"overview" | "orders" | "earnings" | "withdrawals" | "refunds" | "requests" | "users" | "restaurants" | "menus" | "drivers" | "fees" | "areas" | "about">("overview");
+  const [tab, setTab] = useState<"overview" | "orders" | "earnings" | "withdrawals" | "refunds" | "requests" | "users" | "restaurants" | "menus" | "drivers" | "areas" | "about">("overview");
   const [stats, setStats] = useState<Stats>({
     totalOrders: 0, totalRevenue: 0, totalRestaurants: 0,
     pendingOrders: 0, deliveredToday: 0, totalDrivers: 0,
@@ -315,7 +314,7 @@ const AdminDashboard = () => {
     { label: "Today", value: stats.deliveredToday, icon: UserCheck, color: "bg-primary/10 text-primary" },
   ];
 
-  const tabs = ["overview", "orders", "earnings", "withdrawals", "refunds", "requests", "users", "restaurants", "menus", "drivers", "fees", "areas", "about"] as const;
+  const tabs = ["overview", "orders", "earnings", "withdrawals", "refunds", "requests", "users", "restaurants", "menus", "drivers", "areas", "about"] as const;
 
   return (
     <div className="min-h-screen bg-background">
@@ -490,15 +489,7 @@ const AdminDashboard = () => {
           <DriversTab drivers={drivers} onDriverAdded={() => { fetchDrivers(); fetchUsers(); }} />
         )}
 
-        {/* Delivery Fees */}
-        {tab === "fees" && (
-          <>
-            <h2 className="font-bold text-foreground mb-3">🚚 Delivery Fees</h2>
-            <AdminDeliveryFees />
-          </>
-        )}
-
-        {/* Delivery Areas */}
+        {/* Delivery Zones (centre + 5km radius + per-zone fee) */}
         {tab === "areas" && <AdminDeliveryAreas />}
 
         {/* About Page Editor */}
