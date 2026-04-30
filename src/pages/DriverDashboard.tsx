@@ -269,7 +269,7 @@ const DriverDashboard = () => {
 
   const fetchDriverProfile = async () => {
     const { data } = await supabase
-      .from("driver_profiles").select("is_online, total_earnings, total_deliveries, service_lat, service_lng")
+      .from("driver_profiles").select("is_online, total_earnings, total_deliveries, service_area_id")
       .eq("user_id", user!.id).maybeSingle();
     if (data) setDriverProfile(data);
     else {
