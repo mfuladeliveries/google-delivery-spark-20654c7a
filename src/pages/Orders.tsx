@@ -14,6 +14,7 @@ import { RestaurantName } from "@/components/RestaurantName";
 import { RatingDialog } from "@/components/RatingDialog";
 import { stashReorder } from "@/lib/reorder";
 import { OrderChat } from "@/components/OrderChat";
+import { distanceKm } from "@/lib/serviceArea";
 
 interface OrderItem {
   id?: string;
@@ -47,6 +48,11 @@ interface Order {
   refund_amount?: number | null;
   dispatch_phase?: "offer_a" | "offer_b" | "waiting" | "broadcast" | null;
   address_tag?: string | null;
+  driver_lat?: number | null;
+  driver_lng?: number | null;
+  customer_lat?: number | null;
+  customer_lng?: number | null;
+  driver_location_updated_at?: string | null;
 }
 
 interface RatingTarget {
@@ -89,6 +95,47 @@ const getStatusConfig = (status: string) => {
 const getStepIndex = (status: string) => {
   const idx = statusSteps.findIndex(s => s.key === status);
   return idx >= 0 ? idx : 0;
+};
+
+/**
+ * Customer-facing ETA. Uses live driver GPS + customer coords to estimate minutes.
+ * Adds a small prep buffer before pickup so we don't promise too aggressive a time.
+ * Returns null when we can't compute (missing coords).
+ */
+const computeEtaMinutes = (order: Order): number | null => {
+  if (
+    order.driver_lat == null ||
+    order.driver_lng == null ||
+    order.customer_lat == null ||
+    order.customer_lng == null
+  ) return null;
+
+  const distKm = distanceKm(
+    order.driver_lat,
+    order.driver_lng,
+    order.customer_lat,
+    order.customer_lng,
+  );
+  // Avg urban speed in km/h: a bit slower while heading to restaurant (traffic + waiting), faster on delivery leg
+  const speedKmh = order.status === "out_for_delivery" ? 30 : 25;
+  // Prep buffer (minutes) added until the food is actually picked up
+  const prepBuffer =
+    order.status === "driver_assigned" ? 6 :
+    order.status === "picking_up" ? 4 :
+    order.status === "arrived_at_restaurant" ? 3 : 0;
+  const travelMin = (distKm / speedKmh) * 60;
+  const total = Math.max(1, Math.round(travelMin + prepBuffer));
+  // Cap at 120 min so we never show silly numbers from stale GPS
+  return Math.min(total, 120);
+};
+
+const formatEta = (minutes: number): string => {
+  if (minutes < 1) return "Arriving now";
+  if (minutes === 1) return "1 min";
+  if (minutes < 60) return `${minutes} min`;
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  return m === 0 ? `${h}h` : `${h}h ${m}m`;
 };
 
 const Orders = () => {
@@ -151,6 +198,11 @@ const Orders = () => {
             driver_id: o.driver_id ?? null,
             dispatch_phase: o.dispatch_phase ?? null,
             address_tag: o.address_tag ?? null,
+            driver_lat: o.driver_lat ?? null,
+            driver_lng: o.driver_lng ?? null,
+            customer_lat: o.customer_lat ?? null,
+            customer_lng: o.customer_lng ?? null,
+            driver_location_updated_at: o.driver_location_updated_at ?? null,
           }))
         );
         const deliveredIds = data.filter(o => o.status === "delivered" || o.status === "cancelled" || o.status === "rejected").map(o => o.id);
@@ -681,6 +733,49 @@ const Orders = () => {
                       }
                       return null;
                     })()}
+
+                    {/* Live ETA banner — shows once a driver is assigned and updates each time their GPS pings */}
+                    {order.driver_id &&
+                      ["driver_assigned", "picking_up", "arrived_at_restaurant", "out_for_delivery"].includes(order.status) &&
+                      (() => {
+                        const eta = computeEtaMinutes(order);
+                        if (eta == null) return null;
+                        const phaseLabel =
+                          order.status === "out_for_delivery"
+                            ? "Driver heading to you"
+                            : order.status === "arrived_at_restaurant"
+                              ? "Driver picking up your order"
+                              : order.status === "picking_up"
+                                ? "Driver heading to restaurant"
+                                : "Driver on the way";
+                        return (
+                          <div
+                            role="status"
+                            aria-live="polite"
+                            className="mb-3 flex items-center gap-3 rounded-xl border-2 border-primary/30 bg-gradient-to-r from-primary/10 to-primary/5 px-3 py-2.5"
+                          >
+                            <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-orange">
+                              <Clock className="h-4 w-4" />
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
+                                Estimated arrival
+                              </p>
+                              <p className="text-base font-extrabold leading-tight text-primary">
+                                {formatEta(eta)}
+                              </p>
+                            </div>
+                            <div className="hidden sm:block min-w-0 text-right">
+                              <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                                Status
+                              </p>
+                              <p className="truncate text-xs font-semibold text-foreground">
+                                {phaseLabel}
+                              </p>
+                            </div>
+                          </div>
+                        );
+                      })()}
 
                     {/* Delivery PIN shown directly under order number until delivered */}
                     {(deliveryPins[order.id] || order.delivery_code) && order.status !== "delivered" && !isCancelled && (
