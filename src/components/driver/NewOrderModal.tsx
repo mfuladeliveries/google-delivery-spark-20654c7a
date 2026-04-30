@@ -50,6 +50,7 @@ const NewOrderModal = ({ open, offer, distanceKm, accepting, rejecting, onAccept
   // variant "accept" = bright rising major third (E5 -> A5)
   // variant "decline" = muted descending minor (A4 -> D4)
   const playFeedback = (variant: "accept" | "decline") => {
+    if (!getNotificationPrefs().driver_action_sounds) return;
     try {
       const Ctx = (window.AudioContext || (window as any).webkitAudioContext);
       if (!Ctx) return;
