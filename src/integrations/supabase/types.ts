@@ -171,6 +171,10 @@ export type Database = {
           license_plate: string
           license_url: string
           location_updated_at: string | null
+          service_area_label: string
+          service_lat: number | null
+          service_lng: number | null
+          service_radius_km: number
           total_deliveries: number
           total_earnings: number
           updated_at: string
@@ -192,6 +196,10 @@ export type Database = {
           license_plate?: string
           license_url?: string
           location_updated_at?: string | null
+          service_area_label?: string
+          service_lat?: number | null
+          service_lng?: number | null
+          service_radius_km?: number
           total_deliveries?: number
           total_earnings?: number
           updated_at?: string
@@ -213,6 +221,10 @@ export type Database = {
           license_plate?: string
           license_url?: string
           location_updated_at?: string | null
+          service_area_label?: string
+          service_lat?: number | null
+          service_lng?: number | null
+          service_radius_km?: number
           total_deliveries?: number
           total_earnings?: number
           updated_at?: string
@@ -930,6 +942,10 @@ export type Database = {
         Returns: undefined
       }
       auto_cancel_stale_orders: { Args: never; Returns: number }
+      check_area_coverage: {
+        Args: { p_lat: number; p_lng: number }
+        Returns: Json
+      }
       check_rate_limit: {
         Args: {
           p_action: string
