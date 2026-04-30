@@ -156,6 +156,11 @@ const Orders = () => {
             driver_id: o.driver_id ?? null,
             dispatch_phase: o.dispatch_phase ?? null,
             address_tag: o.address_tag ?? null,
+            driver_lat: o.driver_lat ?? null,
+            driver_lng: o.driver_lng ?? null,
+            customer_lat: o.customer_lat ?? null,
+            customer_lng: o.customer_lng ?? null,
+            driver_location_updated_at: o.driver_location_updated_at ?? null,
           }))
         );
         const deliveredIds = data.filter(o => o.status === "delivered" || o.status === "cancelled" || o.status === "rejected").map(o => o.id);
