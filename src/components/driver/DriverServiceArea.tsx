@@ -57,16 +57,35 @@ const DriverServiceArea = ({ onSaved }: { onSaved?: () => void }) => {
       service_lng: r.lng,
       service_area_label: d.service_area_label || r.address.split(",").slice(0, 2).join(",").trim(),
     }));
+    setErrors((e) => ({ ...e, centre: undefined }));
     setShowPicker(false);
   };
 
-  const requestSave = () => {
-    if (data.service_lat == null || data.service_lng == null) {
-      toast.error("Please pick your working area on the map first");
-      return;
+  const validate = (d: ServiceArea) => {
+    const next: { centre?: string; radius?: string } = {};
+    if (d.service_lat == null || d.service_lng == null) {
+      next.centre = "Pick your area centre on the map before saving.";
+    } else if (
+      Math.abs(d.service_lat) > 90 ||
+      Math.abs(d.service_lng) > 180
+    ) {
+      next.centre = "The selected coordinates are invalid. Please pick again.";
     }
-    if (!data.service_radius_km || data.service_radius_km < 1) {
-      toast.error("Radius must be at least 1 km");
+    if (d.service_radius_km == null || Number.isNaN(d.service_radius_km)) {
+      next.radius = "Choose a radius between 1 and 20 km.";
+    } else if (d.service_radius_km < 1) {
+      next.radius = "Radius must be at least 1 km.";
+    } else if (d.service_radius_km > 20) {
+      next.radius = "Radius cannot exceed 20 km.";
+    }
+    return next;
+  };
+
+  const requestSave = () => {
+    const next = validate(data);
+    setErrors(next);
+    if (next.centre || next.radius) {
+      toast.error("Please fix the highlighted fields before saving");
       return;
     }
     setShowConfirm(true);
