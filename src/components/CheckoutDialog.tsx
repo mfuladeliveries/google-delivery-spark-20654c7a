@@ -133,7 +133,7 @@ const CheckoutDialog = ({
 
   // Driver-coverage check: when the customer's coords change, ask the server whether any
   // online driver covers this delivery location. Non-blocking — we only warn the customer.
-  const [coverage, setCoverage] = useState<{ covered: boolean; online_in_area: number; total_online: number } | null>(null);
+  const [coverage, setCoverage] = useState<{ covered: boolean; online_in_area: number; total_online: number; address_tag: string | null } | null>(null);
   useEffect(() => {
     if (!coords) {
       setCoverage(null);
@@ -575,6 +575,25 @@ const CheckoutDialog = ({
                     We deliver up to {MAX_DELIVERY_KM} km. Please pick a closer address.
                   </p>
                 </div>
+              </div>
+            )}
+
+            {addressVerified && coords && !outOfRange && coverage && (
+              <div className="mt-2 flex items-center gap-2 flex-wrap">
+                <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+                  Delivery area
+                </span>
+                {coverage.address_tag ? (
+                  <span className="inline-flex items-center gap-1 rounded-full border border-primary/40 bg-primary/10 px-2.5 py-1 text-xs font-bold text-primary">
+                    <MapPin className="h-3 w-3" />
+                    {coverage.address_tag}
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1 rounded-full border border-amber-500/40 bg-amber-500/10 px-2.5 py-1 text-xs font-bold text-amber-700">
+                    <AlertTriangle className="h-3 w-3" />
+                    No matching area
+                  </span>
+                )}
               </div>
             )}
 
