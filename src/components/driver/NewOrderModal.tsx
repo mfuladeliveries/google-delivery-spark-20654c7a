@@ -28,7 +28,36 @@ interface NewOrderModalProps {
 
 const NewOrderModal = ({ open, offer, distanceKm, accepting, rejecting, onAccept, onReject }: NewOrderModalProps) => {
   const [secondsLeft, setSecondsLeft] = useState<number | null>(null);
+  const [dismissed, setDismissed] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  // Reset dismissed flag whenever a new offer arrives
+  useEffect(() => {
+    setDismissed(false);
+  }, [offer?.id]);
+
+  const handleAcceptClick = () => {
+    if (dismissed || accepting || rejecting) return;
+    setDismissed(true);
+    // Stop sound/vibration immediately for instant feedback
+    audioRef.current?.pause();
+    if (audioRef.current) audioRef.current.currentTime = 0;
+    if (typeof navigator !== "undefined" && "vibrate" in navigator) {
+      try { navigator.vibrate(0); } catch { /* noop */ }
+    }
+    onAccept();
+  };
+
+  const handleRejectClick = () => {
+    if (dismissed || accepting || rejecting) return;
+    setDismissed(true);
+    audioRef.current?.pause();
+    if (audioRef.current) audioRef.current.currentTime = 0;
+    if (typeof navigator !== "undefined" && "vibrate" in navigator) {
+      try { navigator.vibrate(0); } catch { /* noop */ }
+    }
+    onReject();
+  };
 
   // Play custom alert sound + vibrate on open, loop for ~10 seconds, then stop
   useEffect(() => {
@@ -99,7 +128,7 @@ const NewOrderModal = ({ open, offer, distanceKm, accepting, rejecting, onAccept
   const dashOffset = circumference * (1 - progress);
 
   return (
-    <Dialog open={open} onOpenChange={() => { /* must Accept or Reject */ }}>
+    <Dialog open={open && !dismissed} onOpenChange={() => { /* must Accept or Reject */ }}>
       <DialogContent
         className="sm:max-w-md p-0 overflow-hidden border-2 border-primary max-h-[90vh] flex flex-col gap-0 top-[5vh] translate-y-0 sm:top-[50%] sm:translate-y-[-50%]"
         onPointerDownOutside={(e) => e.preventDefault()}
@@ -192,16 +221,16 @@ const NewOrderModal = ({ open, offer, distanceKm, accepting, rejecting, onAccept
         {/* Actions */}
         <div className="grid grid-cols-2 gap-2 p-4 bg-secondary/30 border-t border-border shrink-0">
           <button
-            onClick={onReject}
-            disabled={accepting || rejecting}
+            onClick={handleRejectClick}
+            disabled={accepting || rejecting || dismissed}
             className="rounded-xl border-2 border-destructive/30 bg-card py-3.5 text-sm font-bold text-destructive disabled:opacity-50 transition-all hover:bg-destructive/5 active:scale-[0.98] flex items-center justify-center gap-2"
           >
             <X className="h-4 w-4" />
             {rejecting ? "Declining..." : "Decline"}
           </button>
           <button
-            onClick={onAccept}
-            disabled={accepting || rejecting}
+            onClick={handleAcceptClick}
+            disabled={accepting || rejecting || dismissed}
             className="rounded-xl bg-primary py-3.5 text-sm font-bold text-primary-foreground disabled:opacity-50 transition-all hover:opacity-95 active:scale-[0.98] shadow-orange flex items-center justify-center gap-2"
           >
             <Check className="h-4 w-4" />
