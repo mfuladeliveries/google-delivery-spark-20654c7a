@@ -131,6 +131,22 @@ const CheckoutDialog = ({
 
   const outOfRange = distanceToRestaurant != null && distanceToRestaurant > MAX_DELIVERY_KM;
 
+  // Driver-coverage check: when the customer's coords change, ask the server whether any
+  // online driver covers this delivery location. Non-blocking — we only warn the customer.
+  const [coverage, setCoverage] = useState<{ covered: boolean; online_in_area: number; total_online: number } | null>(null);
+  useEffect(() => {
+    if (!coords) {
+      setCoverage(null);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase.rpc("check_area_coverage", { p_lat: coords.lat, p_lng: coords.lng });
+      if (!cancelled && data) setCoverage(data as any);
+    })();
+    return () => { cancelled = true; };
+  }, [coords]);
+
   const handleAddressSelect = (result: ValidatedAddress) => {
     setAddress(result.address);
     setCoords({ lat: result.lat, lng: result.lng });
@@ -557,6 +573,18 @@ const CheckoutDialog = ({
                   <p className="mt-0.5 text-foreground">
                     This address is {distanceToRestaurant.toFixed(1)} km from {primaryRestaurantName || "the restaurant"}.
                     We deliver up to {MAX_DELIVERY_KM} km. Please pick a closer address.
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {addressVerified && coords && !outOfRange && coverage && !coverage.covered && (
+              <div className="mt-2 flex items-start gap-2 rounded-xl border-2 border-amber-500/40 bg-amber-500/10 p-3">
+                <AlertTriangle className="h-4 w-4 flex-shrink-0 text-amber-600 mt-0.5" />
+                <div className="text-xs">
+                  <p className="font-bold text-amber-700">No drivers online in your area right now</p>
+                  <p className="mt-0.5 text-foreground">
+                    You can still place this order, but it may take longer than usual to be picked up while we wait for a driver to come online nearby.
                   </p>
                 </div>
               </div>
