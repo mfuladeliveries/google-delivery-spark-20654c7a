@@ -1123,6 +1123,23 @@ const RestaurantsTab = ({
               <input value={description} onChange={e => setDescription(e.target.value)} placeholder="Short description"
                 className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20" />
             </div>
+            <div className="sm:col-span-2">
+              <label className="block text-xs font-semibold text-muted-foreground mb-1">
+                🗺️ Delivery Area <span className="text-muted-foreground">(customers in this area will see this restaurant)</span>
+              </label>
+              <select
+                value={areaId}
+                onChange={e => setAreaId(e.target.value)}
+                className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+              >
+                <option value="">— No area assigned —</option>
+                {areas.map(a => (
+                  <option key={a.id} value={a.id}>
+                    {a.name}{a.is_active ? "" : " (inactive)"}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
 
           <div className="border-t border-border pt-3 mt-1">
@@ -1191,6 +1208,7 @@ const RestaurantsTab = ({
           <RestaurantCard
             key={r.id}
             restaurant={r}
+            areas={areas}
             onToggleActive={onToggleActive}
             onDelete={handleDelete}
             deleting={deleting}
