@@ -128,7 +128,7 @@ const NewOrderModal = ({ open, offer, distanceKm, accepting, rejecting, onAccept
   const dashOffset = circumference * (1 - progress);
 
   return (
-    <Dialog open={open} onOpenChange={() => { /* must Accept or Reject */ }}>
+    <Dialog open={open && !dismissed} onOpenChange={() => { /* must Accept or Reject */ }}>
       <DialogContent
         className="sm:max-w-md p-0 overflow-hidden border-2 border-primary max-h-[90vh] flex flex-col gap-0 top-[5vh] translate-y-0 sm:top-[50%] sm:translate-y-[-50%]"
         onPointerDownOutside={(e) => e.preventDefault()}
