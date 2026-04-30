@@ -45,6 +45,8 @@ interface Order {
   refund_status?: "pending" | "credited" | "bank_pending" | "bank_paid" | null;
   refund_method?: "credits" | "bank" | null;
   refund_amount?: number | null;
+  dispatch_phase?: "offer_a" | "offer_b" | "waiting" | "broadcast" | null;
+  address_tag?: string | null;
 }
 
 interface RatingTarget {
