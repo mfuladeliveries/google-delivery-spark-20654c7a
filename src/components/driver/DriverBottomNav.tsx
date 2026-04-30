@@ -28,7 +28,7 @@ const DriverBottomNav = ({ activeTab, onTabChange, jobCount = 0, activeCount = 0
             <button
               key={id}
               onClick={() => onTabChange(id)}
-              className={`relative flex flex-col items-center gap-0.5 px-4 py-1.5 rounded-xl transition-all ${
+              className={`relative flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-xl transition-all ${
                 isActive
                   ? "text-primary"
                   : "text-muted-foreground hover:text-foreground"
