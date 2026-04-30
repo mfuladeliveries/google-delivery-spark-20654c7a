@@ -1223,12 +1223,14 @@ const RestaurantsTab = ({
 // Individual restaurant card with inline edit
 const RestaurantCard = ({
   restaurant: r,
+  areas,
   onToggleActive,
   onDelete,
   deleting,
   onRestaurantChanged,
 }: {
   restaurant: RestaurantRecord;
+  areas: DeliveryAreaOption[];
   onToggleActive: (id: string, isActive: boolean) => void;
   onDelete: (id: string, name: string) => void;
   deleting: string | null;
@@ -1239,6 +1241,8 @@ const RestaurantCard = ({
   const [editPassword, setEditPassword] = useState("");
   const [editName, setEditName] = useState("");
   const [editContact, setEditContact] = useState("");
+  const [editAreaId, setEditAreaId] = useState<string>(r.area_id ?? "");
+  const [savingArea, setSavingArea] = useState(false);
   const [savingEdit, setSavingEdit] = useState(false);
   const [ownerInfo, setOwnerInfo] = useState<{ email: string; full_name: string; contact_number: string } | null>(null);
   const [loadingOwner, setLoadingOwner] = useState(false);
