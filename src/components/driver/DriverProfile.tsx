@@ -3,7 +3,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Camera, Upload, Save, Car, FileText, CreditCard, LogOut, User, Star } from "lucide-react";
 import { toast } from "sonner";
-import DriverServiceArea from "./DriverServiceArea";
 
 interface ProfileData {
   full_name: string;
@@ -178,9 +177,6 @@ const DriverProfileTab = () => {
           />
         </div>
       </div>
-
-      {/* Working Area */}
-      <DriverServiceArea />
 
       {/* Documents */}
       <div className="rounded-2xl border border-border bg-card p-4 shadow-card space-y-3">

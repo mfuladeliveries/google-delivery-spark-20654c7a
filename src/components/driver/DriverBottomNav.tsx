@@ -1,6 +1,6 @@
-import { Briefcase, DollarSign, UserCircle, Wallet } from "lucide-react";
+import { Briefcase, DollarSign, MapPin, UserCircle, Wallet } from "lucide-react";
 
-type DriverTab = "orders" | "earnings" | "withdraw" | "profile";
+type DriverTab = "orders" | "earnings" | "withdraw" | "area" | "profile";
 
 interface DriverBottomNavProps {
   activeTab: DriverTab;
@@ -13,6 +13,7 @@ const tabs = [
   { id: "orders" as DriverTab, icon: Briefcase, label: "Orders" },
   { id: "earnings" as DriverTab, icon: DollarSign, label: "Earnings" },
   { id: "withdraw" as DriverTab, icon: Wallet, label: "Withdraw" },
+  { id: "area" as DriverTab, icon: MapPin, label: "Area" },
   { id: "profile" as DriverTab, icon: UserCircle, label: "Profile" },
 ];
 
@@ -27,7 +28,7 @@ const DriverBottomNav = ({ activeTab, onTabChange, jobCount = 0, activeCount = 0
             <button
               key={id}
               onClick={() => onTabChange(id)}
-              className={`relative flex flex-col items-center gap-0.5 px-4 py-1.5 rounded-xl transition-all ${
+              className={`relative flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-xl transition-all ${
                 isActive
                   ? "text-primary"
                   : "text-muted-foreground hover:text-foreground"
