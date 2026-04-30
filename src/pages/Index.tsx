@@ -146,6 +146,12 @@ const Index = () => {
     : geo.hasCoords ? { lat: geo.lat as number, lng: geo.lng as number } : null;
   const hasEffectiveCoords = effectiveCoords != null;
 
+  // Determine which delivery area the customer is in (if any).
+  const currentZone: ZoneMatch | null = useMemo(() => {
+    if (!effectiveCoords || zones.length === 0) return null;
+    return findNearestZone(effectiveCoords.lat, effectiveCoords.lng, zones);
+  }, [effectiveCoords?.lat, effectiveCoords?.lng, zones]);
+
   // Annotate every restaurant with distance + nearby flag.
   // Restaurants without coords are treated as out of range.
   const annotated = useMemo(() => {
@@ -162,11 +168,13 @@ const Index = () => {
   const filtered = annotated.filter((r) => {
     const matchesCuisine = selectedCuisine === "All" || r.cuisine === selectedCuisine;
     const matchesSearch = !search.trim() || r.name.toLowerCase().includes(search.toLowerCase()) || r.cuisine.toLowerCase().includes(search.toLowerCase());
-    // Hide restaurants outside the delivery radius once we know where the
-    // customer is. Without coords (denied/unsupported) we show everything so
-    // the user isn't left with an empty list.
-    const withinRange = !hasEffectiveCoords || r._nearby;
-    return matchesCuisine && matchesSearch && withinRange;
+    // Strict area gating: once we know where the customer is, only show
+    // restaurants assigned to their current delivery area. Without coords
+    // (denied/unsupported) we show everything so the list isn't empty.
+    const matchesArea = !hasEffectiveCoords
+      ? true
+      : currentZone != null && r.area_id === currentZone.zone.id;
+    return matchesCuisine && matchesSearch && matchesArea;
   });
 
   // Sort: nearby first, then by distance asc, then by rating desc as tiebreaker.
