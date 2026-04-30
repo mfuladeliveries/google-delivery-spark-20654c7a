@@ -124,7 +124,10 @@ Deno.serve(async (req) => {
       notify_url: itnUrl,
       name_first: firstName.slice(0, 100),
       name_last: lastName.slice(0, 100),
-      email_address: userEmail.slice(0, 255),
+      // In sandbox, PayFast rejects the handoff when the buyer email belongs to
+      // the merchant sandbox account. Leave it blank so the tester can enter a
+      // separate sandbox buyer account on the hosted checkout page.
+      email_address: MODE === "sandbox" ? "" : userEmail.slice(0, 255),
       cell_number: String(order.customer_contact || "")
         .replace(/[^\d]/g, "")
         .slice(0, 15),
