@@ -1,7 +1,17 @@
-import { useEffect, useState, lazy, Suspense } from "react";
+import { useEffect, useState, lazy, Suspense, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { MapPin, Plus, Pencil, Trash2, X, Check, Power, PowerOff, Map as MapIcon } from "lucide-react";
+import {
+  MapPin,
+  Plus,
+  Pencil,
+  Trash2,
+  X,
+  Check,
+  Power,
+  PowerOff,
+  Map as MapIcon,
+} from "lucide-react";
 import { refreshZones } from "@/lib/serviceArea";
 
 const AddressMapPicker = lazy(() => import("@/components/AddressMapPicker"));
@@ -13,7 +23,10 @@ interface DeliveryZone {
   lat: number | null;
   lng: number | null;
   radius_km: number;
-  delivery_fee: number;
+  base_fee: number;
+  price_per_km: number;
+  min_fee: number | null;
+  max_fee: number | null;
   is_active: boolean;
 }
 
@@ -22,8 +35,11 @@ const blankForm = {
   suburb: "",
   lat: "" as string,
   lng: "" as string,
-  radius_km: "5",
-  delivery_fee: "65",
+  radius_km: 5,
+  base_fee: "30",
+  price_per_km: "8",
+  min_fee: "",
+  max_fee: "",
 };
 
 const AdminDeliveryAreas = () => {
@@ -34,20 +50,39 @@ const AdminDeliveryAreas = () => {
   const [form, setForm] = useState(blankForm);
   const [saving, setSaving] = useState(false);
   const [showMap, setShowMap] = useState(false);
+  const [orderCounts, setOrderCounts] = useState<Record<string, number>>({});
 
   const fetchZones = async () => {
     setLoading(true);
     const { data, error } = await supabase
       .from("delivery_areas")
-      .select("id, name, suburb, lat, lng, radius_km, delivery_fee, is_active")
+      .select(
+        "id, name, suburb, lat, lng, radius_km, base_fee, price_per_km, min_fee, max_fee, is_active",
+      )
       .order("name");
     if (error) toast.error(error.message);
     else setZones((data || []) as DeliveryZone[]);
     setLoading(false);
   };
 
+  // Per-zone order count, grouped by orders.address_tag (= zone name).
+  const fetchOrderCounts = async () => {
+    const { data } = await supabase
+      .from("orders")
+      .select("address_tag")
+      .not("address_tag", "is", null);
+    const counts: Record<string, number> = {};
+    (data || []).forEach((row: { address_tag: string | null }) => {
+      const tag = (row.address_tag || "").trim();
+      if (!tag) return;
+      counts[tag] = (counts[tag] || 0) + 1;
+    });
+    setOrderCounts(counts);
+  };
+
   useEffect(() => {
     fetchZones();
+    fetchOrderCounts();
   }, []);
 
   const startCreate = () => {
@@ -62,8 +97,11 @@ const AdminDeliveryAreas = () => {
       suburb: z.suburb || "",
       lat: z.lat != null ? String(z.lat) : "",
       lng: z.lng != null ? String(z.lng) : "",
-      radius_km: String(z.radius_km ?? 5),
-      delivery_fee: String(z.delivery_fee ?? 65),
+      radius_km: Number(z.radius_km ?? 5),
+      base_fee: String(z.base_fee ?? 0),
+      price_per_km: String(z.price_per_km ?? 0),
+      min_fee: z.min_fee != null ? String(z.min_fee) : "",
+      max_fee: z.max_fee != null ? String(z.max_fee) : "",
     });
     setEditing(z);
     setCreating(true);
@@ -74,6 +112,19 @@ const AdminDeliveryAreas = () => {
     setEditing(null);
     setForm(blankForm);
   };
+
+  // Live preview of the calculated fee for the form's settings.
+  const sampleDistanceKm = 3;
+  const previewFee = useMemo(() => {
+    const base = Number(form.base_fee) || 0;
+    const perKm = Number(form.price_per_km) || 0;
+    const min = form.min_fee.trim() === "" ? null : Number(form.min_fee);
+    const max = form.max_fee.trim() === "" ? null : Number(form.max_fee);
+    let v = Math.round((base + perKm * sampleDistanceKm) * 100) / 100;
+    if (max != null && v > max) v = max;
+    if (min != null && v < min) v = min;
+    return v;
+  }, [form.base_fee, form.price_per_km, form.min_fee, form.max_fee]);
 
   const handleSave = async () => {
     const name = form.name.trim();
@@ -92,7 +143,14 @@ const AdminDeliveryAreas = () => {
       return;
     }
     const radius = Math.max(0.5, Math.min(50, Number(form.radius_km) || 5));
-    const fee = Math.max(0, Number(form.delivery_fee) || 0);
+    const base = Math.max(0, Number(form.base_fee) || 0);
+    const perKm = Math.max(0, Number(form.price_per_km) || 0);
+    const min = form.min_fee.trim() === "" ? null : Math.max(0, Number(form.min_fee));
+    const max = form.max_fee.trim() === "" ? null : Math.max(0, Number(form.max_fee));
+    if (min != null && max != null && min > max) {
+      toast.error("Minimum fee cannot exceed maximum fee");
+      return;
+    }
 
     setSaving(true);
     const payload = {
@@ -101,7 +159,12 @@ const AdminDeliveryAreas = () => {
       lat,
       lng,
       radius_km: radius,
-      delivery_fee: fee,
+      base_fee: base,
+      price_per_km: perKm,
+      min_fee: min,
+      max_fee: max,
+      // Keep legacy column in sync so older clients still see something sensible.
+      delivery_fee: base,
     };
 
     const { error } = editing
@@ -109,7 +172,10 @@ const AdminDeliveryAreas = () => {
       : await supabase.from("delivery_areas").insert(payload);
     setSaving(false);
     if (error) {
-      toast.error(error.message);
+      const msg = /delivery_areas_name_lower_uniq/i.test(error.message)
+        ? "An area with this name already exists."
+        : error.message;
+      toast.error(msg);
       return;
     }
     toast.success(editing ? "Zone updated" : "Zone created");
@@ -136,7 +202,12 @@ const AdminDeliveryAreas = () => {
   };
 
   const handleDelete = async (z: DeliveryZone) => {
-    if (!confirm(`Delete "${z.name}"? Drivers assigned to this zone will be unassigned.`)) return;
+    if (
+      !confirm(
+        `Delete "${z.name}"? Drivers assigned to this zone will be unassigned.`,
+      )
+    )
+      return;
     const { error } = await supabase.from("delivery_areas").delete().eq("id", z.id);
     if (error) toast.error(error.message);
     else {
@@ -159,8 +230,9 @@ const AdminDeliveryAreas = () => {
             <MapPin className="h-5 w-5 text-primary" /> Delivery Zones
           </h2>
           <p className="text-xs text-muted-foreground mt-1">
-            Each zone has a centre point and a 5km delivery radius. Customers can only order if
-            they're inside a zone. Drivers pick which zones they work in.
+            Each zone has a centre point, a delivery radius and dynamic pricing
+            (base + per-km, optionally clamped). Customers can only order if they
+            fall inside an active zone.
           </p>
         </div>
         {!creating && (
@@ -175,7 +247,9 @@ const AdminDeliveryAreas = () => {
 
       {creating && (
         <div className="rounded-2xl border-2 border-primary/40 bg-primary/5 p-4 space-y-3">
-          <h3 className="font-bold text-foreground">{editing ? "Edit zone" : "Add new zone"}</h3>
+          <h3 className="font-bold text-foreground">
+            {editing ? "Edit zone" : "Add new zone"}
+          </h3>
           <div>
             <label className="text-xs font-semibold text-muted-foreground mb-1 block">
               Zone name <span className="text-destructive">*</span>
@@ -232,34 +306,104 @@ const AdminDeliveryAreas = () => {
             <MapIcon className="h-3.5 w-3.5 text-primary" /> Pick centre on map
           </button>
 
+          {/* Radius slider */}
+          <div>
+            <div className="flex items-center justify-between mb-1">
+              <label className="text-xs font-semibold text-muted-foreground">
+                Delivery radius
+              </label>
+              <span className="text-xs font-bold text-primary">
+                {form.radius_km} km
+              </span>
+            </div>
+            <input
+              type="range"
+              min={1}
+              max={20}
+              step={0.5}
+              value={form.radius_km}
+              onChange={(e) =>
+                setForm((f) => ({ ...f, radius_km: Number(e.target.value) }))
+              }
+              className="w-full accent-primary"
+            />
+            <div className="flex justify-between text-[10px] text-muted-foreground mt-0.5">
+              <span>1km</span>
+              <span>20km</span>
+            </div>
+          </div>
+
+          {/* Pricing */}
           <div className="grid grid-cols-2 gap-2">
             <div>
               <label className="text-xs font-semibold text-muted-foreground mb-1 block">
-                Radius (km)
-              </label>
-              <input
-                type="number"
-                step="0.5"
-                min="0.5"
-                max="50"
-                value={form.radius_km}
-                onChange={(e) => setForm((f) => ({ ...f, radius_km: e.target.value }))}
-                className="w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm text-foreground focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none"
-              />
-            </div>
-            <div>
-              <label className="text-xs font-semibold text-muted-foreground mb-1 block">
-                Delivery fee (R)
+                Base fee (R) <span className="text-destructive">*</span>
               </label>
               <input
                 type="number"
                 step="1"
                 min="0"
-                value={form.delivery_fee}
-                onChange={(e) => setForm((f) => ({ ...f, delivery_fee: e.target.value }))}
+                value={form.base_fee}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, base_fee: e.target.value }))
+                }
                 className="w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm text-foreground focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none"
               />
             </div>
+            <div>
+              <label className="text-xs font-semibold text-muted-foreground mb-1 block">
+                Price per km (R)
+              </label>
+              <input
+                type="number"
+                step="0.5"
+                min="0"
+                value={form.price_per_km}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, price_per_km: e.target.value }))
+                }
+                className="w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm text-foreground focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none"
+              />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <label className="text-xs font-semibold text-muted-foreground mb-1 block">
+                Min fee (R, optional)
+              </label>
+              <input
+                type="number"
+                step="1"
+                min="0"
+                value={form.min_fee}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, min_fee: e.target.value }))
+                }
+                placeholder="—"
+                className="w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm text-foreground focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none"
+              />
+            </div>
+            <div>
+              <label className="text-xs font-semibold text-muted-foreground mb-1 block">
+                Max fee (R, optional)
+              </label>
+              <input
+                type="number"
+                step="1"
+                min="0"
+                value={form.max_fee}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, max_fee: e.target.value }))
+                }
+                placeholder="—"
+                className="w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm text-foreground focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none"
+              />
+            </div>
+          </div>
+
+          <div className="rounded-xl bg-secondary/40 px-3 py-2 text-xs text-muted-foreground">
+            Example fee at <span className="font-semibold text-foreground">3km</span>:{" "}
+            <span className="font-bold text-primary">R{previewFee.toFixed(2)}</span>
           </div>
 
           <div className="flex gap-2">
@@ -284,7 +428,9 @@ const AdminDeliveryAreas = () => {
         <div className="fixed inset-0 z-[70] bg-black/70 backdrop-blur-sm flex items-center justify-center p-3">
           <div className="relative w-full max-w-lg max-h-[92vh] overflow-y-auto rounded-3xl border border-border bg-background pt-4 shadow-xl">
             <div className="flex items-center justify-between px-4 pb-2">
-              <h3 className="font-display text-base font-bold text-foreground">Pick zone centre</h3>
+              <h3 className="font-display text-base font-bold text-foreground">
+                Pick zone centre
+              </h3>
               <button
                 onClick={() => setShowMap(false)}
                 className="rounded-full p-2 text-muted-foreground hover:bg-secondary"
@@ -304,7 +450,9 @@ const AdminDeliveryAreas = () => {
                 onConfirm={handleMapConfirm}
                 initialAddress={form.name}
                 initialCoords={
-                  form.lat && form.lng ? { lat: Number(form.lat), lng: Number(form.lng) } : null
+                  form.lat && form.lng
+                    ? { lat: Number(form.lat), lng: Number(form.lng) }
+                    : null
                 }
               />
             </Suspense>
@@ -323,10 +471,11 @@ const AdminDeliveryAreas = () => {
         <div className="space-y-2">
           {zones.map((z) => {
             const hasCoords = z.lat != null && z.lng != null;
+            const orders = orderCounts[z.name] || 0;
             return (
               <div
                 key={z.id}
-                className={`rounded-xl border p-3 flex items-center justify-between gap-3 ${
+                className={`rounded-xl border p-3 flex items-start justify-between gap-3 ${
                   z.is_active
                     ? "border-border bg-card"
                     : "border-dashed border-muted-foreground/30 bg-muted/20"
@@ -341,7 +490,7 @@ const AdminDeliveryAreas = () => {
                       </span>
                     )}
                     <span className="text-[10px] font-bold text-primary bg-primary/10 px-1.5 py-0.5 rounded">
-                      R{z.delivery_fee} · {z.radius_km}km
+                      {z.radius_km}km radius
                     </span>
                     {!z.is_active && (
                       <span className="text-[10px] uppercase font-bold tracking-wider text-destructive">
@@ -349,10 +498,21 @@ const AdminDeliveryAreas = () => {
                       </span>
                     )}
                   </div>
+                  <p className="text-[11px] text-muted-foreground mt-1">
+                    Base R{Number(z.base_fee).toFixed(0)}
+                    {Number(z.price_per_km) > 0 && (
+                      <> + R{Number(z.price_per_km).toFixed(2)}/km</>
+                    )}
+                    {z.min_fee != null && <> · min R{Number(z.min_fee).toFixed(0)}</>}
+                    {z.max_fee != null && <> · max R{Number(z.max_fee).toFixed(0)}</>}
+                  </p>
                   <p className="text-[11px] text-muted-foreground mt-0.5">
                     {hasCoords ? (
                       <>
-                        Centre: {z.lat!.toFixed(4)}, {z.lng!.toFixed(4)}
+                        Centre: {z.lat!.toFixed(4)}, {z.lng!.toFixed(4)} · {" "}
+                        <span className="font-semibold text-foreground">
+                          {orders} order{orders === 1 ? "" : "s"}
+                        </span>
                       </>
                     ) : (
                       <span className="text-amber-600 font-semibold">No centre set</span>
