@@ -896,6 +896,10 @@ const RestaurantDashboard = () => {
             )}
           </>
         )}
+
+        {tab === "earnings" && restaurant?.id && (
+          <RestaurantEarnings restaurantId={restaurant.id} />
+        )}
       </main>
       <BottomNav />
     </div>
