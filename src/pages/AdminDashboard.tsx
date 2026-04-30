@@ -70,6 +70,13 @@ interface RestaurantRecord {
   gallery_images: string[];
   opens_at: string | null;
   closes_at: string | null;
+  area_id: string | null;
+}
+
+interface DeliveryAreaOption {
+  id: string;
+  name: string;
+  is_active: boolean;
 }
 
 interface DriverRecord {
