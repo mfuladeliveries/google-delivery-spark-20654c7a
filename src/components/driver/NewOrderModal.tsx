@@ -221,16 +221,16 @@ const NewOrderModal = ({ open, offer, distanceKm, accepting, rejecting, onAccept
         {/* Actions */}
         <div className="grid grid-cols-2 gap-2 p-4 bg-secondary/30 border-t border-border shrink-0">
           <button
-            onClick={onReject}
-            disabled={accepting || rejecting}
+            onClick={handleRejectClick}
+            disabled={accepting || rejecting || dismissed}
             className="rounded-xl border-2 border-destructive/30 bg-card py-3.5 text-sm font-bold text-destructive disabled:opacity-50 transition-all hover:bg-destructive/5 active:scale-[0.98] flex items-center justify-center gap-2"
           >
             <X className="h-4 w-4" />
             {rejecting ? "Declining..." : "Decline"}
           </button>
           <button
-            onClick={onAccept}
-            disabled={accepting || rejecting}
+            onClick={handleAcceptClick}
+            disabled={accepting || rejecting || dismissed}
             className="rounded-xl bg-primary py-3.5 text-sm font-bold text-primary-foreground disabled:opacity-50 transition-all hover:opacity-95 active:scale-[0.98] shadow-orange flex items-center justify-center gap-2"
           >
             <Check className="h-4 w-4" />
