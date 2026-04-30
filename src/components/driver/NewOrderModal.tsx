@@ -30,32 +30,69 @@ const NewOrderModal = ({ open, offer, distanceKm, accepting, rejecting, onAccept
   const [secondsLeft, setSecondsLeft] = useState<number | null>(null);
   const [dismissed, setDismissed] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const feedbackCtxRef = useRef<AudioContext | null>(null);
 
   // Reset dismissed flag whenever a new offer arrives
   useEffect(() => {
     setDismissed(false);
   }, [offer?.id]);
 
-  const handleAcceptClick = () => {
-    if (dismissed || accepting || rejecting) return;
-    setDismissed(true);
-    // Stop sound/vibration immediately for instant feedback
+  const stopAlert = () => {
     audioRef.current?.pause();
     if (audioRef.current) audioRef.current.currentTime = 0;
     if (typeof navigator !== "undefined" && "vibrate" in navigator) {
       try { navigator.vibrate(0); } catch { /* noop */ }
     }
+  };
+
+  // Play a short two-note feedback chime via Web Audio.
+  // variant "accept" = bright rising major third (E5 -> A5)
+  // variant "decline" = muted descending minor (A4 -> D4)
+  const playFeedback = (variant: "accept" | "decline") => {
+    try {
+      const Ctx = (window.AudioContext || (window as any).webkitAudioContext);
+      if (!Ctx) return;
+      const ctx: AudioContext = feedbackCtxRef.current ?? new Ctx();
+      feedbackCtxRef.current = ctx;
+      if (ctx.state === "suspended") ctx.resume();
+
+      const now = ctx.currentTime;
+      const notes = variant === "accept"
+        ? [{ f: 659.25, t: 0 }, { f: 880.0, t: 0.11 }] // E5 -> A5
+        : [{ f: 440.0, t: 0 }, { f: 293.66, t: 0.13 }]; // A4 -> D4
+
+      notes.forEach(({ f, t }) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = variant === "accept" ? "triangle" : "sawtooth";
+        osc.frequency.value = f;
+        const start = now + t;
+        const dur = 0.18;
+        gain.gain.setValueAtTime(0, start);
+        gain.gain.linearRampToValueAtTime(variant === "accept" ? 0.35 : 0.25, start + 0.01);
+        gain.gain.exponentialRampToValueAtTime(0.0001, start + dur);
+        osc.connect(gain).connect(ctx.destination);
+        osc.start(start);
+        osc.stop(start + dur + 0.02);
+      });
+    } catch {
+      /* audio unavailable — silent fallback */
+    }
+  };
+
+  const handleAcceptClick = () => {
+    if (dismissed || accepting || rejecting) return;
+    setDismissed(true);
+    stopAlert();
+    playFeedback("accept");
     onAccept();
   };
 
   const handleRejectClick = () => {
     if (dismissed || accepting || rejecting) return;
     setDismissed(true);
-    audioRef.current?.pause();
-    if (audioRef.current) audioRef.current.currentTime = 0;
-    if (typeof navigator !== "undefined" && "vibrate" in navigator) {
-      try { navigator.vibrate(0); } catch { /* noop */ }
-    }
+    stopAlert();
+    playFeedback("decline");
     onReject();
   };
 
