@@ -60,7 +60,7 @@ Deno.serve(async (req) => {
     }
 
     // 1. Signature check
-    const expectedSig = buildPayfastSignature(fields, PASSPHRASE);
+    const expectedSig = await buildPayfastSignature(fields, PASSPHRASE);
     const sigOk =
       typeof fields.signature === "string" &&
       fields.signature.toLowerCase() === expectedSig.toLowerCase();
