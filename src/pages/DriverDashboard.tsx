@@ -402,7 +402,7 @@ const DriverDashboard = () => {
   const needsAreaSetup =
     !roles.includes("admin") &&
     driverProfile != null &&
-    (driverProfile.service_lat == null || driverProfile.service_lng == null);
+    !driverProfile.service_area_id;
 
   if (needsAreaSetup) {
     return (
