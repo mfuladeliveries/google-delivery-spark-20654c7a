@@ -96,6 +96,47 @@ const getStepIndex = (status: string) => {
   return idx >= 0 ? idx : 0;
 };
 
+/**
+ * Customer-facing ETA. Uses live driver GPS + customer coords to estimate minutes.
+ * Adds a small prep buffer before pickup so we don't promise too aggressive a time.
+ * Returns null when we can't compute (missing coords).
+ */
+const computeEtaMinutes = (order: Order): number | null => {
+  if (
+    order.driver_lat == null ||
+    order.driver_lng == null ||
+    order.customer_lat == null ||
+    order.customer_lng == null
+  ) return null;
+
+  const distKm = distanceKm(
+    order.driver_lat,
+    order.driver_lng,
+    order.customer_lat,
+    order.customer_lng,
+  );
+  // Avg urban speed in km/h: a bit slower while heading to restaurant (traffic + waiting), faster on delivery leg
+  const speedKmh = order.status === "out_for_delivery" ? 30 : 25;
+  // Prep buffer (minutes) added until the food is actually picked up
+  const prepBuffer =
+    order.status === "driver_assigned" ? 6 :
+    order.status === "picking_up" ? 4 :
+    order.status === "arrived_at_restaurant" ? 3 : 0;
+  const travelMin = (distKm / speedKmh) * 60;
+  const total = Math.max(1, Math.round(travelMin + prepBuffer));
+  // Cap at 120 min so we never show silly numbers from stale GPS
+  return Math.min(total, 120);
+};
+
+const formatEta = (minutes: number): string => {
+  if (minutes < 1) return "Arriving now";
+  if (minutes === 1) return "1 min";
+  if (minutes < 60) return `${minutes} min`;
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  return m === 0 ? `${h}h` : `${h}h ${m}m`;
+};
+
 const Orders = () => {
   const { user, roles, loading: authLoading } = useAuth();
   const navigate = useNavigate();
