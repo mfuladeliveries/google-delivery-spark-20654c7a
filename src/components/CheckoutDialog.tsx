@@ -125,13 +125,15 @@ const CheckoutDialog = ({
     };
   }, [open, primaryRestaurantName]);
 
-  // Distance from selected delivery address to the restaurant (km), or null if either side missing.
-  const distanceToRestaurant = useMemo(() => {
-    if (!coords || !restaurantCoords) return null;
-    return distanceKm(coords.lat, coords.lng, restaurantCoords.lat, restaurantCoords.lng);
-  }, [coords, restaurantCoords]);
+  // Match the customer's verified coords against the active delivery zones.
+  // A delivery is allowed only if the address falls within ANY zone's radius.
+  const zoneMatch = useMemo(() => {
+    if (!coords) return null;
+    return findNearestZone(coords.lat, coords.lng, zones);
+  }, [coords, zones]);
 
-  const outOfRange = distanceToRestaurant != null && distanceToRestaurant > MAX_DELIVERY_KM;
+  const outOfRange = !!coords && zoneMatch === null;
+  const zoneFee = zoneMatch ? Number(zoneMatch.zone.delivery_fee) : null;
 
   // Driver-coverage check: when the customer's coords change, ask the server whether any
   // online driver covers this delivery location. Non-blocking — we only warn the customer.
