@@ -441,7 +441,7 @@ const RestaurantDashboard = () => {
           </div>
           <div className="flex items-center gap-2">
             <InstallAppButton variant="restaurant" compact />
-            {(["orders", "menu"] as const).map(t => (
+            {(["orders", "menu", "earnings"] as const).map(t => (
               <button
                 key={t}
                 onClick={() => setTab(t)}
@@ -449,7 +449,7 @@ const RestaurantDashboard = () => {
                   tab === t ? "gradient-orange text-primary-foreground shadow-orange" : "text-muted-foreground hover:bg-secondary"
                 }`}
               >
-                {t === "orders" ? "Orders" : "Menu"}
+                {t === "orders" ? "Orders" : t === "menu" ? "Menu" : "Earnings"}
               </button>
             ))}
           </div>
