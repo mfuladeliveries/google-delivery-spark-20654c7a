@@ -45,6 +45,8 @@ interface Order {
   refund_status?: "pending" | "credited" | "bank_pending" | "bank_paid" | null;
   refund_method?: "credits" | "bank" | null;
   refund_amount?: number | null;
+  dispatch_phase?: "offer_a" | "offer_b" | "waiting" | "broadcast" | null;
+  address_tag?: string | null;
 }
 
 interface RatingTarget {
@@ -147,6 +149,8 @@ const Orders = () => {
             customer_address: o.customer_address || "",
             restaurant_id: o.restaurant_id ?? null,
             driver_id: o.driver_id ?? null,
+            dispatch_phase: o.dispatch_phase ?? null,
+            address_tag: o.address_tag ?? null,
           }))
         );
         const deliveredIds = data.filter(o => o.status === "delivered" || o.status === "cancelled" || o.status === "rejected").map(o => o.id);
@@ -629,6 +633,54 @@ const Orders = () => {
                       </div>
                     )}
 
+                    {/* Dispatch status banner — visible while order is ready and waiting for a driver to claim it */}
+                    {order.status === "ready" && !order.driver_id && (() => {
+                      const phase = order.dispatch_phase;
+                      const isWaiting =
+                        phase === "waiting" ||
+                        phase === "broadcast" ||
+                        notificationLog[order.id]?.has("customer_no_driver_available");
+                      const isSearching = phase === "offer_a" || phase === "offer_b";
+                      const areaSuffix = order.address_tag ? ` in ${order.address_tag}` : "";
+                      if (isWaiting) {
+                        return (
+                          <div
+                            role="status"
+                            aria-live="polite"
+                            className="mb-3 flex items-start gap-2 rounded-xl border-2 border-amber-500/40 bg-amber-500/10 px-3 py-2.5"
+                          >
+                            <AlertCircle className="h-4 w-4 flex-shrink-0 text-amber-600 mt-0.5" />
+                            <div className="min-w-0">
+                              <p className="text-sm font-bold text-amber-700">
+                                No driver available yet
+                              </p>
+                              <p className="mt-0.5 text-xs text-foreground">
+                                We couldn't find a driver{areaSuffix} right now. We're still trying — you'll be
+                                notified as soon as a driver accepts your order.
+                              </p>
+                            </div>
+                          </div>
+                        );
+                      }
+                      if (isSearching) {
+                        return (
+                          <div
+                            role="status"
+                            aria-live="polite"
+                            className="mb-3 flex items-center gap-2 rounded-xl border border-primary/30 bg-primary/5 px-3 py-2.5"
+                          >
+                            <span className="relative flex h-2.5 w-2.5 flex-shrink-0">
+                              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-60" />
+                              <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-primary" />
+                            </span>
+                            <p className="text-xs font-semibold text-foreground">
+                              Looking for a driver{areaSuffix}…
+                            </p>
+                          </div>
+                        );
+                      }
+                      return null;
+                    })()}
 
                     {/* Delivery PIN shown directly under order number until delivered */}
                     {(deliveryPins[order.id] || order.delivery_code) && order.status !== "delivered" && !isCancelled && (
