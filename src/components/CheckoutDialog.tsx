@@ -527,8 +527,54 @@ const CheckoutDialog = ({
             <label className="mb-1.5 flex items-center gap-1.5 text-sm font-semibold text-foreground">
               <MapPin className="h-3.5 w-3.5 text-primary" /> Delivery Address
             </label>
-            <input
-              type="text"
+            {/* Saved-address picker */}
+            {savedAddresses.length > 0 && (
+              <div className="mb-3 rounded-xl border border-border bg-card p-2.5">
+                <div className="mb-1.5 flex items-center justify-between">
+                  <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Saved addresses</p>
+                  <button
+                    type="button"
+                    onClick={() => setShowAddSaved(true)}
+                    className="inline-flex items-center gap-1 text-[11px] font-bold text-primary hover:underline"
+                  >
+                    <Plus className="h-3 w-3" /> Add new
+                  </button>
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {savedAddresses.map((a) => {
+                    const active = selectedSavedId === a.id;
+                    return (
+                      <button
+                        key={a.id}
+                        type="button"
+                        onClick={() => handlePickSaved(a)}
+                        className={`group inline-flex max-w-full items-center gap-1.5 rounded-full border px-2.5 py-1.5 text-left text-xs transition-colors ${
+                          active
+                            ? "border-primary bg-primary text-primary-foreground"
+                            : "border-border bg-background text-foreground hover:bg-secondary"
+                        }`}
+                        title={a.address}
+                      >
+                        {a.is_default && <Star className={`h-3 w-3 flex-shrink-0 ${active ? "" : "text-primary"}`} />}
+                        <span className="font-bold">{a.label}</span>
+                        <span className={`truncate max-w-[140px] ${active ? "opacity-90" : "text-muted-foreground"}`}>· {a.address}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+            {savedAddresses.length === 0 && (
+              <button
+                type="button"
+                onClick={() => setShowAddSaved(true)}
+                className="mb-3 flex w-full items-center justify-center gap-1.5 rounded-xl border border-dashed border-border bg-card px-3 py-2.5 text-xs font-semibold text-primary hover:bg-secondary"
+              >
+                <BookmarkPlus className="h-3.5 w-3.5" />
+                Save addresses for faster checkout
+              </button>
+            )}
+
               inputMode="text"
               value={houseNumber}
               onChange={(e) => setHouseNumber(e.target.value.slice(0, 20))}
