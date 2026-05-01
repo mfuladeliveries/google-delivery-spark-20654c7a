@@ -8,6 +8,7 @@ import BottomNav from "@/components/BottomNav";
 import { useCustomerCredits } from "@/hooks/useCustomerCredits";
 import WalletHistory from "@/components/WalletHistory";
 import AppSwitcher from "@/components/AppSwitcher";
+import SavedAddressManager from "@/components/SavedAddressManager";
 import { getHomeRouteForRoles } from "@/lib/homeRoute";
 
 interface Profile {
