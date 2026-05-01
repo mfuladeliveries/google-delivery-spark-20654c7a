@@ -999,6 +999,22 @@ const CheckoutDialog = ({
           </p>
         </div>
       </div>
+
+      <SavedAddressDialog
+        open={showAddSaved}
+        onClose={() => setShowAddSaved(false)}
+        zones={zones}
+        onSave={async (input) => {
+          const created = await addSavedAddress(input);
+          if (created) {
+            toast.success("Address saved");
+            handlePickSaved(created);
+            refreshAddresses();
+          } else {
+            toast.error("Failed to save address");
+          }
+        }}
+      />
     </>
   );
 };
