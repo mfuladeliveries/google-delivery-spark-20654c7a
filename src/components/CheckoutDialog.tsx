@@ -354,6 +354,24 @@ const CheckoutDialog = ({
         .eq("user_id", user.id);
       refreshLocation();
 
+      // Save this address to the customer's address book if they opted in.
+      if (saveForNextTime && coords && !selectedSavedId) {
+        try {
+          await addSavedAddress({
+            label: nextTimeLabel.trim() || "Home",
+            address: fullAddress,
+            lat: coords.lat,
+            lng: coords.lng,
+            area_id: zoneMatch?.zone.id ?? null,
+            is_default: savedAddresses.length === 0,
+          });
+          refreshAddresses();
+        } catch (e) {
+          // non-fatal — just log
+          console.warn("Failed to save address for next time", e);
+        }
+      }
+
       const deliveryCode = String(Math.floor(100000 + Math.random() * 900000));
 
       const orderItems = items.map((ci) => ({
