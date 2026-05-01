@@ -1,16 +1,18 @@
 import { useState, useEffect, useMemo, lazy, Suspense } from "react";
-import { X, Package, MapPin, Phone, User, StickyNote, CreditCard, Wallet, Clock, Navigation, AlertTriangle, Map as MapIcon, Check } from "lucide-react";
+import { X, Package, MapPin, Phone, User, StickyNote, CreditCard, Wallet, Clock, Navigation, AlertTriangle, Map as MapIcon, Check, Plus, Star, BookmarkPlus } from "lucide-react";
 import { CartItem } from "@/hooks/useCart";
 import { storeInfo } from "@/data/menu";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useCustomerCredits } from "@/hooks/useCustomerCredits";
 import { useCustomerLocation } from "@/hooks/useCustomerLocation";
+import { useCustomerAddresses, type SavedAddress } from "@/hooks/useCustomerAddresses";
 import { z } from "zod";
 import { toast } from "sonner";
 // dispatchAndNotify removed — dispatch is now triggered server-side after PayFast ITN confirms payment.
 import { useNavigate } from "react-router-dom";
 import { AddressAutocomplete, type ValidatedAddress } from "@/components/AddressAutocomplete";
+import { SavedAddressDialog } from "@/components/SavedAddressDialog";
 import { findNearestZone, OUT_OF_ZONE_MESSAGE, DEFAULT_ZONE_RADIUS_KM } from "@/lib/serviceArea";
 
 // Lazy-load the heavy Leaflet map picker only when the user opens it.
@@ -65,6 +67,11 @@ const CheckoutDialog = ({
   const { user } = useAuth();
   const { balance: walletBalance, refresh: refreshWallet } = useCustomerCredits();
   const { refresh: refreshLocation, zones } = useCustomerLocation();
+  const { addresses: savedAddresses, defaultAddress, add: addSavedAddress, refresh: refreshAddresses } = useCustomerAddresses();
+  const [selectedSavedId, setSelectedSavedId] = useState<string | null>(null);
+  const [showAddSaved, setShowAddSaved] = useState(false);
+  const [saveForNextTime, setSaveForNextTime] = useState(false);
+  const [nextTimeLabel, setNextTimeLabel] = useState("Home");
   const [useWallet, setUseWallet] = useState(false);
   const [name, setName] = useState("");
   const [contact, setContact] = useState("");
