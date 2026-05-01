@@ -1,16 +1,18 @@
 import { useState, useEffect, useMemo, lazy, Suspense } from "react";
-import { X, Package, MapPin, Phone, User, StickyNote, CreditCard, Wallet, Clock, Navigation, AlertTriangle, Map as MapIcon, Check } from "lucide-react";
+import { X, Package, MapPin, Phone, User, StickyNote, CreditCard, Wallet, Clock, Navigation, AlertTriangle, Map as MapIcon, Check, Plus, Star, BookmarkPlus } from "lucide-react";
 import { CartItem } from "@/hooks/useCart";
 import { storeInfo } from "@/data/menu";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useCustomerCredits } from "@/hooks/useCustomerCredits";
 import { useCustomerLocation } from "@/hooks/useCustomerLocation";
+import { useCustomerAddresses, type SavedAddress } from "@/hooks/useCustomerAddresses";
 import { z } from "zod";
 import { toast } from "sonner";
 // dispatchAndNotify removed — dispatch is now triggered server-side after PayFast ITN confirms payment.
 import { useNavigate } from "react-router-dom";
 import { AddressAutocomplete, type ValidatedAddress } from "@/components/AddressAutocomplete";
+import { SavedAddressDialog } from "@/components/SavedAddressDialog";
 import { findNearestZone, OUT_OF_ZONE_MESSAGE, DEFAULT_ZONE_RADIUS_KM } from "@/lib/serviceArea";
 
 // Lazy-load the heavy Leaflet map picker only when the user opens it.
@@ -65,6 +67,11 @@ const CheckoutDialog = ({
   const { user } = useAuth();
   const { balance: walletBalance, refresh: refreshWallet } = useCustomerCredits();
   const { refresh: refreshLocation, zones } = useCustomerLocation();
+  const { addresses: savedAddresses, defaultAddress, add: addSavedAddress, refresh: refreshAddresses } = useCustomerAddresses();
+  const [selectedSavedId, setSelectedSavedId] = useState<string | null>(null);
+  const [showAddSaved, setShowAddSaved] = useState(false);
+  const [saveForNextTime, setSaveForNextTime] = useState(false);
+  const [nextTimeLabel, setNextTimeLabel] = useState("Home");
   const [useWallet, setUseWallet] = useState(false);
   const [name, setName] = useState("");
   const [contact, setContact] = useState("");
@@ -101,6 +108,30 @@ const CheckoutDialog = ({
       setNotes(initialFoodNote);
     }
   }, [open, initialFoodNote]);
+
+  // Auto-fill the customer's default saved address when the dialog opens.
+  useEffect(() => {
+    if (!open || !defaultAddress) return;
+    if (addressVerified || address.trim()) return;
+    setSelectedSavedId(defaultAddress.id);
+    setAddress(defaultAddress.address);
+    setCoords({ lat: defaultAddress.lat, lng: defaultAddress.lng });
+    setAddressVerified(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, defaultAddress?.id]);
+
+  const handlePickSaved = (a: SavedAddress) => {
+    setSelectedSavedId(a.id);
+    setAddress(a.address);
+    setCoords({ lat: a.lat, lng: a.lng });
+    setAddressVerified(true);
+    setHouseNumber("");
+    setSaveForNextTime(false);
+    setValidationErrors((prev) => {
+      const { address: _a, ...rest } = prev;
+      return rest;
+    });
+  };
 
   // Fetch restaurant coordinates so we can enforce the 8km radius client-side.
   useEffect(() => {
@@ -155,6 +186,7 @@ const CheckoutDialog = ({
     setAddress(result.address);
     setCoords({ lat: result.lat, lng: result.lng });
     setAddressVerified(true);
+    setSelectedSavedId(null);
     setValidationErrors((prev) => {
       const { address: _a, ...rest } = prev;
       return rest;
@@ -163,6 +195,7 @@ const CheckoutDialog = ({
 
   const handleAddressTextChange = (text: string) => {
     setAddress(text);
+    setSelectedSavedId(null);
     // Plain typing invalidates any previously selected coords.
     if (addressVerified) {
       setCoords(null);
@@ -174,6 +207,7 @@ const CheckoutDialog = ({
     setAddress(result.address);
     setCoords({ lat: result.lat, lng: result.lng });
     setAddressVerified(true);
+    setSelectedSavedId(null);
     setShowMapPicker(false);
     setValidationErrors((prev) => {
       const { address: _a, ...rest } = prev;
@@ -319,6 +353,24 @@ const CheckoutDialog = ({
         })
         .eq("user_id", user.id);
       refreshLocation();
+
+      // Save this address to the customer's address book if they opted in.
+      if (saveForNextTime && coords && !selectedSavedId) {
+        try {
+          await addSavedAddress({
+            label: nextTimeLabel.trim() || "Home",
+            address: fullAddress,
+            lat: coords.lat,
+            lng: coords.lng,
+            area_id: zoneMatch?.zone.id ?? null,
+            is_default: savedAddresses.length === 0,
+          });
+          refreshAddresses();
+        } catch (e) {
+          // non-fatal — just log
+          console.warn("Failed to save address for next time", e);
+        }
+      }
 
       const deliveryCode = String(Math.floor(100000 + Math.random() * 900000));
 
@@ -493,6 +545,54 @@ const CheckoutDialog = ({
             <label className="mb-1.5 flex items-center gap-1.5 text-sm font-semibold text-foreground">
               <MapPin className="h-3.5 w-3.5 text-primary" /> Delivery Address
             </label>
+            {/* Saved-address picker */}
+            {savedAddresses.length > 0 && (
+              <div className="mb-3 rounded-xl border border-border bg-card p-2.5">
+                <div className="mb-1.5 flex items-center justify-between">
+                  <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Saved addresses</p>
+                  <button
+                    type="button"
+                    onClick={() => setShowAddSaved(true)}
+                    className="inline-flex items-center gap-1 text-[11px] font-bold text-primary hover:underline"
+                  >
+                    <Plus className="h-3 w-3" /> Add new
+                  </button>
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {savedAddresses.map((a) => {
+                    const active = selectedSavedId === a.id;
+                    return (
+                      <button
+                        key={a.id}
+                        type="button"
+                        onClick={() => handlePickSaved(a)}
+                        className={`group inline-flex max-w-full items-center gap-1.5 rounded-full border px-2.5 py-1.5 text-left text-xs transition-colors ${
+                          active
+                            ? "border-primary bg-primary text-primary-foreground"
+                            : "border-border bg-background text-foreground hover:bg-secondary"
+                        }`}
+                        title={a.address}
+                      >
+                        {a.is_default && <Star className={`h-3 w-3 flex-shrink-0 ${active ? "" : "text-primary"}`} />}
+                        <span className="font-bold">{a.label}</span>
+                        <span className={`truncate max-w-[140px] ${active ? "opacity-90" : "text-muted-foreground"}`}>· {a.address}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+            {savedAddresses.length === 0 && (
+              <button
+                type="button"
+                onClick={() => setShowAddSaved(true)}
+                className="mb-3 flex w-full items-center justify-center gap-1.5 rounded-xl border border-dashed border-border bg-card px-3 py-2.5 text-xs font-semibold text-primary hover:bg-secondary"
+              >
+                <BookmarkPlus className="h-3.5 w-3.5" />
+                Save addresses for faster checkout
+              </button>
+            )}
+
             <input
               type="text"
               inputMode="text"
@@ -568,6 +668,48 @@ const CheckoutDialog = ({
                     </span>
                   )}
                 </div>
+              </div>
+            )}
+
+            {/* Save-for-next-time toggle (only for fresh, verified, in-range addresses not already saved) */}
+            {addressVerified && coords && !outOfRange && !selectedSavedId && (
+              <div className="mt-2 rounded-xl border border-border bg-card p-3 space-y-2">
+                <label className="flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-2">
+                    <BookmarkPlus className="h-4 w-4 text-primary" />
+                    <span className="text-xs font-bold text-foreground">Save this for next time</span>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={saveForNextTime}
+                    onChange={(e) => setSaveForNextTime(e.target.checked)}
+                    className="h-4 w-4 accent-primary"
+                  />
+                </label>
+                {saveForNextTime && (
+                  <div className="flex flex-wrap gap-1.5 pt-1">
+                    {(["Home", "Work", "Other"] as const).map((p) => (
+                      <button
+                        key={p}
+                        type="button"
+                        onClick={() => setNextTimeLabel(p)}
+                        className={`rounded-full border px-2.5 py-1 text-[11px] font-bold transition-colors ${
+                          nextTimeLabel === p
+                            ? "border-primary bg-primary text-primary-foreground"
+                            : "border-border bg-background text-foreground hover:bg-secondary"
+                        }`}
+                      >
+                        {p}
+                      </button>
+                    ))}
+                    <input
+                      value={["Home", "Work", "Other"].includes(nextTimeLabel) ? "" : nextTimeLabel}
+                      onChange={(e) => setNextTimeLabel(e.target.value.slice(0, 40))}
+                      placeholder="Custom label"
+                      className="flex-1 min-w-[100px] rounded-full border border-border bg-background px-2.5 py-1 text-[11px] text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none"
+                    />
+                  </div>
+                )}
               </div>
             )}
 
@@ -857,6 +999,22 @@ const CheckoutDialog = ({
           </p>
         </div>
       </div>
+
+      <SavedAddressDialog
+        open={showAddSaved}
+        onClose={() => setShowAddSaved(false)}
+        zones={zones}
+        onSave={async (input) => {
+          const created = await addSavedAddress(input);
+          if (created) {
+            toast.success("Address saved");
+            handlePickSaved(created);
+            refreshAddresses();
+          } else {
+            toast.error("Failed to save address");
+          }
+        }}
+      />
     </>
   );
 };

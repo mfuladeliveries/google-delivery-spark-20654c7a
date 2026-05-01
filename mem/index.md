@@ -49,3 +49,4 @@ Closed onboarding for providers (admin-led). Customer self-service.
 - [Restaurant Areas](mem://features/restaurant-areas) — restaurants.area_id; customers only see restaurants from their detected delivery area
 - [Driver Service Areas](mem://features/driver-service-areas) — Driver-set centre+radius; dispatch only matches drivers covering the customer location; checkout warns when no online driver covers the area
 - [Delivery Pricing](mem://features/delivery-pricing) — Per-zone base + per-km, clamped by min/max; computed from restaurant→customer distance; authoritative inside create_verified_order
+- [Saved Addresses](mem://features/saved-addresses) — customer_addresses table with Home/Work/Other labels; default auto-fills checkout; chip picker + save-for-next-time toggle

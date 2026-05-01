@@ -8,6 +8,7 @@ import BottomNav from "@/components/BottomNav";
 import { useCustomerCredits } from "@/hooks/useCustomerCredits";
 import WalletHistory from "@/components/WalletHistory";
 import AppSwitcher from "@/components/AppSwitcher";
+import SavedAddressManager from "@/components/SavedAddressManager";
 import { getHomeRouteForRoles } from "@/lib/homeRoute";
 
 interface Profile {
@@ -227,6 +228,9 @@ const Profile = () => {
             {saved ? "Saved!" : saving ? "Saving..." : "Save Changes"}
           </button>
         </div>
+
+        {/* Saved delivery addresses (Home, Work, Other) */}
+        <SavedAddressManager />
 
         {/* Recent Orders */}
         <div className="rounded-2xl border border-border bg-card p-4 shadow-card">
