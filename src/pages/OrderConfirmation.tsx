@@ -15,6 +15,7 @@ interface ConfirmationState {
   total?: number;
   paymentMethod?: "cash" | "online";
   restaurant?: string;
+  paymentPending?: boolean;
 }
 
 // Parse our combined special_notes string (created in CheckoutDialog) into parts.
@@ -84,12 +85,13 @@ const OrderConfirmation = () => {
     }
 
     let cancelled = false;
-    (async () => {
-      setLoading(true);
+    let pollTimer: ReturnType<typeof setTimeout> | null = null;
+
+    const load = async () => {
       const { data: order, error } = await supabase
         .from("orders")
         .select(
-          "order_number, delivery_code, special_notes, total, payment_method, restaurant, user_id"
+          "order_number, delivery_code, special_notes, total, payment_method, restaurant, user_id, status, payment_status"
         )
         .eq("order_number", orderNumInt)
         .eq("user_id", user.id)
@@ -103,6 +105,22 @@ const OrderConfirmation = () => {
         return;
       }
 
+      // Payment is still being confirmed by PayFast (ITN webhook is async).
+      // Show a friendly "confirming payment" state and poll until it flips.
+      if (order.status === "pending_payment") {
+        setData({
+          orderNumber: order.order_number,
+          deliveryPin: order.delivery_code || "------",
+          total: typeof order.total === "number" ? order.total : Number(order.total),
+          paymentMethod: (order.payment_method as "cash" | "online") || undefined,
+          restaurant: order.restaurant || undefined,
+          paymentPending: true,
+        });
+        setLoading(false);
+        pollTimer = setTimeout(load, 3000);
+        return;
+      }
+
       const parsed = parseSpecialNotes(order.special_notes);
       setData({
         orderNumber: order.order_number,
@@ -113,12 +131,17 @@ const OrderConfirmation = () => {
         total: typeof order.total === "number" ? order.total : Number(order.total),
         paymentMethod: (order.payment_method as "cash" | "online") || undefined,
         restaurant: order.restaurant || undefined,
+        paymentPending: false,
       });
       setLoading(false);
-    })();
+    };
+
+    setLoading(true);
+    load();
 
     return () => {
       cancelled = true;
+      if (pollTimer) clearTimeout(pollTimer);
     };
   }, [data, lookupOrderNumber, user, authLoading, navigate]);
 
@@ -161,6 +184,7 @@ const OrderConfirmation = () => {
     total,
     paymentMethod,
     restaurant,
+    paymentPending,
   } = data;
 
   return (
@@ -168,13 +192,21 @@ const OrderConfirmation = () => {
       <main className="mx-auto max-w-lg px-4 pt-8 md:pt-12">
         {/* Success header */}
         <div className="flex flex-col items-center text-center">
-          <div className="flex h-20 w-20 items-center justify-center rounded-full bg-primary/10">
-            <CheckCircle2 className="h-12 w-12 text-primary" strokeWidth={2.2} />
+          <div className={`flex h-20 w-20 items-center justify-center rounded-full ${paymentPending ? "bg-muted" : "bg-primary/10"}`}>
+            {paymentPending ? (
+              <Loader2 className="h-10 w-10 animate-spin text-primary" />
+            ) : (
+              <CheckCircle2 className="h-12 w-12 text-primary" strokeWidth={2.2} />
+            )}
           </div>
           <h1 className="mt-4 font-display text-2xl font-bold text-foreground">
-            Order Confirmed!
+            {paymentPending ? "Confirming payment…" : "Order Confirmed!"}
           </h1>
-          {restaurant ? (
+          {paymentPending ? (
+            <p className="mt-2 text-sm text-muted-foreground max-w-xs">
+              We're waiting for PayFast to confirm your payment. This usually takes a few seconds — this page will update automatically.
+            </p>
+          ) : restaurant ? (
             <div className="mt-2 space-y-0.5">
               <p className="text-sm text-muted-foreground">Your order from</p>
               <RestaurantName as="p" size="xl" name={restaurant} />

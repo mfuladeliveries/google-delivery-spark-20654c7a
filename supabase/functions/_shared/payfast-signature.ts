@@ -17,12 +17,15 @@ export async function md5(input: string): Promise<string> {
 export async function buildPayfastSignature(
   fields: Record<string, string>,
   passphrase: string,
+  options: { skipEmpty?: boolean } = { skipEmpty: true },
 ): Promise<string> {
+  const skipEmpty = options.skipEmpty !== false;
   const parts: string[] = [];
 
   for (const [key, value] of Object.entries(fields)) {
     if (key === "signature") continue;
-    if (value === null || value === undefined || value === "") continue;
+    if (value === null || value === undefined) continue;
+    if (skipEmpty && value === "") continue;
     parts.push(`${key}=${pfEncode(String(value).trim())}`);
   }
 

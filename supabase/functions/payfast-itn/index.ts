@@ -60,7 +60,13 @@ Deno.serve(async (req) => {
     }
 
     // 1. Signature check
-    const expectedSig = await buildPayfastSignature(fields, PASSPHRASE);
+    // PayFast signs the ITN payload with ALL posted fields included — even
+    // empty strings. Our outgoing-request signature skips empties (PayFast
+    // expects that for the redirect form), but ITN verification must NOT skip
+    // empties or the signature will never match.
+    const expectedSig = await buildPayfastSignature(fields, PASSPHRASE, {
+      skipEmpty: false,
+    });
     const sigOk =
       typeof fields.signature === "string" &&
       fields.signature.toLowerCase() === expectedSig.toLowerCase();
