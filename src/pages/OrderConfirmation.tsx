@@ -47,6 +47,9 @@ const OrderConfirmation = () => {
   const [searchParams] = useSearchParams();
   const { user, loading: authLoading } = useAuth();
   const navState = location.state as ConfirmationState | null;
+
+  // Determine which order number to look up: from nav state OR ?order=123 query param
+  const queryOrderNumber = searchParams.get("order");
   const cachedPendingOrder = loadPendingPaymentOrder(queryOrderNumber);
 
   const [data, setData] = useState<ConfirmationState | null>(() =>
@@ -65,8 +68,6 @@ const OrderConfirmation = () => {
   const [loading, setLoading] = useState(!navState && !cachedPendingOrder);
   const [notFound, setNotFound] = useState(false);
 
-  // Determine which order number to look up: from nav state OR ?order=123 query param
-  const queryOrderNumber = searchParams.get("order");
   const lookupOrderNumber = navState?.orderNumber ?? queryOrderNumber ?? null;
 
   // Keep ?order=N in the URL so refresh works
