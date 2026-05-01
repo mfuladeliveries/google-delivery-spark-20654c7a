@@ -575,6 +575,8 @@ const CheckoutDialog = ({
               </button>
             )}
 
+            <input
+              type="text"
               inputMode="text"
               value={houseNumber}
               onChange={(e) => setHouseNumber(e.target.value.slice(0, 20))}
