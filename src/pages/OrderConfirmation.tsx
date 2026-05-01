@@ -88,6 +88,41 @@ const OrderConfirmation = () => {
     let pollTimer: ReturnType<typeof setTimeout> | null = null;
 
     const load = async () => {
+      // Lightweight status poll via dedicated edge function — returns the
+      // freshest status/payment_status without pulling the full row each time.
+      const { data: statusData, error: statusErr } = await supabase.functions.invoke(
+        "get-order-status",
+        { body: { orderNumber: orderNumInt } }
+      );
+
+      if (cancelled) return;
+
+      if (statusErr || !statusData || (statusData as any).error) {
+        setNotFound(true);
+        setLoading(false);
+        return;
+      }
+
+      const status = (statusData as any).status as string;
+
+      // Payment is still being confirmed by PayFast (ITN webhook is async).
+      // Show a friendly "confirming payment" state and poll until it flips.
+      if (status === "pending_payment") {
+        const totalRaw = (statusData as any).total;
+        setData({
+          orderNumber: (statusData as any).order_number,
+          deliveryPin: (statusData as any).delivery_code || "------",
+          total: typeof totalRaw === "number" ? totalRaw : Number(totalRaw),
+          paymentMethod: ((statusData as any).payment_method as "cash" | "online") || undefined,
+          restaurant: (statusData as any).restaurant || undefined,
+          paymentPending: true,
+        });
+        setLoading(false);
+        pollTimer = setTimeout(load, 3000);
+        return;
+      }
+
+      // Once confirmed, fetch the full row (with notes) once.
       const { data: order, error } = await supabase
         .from("orders")
         .select(
@@ -102,22 +137,6 @@ const OrderConfirmation = () => {
       if (error || !order) {
         setNotFound(true);
         setLoading(false);
-        return;
-      }
-
-      // Payment is still being confirmed by PayFast (ITN webhook is async).
-      // Show a friendly "confirming payment" state and poll until it flips.
-      if (order.status === "pending_payment") {
-        setData({
-          orderNumber: order.order_number,
-          deliveryPin: order.delivery_code || "------",
-          total: typeof order.total === "number" ? order.total : Number(order.total),
-          paymentMethod: (order.payment_method as "cash" | "online") || undefined,
-          restaurant: order.restaurant || undefined,
-          paymentPending: true,
-        });
-        setLoading(false);
-        pollTimer = setTimeout(load, 3000);
         return;
       }
 
