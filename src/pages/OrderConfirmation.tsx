@@ -184,6 +184,7 @@ const OrderConfirmation = () => {
     total,
     paymentMethod,
     restaurant,
+    paymentPending,
   } = data;
 
   return (
@@ -191,13 +192,21 @@ const OrderConfirmation = () => {
       <main className="mx-auto max-w-lg px-4 pt-8 md:pt-12">
         {/* Success header */}
         <div className="flex flex-col items-center text-center">
-          <div className="flex h-20 w-20 items-center justify-center rounded-full bg-primary/10">
-            <CheckCircle2 className="h-12 w-12 text-primary" strokeWidth={2.2} />
+          <div className={`flex h-20 w-20 items-center justify-center rounded-full ${paymentPending ? "bg-muted" : "bg-primary/10"}`}>
+            {paymentPending ? (
+              <Loader2 className="h-10 w-10 animate-spin text-primary" />
+            ) : (
+              <CheckCircle2 className="h-12 w-12 text-primary" strokeWidth={2.2} />
+            )}
           </div>
           <h1 className="mt-4 font-display text-2xl font-bold text-foreground">
-            Order Confirmed!
+            {paymentPending ? "Confirming payment…" : "Order Confirmed!"}
           </h1>
-          {restaurant ? (
+          {paymentPending ? (
+            <p className="mt-2 text-sm text-muted-foreground max-w-xs">
+              We're waiting for PayFast to confirm your payment. This usually takes a few seconds — this page will update automatically.
+            </p>
+          ) : restaurant ? (
             <div className="mt-2 space-y-0.5">
               <p className="text-sm text-muted-foreground">Your order from</p>
               <RestaurantName as="p" size="xl" name={restaurant} />
