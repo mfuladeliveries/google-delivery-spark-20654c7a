@@ -14,6 +14,7 @@ import { useNavigate } from "react-router-dom";
 import { AddressAutocomplete, type ValidatedAddress } from "@/components/AddressAutocomplete";
 import { SavedAddressDialog } from "@/components/SavedAddressDialog";
 import { findNearestZone, OUT_OF_ZONE_MESSAGE, DEFAULT_ZONE_RADIUS_KM } from "@/lib/serviceArea";
+import { savePendingPaymentOrder } from "@/lib/pendingPaymentOrder";
 
 // Lazy-load the heavy Leaflet map picker only when the user opens it.
 const AddressMapPicker = lazy(() => import("@/components/AddressMapPicker"));
@@ -481,6 +482,15 @@ const CheckoutDialog = ({
         description: `Order #${orderNum} · R${orderTotalNum.toFixed(2)}`,
         duration: 3000,
       });
+
+      if (orderId) {
+        savePendingPaymentOrder({
+          orderId,
+          orderNumber: String(orderNum),
+          total: orderTotalNum,
+          restaurant: restaurants[0] || undefined,
+        });
+      }
 
       setLoading(false);
       onOrderPlaced();

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Loader2, CreditCard, AlertTriangle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { loadPendingPaymentOrder } from "@/lib/pendingPaymentOrder";
 
 // Auto-submitting form that posts the user to PayFast's hosted checkout.
 // We arrive here from CheckoutDialog after the order has been created in
@@ -16,7 +17,7 @@ interface PayState {
 const PayFastRedirect = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const state = location.state as PayState | null;
+  const state = (location.state as PayState | null) ?? loadPendingPaymentOrder();
 
   const [error, setError] = useState<string | null>(null);
   const [fields, setFields] = useState<Record<string, string> | null>(null);

@@ -5,6 +5,7 @@ import BottomNav from "@/components/BottomNav";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { RestaurantName } from "@/components/RestaurantName";
+import { clearPendingPaymentOrder, loadPendingPaymentOrder } from "@/lib/pendingPaymentOrder";
 
 interface ConfirmationState {
   orderNumber: string | number;
@@ -47,12 +48,26 @@ const OrderConfirmation = () => {
   const { user, loading: authLoading } = useAuth();
   const navState = location.state as ConfirmationState | null;
 
-  const [data, setData] = useState<ConfirmationState | null>(navState ?? null);
-  const [loading, setLoading] = useState(!navState);
-  const [notFound, setNotFound] = useState(false);
-
   // Determine which order number to look up: from nav state OR ?order=123 query param
   const queryOrderNumber = searchParams.get("order");
+  const cachedPendingOrder = loadPendingPaymentOrder(queryOrderNumber);
+
+  const [data, setData] = useState<ConfirmationState | null>(() =>
+    navState ??
+    (cachedPendingOrder
+      ? {
+          orderNumber: cachedPendingOrder.orderNumber,
+          deliveryPin: "------",
+          total: cachedPendingOrder.total,
+          paymentMethod: "online",
+          restaurant: cachedPendingOrder.restaurant,
+          paymentPending: true,
+        }
+      : null),
+  );
+  const [loading, setLoading] = useState(!navState && !cachedPendingOrder);
+  const [notFound, setNotFound] = useState(false);
+
   const lookupOrderNumber = navState?.orderNumber ?? queryOrderNumber ?? null;
 
   // Keep ?order=N in the URL so refresh works
@@ -69,7 +84,7 @@ const OrderConfirmation = () => {
 
   // Fetch from DB when we don't already have full state (e.g. after refresh)
   useEffect(() => {
-    if (data || !lookupOrderNumber) return;
+    if (!lookupOrderNumber) return;
     if (authLoading) return;
     if (!user) {
       // Not signed in — can't fetch their order; bounce to orders page (will redirect to auth if needed)
@@ -87,7 +102,45 @@ const OrderConfirmation = () => {
     let cancelled = false;
     let pollTimer: ReturnType<typeof setTimeout> | null = null;
 
+    const fetchFullOrder = async () => {
+      const { data: order, error } = await supabase
+        .from("orders")
+        .select(
+          "order_number, delivery_code, special_notes, total, payment_method, restaurant, user_id, status, payment_status"
+        )
+        .eq("order_number", orderNumInt)
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      if (cancelled) return false;
+
+      if (error || !order) {
+        return false;
+      }
+
+      const parsed = parseSpecialNotes(order.special_notes);
+      setData({
+        orderNumber: order.order_number,
+        deliveryPin: order.delivery_code || "------",
+        scheduledLabel: parsed.scheduledLabel,
+        foodNote: parsed.foodNote,
+        deliveryInstructions: parsed.deliveryInstructions,
+        total: typeof order.total === "number" ? order.total : Number(order.total),
+        paymentMethod: (order.payment_method as "cash" | "online") || undefined,
+        restaurant: order.restaurant || undefined,
+        paymentPending: order.status === "pending_payment",
+      });
+
+      if (order.payment_status === "paid" || order.status !== "pending_payment") {
+        clearPendingPaymentOrder(order.order_number);
+      }
+
+      return true;
+    };
+
     const load = async () => {
+      setLoading((prev) => (data ? prev : true));
+
       // Lightweight status poll via dedicated edge function — returns the
       // freshest status/payment_status without pulling the full row each time.
       const { data: statusData, error: statusErr } = await supabase.functions.invoke(
@@ -98,12 +151,16 @@ const OrderConfirmation = () => {
       if (cancelled) return;
 
       if (statusErr || !statusData || (statusData as any).error) {
-        setNotFound(true);
-        setLoading(false);
+        const recovered = await fetchFullOrder();
+        if (!recovered) {
+          setNotFound(true);
+          setLoading(false);
+        }
         return;
       }
 
       const status = (statusData as any).status as string;
+      const paymentStatus = (statusData as any).payment_status as string | undefined;
 
       // Payment is still being confirmed by PayFast (ITN webhook is async).
       // Show a friendly "confirming payment" state and poll until it flips.
@@ -122,36 +179,17 @@ const OrderConfirmation = () => {
         return;
       }
 
-      // Once confirmed, fetch the full row (with notes) once.
-      const { data: order, error } = await supabase
-        .from("orders")
-        .select(
-          "order_number, delivery_code, special_notes, total, payment_method, restaurant, user_id, status, payment_status"
-        )
-        .eq("order_number", orderNumInt)
-        .eq("user_id", user.id)
-        .maybeSingle();
-
-      if (cancelled) return;
-
-      if (error || !order) {
+      const recovered = await fetchFullOrder();
+      if (!recovered) {
         setNotFound(true);
         setLoading(false);
         return;
       }
 
-      const parsed = parseSpecialNotes(order.special_notes);
-      setData({
-        orderNumber: order.order_number,
-        deliveryPin: order.delivery_code || "------",
-        scheduledLabel: parsed.scheduledLabel,
-        foodNote: parsed.foodNote,
-        deliveryInstructions: parsed.deliveryInstructions,
-        total: typeof order.total === "number" ? order.total : Number(order.total),
-        paymentMethod: (order.payment_method as "cash" | "online") || undefined,
-        restaurant: order.restaurant || undefined,
-        paymentPending: false,
-      });
+      if (paymentStatus === "paid") {
+        clearPendingPaymentOrder((statusData as any).order_number ?? orderNumInt);
+      }
+
       setLoading(false);
     };
 
@@ -162,7 +200,7 @@ const OrderConfirmation = () => {
       cancelled = true;
       if (pollTimer) clearTimeout(pollTimer);
     };
-  }, [data, lookupOrderNumber, user, authLoading, navigate]);
+  }, [lookupOrderNumber, user, authLoading, navigate]);
 
   // If there's nothing to look up at all, send to Orders
   useEffect(() => {
@@ -192,7 +230,24 @@ const OrderConfirmation = () => {
     );
   }
 
-  if (!data) return null;
+  if (!data) {
+    return (
+      <div className="min-h-screen bg-background pb-nav">
+        <main className="mx-auto flex max-w-lg flex-col items-center justify-center px-4 pt-24 text-center">
+          <div className="flex h-20 w-20 items-center justify-center rounded-full bg-muted">
+            <Loader2 className="h-10 w-10 animate-spin text-primary" />
+          </div>
+          <h1 className="mt-4 font-display text-2xl font-bold text-foreground">
+            Finalising your order…
+          </h1>
+          <p className="mt-2 max-w-xs text-sm text-muted-foreground">
+            We're reconnecting to your latest payment update. This page will refresh automatically.
+          </p>
+        </main>
+        <BottomNav />
+      </div>
+    );
+  }
 
   const {
     orderNumber,
