@@ -653,6 +653,48 @@ const CheckoutDialog = ({
               </div>
             )}
 
+            {/* Save-for-next-time toggle (only for fresh, verified, in-range addresses not already saved) */}
+            {addressVerified && coords && !outOfRange && !selectedSavedId && (
+              <div className="mt-2 rounded-xl border border-border bg-card p-3 space-y-2">
+                <label className="flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-2">
+                    <BookmarkPlus className="h-4 w-4 text-primary" />
+                    <span className="text-xs font-bold text-foreground">Save this for next time</span>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={saveForNextTime}
+                    onChange={(e) => setSaveForNextTime(e.target.checked)}
+                    className="h-4 w-4 accent-primary"
+                  />
+                </label>
+                {saveForNextTime && (
+                  <div className="flex flex-wrap gap-1.5 pt-1">
+                    {(["Home", "Work", "Other"] as const).map((p) => (
+                      <button
+                        key={p}
+                        type="button"
+                        onClick={() => setNextTimeLabel(p)}
+                        className={`rounded-full border px-2.5 py-1 text-[11px] font-bold transition-colors ${
+                          nextTimeLabel === p
+                            ? "border-primary bg-primary text-primary-foreground"
+                            : "border-border bg-background text-foreground hover:bg-secondary"
+                        }`}
+                      >
+                        {p}
+                      </button>
+                    ))}
+                    <input
+                      value={["Home", "Work", "Other"].includes(nextTimeLabel) ? "" : nextTimeLabel}
+                      onChange={(e) => setNextTimeLabel(e.target.value.slice(0, 40))}
+                      placeholder="Custom label"
+                      className="flex-1 min-w-[100px] rounded-full border border-border bg-background px-2.5 py-1 text-[11px] text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none"
+                    />
+                  </div>
+                )}
+              </div>
+            )}
+
             {addressVerified && outOfRange && (
               <div className="mt-2 flex items-start gap-2 rounded-xl border-2 border-destructive/40 bg-destructive/10 p-3">
                 <AlertTriangle className="h-4 w-4 flex-shrink-0 text-destructive mt-0.5" />
