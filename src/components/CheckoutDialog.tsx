@@ -186,6 +186,7 @@ const CheckoutDialog = ({
     setAddress(result.address);
     setCoords({ lat: result.lat, lng: result.lng });
     setAddressVerified(true);
+    setSelectedSavedId(null);
     setValidationErrors((prev) => {
       const { address: _a, ...rest } = prev;
       return rest;
@@ -194,6 +195,7 @@ const CheckoutDialog = ({
 
   const handleAddressTextChange = (text: string) => {
     setAddress(text);
+    setSelectedSavedId(null);
     // Plain typing invalidates any previously selected coords.
     if (addressVerified) {
       setCoords(null);
@@ -205,6 +207,7 @@ const CheckoutDialog = ({
     setAddress(result.address);
     setCoords({ lat: result.lat, lng: result.lng });
     setAddressVerified(true);
+    setSelectedSavedId(null);
     setShowMapPicker(false);
     setValidationErrors((prev) => {
       const { address: _a, ...rest } = prev;
