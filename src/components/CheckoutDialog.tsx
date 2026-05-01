@@ -109,6 +109,30 @@ const CheckoutDialog = ({
     }
   }, [open, initialFoodNote]);
 
+  // Auto-fill the customer's default saved address when the dialog opens.
+  useEffect(() => {
+    if (!open || !defaultAddress) return;
+    if (addressVerified || address.trim()) return;
+    setSelectedSavedId(defaultAddress.id);
+    setAddress(defaultAddress.address);
+    setCoords({ lat: defaultAddress.lat, lng: defaultAddress.lng });
+    setAddressVerified(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, defaultAddress?.id]);
+
+  const handlePickSaved = (a: SavedAddress) => {
+    setSelectedSavedId(a.id);
+    setAddress(a.address);
+    setCoords({ lat: a.lat, lng: a.lng });
+    setAddressVerified(true);
+    setHouseNumber("");
+    setSaveForNextTime(false);
+    setValidationErrors((prev) => {
+      const { address: _a, ...rest } = prev;
+      return rest;
+    });
+  };
+
   // Fetch restaurant coordinates so we can enforce the 8km radius client-side.
   useEffect(() => {
     if (!open || !primaryRestaurantName) return;
