@@ -1260,17 +1260,15 @@ export type Database = {
         Returns: undefined
       }
       expire_stale_pending_payments: { Args: never; Returns: number }
-      find_nearest_zone:
-        | { Args: { p_lat: number; p_lng: number }; Returns: Json }
-        | {
-            Args: {
-              p_lat: number
-              p_lng: number
-              p_restaurant_lat?: number
-              p_restaurant_lng?: number
-            }
-            Returns: Json
-          }
+      find_nearest_zone: {
+        Args: {
+          p_lat: number
+          p_lng: number
+          p_restaurant_lat?: number
+          p_restaurant_lng?: number
+        }
+        Returns: Json
+      }
       get_customer_balance: { Args: { p_user_id?: string }; Returns: number }
       get_driver_balance: { Args: { p_driver_id: string }; Returns: number }
       has_role: {
