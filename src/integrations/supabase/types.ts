@@ -65,6 +65,45 @@ export type Database = {
         }
         Relationships: []
       }
+      customer_addresses: {
+        Row: {
+          address: string
+          area_id: string | null
+          created_at: string
+          id: string
+          is_default: boolean
+          label: string
+          lat: number
+          lng: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          address: string
+          area_id?: string | null
+          created_at?: string
+          id?: string
+          is_default?: boolean
+          label?: string
+          lat: number
+          lng: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          address?: string
+          area_id?: string | null
+          created_at?: string
+          id?: string
+          is_default?: boolean
+          label?: string
+          lat?: number
+          lng?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       customer_credits: {
         Row: {
           balance: number
