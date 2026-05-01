@@ -229,6 +229,9 @@ const Profile = () => {
           </button>
         </div>
 
+        {/* Saved delivery addresses (Home, Work, Other) */}
+        <SavedAddressManager />
+
         {/* Recent Orders */}
         <div className="rounded-2xl border border-border bg-card p-4 shadow-card">
           <div className="flex items-center justify-between mb-3">
