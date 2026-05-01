@@ -84,12 +84,13 @@ const OrderConfirmation = () => {
     }
 
     let cancelled = false;
-    (async () => {
-      setLoading(true);
+    let pollTimer: ReturnType<typeof setTimeout> | null = null;
+
+    const load = async () => {
       const { data: order, error } = await supabase
         .from("orders")
         .select(
-          "order_number, delivery_code, special_notes, total, payment_method, restaurant, user_id"
+          "order_number, delivery_code, special_notes, total, payment_method, restaurant, user_id, status, payment_status"
         )
         .eq("order_number", orderNumInt)
         .eq("user_id", user.id)
@@ -103,6 +104,22 @@ const OrderConfirmation = () => {
         return;
       }
 
+      // Payment is still being confirmed by PayFast (ITN webhook is async).
+      // Show a friendly "confirming payment" state and poll until it flips.
+      if (order.status === "pending_payment") {
+        setData({
+          orderNumber: order.order_number,
+          deliveryPin: order.delivery_code || "------",
+          total: typeof order.total === "number" ? order.total : Number(order.total),
+          paymentMethod: (order.payment_method as "cash" | "online") || undefined,
+          restaurant: order.restaurant || undefined,
+          paymentPending: true,
+        });
+        setLoading(false);
+        pollTimer = setTimeout(load, 3000);
+        return;
+      }
+
       const parsed = parseSpecialNotes(order.special_notes);
       setData({
         orderNumber: order.order_number,
@@ -113,12 +130,17 @@ const OrderConfirmation = () => {
         total: typeof order.total === "number" ? order.total : Number(order.total),
         paymentMethod: (order.payment_method as "cash" | "online") || undefined,
         restaurant: order.restaurant || undefined,
+        paymentPending: false,
       });
       setLoading(false);
-    })();
+    };
+
+    setLoading(true);
+    load();
 
     return () => {
       cancelled = true;
+      if (pollTimer) clearTimeout(pollTimer);
     };
   }, [data, lookupOrderNumber, user, authLoading, navigate]);
 
