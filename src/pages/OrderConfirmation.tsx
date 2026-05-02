@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useLocation, useNavigate, useSearchParams, Link } from "react-router-dom";
 import { CheckCircle2, Clock, KeyRound, StickyNote, Navigation, Package, Home, ListOrdered, Loader2 } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
