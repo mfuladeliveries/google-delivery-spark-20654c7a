@@ -202,7 +202,16 @@ const OrderConfirmation = () => {
       cancelled = true;
       if (pollTimer) clearTimeout(pollTimer);
     };
-  }, [lookupOrderNumber, user, authLoading, navigate]);
+  }, [lookupOrderNumber, user, authLoading, navigate, refreshKey]);
+
+  const handleManualRefresh = useCallback(() => {
+    setRefreshing(true);
+    setNotFound(false);
+    setRefreshKey((k) => k + 1);
+    // refreshing spinner is cosmetic — the effect will set loading/data
+    setTimeout(() => setRefreshing(false), 2000);
+  }, []);
+
 
   // If there's nothing to look up at all, send to Orders
   useEffect(() => {
