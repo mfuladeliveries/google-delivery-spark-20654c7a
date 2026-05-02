@@ -67,6 +67,8 @@ const OrderConfirmation = () => {
   );
   const [loading, setLoading] = useState(!navState && !cachedPendingOrder);
   const [notFound, setNotFound] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
+  const [refreshing, setRefreshing] = useState(false);
 
   const lookupOrderNumber = navState?.orderNumber ?? queryOrderNumber ?? null;
 
