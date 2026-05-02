@@ -296,9 +296,19 @@ const OrderConfirmation = () => {
             {paymentPending ? "Confirming payment…" : "Order Confirmed!"}
           </h1>
           {paymentPending ? (
-            <p className="mt-2 text-sm text-muted-foreground max-w-xs">
-              We're waiting for PayFast to confirm your payment. This usually takes a few seconds — this page will update automatically.
-            </p>
+            <div className="mt-2 flex flex-col items-center gap-3">
+              <p className="text-sm text-muted-foreground max-w-xs">
+                We're waiting for PayFast to confirm your payment. This usually takes a few seconds — this page will update automatically.
+              </p>
+              <button
+                onClick={handleManualRefresh}
+                disabled={refreshing}
+                className="inline-flex items-center gap-2 rounded-xl border border-border bg-card px-4 py-2 text-xs font-bold text-foreground transition-colors hover:bg-secondary disabled:opacity-50"
+              >
+                <RefreshCw className={`h-3.5 w-3.5 ${refreshing ? "animate-spin" : ""}`} />
+                {refreshing ? "Refreshing…" : "Refresh status"}
+              </button>
+            </div>
           ) : restaurant ? (
             <div className="mt-2 space-y-0.5">
               <p className="text-sm text-muted-foreground">Your order from</p>
