@@ -254,6 +254,14 @@ const OrderConfirmation = () => {
           <p className="mt-2 max-w-xs text-sm text-muted-foreground">
             We're reconnecting to your latest payment update. This page will refresh automatically.
           </p>
+          <button
+            onClick={handleManualRefresh}
+            disabled={refreshing}
+            className="mt-4 inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-bold text-primary-foreground transition-transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50"
+          >
+            <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
+            {refreshing ? "Refreshing…" : "Refresh status"}
+          </button>
         </main>
         <BottomNav />
       </div>
