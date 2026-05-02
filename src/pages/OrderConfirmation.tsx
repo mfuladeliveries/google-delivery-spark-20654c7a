@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useLocation, useNavigate, useSearchParams, Link } from "react-router-dom";
-import { CheckCircle2, Clock, KeyRound, StickyNote, Navigation, Package, Home, ListOrdered, Loader2 } from "lucide-react";
+import { CheckCircle2, Clock, KeyRound, StickyNote, Navigation, Package, Home, ListOrdered, Loader2, RefreshCw } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -67,6 +67,8 @@ const OrderConfirmation = () => {
   );
   const [loading, setLoading] = useState(!navState && !cachedPendingOrder);
   const [notFound, setNotFound] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
+  const [refreshing, setRefreshing] = useState(false);
 
   const lookupOrderNumber = navState?.orderNumber ?? queryOrderNumber ?? null;
 
@@ -200,7 +202,16 @@ const OrderConfirmation = () => {
       cancelled = true;
       if (pollTimer) clearTimeout(pollTimer);
     };
-  }, [lookupOrderNumber, user, authLoading, navigate]);
+  }, [lookupOrderNumber, user, authLoading, navigate, refreshKey]);
+
+  const handleManualRefresh = useCallback(() => {
+    setRefreshing(true);
+    setNotFound(false);
+    setRefreshKey((k) => k + 1);
+    // refreshing spinner is cosmetic — the effect will set loading/data
+    setTimeout(() => setRefreshing(false), 2000);
+  }, []);
+
 
   // If there's nothing to look up at all, send to Orders
   useEffect(() => {
@@ -243,6 +254,14 @@ const OrderConfirmation = () => {
           <p className="mt-2 max-w-xs text-sm text-muted-foreground">
             We're reconnecting to your latest payment update. This page will refresh automatically.
           </p>
+          <button
+            onClick={handleManualRefresh}
+            disabled={refreshing}
+            className="mt-4 inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-bold text-primary-foreground transition-transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50"
+          >
+            <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
+            {refreshing ? "Refreshing…" : "Refresh status"}
+          </button>
         </main>
         <BottomNav />
       </div>
@@ -277,9 +296,19 @@ const OrderConfirmation = () => {
             {paymentPending ? "Confirming payment…" : "Order Confirmed!"}
           </h1>
           {paymentPending ? (
-            <p className="mt-2 text-sm text-muted-foreground max-w-xs">
-              We're waiting for PayFast to confirm your payment. This usually takes a few seconds — this page will update automatically.
-            </p>
+            <div className="mt-2 flex flex-col items-center gap-3">
+              <p className="text-sm text-muted-foreground max-w-xs">
+                We're waiting for PayFast to confirm your payment. This usually takes a few seconds — this page will update automatically.
+              </p>
+              <button
+                onClick={handleManualRefresh}
+                disabled={refreshing}
+                className="inline-flex items-center gap-2 rounded-xl border border-border bg-card px-4 py-2 text-xs font-bold text-foreground transition-colors hover:bg-secondary disabled:opacity-50"
+              >
+                <RefreshCw className={`h-3.5 w-3.5 ${refreshing ? "animate-spin" : ""}`} />
+                {refreshing ? "Refreshing…" : "Refresh status"}
+              </button>
+            </div>
           ) : restaurant ? (
             <div className="mt-2 space-y-0.5">
               <p className="text-sm text-muted-foreground">Your order from</p>
