@@ -5,7 +5,10 @@
 // 4. POST the payload back to PayFast for server-to-server validation
 // 5. Update the order via SECURITY DEFINER RPCs
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.95.0";
-import { buildPayfastSignature } from "../_shared/payfast-signature.ts";
+import {
+  buildPayfastSignature,
+  buildPayfastSignatureFromRawBody,
+} from "../_shared/payfast-signature.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -64,18 +67,23 @@ Deno.serve(async (req) => {
     // empty strings. Our outgoing-request signature skips empties (PayFast
     // expects that for the redirect form), but ITN verification must NOT skip
     // empties or the signature will never match.
-    const expectedSig = await buildPayfastSignature(fields, PASSPHRASE, {
-      skipEmpty: false,
-    });
+    const expectedSig = await buildPayfastSignatureFromRawBody(
+      rawBody,
+      PASSPHRASE,
+    );
     const sigOk =
       typeof fields.signature === "string" &&
       fields.signature.toLowerCase() === expectedSig.toLowerCase();
 
     if (!sigOk) {
+      const objectSig = await buildPayfastSignature(fields, PASSPHRASE, {
+        skipEmpty: false,
+      });
       console.warn("ITN: signature mismatch", {
         orderId,
         got: fields.signature,
         expected: expectedSig,
+        expectedFromObject: objectSig,
       });
       // Still log so admins can see attempted fraud
       await supabase.from("payment_transactions").insert({
