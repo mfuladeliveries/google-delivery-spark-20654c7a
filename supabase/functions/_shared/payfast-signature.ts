@@ -36,3 +36,19 @@ export async function buildPayfastSignature(
 
   return await md5(queryString);
 }
+
+export async function buildPayfastSignatureFromRawBody(
+  rawBody: string,
+  passphrase: string,
+): Promise<string> {
+  const paramString = rawBody
+    .split("&")
+    .filter((part) => part && !part.startsWith("signature="))
+    .join("&");
+
+  const withPassphrase = passphrase
+    ? `${paramString}&passphrase=${pfEncode(passphrase.trim())}`
+    : paramString;
+
+  return await md5(withPassphrase);
+}
