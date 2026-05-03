@@ -57,7 +57,16 @@ export function computeUnitPrice(
   return base + extras;
 }
 
-const CART_STORAGE_KEY = "mfula-cart-v1";
+export const CART_STORAGE_KEY = "mfula-cart-v1";
+
+export function clearPersistedCart() {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(CART_STORAGE_KEY, JSON.stringify([]));
+  } catch {
+    /* ignore storage failures */
+  }
+}
 
 function loadPersistedCart(): CartItem[] {
   if (typeof window === "undefined") return [];
