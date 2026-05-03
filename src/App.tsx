@@ -12,6 +12,7 @@ import ResetPassword from "./pages/ResetPassword";
 import ForgotPassword from "./pages/ForgotPassword";
 import Orders from "./pages/Orders";
 import OrderConfirmation from "./pages/OrderConfirmation";
+import PaymentResult from "./pages/PaymentResult";
 import PayFastRedirect from "./pages/PayFastRedirect";
 import NotFound from "./pages/NotFound";
 import RestaurantMenu from "./pages/RestaurantMenu";
@@ -68,6 +69,7 @@ const App = () => (
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/orders" element={<Orders />} />
             <Route path="/order-confirmation" element={<OrderConfirmation />} />
+            <Route path="/payment/result" element={<PaymentResult />} />
             <Route
               path="/pay/payfast"
               element={
