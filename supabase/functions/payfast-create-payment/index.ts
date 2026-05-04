@@ -119,8 +119,8 @@ Deno.serve(async (req) => {
     const fields: Record<string, string> = {
       merchant_id: MERCHANT_ID,
       merchant_key: MERCHANT_KEY,
-      return_url: `${origin}/order-confirmation?order=${order.order_number}&payment=success`,
-      cancel_url: `${origin}/orders?payment=cancelled&order=${order.order_number}`,
+      return_url: `${origin}/payment/result?payment_status=COMPLETE&order=${order.order_number}&m_payment_id=${order.id}&amount_gross=${amount}&item_name=${encodeURIComponent(`Mfula Order #${order.order_number}`)}`,
+      cancel_url: `${origin}/payment/result?payment_status=CANCELLED&order=${order.order_number}&m_payment_id=${order.id}&amount_gross=${amount}&item_name=${encodeURIComponent(`Mfula Order #${order.order_number}`)}`,
       notify_url: itnUrl,
       name_first: firstName.slice(0, 100),
       name_last: lastName.slice(0, 100),
