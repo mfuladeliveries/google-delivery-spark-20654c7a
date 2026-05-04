@@ -7,7 +7,7 @@ import { buildPayfastSignature } from "../_shared/payfast-signature.ts";
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
+    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
@@ -45,17 +45,15 @@ Deno.serve(async (req) => {
     const supabase = createClient(SUPABASE_URL, SUPABASE_ANON, {
       global: { headers: { Authorization: authHeader } },
     });
-    const { data: claims } = await supabase.auth.getClaims(
-      authHeader.replace("Bearer ", ""),
-    );
-    if (!claims?.claims?.sub) {
+    const { data: userRes, error: userErr } = await supabase.auth.getUser();
+    if (userErr || !userRes?.user) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-    const userId = claims.claims.sub as string;
-    const userEmail = (claims.claims.email as string) || "";
+    const userId = userRes.user.id;
+    const userEmail = userRes.user.email || "";
 
     const body = await req.json().catch(() => ({}));
     const orderId = String(body.order_id ?? "").trim();
