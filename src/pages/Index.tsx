@@ -45,6 +45,36 @@ const Index = () => {
   const navigate = useNavigate();
   const geo = useGeoLocation();
 
+  // Reverse-geocode GPS coordinates to show the current address
+  const [gpsAddress, setGpsAddress] = useState<string | null>(null);
+  const lastGeocodedRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!geo.ready || !geo.hasCoords || geo.lat == null || geo.lng == null) {
+      setGpsAddress(null);
+      lastGeocodedRef.current = null;
+      return;
+    }
+    // Round to ~100m to avoid spamming Nominatim on tiny GPS jitter
+    const key = `${geo.lat.toFixed(3)},${geo.lng.toFixed(3)}`;
+    if (key === lastGeocodedRef.current) return;
+    lastGeocodedRef.current = key;
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch(
+          `https://nominatim.openstreetmap.org/reverse?lat=${geo.lat}&lon=${geo.lng}&format=json`,
+          { headers: { Accept: "application/json" } }
+        );
+        if (!res.ok || cancelled) return;
+        const data = await res.json();
+        if (!cancelled && data?.display_name) {
+          setGpsAddress(data.display_name);
+        }
+      } catch {/* ignore */}
+    })();
+    return () => { cancelled = true; };
+  }, [geo.ready, geo.hasCoords, geo.lat, geo.lng]);
+
   // Manual address override — when set, restaurants are filtered/sorted from
   // these coords instead of the live GPS / saved-address fallback.
   const [manualAddress, setManualAddress] = useState<ValidatedAddress | null>(() => {
