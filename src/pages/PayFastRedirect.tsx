@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Loader2, CreditCard, AlertTriangle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -17,18 +17,39 @@ interface PayState {
 const PayFastRedirect = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const state = (location.state as PayState | null) ?? loadPendingPaymentOrder();
+
+  // Stabilise state so it doesn't create a new object reference every render,
+  // which would re-trigger the useEffect infinitely.
+  const state = useMemo<PayState | null>(() => {
+    const nav = location.state as PayState | null;
+    if (nav?.orderId) return nav;
+    const stored = loadPendingPaymentOrder();
+    if (stored?.orderId) return {
+      orderId: stored.orderId,
+      orderNumber: stored.orderNumber,
+      total: stored.total,
+      restaurant: stored.restaurant,
+    };
+    return null;
+    // Only recompute when the pathname actually changes (i.e. a real navigation).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.key]);
 
   const [error, setError] = useState<string | null>(null);
   const [fields, setFields] = useState<Record<string, string> | null>(null);
   const [processUrl, setProcessUrl] = useState<string>("");
   const formRef = useRef<HTMLFormElement>(null);
+  const calledRef = useRef(false);
 
   useEffect(() => {
     if (!state?.orderId) {
       navigate("/orders", { replace: true });
       return;
     }
+
+    // Prevent duplicate calls (e.g. React StrictMode double-mount)
+    if (calledRef.current) return;
+    calledRef.current = true;
 
     let cancelled = false;
     (async () => {
