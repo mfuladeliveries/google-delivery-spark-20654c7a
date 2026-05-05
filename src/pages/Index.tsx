@@ -369,6 +369,14 @@ const Index = () => {
                 Use my GPS anyway
               </button>
             )}
+            {/* Current address resolved from GPS */}
+            {gpsAddress && !manualAddress && (
+              <div className="mt-1.5 w-full">
+                <p className="truncate text-[11px] text-muted-foreground" title={gpsAddress}>
+                  📍 {gpsAddress}
+                </p>
+              </div>
+            )}
           </div>
         )}
 
