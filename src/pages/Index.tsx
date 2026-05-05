@@ -308,7 +308,7 @@ const Index = () => {
 
         {/* Location source pill — shows GPS vs saved-address sanity-check fallback */}
         {geo.ready && geo.hasCoords && (
-          <div className="mb-3 flex items-center gap-2">
+          <div className="mb-3 flex flex-wrap items-center gap-2">
             {geo.source === "gps" ? (
               <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-1 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
                 <MapPin className="h-3 w-3" /> Live GPS location
