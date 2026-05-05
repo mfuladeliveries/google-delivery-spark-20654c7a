@@ -45,6 +45,36 @@ const Index = () => {
   const navigate = useNavigate();
   const geo = useGeoLocation();
 
+  // Reverse-geocode GPS coordinates to show the current address
+  const [gpsAddress, setGpsAddress] = useState<string | null>(null);
+  const lastGeocodedRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!geo.ready || !geo.hasCoords || geo.lat == null || geo.lng == null) {
+      setGpsAddress(null);
+      lastGeocodedRef.current = null;
+      return;
+    }
+    // Round to ~100m to avoid spamming Nominatim on tiny GPS jitter
+    const key = `${geo.lat.toFixed(3)},${geo.lng.toFixed(3)}`;
+    if (key === lastGeocodedRef.current) return;
+    lastGeocodedRef.current = key;
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch(
+          `https://nominatim.openstreetmap.org/reverse?lat=${geo.lat}&lon=${geo.lng}&format=json`,
+          { headers: { Accept: "application/json" } }
+        );
+        if (!res.ok || cancelled) return;
+        const data = await res.json();
+        if (!cancelled && data?.display_name) {
+          setGpsAddress(data.display_name);
+        }
+      } catch {/* ignore */}
+    })();
+    return () => { cancelled = true; };
+  }, [geo.ready, geo.hasCoords, geo.lat, geo.lng]);
+
   // Manual address override — when set, restaurants are filtered/sorted from
   // these coords instead of the live GPS / saved-address fallback.
   const [manualAddress, setManualAddress] = useState<ValidatedAddress | null>(() => {
@@ -278,7 +308,7 @@ const Index = () => {
 
         {/* Location source pill — shows GPS vs saved-address sanity-check fallback */}
         {geo.ready && geo.hasCoords && (
-          <div className="mb-3 flex items-center gap-2">
+          <div className="mb-3 flex flex-wrap items-center gap-2">
             {geo.source === "gps" ? (
               <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-1 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
                 <MapPin className="h-3 w-3" /> Live GPS location
@@ -338,6 +368,14 @@ const Index = () => {
               >
                 Use my GPS anyway
               </button>
+            )}
+            {/* Current address resolved from GPS */}
+            {gpsAddress && !manualAddress && (
+              <div className="mt-1.5 w-full">
+                <p className="truncate text-[11px] text-muted-foreground" title={gpsAddress}>
+                  📍 {gpsAddress}
+                </p>
+              </div>
             )}
           </div>
         )}
