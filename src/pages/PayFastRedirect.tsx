@@ -64,11 +64,21 @@ const PayFastRedirect = () => {
           },
         );
         if (cancelled) return;
+
+        // Edge function returned a structured fallback error
+        if (data && typeof data === "object" && (data as Record<string, unknown>).fallback) {
+          setError("Payment service is temporarily unavailable. Please try again shortly.");
+          return;
+        }
+
         if (fnErr || !data?.process_url || !data?.fields) {
-          setError(
+          const msg =
             (fnErr as Error)?.message ||
-              "Could not start PayFast checkout. Please try again.",
-          );
+            (data && typeof data === "object" && (data as Record<string, unknown>).error
+              ? String((data as Record<string, unknown>).error)
+              : null) ||
+            "Could not start PayFast checkout. Please try again.";
+          setError(msg);
           return;
         }
         setProcessUrl(data.process_url);
