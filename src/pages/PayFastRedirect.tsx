@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { RefreshCw } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Loader2, CreditCard, AlertTriangle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
