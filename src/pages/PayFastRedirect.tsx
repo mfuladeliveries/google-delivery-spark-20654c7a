@@ -39,69 +39,67 @@ const PayFastRedirect = () => {
   const [error, setError] = useState<string | null>(null);
   const [fields, setFields] = useState<Record<string, string> | null>(null);
   const [processUrl, setProcessUrl] = useState<string>("");
+  const [retrying, setRetrying] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
   const calledRef = useRef(false);
 
+  const invokePayment = useCallback(async () => {
+    if (!state?.orderId) return;
+    setError(null);
+    try {
+      const { data, error: fnErr } = await supabase.functions.invoke(
+        "payfast-create-payment",
+        {
+          body: {
+            order_id: state.orderId,
+            return_origin: window.location.origin,
+          },
+        },
+      );
+
+      // Edge function returned a structured fallback error
+      if (data && typeof data === "object" && (data as Record<string, unknown>).fallback) {
+        setError("Payment service is temporarily unavailable. Please try again shortly.");
+        return;
+      }
+
+      if (fnErr || !data?.process_url || !data?.fields) {
+        const msg =
+          (fnErr as Error)?.message ||
+          (data && typeof data === "object" && (data as Record<string, unknown>).error
+            ? String((data as Record<string, unknown>).error)
+            : null) ||
+          "Could not start PayFast checkout. Please try again.";
+        setError(msg);
+        return;
+      }
+      setProcessUrl(data.process_url);
+      setFields(data.fields);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Failed to start payment.");
+    }
+  }, [state]);
+
+  // Initial call
   useEffect(() => {
     if (!state?.orderId) {
       navigate("/orders", { replace: true });
       return;
     }
-
-    // Prevent duplicate calls (e.g. React StrictMode double-mount)
     if (calledRef.current) return;
     calledRef.current = true;
+    invokePayment();
+  }, [state, navigate, invokePayment]);
 
-    let cancelled = false;
-    (async () => {
-      try {
-        const { data, error: fnErr } = await supabase.functions.invoke(
-          "payfast-create-payment",
-          {
-            body: {
-              order_id: state.orderId,
-              return_origin: window.location.origin,
-            },
-          },
-        );
-        if (cancelled) return;
-
-        // Edge function returned a structured fallback error
-        if (data && typeof data === "object" && (data as Record<string, unknown>).fallback) {
-          setError("Payment service is temporarily unavailable. Please try again shortly.");
-          return;
-        }
-
-        if (fnErr || !data?.process_url || !data?.fields) {
-          const msg =
-            (fnErr as Error)?.message ||
-            (data && typeof data === "object" && (data as Record<string, unknown>).error
-              ? String((data as Record<string, unknown>).error)
-              : null) ||
-            "Could not start PayFast checkout. Please try again.";
-          setError(msg);
-          return;
-        }
-        setProcessUrl(data.process_url);
-        setFields(data.fields);
-      } catch (e) {
-        if (!cancelled) {
-          setError(
-            e instanceof Error ? e.message : "Failed to start payment.",
-          );
-        }
-      }
-    })();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [state, navigate]);
+  const handleRetry = async () => {
+    setRetrying(true);
+    await invokePayment();
+    setRetrying(false);
+  };
 
   // Auto-submit once we have fields.
   useEffect(() => {
     if (fields && processUrl && formRef.current) {
-      // Tiny delay so the user sees the spinner instead of an instant redirect flash.
       const t = setTimeout(() => formRef.current?.submit(), 600);
       return () => clearTimeout(t);
     }
@@ -117,8 +115,16 @@ const PayFastRedirect = () => {
           </h1>
           <p className="mt-2 text-sm text-muted-foreground">{error}</p>
           <button
+            onClick={handleRetry}
+            disabled={retrying}
+            className="mt-5 w-full rounded-xl bg-primary py-3 text-sm font-bold text-primary-foreground inline-flex items-center justify-center gap-2 disabled:opacity-60"
+          >
+            <RefreshCw className={`h-4 w-4 ${retrying ? "animate-spin" : ""}`} />
+            {retrying ? "Retrying…" : "Retry payment"}
+          </button>
+          <button
             onClick={() => navigate("/orders", { replace: true })}
-            className="mt-5 w-full rounded-xl bg-primary py-3 text-sm font-bold text-primary-foreground"
+            className="mt-3 w-full rounded-xl border border-border bg-background py-3 text-sm font-bold text-foreground"
           >
             Back to orders
           </button>
