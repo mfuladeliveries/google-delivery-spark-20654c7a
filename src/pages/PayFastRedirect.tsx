@@ -42,9 +42,11 @@ const PayFastRedirect = () => {
   const [retrying, setRetrying] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
   const calledRef = useRef(false);
+  const busyRef = useRef(false);
 
   const invokePayment = useCallback(async () => {
-    if (!state?.orderId) return;
+    if (!state?.orderId || busyRef.current) return;
+    busyRef.current = true;
     setError(null);
     try {
       const { data, error: fnErr } = await supabase.functions.invoke(
@@ -77,6 +79,8 @@ const PayFastRedirect = () => {
       setFields(data.fields);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to start payment.");
+    } finally {
+      busyRef.current = false;
     }
   }, [state]);
 
@@ -92,6 +96,7 @@ const PayFastRedirect = () => {
   }, [state, navigate, invokePayment]);
 
   const handleRetry = async () => {
+    if (busyRef.current) return;
     setRetrying(true);
     await invokePayment();
     setRetrying(false);
