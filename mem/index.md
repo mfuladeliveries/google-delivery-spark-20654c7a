@@ -1,19 +1,14 @@
----
-name: index
-description: Project memory index
-type: reference
----
-
 # Project Memory
 
 ## Core
 Multi-restaurant delivery platform (admin, customer, restaurant, driver).
-Warm dark theme, South African township aesthetic. Primary Orange (#FF5A00), Inter font.
+Luxury maroon theme. Primary Maroon (#5B0017), Gold accent (#D4AF37), Matte Black (#121212), Cream (#F8F5F2).
+Playfair Display headings, Inter body. Glassmorphism + premium shadows.
 Role hierarchy: admin > restaurant > driver > customer.
 Closed onboarding for providers (admin-led). Customer self-service.
 
 ## Memories
-- [Visual Identity](mem://style/visual-identity) — Colors, typography, and aesthetic details
+- [Visual Identity](mem://style/visual-identity) — Luxury maroon/gold palette, glassmorphism, premium shadows, Playfair Display
 - [Cart Logic](mem://features/cart-logic) — Delivery fees R40 internal/R55 display, 5% tax, min order R40
 - [Order Tracking](mem://features/order-tracking) — 7-stage tracker, driver GPS every 10s
 - [Role Assignment](mem://auth/role-assignment) — Default customer role, multi-role priority handling
@@ -46,7 +41,3 @@ Closed onboarding for providers (admin-led). Customer self-service.
 - [Food Images](mem://features/food-image-management) — 5MB limit, drag-and-drop, restricted upload
 - [Location Gating](mem://features/location-gating) — Live GPS, 6km per-restaurant radius, sort/filter nearby on home
 - [Coordinate Validation](mem://security/coordinate-validation) — Autocomplete-only addresses, map confirm, 8km server-enforced radius, invalid_order_attempts log
-- [Restaurant Areas](mem://features/restaurant-areas) — restaurants.area_id; customers only see restaurants from their detected delivery area
-- [Driver Service Areas](mem://features/driver-service-areas) — Driver-set centre+radius; dispatch only matches drivers covering the customer location; checkout warns when no online driver covers the area
-- [Delivery Pricing](mem://features/delivery-pricing) — Per-zone base + per-km, clamped by min/max; computed from restaurant→customer distance; authoritative inside create_verified_order
-- [Saved Addresses](mem://features/saved-addresses) — customer_addresses table with Home/Work/Other labels; default auto-fills checkout; chip picker + save-for-next-time toggle
