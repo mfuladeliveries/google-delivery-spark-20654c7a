@@ -37,7 +37,7 @@ const BottomNav = () => {
   else if (role === 'admin') links = adminLinks;
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-card shadow-lg md:hidden">
+    <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-border/50 glass-dark shadow-lg md:hidden">
       <div className="flex items-center justify-around px-2 py-2">
         {links.map(({ to, icon: Icon, label }) => {
           const active = path === to || (to !== "/" && path.startsWith(to));
@@ -45,10 +45,10 @@ const BottomNav = () => {
             <Link
               key={to}
               to={to}
-              className={`flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl transition-colors ${
+              className={`flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl transition-all duration-200 ${
                 active
-                  ? "text-primary"
-                  : "text-muted-foreground hover:text-foreground"
+                  ? "text-gold scale-105"
+                  : "text-muted-foreground hover:text-primary-foreground"
               }`}
             >
               <Icon className={`h-5 w-5 ${active ? "stroke-[2.5]" : ""}`} />

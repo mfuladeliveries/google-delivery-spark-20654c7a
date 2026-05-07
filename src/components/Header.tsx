@@ -24,13 +24,13 @@ const Header = ({ cartCount, onCartClick, title }: HeaderProps) => {
   const roleLink = role && role !== 'customer' ? roleLinks[role as keyof typeof roleLinks] : null;
 
   return (
-    <header className="sticky top-0 z-50 border-b border-border bg-card/95 backdrop-blur-xl shadow-card">
+    <header className="sticky top-0 z-50 border-b border-border/50 glass shadow-luxury">
       <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3">
         <Link to="/" className="flex items-center gap-3">
           <img
             src={storeInfo.logo}
             alt={storeInfo.name}
-            className="h-9 w-9 rounded-full object-cover ring-2 ring-primary/30"
+            className="h-9 w-9 rounded-full object-cover ring-2 ring-gold/40"
           />
           <div>
             <h1 className="font-display text-base font-bold text-foreground leading-tight">
@@ -93,7 +93,7 @@ const Header = ({ cartCount, onCartClick, title }: HeaderProps) => {
           {user && walletBalance > 0 && (
             <Link
               to="/profile"
-              className="flex items-center gap-1 rounded-xl border border-primary/30 bg-primary/10 px-2.5 py-2 text-xs font-bold text-primary transition-transform hover:scale-105 active:scale-95"
+              className="flex items-center gap-1 rounded-xl vip-border bg-gold/10 px-2.5 py-2 text-xs font-bold text-gold transition-transform hover:scale-105 active:scale-95"
               title="Wallet balance"
             >
               <Wallet className="h-4 w-4" />
@@ -106,11 +106,11 @@ const Header = ({ cartCount, onCartClick, title }: HeaderProps) => {
               onClick={onCartClick}
               data-testid="open-cart-button"
               aria-label="Open cart"
-              className="relative rounded-xl bg-primary px-3 py-2 text-primary-foreground transition-transform hover:scale-105 active:scale-95 shadow-orange flex items-center gap-1.5"
+              className="relative rounded-xl gradient-maroon px-3 py-2 text-primary-foreground transition-transform hover:scale-105 active:scale-95 shadow-maroon btn-glow flex items-center gap-1.5"
             >
               <ShoppingCart className="h-5 w-5" />
               {cartCount !== undefined && cartCount > 0 && (
-                <span data-testid="cart-count" className="flex h-5 w-5 items-center justify-center rounded-full bg-card text-[10px] font-bold text-primary">
+                <span data-testid="cart-count" className="flex h-5 w-5 items-center justify-center rounded-full bg-gold text-[10px] font-bold text-gold-foreground">
                   {cartCount}
                 </span>
               )}

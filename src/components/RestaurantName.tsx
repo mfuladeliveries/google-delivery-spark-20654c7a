@@ -39,8 +39,8 @@ export const RestaurantName = ({
       className={cn(
         sizes[size],
         "font-extrabold tracking-[-0.3px]",
-        onDark ? "text-primary-foreground" : "text-primary",
-        "[text-shadow:0_1px_3px_hsl(var(--primary)/0.25)]",
+        onDark ? "text-gold" : "text-primary",
+        "[text-shadow:0_1px_3px_hsl(345_100%_18%/0.2)]",
         className,
       )}
     >

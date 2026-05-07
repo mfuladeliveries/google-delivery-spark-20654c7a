@@ -11,11 +11,6 @@ const isStandalone = () => {
   );
 };
 
-/**
- * Native-feel splash screen shown for ~1s on cold launch of the installed PWA.
- * - Only shows in standalone mode (installed app)
- * - Once per session (so it doesn't reappear on in-app navigation)
- */
 const SplashScreen = () => {
   const [show, setShow] = useState(() => {
     if (typeof window === "undefined") return false;
@@ -28,7 +23,6 @@ const SplashScreen = () => {
   useEffect(() => {
     if (!show) return;
     sessionStorage.setItem(SESSION_KEY, "1");
-
     const fadeT = window.setTimeout(() => setFading(true), 800);
     const hideT = window.setTimeout(() => setShow(false), 1100);
     return () => {
@@ -41,14 +35,14 @@ const SplashScreen = () => {
 
   return (
     <div
-      className={`fixed inset-0 z-[100] flex flex-col items-center justify-center bg-primary transition-opacity duration-300 ${
+      className={`fixed inset-0 z-[100] flex flex-col items-center justify-center gradient-maroon transition-opacity duration-300 ${
         fading ? "opacity-0" : "opacity-100"
       }`}
       role="status"
       aria-label="Loading Mfula Deliveries"
     >
       <div className="flex flex-col items-center gap-4 animate-in fade-in zoom-in-95 duration-500">
-        <div className="rounded-3xl bg-primary-foreground/10 p-4 ring-4 ring-primary-foreground/20 backdrop-blur-sm">
+        <div className="rounded-3xl bg-primary-foreground/10 p-4 ring-4 ring-gold/30 backdrop-blur-sm shadow-gold">
           <img
             src={storeInfo.logo}
             alt={storeInfo.name}
@@ -59,9 +53,9 @@ const SplashScreen = () => {
           Mfula Deliveries
         </h1>
         <div className="mt-2 flex gap-1.5">
-          <span className="h-1.5 w-1.5 rounded-full bg-primary-foreground/80 animate-bounce [animation-delay:-0.3s]" />
-          <span className="h-1.5 w-1.5 rounded-full bg-primary-foreground/80 animate-bounce [animation-delay:-0.15s]" />
-          <span className="h-1.5 w-1.5 rounded-full bg-primary-foreground/80 animate-bounce" />
+          <span className="h-1.5 w-1.5 rounded-full bg-gold animate-bounce [animation-delay:-0.3s]" />
+          <span className="h-1.5 w-1.5 rounded-full bg-gold animate-bounce [animation-delay:-0.15s]" />
+          <span className="h-1.5 w-1.5 rounded-full bg-gold animate-bounce" />
         </div>
       </div>
     </div>
