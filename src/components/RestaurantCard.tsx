@@ -106,7 +106,7 @@ const RestaurantCard = ({ restaurant: r, variant = "standard", distanceKm, nearb
           <p className="truncate text-xs text-muted-foreground">{r.description}</p>
           <div className="mt-1 flex items-center gap-2 text-[11px] text-muted-foreground">
             <span className="flex items-center gap-0.5 font-semibold text-foreground">
-              <Star className="h-3 w-3 fill-primary text-primary" /> {r.rating}
+              <Star className="h-3 w-3 fill-gold text-gold" /> {r.rating}
             </span>
             <span>·</span>
             <span className="flex items-center gap-0.5">
@@ -138,8 +138,8 @@ const RestaurantCard = ({ restaurant: r, variant = "standard", distanceKm, nearb
       data-restaurant-open={open ? "true" : "false"}
       data-out-of-range={tooFar ? "true" : "false"}
       aria-label={`Open ${r.name}`}
-      className={`group relative cursor-pointer overflow-hidden rounded-[20px] border bg-card shadow-card transition-all ${tooFar ? "border-destructive/40 opacity-75" : "border-border"} ${open && !tooFar ? "hover:-translate-y-0.5 hover:shadow-orange/30" : ""} ${!open ? "opacity-70" : ""}`}
-      style={{ boxShadow: "0 2px 16px hsl(0 0% 0% / 0.08)" }}
+      className={`group relative cursor-pointer overflow-hidden rounded-[20px] border bg-card shadow-luxury transition-all ${tooFar ? "border-destructive/40 opacity-75" : "border-border"} ${open && !tooFar ? "hover:-translate-y-1 hover:shadow-maroon" : ""} ${!open ? "opacity-70" : ""}`}
+      style={{ boxShadow: "var(--shadow-luxury)" }}
     >
       {/* Image */}
       <div className={`relative ${imgHeightClass} w-full bg-muted`}>
@@ -162,7 +162,7 @@ const RestaurantCard = ({ restaurant: r, variant = "standard", distanceKm, nearb
         </span>
 
         {/* Cuisine — top left */}
-        <span className="absolute left-3 top-3 rounded-full bg-primary px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-primary-foreground shadow-orange">
+        <span className="absolute left-3 top-3 rounded-full gradient-maroon px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-primary-foreground shadow-maroon">
           {r.cuisine}
         </span>
 
@@ -199,7 +199,7 @@ const RestaurantCard = ({ restaurant: r, variant = "standard", distanceKm, nearb
         {/* Stats row */}
         <div className="mt-2.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-[12px] text-muted-foreground">
           <span className="flex items-center gap-0.5 font-semibold text-foreground">
-            <Star className="h-3.5 w-3.5 fill-primary text-primary" /> {r.rating}
+            <Star className="h-3.5 w-3.5 fill-gold text-gold" /> {r.rating}
           </span>
           <span>·</span>
           <span className="flex items-center gap-0.5">
@@ -258,7 +258,7 @@ const RestaurantCard = ({ restaurant: r, variant = "standard", distanceKm, nearb
               handleClick();
             }}
             disabled={!open || tooFar}
-            className="mt-4 inline-flex w-full items-center justify-center gap-1.5 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-orange transition-transform hover:scale-[1.02] disabled:opacity-50 disabled:hover:scale-100"
+            className="mt-4 inline-flex w-full items-center justify-center gap-1.5 rounded-full gradient-maroon px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-maroon transition-transform hover:scale-[1.02] btn-glow disabled:opacity-50 disabled:hover:scale-100"
           >
             {tooFar ? (
               <>Out of delivery range</>
