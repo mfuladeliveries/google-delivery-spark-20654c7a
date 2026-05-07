@@ -12,7 +12,7 @@ import { useGeoLocation, DELIVERY_RADIUS_KM } from "@/hooks/useGeoLocation";
 import { useCart } from "@/hooks/useCart";
 import { useAuth } from "@/hooks/useAuth";
 import { menuItems } from "@/data/menu";
-import mfulaLogo from "@/assets/mfula-logo.png";
+import mfulaLogo from "@/assets/mfula-logo.jpeg";
 import AddressAutocomplete, { type ValidatedAddress } from "@/components/AddressAutocomplete";
 import { distanceKm, getActiveZones, findNearestZone, type DeliveryZone, type ZoneMatch } from "@/lib/serviceArea";
 import { toast } from "sonner";
