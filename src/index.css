@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Playfair+Display:wght@600;700;800&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -6,55 +6,67 @@
 
 @layer base {
   :root {
-    --background: 0 0% 98%;
-    --foreground: 0 0% 10%;
+    /* Luxury Maroon Theme */
+    --background: 30 14% 96%;
+    --foreground: 0 0% 7%;
 
-    --card: 0 0% 100%;
-    --card-foreground: 0 0% 10%;
+    --card: 30 20% 99%;
+    --card-foreground: 0 0% 7%;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 10%;
+    --popover: 30 20% 99%;
+    --popover-foreground: 0 0% 7%;
 
-    --primary: 21 100% 50%;
-    --primary-foreground: 0 0% 100%;
+    --primary: 345 100% 18%;
+    --primary-foreground: 40 33% 95%;
 
+    --secondary: 30 14% 92%;
+    --secondary-foreground: 345 60% 22%;
+
+    --muted: 30 10% 90%;
+    --muted-foreground: 0 0% 42%;
+
+    --accent: 43 72% 52%;
+    --accent-foreground: 0 0% 7%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 30 10% 86%;
+    --input: 30 10% 86%;
+    --ring: 345 100% 18%;
+
+    --radius: 0.75rem;
+
+    /* Driver tokens */
     --driver-success: 142 76% 36%;
     --driver-success-foreground: 0 0% 100%;
     --driver-warning: 38 92% 50%;
     --driver-info: 217 91% 60%;
 
-    --secondary: 0 0% 95%;
-    --secondary-foreground: 0 0% 20%;
+    --sidebar-background: 0 0% 7%;
+    --sidebar-foreground: 40 33% 95%;
+    --sidebar-primary: 43 72% 52%;
+    --sidebar-primary-foreground: 0 0% 7%;
+    --sidebar-accent: 345 60% 22%;
+    --sidebar-accent-foreground: 40 33% 95%;
+    --sidebar-border: 0 0% 15%;
+    --sidebar-ring: 43 72% 52%;
 
-    --muted: 0 0% 93%;
-    --muted-foreground: 0 0% 50%;
+    /* Custom luxury tokens */
+    --gold: 43 72% 52%;
+    --gold-foreground: 0 0% 7%;
+    --maroon-deep: 345 100% 18%;
+    --maroon-rich: 350 82% 16%;
+    --cream: 30 33% 97%;
 
-    --accent: 21 100% 50%;
-    --accent-foreground: 0 0% 100%;
-
-    --destructive: 0 84% 60%;
-    --destructive-foreground: 0 0% 100%;
-
-    --border: 0 0% 88%;
-    --input: 0 0% 88%;
-    --ring: 21 100% 50%;
-
-    --radius: 0.75rem;
-
-    --sidebar-background: 0 0% 98%;
-    --sidebar-foreground: 0 0% 10%;
-    --sidebar-primary: 21 100% 50%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 0 0% 95%;
-    --sidebar-accent-foreground: 0 0% 20%;
-    --sidebar-border: 0 0% 88%;
-    --sidebar-ring: 21 100% 50%;
-
-    /* Custom tokens */
-    --gradient-hero: linear-gradient(135deg, hsl(21 100% 50% / 0.1), hsl(35 100% 55% / 0.05));
-    --gradient-orange: linear-gradient(135deg, hsl(21 100% 50%), hsl(35 100% 55%));
-    --shadow-orange: 0 8px 25px hsl(21 100% 50% / 0.25);
-    --shadow-card: 0 2px 12px hsl(0 0% 0% / 0.08);
+    --gradient-hero: linear-gradient(135deg, hsl(345 100% 18% / 0.08), hsl(43 72% 52% / 0.06), hsl(30 33% 97% / 0.5));
+    --gradient-maroon: linear-gradient(135deg, hsl(345 100% 18%), hsl(350 82% 20%));
+    --gradient-gold: linear-gradient(135deg, hsl(43 72% 52%), hsl(38 60% 58%));
+    --gradient-dark: linear-gradient(180deg, hsl(0 0% 7%), hsl(0 0% 10%));
+    --shadow-maroon: 0 8px 30px hsl(345 100% 18% / 0.2);
+    --shadow-gold: 0 4px 20px hsl(43 72% 52% / 0.25);
+    --shadow-card: 0 2px 16px hsl(0 0% 0% / 0.06);
+    --shadow-luxury: 0 8px 32px hsl(0 0% 0% / 0.08), 0 2px 8px hsl(0 0% 0% / 0.04);
     --bottom-nav-height: 64px;
   }
 }
@@ -76,7 +88,7 @@
 
 @layer utilities {
   .font-display {
-    font-family: 'Inter', sans-serif;
+    font-family: 'Playfair Display', 'Inter', serif;
     font-weight: 700;
   }
   .font-body {
@@ -85,14 +97,34 @@
   .gradient-hero {
     background: var(--gradient-hero);
   }
-  .gradient-orange {
-    background: var(--gradient-orange);
+  .gradient-maroon {
+    background: var(--gradient-maroon);
   }
+  .gradient-gold {
+    background: var(--gradient-gold);
+  }
+  .gradient-dark {
+    background: var(--gradient-dark);
+  }
+  /* Keep old class name working */
+  .gradient-orange {
+    background: var(--gradient-maroon);
+  }
+  .shadow-maroon {
+    box-shadow: var(--shadow-maroon);
+  }
+  .shadow-gold {
+    box-shadow: var(--shadow-gold);
+  }
+  /* Keep old class name working */
   .shadow-orange {
-    box-shadow: var(--shadow-orange);
+    box-shadow: var(--shadow-maroon);
   }
   .shadow-card {
     box-shadow: var(--shadow-card);
+  }
+  .shadow-luxury {
+    box-shadow: var(--shadow-luxury);
   }
   .scrollbar-hide {
     -ms-overflow-style: none;
@@ -104,13 +136,70 @@
   .pb-nav {
     padding-bottom: calc(var(--bottom-nav-height) + 1rem);
   }
+
+  /* Glassmorphism */
+  .glass {
+    background: hsl(var(--card) / 0.7);
+    backdrop-filter: blur(16px) saturate(1.8);
+    -webkit-backdrop-filter: blur(16px) saturate(1.8);
+    border: 1px solid hsl(var(--border) / 0.5);
+  }
+  .glass-dark {
+    background: hsl(0 0% 7% / 0.75);
+    backdrop-filter: blur(16px) saturate(1.8);
+    -webkit-backdrop-filter: blur(16px) saturate(1.8);
+    border: 1px solid hsl(0 0% 20% / 0.5);
+  }
+
+  /* Gold accent text */
+  .text-gold {
+    color: hsl(var(--gold));
+  }
+
+  /* Premium button glow */
+  .btn-glow {
+    position: relative;
+    overflow: hidden;
+    transition: all 0.3s ease;
+  }
+  .btn-glow::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    box-shadow: inset 0 0 20px hsl(43 72% 52% / 0.3);
+    border-radius: inherit;
+  }
+  .btn-glow:hover::after {
+    opacity: 1;
+  }
+  .btn-glow:active {
+    transform: scale(0.97);
+  }
+
+  /* Gold border VIP */
+  .vip-border {
+    border: 1.5px solid hsl(var(--gold));
+    box-shadow: 0 0 12px hsl(43 72% 52% / 0.15);
+  }
+
   .shimmer {
-    background: linear-gradient(90deg, hsl(0 0% 94%) 0%, hsl(0 0% 88%) 50%, hsl(0 0% 94%) 100%);
+    background: linear-gradient(90deg, hsl(30 14% 92%) 0%, hsl(30 14% 86%) 50%, hsl(30 14% 92%) 100%);
     background-size: 200% 100%;
     animation: shimmer 1.5s ease-in-out infinite;
   }
   @keyframes shimmer {
     0% { background-position: 200% 0; }
     100% { background-position: -200% 0; }
+  }
+
+  /* Luxury pulse loader */
+  @keyframes luxury-pulse {
+    0%, 100% { opacity: 0.4; transform: scale(0.95); }
+    50% { opacity: 1; transform: scale(1.05); }
+  }
+  .luxury-pulse {
+    animation: luxury-pulse 1.8s cubic-bezier(0.4, 0, 0.6, 1) infinite;
   }
 }
