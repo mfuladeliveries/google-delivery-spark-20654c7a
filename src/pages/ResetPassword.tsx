@@ -368,6 +368,7 @@ const ResetPassword = () => {
             </form>
           </>
         )}
+        </div>
       </div>
     </div>
   );
