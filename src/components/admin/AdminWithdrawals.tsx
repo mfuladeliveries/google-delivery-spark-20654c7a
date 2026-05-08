@@ -244,7 +244,7 @@ const AdminWithdrawals = ({ drivers }: AdminWithdrawalsProps) => {
                       <button
                         onClick={() => handleApprove(r)}
                         disabled={isActing}
-                        className="flex-1 rounded-xl bg-primary py-2 text-xs font-bold text-primary-foreground hover:opacity-90 disabled:opacity-50"
+                        className="btn-glow flex-1 rounded-xl gradient-maroon py-2 text-xs font-bold text-primary-foreground hover:opacity-90 disabled:opacity-50"
                       >
                         Approve
                       </button>

@@ -471,7 +471,7 @@ const ProductCustomizeModal = ({ open, item, onClose, onAdd }: ProductCustomizeM
           <button
             onClick={handleAdd}
             disabled={ctaDisabled}
-            className="flex w-full items-center justify-between gap-3 rounded-xl bg-primary px-5 py-3.5 font-display text-sm font-bold text-primary-foreground shadow-orange transition-transform hover:scale-[1.01] active:scale-[0.99] disabled:opacity-50 disabled:hover:scale-100"
+            className="btn-glow flex w-full items-center justify-between gap-3 rounded-xl gradient-maroon px-5 py-3.5 font-display text-sm font-bold text-primary-foreground shadow-maroon transition-transform hover:scale-[1.01] active:scale-[0.99] disabled:opacity-50 disabled:hover:scale-100"
           >
             <span className="flex items-center gap-2">
               <Plus className="h-4 w-4" /> Add {qty} to cart

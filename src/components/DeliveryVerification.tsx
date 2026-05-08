@@ -51,7 +51,7 @@ const DeliveryVerification = ({ orderId, onVerified }: DeliveryVerificationProps
         <button
           onClick={handleVerify}
           disabled={loading || code.length < 6}
-          className="rounded-xl bg-primary px-5 py-2.5 text-sm font-bold text-primary-foreground disabled:opacity-50"
+          className="btn-glow rounded-xl gradient-maroon px-5 py-2.5 text-sm font-bold text-primary-foreground disabled:opacity-50"
         >
           {loading ? "..." : "Verify"}
         </button>

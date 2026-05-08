@@ -184,7 +184,7 @@ const PaymentResult = () => {
           <button
             onClick={refreshStatus}
             disabled={refreshing}
-            className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-primary px-5 py-3 text-sm font-bold text-primary-foreground disabled:opacity-60"
+            className="btn-glow mt-5 inline-flex w-full items-center justify-center gap-2 rounded-2xl gradient-maroon px-5 py-3 text-sm font-bold text-primary-foreground disabled:opacity-60"
           >
             <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
             {refreshing ? "Refreshing…" : "Refresh status"}

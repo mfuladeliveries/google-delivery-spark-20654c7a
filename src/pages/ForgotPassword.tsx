@@ -111,7 +111,7 @@ const ForgotPassword = () => {
               <button
                 type="submit"
                 disabled={loading || !email}
-                className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary py-2.5 font-display font-bold text-primary-foreground transition-transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50"
+                className="btn-glow flex w-full items-center justify-center gap-2 rounded-xl gradient-maroon py-2.5 font-display font-bold text-primary-foreground transition-transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50"
               >
                 {loading && <Loader2 className="h-4 w-4 animate-spin" />}
                 {loading ? "Sending..." : "Send Reset Link"}
@@ -141,7 +141,7 @@ const ForgotPassword = () => {
 
             <a
               href="mailto:"
-              className="mt-6 inline-flex w-full items-center justify-center rounded-xl bg-primary py-2.5 font-display font-bold text-primary-foreground transition-transform hover:scale-[1.02] active:scale-[0.98]"
+              className="btn-glow mt-6 inline-flex w-full items-center justify-center rounded-xl gradient-maroon py-2.5 font-display font-bold text-primary-foreground transition-transform hover:scale-[1.02] active:scale-[0.98]"
             >
               Open Email App
             </a>

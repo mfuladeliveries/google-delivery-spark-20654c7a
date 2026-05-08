@@ -181,7 +181,7 @@ const ResetPassword = () => {
             </p>
             <button
               onClick={() => navigate("/auth", { replace: true })}
-              className="mt-6 w-full rounded-xl bg-primary py-2.5 font-display font-bold text-primary-foreground transition-transform hover:scale-[1.02] active:scale-[0.98]"
+              className="btn-glow mt-6 w-full rounded-xl gradient-maroon py-2.5 font-display font-bold text-primary-foreground transition-transform hover:scale-[1.02] active:scale-[0.98]"
             >
               Sign In Now
             </button>
@@ -208,7 +208,7 @@ const ResetPassword = () => {
 
             <Link
               to="/forgot-password"
-              className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-primary py-2.5 font-display font-bold text-primary-foreground transition-transform hover:scale-[1.02] active:scale-[0.98]"
+              className="btn-glow mt-6 inline-flex w-full items-center justify-center gap-2 rounded-xl gradient-maroon py-2.5 font-display font-bold text-primary-foreground transition-transform hover:scale-[1.02] active:scale-[0.98]"
             >
               <RefreshCw className="h-4 w-4" />
               Request a New Reset Link
@@ -232,7 +232,7 @@ const ResetPassword = () => {
             </p>
             <a
               href="mailto:"
-              className="mt-6 inline-flex w-full items-center justify-center rounded-xl bg-primary py-2.5 font-display font-bold text-primary-foreground transition-transform hover:scale-[1.02] active:scale-[0.98]"
+              className="btn-glow mt-6 inline-flex w-full items-center justify-center rounded-xl gradient-maroon py-2.5 font-display font-bold text-primary-foreground transition-transform hover:scale-[1.02] active:scale-[0.98]"
             >
               Open Email App
             </a>
@@ -254,7 +254,7 @@ const ResetPassword = () => {
                 type="button"
                 onClick={handleResend}
                 disabled={resendLoading || !resendEmail}
-                className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-primary py-2.5 font-display font-bold text-primary-foreground transition-transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50"
+                className="btn-glow mt-3 flex w-full items-center justify-center gap-2 rounded-xl gradient-maroon py-2.5 font-display font-bold text-primary-foreground transition-transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50"
               >
                 {resendLoading && <Loader2 className="h-4 w-4 animate-spin" />}
                 {resendLoading ? "Sending..." : "Request a new link"}
@@ -360,7 +360,7 @@ const ResetPassword = () => {
               <button
                 type="submit"
                 disabled={!canSubmit}
-                className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary py-2.5 font-display font-bold text-primary-foreground transition-transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50"
+                className="btn-glow flex w-full items-center justify-center gap-2 rounded-xl gradient-maroon py-2.5 font-display font-bold text-primary-foreground transition-transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50"
               >
                 {loading && <Loader2 className="h-4 w-4 animate-spin" />}
                 {loading ? "Updating…" : "Update Password"}

@@ -301,7 +301,7 @@ const AdminEarnings = ({ drivers }: AdminEarningsProps) => {
           <button
             onClick={handleGenerate}
             disabled={!statementDriver || generating}
-            className="flex items-center justify-center gap-1.5 rounded-xl bg-primary px-4 py-2.5 text-sm font-bold text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-50"
+            className="btn-glow flex items-center justify-center gap-1.5 rounded-xl gradient-maroon px-4 py-2.5 text-sm font-bold text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-50"
           >
             <FileDown className="h-4 w-4" />
             {generating ? "Generating…" : "Download"}

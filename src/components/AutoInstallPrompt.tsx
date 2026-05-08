@@ -155,7 +155,7 @@ const AutoInstallPrompt = ({ variant, delayMs = 3000, appName = "Mfula App" }: A
             </button>
             <button
               onClick={handleInstall}
-              className="rounded-xl bg-primary py-2.5 text-xs font-bold text-primary-foreground active:scale-95 transition-transform flex items-center justify-center gap-1.5"
+              className="btn-glow rounded-xl gradient-maroon py-2.5 text-xs font-bold text-primary-foreground active:scale-95 transition-transform flex items-center justify-center gap-1.5"
             >
               <Download className="h-3.5 w-3.5" />
               Install Now

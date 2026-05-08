@@ -293,7 +293,7 @@ const RestaurantMenu = () => {
         {/* Cart button */}
         <button
           onClick={() => setCartOpen(true)}
-          className="absolute top-4 right-4 relative rounded-full bg-primary p-2.5 shadow-orange"
+          className="btn-glow absolute top-4 right-4 relative rounded-full gradient-maroon p-2.5 shadow-maroon"
         >
           <ShoppingCart className="h-5 w-5 text-primary-foreground" />
           {cart.totalItems > 0 && (
@@ -316,7 +316,7 @@ const RestaurantMenu = () => {
               </p>
               <button
                 onClick={() => geo.refresh()}
-                className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-primary px-4 py-1.5 text-xs font-bold text-primary-foreground shadow-orange"
+                className="btn-glow mt-2 inline-flex items-center gap-1.5 rounded-full gradient-maroon px-4 py-1.5 text-xs font-bold text-primary-foreground shadow-maroon"
               >
                 <MapPin className="h-3.5 w-3.5" /> Enable location
               </button>
@@ -337,7 +337,7 @@ const RestaurantMenu = () => {
               </p>
               <button
                 onClick={() => navigate("/")}
-                className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-primary px-4 py-1.5 text-xs font-bold text-primary-foreground shadow-orange"
+                className="btn-glow mt-2 inline-flex items-center gap-1.5 rounded-full gradient-maroon px-4 py-1.5 text-xs font-bold text-primary-foreground shadow-maroon"
               >
                 See nearby restaurants
               </button>
@@ -458,7 +458,7 @@ const RestaurantMenu = () => {
                           onClick={(e) => { e.stopPropagation(); handleAddItem(item); }}
                           disabled={!canOrder}
                           data-testid="menu-add-button"
-                          className="flex items-center gap-1 rounded-xl bg-primary px-3 py-1.5 text-xs font-bold text-primary-foreground transition-transform hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+                          className="btn-glow flex items-center gap-1 rounded-xl gradient-maroon px-3 py-1.5 text-xs font-bold text-primary-foreground transition-transform hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
                         >
                           {hasOptions ? (
                             <>Customize <ChevronRight className="h-3.5 w-3.5" /></>
@@ -487,7 +487,7 @@ const RestaurantMenu = () => {
                             onClick={() => handleAddItem(item)}
                             disabled={!canOrder}
                             aria-label={hasOptions ? "Add another with options" : "Add one"}
-                            className="flex h-7 w-7 items-center justify-center rounded-full bg-primary text-primary-foreground disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="btn-glow flex h-7 w-7 items-center justify-center rounded-full gradient-maroon text-primary-foreground disabled:opacity-50 disabled:cursor-not-allowed"
                           >
                             <Plus className="h-3.5 w-3.5" />
                           </button>
@@ -507,7 +507,7 @@ const RestaurantMenu = () => {
         <div className="fixed bottom-16 left-4 right-4 z-40 md:bottom-4 mx-auto max-w-md">
           <button
             onClick={() => setCartOpen(true)}
-            className="flex w-full items-center justify-between rounded-2xl bg-primary px-4 py-3 shadow-orange"
+            className="btn-glow flex w-full items-center justify-between rounded-2xl gradient-maroon px-4 py-3 shadow-maroon"
           >
             <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary-foreground/20 text-xs font-bold text-primary-foreground">
               {cart.totalItems}
