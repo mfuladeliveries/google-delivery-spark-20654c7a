@@ -101,7 +101,7 @@ const Auth = () => {
             <button
               type="submit"
               disabled={loading || otp.length < 6}
-              className="w-full rounded-xl bg-primary py-2.5 font-display font-bold text-primary-foreground transition-transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50"
+              className="btn-glow w-full rounded-xl gradient-maroon py-2.5 font-display font-bold text-primary-foreground transition-transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50"
             >
               {loading ? "Verifying..." : "Verify & Sign In"}
             </button>
