@@ -183,7 +183,7 @@ const Install = () => {
                 <button
                   onClick={() => handleInstall(app.variant)}
                   disabled={isInstalling || (isInstalled && !deferredPrompt)}
-                  className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-primary py-2.5 font-display text-sm font-bold text-primary-foreground transition-transform hover:scale-[1.01] active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed"
+                  className="btn-glow mt-3 flex w-full items-center justify-center gap-2 rounded-xl gradient-maroon py-2.5 font-display text-sm font-bold text-primary-foreground transition-transform hover:scale-[1.01] active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed"
                 >
                   {isInstalled && !deferredPrompt ? (
                     <>

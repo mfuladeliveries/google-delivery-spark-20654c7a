@@ -226,7 +226,7 @@ const About = () => {
           <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-3">
             <a
               href={`tel:${phoneTel}`}
-              className="flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 text-sm font-bold text-primary-foreground shadow-orange hover:scale-[1.02] active:scale-95 transition-transform"
+              className="btn-glow flex items-center justify-center gap-2 rounded-xl gradient-maroon px-4 py-3 text-sm font-bold text-primary-foreground shadow-maroon hover:scale-[1.02] active:scale-95 transition-transform"
             >
               <Phone className="h-4 w-4" />
               Call Us

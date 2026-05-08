@@ -68,7 +68,7 @@ const DriverInstallBanner = () => {
       </div>
       <Link
         to="/install/driver"
-        className="shrink-0 rounded-xl bg-primary px-3 py-2 text-xs font-bold text-primary-foreground shadow-sm transition-transform hover:scale-[1.02] active:scale-[0.98]"
+        className="btn-glow shrink-0 rounded-xl gradient-maroon px-3 py-2 text-xs font-bold text-primary-foreground shadow-sm transition-transform hover:scale-[1.02] active:scale-[0.98]"
       >
         Install
       </Link>
