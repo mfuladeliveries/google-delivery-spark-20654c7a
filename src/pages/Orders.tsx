@@ -841,7 +841,7 @@ const Orders = () => {
                         <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
                           <button
                             onClick={() => handleChooseRefund(order.id, order.order_number, "credits")}
-                            className="flex items-center justify-center gap-1.5 rounded-xl bg-primary px-3 py-2.5 text-xs font-bold text-primary-foreground hover:opacity-90"
+                            className="btn-glow flex items-center justify-center gap-1.5 rounded-xl gradient-maroon px-3 py-2.5 text-xs font-bold text-primary-foreground hover:opacity-90"
                           >
                             <Wallet className="h-3.5 w-3.5" />
                             Add to wallet (instant)
@@ -906,7 +906,7 @@ const Orders = () => {
                               });
                             }}
                             disabled={ratedOrderIds.has(order.id)}
-                            className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-primary px-3 py-2.5 text-xs font-bold text-primary-foreground hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+                            className="btn-glow flex flex-1 items-center justify-center gap-1.5 rounded-xl gradient-maroon px-3 py-2.5 text-xs font-bold text-primary-foreground hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
                           >
                             <Star className="h-3.5 w-3.5" />
                             Rate order

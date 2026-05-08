@@ -211,7 +211,7 @@ const AdminRefunds = () => {
                 <button
                   onClick={() => markPaid(r)}
                   disabled={actingId === r.id}
-                  className="mt-3 w-full rounded-xl bg-primary py-2 text-xs font-bold text-primary-foreground hover:opacity-90 disabled:opacity-50"
+                  className="btn-glow mt-3 w-full rounded-xl gradient-maroon py-2 text-xs font-bold text-primary-foreground hover:opacity-90 disabled:opacity-50"
                 >
                   {actingId === r.id ? "Processing…" : "Mark as Paid"}
                 </button>

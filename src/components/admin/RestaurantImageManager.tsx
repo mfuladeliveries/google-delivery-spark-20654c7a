@@ -479,7 +479,7 @@ const RestaurantImageManager = ({ open, onClose, restaurantId, restaurantName, o
                 <div className="flex-1 min-w-0">
                   <p className="text-xs text-muted-foreground mb-2">Round logo shown on cards. Recommended square image.</p>
                   <div className="flex flex-wrap gap-2">
-                    <label className="inline-flex cursor-pointer items-center gap-1.5 rounded-xl bg-primary px-3 py-1.5 text-xs font-bold text-primary-foreground hover:opacity-90 disabled:opacity-50">
+                    <label className="btn-glow inline-flex cursor-pointer items-center gap-1.5 rounded-xl gradient-maroon px-3 py-1.5 text-xs font-bold text-primary-foreground hover:opacity-90 disabled:opacity-50">
                       {uploadingKind === "logo" ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />}
                       {state.logo_url ? "Replace" : "Upload"} logo
                       <input
