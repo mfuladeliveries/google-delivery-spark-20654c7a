@@ -293,7 +293,7 @@ const RestaurantMenu = () => {
         {/* Cart button */}
         <button
           onClick={() => setCartOpen(true)}
-          className="absolute top-4 right-4 relative rounded-full bg-primary p-2.5 shadow-orange"
+          className="btn-glow absolute top-4 right-4 relative rounded-full gradient-maroon p-2.5 shadow-maroon"
         >
           <ShoppingCart className="h-5 w-5 text-primary-foreground" />
           {cart.totalItems > 0 && (
