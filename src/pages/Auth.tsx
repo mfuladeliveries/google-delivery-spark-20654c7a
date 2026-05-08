@@ -64,15 +64,15 @@ const Auth = () => {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4">
+    <div className="flex min-h-screen items-center justify-center px-4 py-10 bg-gradient-to-br from-secondary via-background to-secondary">
       <div className="w-full max-w-sm">
-        <div className="mb-8 text-center">
+        <div className="mb-6 text-center">
           <img
             src={storeInfo.logo}
             alt={storeInfo.name}
-            className="mx-auto h-16 w-16 rounded-full object-cover ring-2 ring-primary/30"
+            className="mx-auto h-20 w-20 rounded-full object-cover ring-2 ring-[hsl(var(--gold))] shadow-gold"
           />
-          <h1 className="mt-4 font-display text-2xl font-bold text-foreground">
+          <h1 className="mt-4 font-display text-3xl font-bold text-primary tracking-tight">
             {storeInfo.name}
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">
@@ -80,6 +80,7 @@ const Auth = () => {
           </p>
         </div>
 
+        <div className="glass shadow-luxury rounded-3xl p-6 sm:p-7">
         {showOtp ? (
           <form onSubmit={handleVerifyOtp} className="space-y-4">
             <p className="text-sm text-muted-foreground">{message}</p>
