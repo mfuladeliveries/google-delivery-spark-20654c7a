@@ -471,7 +471,7 @@ const Install = () => {
                       )}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex items-center justify-center gap-1.5 rounded-lg bg-primary py-2 text-xs font-bold text-primary-foreground transition-transform hover:scale-[1.01] active:scale-[0.98]"
+                      className="btn-glow flex items-center justify-center gap-1.5 rounded-lg gradient-maroon py-2 text-xs font-bold text-primary-foreground transition-transform hover:scale-[1.01] active:scale-[0.98]"
                     >
                       <Send className="h-3.5 w-3.5" />
                       Share on WhatsApp
