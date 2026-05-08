@@ -40,7 +40,7 @@ const MenuCard = ({ item, onAdd }: MenuCardProps) => {
           <button
             onClick={() => onAdd(item)}
             data-testid="menu-add-button"
-            className="rounded-xl bg-primary p-2 text-primary-foreground transition-transform hover:scale-110 active:scale-95"
+            className="btn-glow rounded-xl gradient-maroon p-2 text-primary-foreground transition-transform hover:scale-110 active:scale-95"
             aria-label={`Add ${item.name} to cart`}
           >
             <Plus className="h-4 w-4" />

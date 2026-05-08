@@ -691,7 +691,7 @@ const Index = () => {
                       <button
                         onClick={() => geo.refresh()}
                         disabled={geo.status === "prompt"}
-                        className="inline-flex items-center gap-1.5 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-orange transition-transform hover:scale-105 disabled:cursor-not-allowed disabled:opacity-60"
+                        className="btn-glow inline-flex items-center gap-1.5 rounded-full gradient-maroon px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-maroon transition-transform hover:scale-105 disabled:cursor-not-allowed disabled:opacity-60"
                       >
                         <RefreshCw className={`h-4 w-4 ${geo.status === "prompt" ? "animate-spin" : ""}`} />
                         {geo.status === "prompt" ? "Checking…" : "Retry GPS"}
@@ -731,7 +731,7 @@ const Index = () => {
                       setSearch("");
                       setSelectedCuisine("All");
                     }}
-                    className="mt-5 inline-flex items-center gap-1.5 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-orange transition-transform hover:scale-105"
+                    className="btn-glow mt-5 inline-flex items-center gap-1.5 rounded-full gradient-maroon px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-maroon transition-transform hover:scale-105"
                   >
                     Browse All Restaurants
                   </button>
