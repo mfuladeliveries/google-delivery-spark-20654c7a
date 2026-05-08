@@ -257,7 +257,7 @@ const OrderConfirmation = () => {
           <button
             onClick={handleManualRefresh}
             disabled={refreshing}
-            className="mt-4 inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-bold text-primary-foreground transition-transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50"
+            className="btn-glow mt-4 inline-flex items-center gap-2 rounded-xl gradient-maroon px-5 py-2.5 text-sm font-bold text-primary-foreground transition-transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50"
           >
             <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
             {refreshing ? "Refreshing…" : "Refresh status"}
@@ -428,7 +428,7 @@ const OrderConfirmation = () => {
         <div className="mt-6 grid grid-cols-2 gap-3">
           <Link
             to="/orders"
-            className="flex items-center justify-center gap-2 rounded-2xl bg-primary py-3.5 font-display text-sm font-bold text-primary-foreground shadow-orange transition-transform hover:scale-[1.02] active:scale-[0.98]"
+            className="btn-glow flex items-center justify-center gap-2 rounded-2xl gradient-maroon py-3.5 font-display text-sm font-bold text-primary-foreground shadow-orange transition-transform hover:scale-[1.02] active:scale-[0.98]"
           >
             <ListOrdered className="h-4 w-4" />
             Track Order

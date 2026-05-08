@@ -121,7 +121,7 @@ const PayFastRedirect = () => {
           <button
             onClick={handleRetry}
             disabled={retrying}
-            className="mt-5 w-full rounded-xl bg-primary py-3 text-sm font-bold text-primary-foreground inline-flex items-center justify-center gap-2 disabled:opacity-60"
+            className="btn-glow mt-5 w-full rounded-xl gradient-maroon py-3 text-sm font-bold text-primary-foreground inline-flex items-center justify-center gap-2 disabled:opacity-60"
           >
             <RefreshCw className={`h-4 w-4 ${retrying ? "animate-spin" : ""}`} />
             {retrying ? "Retrying…" : "Retry payment"}
