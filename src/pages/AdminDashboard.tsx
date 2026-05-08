@@ -647,7 +647,7 @@ const DriversTab = ({ drivers, onDriverAdded }: { drivers: DriverRecord[]; onDri
         <h2 className="font-bold text-foreground">🚗 Drivers ({drivers.length})</h2>
         <button
           onClick={() => setShowForm(!showForm)}
-          className="flex items-center gap-1.5 rounded-xl bg-primary px-3 py-2 text-xs font-bold text-primary-foreground hover:opacity-90 transition-opacity"
+          className="btn-glow flex items-center gap-1.5 rounded-xl gradient-maroon px-3 py-2 text-xs font-bold text-primary-foreground hover:opacity-90 transition-opacity"
         >
           <UserPlus className="h-3.5 w-3.5" />
           {showForm ? "Cancel" : "Register Driver"}
@@ -695,7 +695,7 @@ const DriversTab = ({ drivers, onDriverAdded }: { drivers: DriverRecord[]; onDri
             </div>
           </div>
           <button type="submit" disabled={registering}
-            className="w-full rounded-xl bg-primary py-2.5 text-sm font-bold text-primary-foreground disabled:opacity-50 hover:opacity-90 transition-opacity">
+            className="btn-glow w-full rounded-xl gradient-maroon py-2.5 text-sm font-bold text-primary-foreground disabled:opacity-50 hover:opacity-90 transition-opacity">
             {registering ? "Registering..." : "Register Driver"}
           </button>
         </form>
@@ -1087,7 +1087,7 @@ const RestaurantsTab = ({
         <h2 className="font-bold text-foreground">🍽️ Restaurants ({restaurants.length})</h2>
         <button
           onClick={() => setShowForm(!showForm)}
-          className="flex items-center gap-1.5 rounded-xl bg-primary px-3 py-2 text-xs font-bold text-primary-foreground hover:opacity-90 transition-opacity"
+          className="btn-glow flex items-center gap-1.5 rounded-xl gradient-maroon px-3 py-2 text-xs font-bold text-primary-foreground hover:opacity-90 transition-opacity"
         >
           <Plus className="h-3.5 w-3.5" />
           {showForm ? "Cancel" : "Add Restaurant"}
@@ -1197,7 +1197,7 @@ const RestaurantsTab = ({
           </div>
 
           <button type="submit" disabled={saving}
-            className="w-full rounded-xl bg-primary py-2.5 text-sm font-bold text-primary-foreground disabled:opacity-50 hover:opacity-90 transition-opacity">
+            className="btn-glow w-full rounded-xl gradient-maroon py-2.5 text-sm font-bold text-primary-foreground disabled:opacity-50 hover:opacity-90 transition-opacity">
             {saving ? "Adding..." : "Add Restaurant"}
           </button>
         </form>
@@ -1551,7 +1551,7 @@ const RestaurantCard = ({
               <button
                 onClick={handleSaveArea}
                 disabled={savingArea || (editAreaId === (r.area_id ?? ""))}
-                className="rounded-xl bg-primary px-3 py-2 text-xs font-bold text-primary-foreground disabled:opacity-50 hover:opacity-90"
+                className="btn-glow rounded-xl gradient-maroon px-3 py-2 text-xs font-bold text-primary-foreground disabled:opacity-50 hover:opacity-90"
               >
                 <Save className="inline h-3 w-3 mr-1" />{savingArea ? "Saving…" : "Save"}
               </button>
@@ -1591,7 +1591,7 @@ const RestaurantCard = ({
             <button
               onClick={handleSaveCoords}
               disabled={savingCoords}
-              className="flex items-center justify-center gap-1.5 w-full rounded-xl bg-primary py-2 text-xs font-bold text-primary-foreground disabled:opacity-50 hover:opacity-90 transition-opacity"
+              className="btn-glow flex items-center justify-center gap-1.5 w-full rounded-xl gradient-maroon py-2 text-xs font-bold text-primary-foreground disabled:opacity-50 hover:opacity-90 transition-opacity"
             >
               <Save className="h-3 w-3" />
               {savingCoords ? "Saving..." : "Save Coordinates"}
@@ -1633,7 +1633,7 @@ const RestaurantCard = ({
               <button
                 onClick={handleSaveHours}
                 disabled={savingHours}
-                className="flex-1 flex items-center justify-center gap-1.5 rounded-xl bg-primary py-2 text-xs font-bold text-primary-foreground disabled:opacity-50 hover:opacity-90 transition-opacity"
+                className="btn-glow flex-1 flex items-center justify-center gap-1.5 rounded-xl gradient-maroon py-2 text-xs font-bold text-primary-foreground disabled:opacity-50 hover:opacity-90 transition-opacity"
               >
                 <Save className="h-3 w-3" />
                 {savingHours ? "Saving..." : "Save Hours"}
@@ -1691,7 +1691,7 @@ const RestaurantCard = ({
                 <button
                   onClick={handleSaveEdit}
                   disabled={savingEdit}
-                  className="mt-3 flex items-center justify-center gap-1.5 w-full rounded-xl bg-primary py-2.5 text-sm font-bold text-primary-foreground disabled:opacity-50 hover:opacity-90 transition-opacity"
+                  className="btn-glow mt-3 flex items-center justify-center gap-1.5 w-full rounded-xl gradient-maroon py-2.5 text-sm font-bold text-primary-foreground disabled:opacity-50 hover:opacity-90 transition-opacity"
                 >
                   <Save className="h-3.5 w-3.5" />
                   {savingEdit ? "Saving..." : "Save Credentials"}
