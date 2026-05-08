@@ -243,7 +243,7 @@ const Index = () => {
 
       <main className="mx-auto max-w-7xl px-4 pb-nav pt-4 md:pb-8">
         {/* Hero */}
-        <div className="mb-6 rounded-2xl overflow-hidden relative" style={{ background: 'linear-gradient(135deg, hsl(21 100% 50%), hsl(35 100% 55%))' }}>
+        <div className="mb-6 rounded-2xl overflow-hidden relative gradient-maroon shadow-luxury">
           <div className="px-6 py-8 relative">
             <p className="text-primary-foreground/80 text-sm font-medium mb-1">
             </p>
