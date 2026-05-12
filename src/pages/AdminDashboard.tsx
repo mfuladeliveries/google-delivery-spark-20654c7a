@@ -504,6 +504,7 @@ const AdminDashboard = () => {
             restaurants={restaurants}
             areas={areas}
             onToggleActive={toggleRestaurantActive}
+            onToggleConfirmation={toggleRestaurantConfirmation}
             onRestaurantChanged={() => { fetchRestaurants(); fetchStats(); }}
           />
         )}
