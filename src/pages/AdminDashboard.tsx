@@ -1239,6 +1239,7 @@ const RestaurantCard = ({
   restaurant: r,
   areas,
   onToggleActive,
+  onToggleConfirmation,
   onDelete,
   deleting,
   onRestaurantChanged,
@@ -1246,6 +1247,7 @@ const RestaurantCard = ({
   restaurant: RestaurantRecord;
   areas: DeliveryAreaOption[];
   onToggleActive: (id: string, isActive: boolean) => void;
+  onToggleConfirmation: (id: string, current: boolean) => void;
   onDelete: (id: string, name: string) => void;
   deleting: string | null;
   onRestaurantChanged: () => void;
