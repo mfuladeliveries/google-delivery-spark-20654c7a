@@ -156,6 +156,8 @@ Deno.serve(async (req) => {
         total: number;
         user_id: string;
         newly_paid: boolean;
+        new_status?: string;
+        requires_confirmation?: boolean;
       };
 
       // Only kick off dispatch + notifications on the first transition
