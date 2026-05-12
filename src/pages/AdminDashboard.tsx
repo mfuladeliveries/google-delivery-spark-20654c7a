@@ -71,6 +71,7 @@ interface RestaurantRecord {
   opens_at: string | null;
   closes_at: string | null;
   area_id: string | null;
+  requires_confirmation: boolean;
 }
 
 interface DeliveryAreaOption {
