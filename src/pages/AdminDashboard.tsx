@@ -71,6 +71,7 @@ interface RestaurantRecord {
   opens_at: string | null;
   closes_at: string | null;
   area_id: string | null;
+  requires_confirmation: boolean;
 }
 
 interface DeliveryAreaOption {
@@ -274,7 +275,7 @@ const AdminDashboard = () => {
   };
 
   const fetchRestaurants = async () => {
-    const { data } = await supabase.from("restaurants").select("id, name, cuisine, is_active, owner_user_id, rating, location, lat, lng, logo_url, banner_url, gallery_images, opens_at, closes_at, area_id").order("name");
+    const { data } = await supabase.from("restaurants").select("id, name, cuisine, is_active, owner_user_id, rating, location, lat, lng, logo_url, banner_url, gallery_images, opens_at, closes_at, area_id, requires_confirmation").order("name");
     if (data) setRestaurants(data as RestaurantRecord[]);
   };
 
@@ -307,6 +308,15 @@ const AdminDashboard = () => {
     await supabase.from("restaurants").update({ is_active: !isActive }).eq("id", id);
     setRestaurants(prev => prev.map(r => r.id === id ? { ...r, is_active: !isActive } : r));
     toast.success(`Restaurant ${!isActive ? 'activated' : 'deactivated'}`);
+  };
+
+  const toggleRestaurantConfirmation = async (id: string, current: boolean) => {
+    const { error } = await supabase.from("restaurants").update({ requires_confirmation: !current }).eq("id", id);
+    if (error) { toast.error(error.message); return; }
+    setRestaurants(prev => prev.map(r => r.id === id ? { ...r, requires_confirmation: !current } : r));
+    toast.success(!current
+      ? "✅ Orders for this restaurant now require confirmation before driver dispatch"
+      : "🚀 Orders for this restaurant will go straight to drivers after payment");
   };
 
   const updateUserRole = async (userId: string, newRole: string) => {
@@ -494,6 +504,7 @@ const AdminDashboard = () => {
             restaurants={restaurants}
             areas={areas}
             onToggleActive={toggleRestaurantActive}
+            onToggleConfirmation={toggleRestaurantConfirmation}
             onRestaurantChanged={() => { fetchRestaurants(); fetchStats(); }}
           />
         )}
@@ -956,11 +967,13 @@ const RestaurantsTab = ({
   restaurants,
   areas,
   onToggleActive,
+  onToggleConfirmation,
   onRestaurantChanged,
 }: {
   restaurants: RestaurantRecord[];
   areas: DeliveryAreaOption[];
   onToggleActive: (id: string, isActive: boolean) => void;
+  onToggleConfirmation: (id: string, current: boolean) => void;
   onRestaurantChanged: () => void;
 }) => {
   const [showForm, setShowForm] = useState(false);
@@ -1210,6 +1223,7 @@ const RestaurantsTab = ({
             restaurant={r}
             areas={areas}
             onToggleActive={onToggleActive}
+            onToggleConfirmation={onToggleConfirmation}
             onDelete={handleDelete}
             deleting={deleting}
             onRestaurantChanged={onRestaurantChanged}
@@ -1225,6 +1239,7 @@ const RestaurantCard = ({
   restaurant: r,
   areas,
   onToggleActive,
+  onToggleConfirmation,
   onDelete,
   deleting,
   onRestaurantChanged,
@@ -1232,6 +1247,7 @@ const RestaurantCard = ({
   restaurant: RestaurantRecord;
   areas: DeliveryAreaOption[];
   onToggleActive: (id: string, isActive: boolean) => void;
+  onToggleConfirmation: (id: string, current: boolean) => void;
   onDelete: (id: string, name: string) => void;
   deleting: string | null;
   onRestaurantChanged: () => void;
@@ -1531,6 +1547,34 @@ const RestaurantCard = ({
 
       {editing && (
         <div className="border-t border-border bg-secondary/30 p-4 space-y-4">
+          {/* Order confirmation requirement */}
+          <div className="space-y-2 rounded-xl border border-border bg-background/60 p-3">
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex-1">
+                <h4 className="font-bold text-xs text-foreground">🛎️ Restaurant Confirms Orders</h4>
+                <p className="mt-1 text-[10px] text-muted-foreground">
+                  When ON, paid orders go to <b>Pending</b> and wait for the restaurant to accept before a driver is dispatched.
+                  When OFF, paid orders go straight to drivers.
+                </p>
+              </div>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={r.requires_confirmation}
+                onClick={() => onToggleConfirmation(r.id, r.requires_confirmation)}
+                className={`relative h-6 w-11 shrink-0 rounded-full transition-colors ${
+                  r.requires_confirmation ? "bg-primary" : "bg-muted"
+                }`}
+              >
+                <span
+                  className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${
+                    r.requires_confirmation ? "translate-x-5" : "translate-x-0.5"
+                  }`}
+                />
+              </button>
+            </div>
+          </div>
+
           {/* Delivery area assignment */}
           <div className="space-y-2">
             <h4 className="font-bold text-xs text-foreground">🗺️ Delivery Area</h4>
