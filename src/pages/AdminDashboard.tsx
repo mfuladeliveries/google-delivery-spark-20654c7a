@@ -1547,6 +1547,34 @@ const RestaurantCard = ({
 
       {editing && (
         <div className="border-t border-border bg-secondary/30 p-4 space-y-4">
+          {/* Order confirmation requirement */}
+          <div className="space-y-2 rounded-xl border border-border bg-background/60 p-3">
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex-1">
+                <h4 className="font-bold text-xs text-foreground">🛎️ Restaurant Confirms Orders</h4>
+                <p className="mt-1 text-[10px] text-muted-foreground">
+                  When ON, paid orders go to <b>Pending</b> and wait for the restaurant to accept before a driver is dispatched.
+                  When OFF, paid orders go straight to drivers.
+                </p>
+              </div>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={r.requires_confirmation}
+                onClick={() => onToggleConfirmation(r.id, r.requires_confirmation)}
+                className={`relative h-6 w-11 shrink-0 rounded-full transition-colors ${
+                  r.requires_confirmation ? "bg-primary" : "bg-muted"
+                }`}
+              >
+                <span
+                  className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${
+                    r.requires_confirmation ? "translate-x-5" : "translate-x-0.5"
+                  }`}
+                />
+              </button>
+            </div>
+          </div>
+
           {/* Delivery area assignment */}
           <div className="space-y-2">
             <h4 className="font-bold text-xs text-foreground">🗺️ Delivery Area</h4>
