@@ -310,6 +310,15 @@ const AdminDashboard = () => {
     toast.success(`Restaurant ${!isActive ? 'activated' : 'deactivated'}`);
   };
 
+  const toggleRestaurantConfirmation = async (id: string, current: boolean) => {
+    const { error } = await supabase.from("restaurants").update({ requires_confirmation: !current }).eq("id", id);
+    if (error) { toast.error(error.message); return; }
+    setRestaurants(prev => prev.map(r => r.id === id ? { ...r, requires_confirmation: !current } : r));
+    toast.success(!current
+      ? "✅ Orders for this restaurant now require confirmation before driver dispatch"
+      : "🚀 Orders for this restaurant will go straight to drivers after payment");
+  };
+
   const updateUserRole = async (userId: string, newRole: string) => {
     await supabase.from("user_roles").update({ role: newRole as any }).eq("user_id", userId);
     fetchUsers();
