@@ -966,6 +966,7 @@ export type Database = {
           operating_days: Json
           owner_user_id: string | null
           rating: number
+          requires_confirmation: boolean
           total_reviews: number
         }
         Insert: {
@@ -993,6 +994,7 @@ export type Database = {
           operating_days?: Json
           owner_user_id?: string | null
           rating?: number
+          requires_confirmation?: boolean
           total_reviews?: number
         }
         Update: {
@@ -1020,6 +1022,7 @@ export type Database = {
           operating_days?: Json
           owner_user_id?: string | null
           rating?: number
+          requires_confirmation?: boolean
           total_reviews?: number
         }
         Relationships: [
