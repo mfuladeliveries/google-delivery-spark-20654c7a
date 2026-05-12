@@ -967,11 +967,13 @@ const RestaurantsTab = ({
   restaurants,
   areas,
   onToggleActive,
+  onToggleConfirmation,
   onRestaurantChanged,
 }: {
   restaurants: RestaurantRecord[];
   areas: DeliveryAreaOption[];
   onToggleActive: (id: string, isActive: boolean) => void;
+  onToggleConfirmation: (id: string, current: boolean) => void;
   onRestaurantChanged: () => void;
 }) => {
   const [showForm, setShowForm] = useState(false);
