@@ -1223,6 +1223,7 @@ const RestaurantsTab = ({
             restaurant={r}
             areas={areas}
             onToggleActive={onToggleActive}
+            onToggleConfirmation={onToggleConfirmation}
             onDelete={handleDelete}
             deleting={deleting}
             onRestaurantChanged={onRestaurantChanged}
