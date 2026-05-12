@@ -178,39 +178,59 @@ Deno.serve(async (req) => {
           console.warn("ITN: customer push failed", e);
         }
 
-        // Kick off the targeted dispatch chain
-        try {
-          const { data: dispatchRes } = await supabase.rpc(
-            "dispatch_assign_next",
-            { p_order_id: result.order_id },
-          );
-          const d = dispatchRes as
-            | { phase?: string; offered_to?: string | null }
-            | null;
-          if (d?.offered_to && (d.phase === "offer_a" || d.phase === "offer_b")) {
+        // Skip driver dispatch when the restaurant must accept the order first.
+        // Order is now in 'pending' and the restaurant dashboard will move it
+        // through confirmed → preparing → ready, which kicks dispatch from there.
+        if (result.requires_confirmation || result.new_status !== "ready") {
+          // Notify the restaurant of the new pending order
+          try {
             await supabase.functions.invoke("push-notify", {
               body: {
                 order_id: result.order_id,
                 order_number: result.order_number,
-                status: "offer_pending",
-                restaurant: result.restaurant,
-                total: result.total,
-                target_user_id: d.offered_to,
-              },
-            });
-          } else if (d?.phase === "waiting") {
-            await supabase.functions.invoke("push-notify", {
-              body: {
-                order_id: result.order_id,
-                order_number: result.order_number,
-                status: "dispatch_broadcast",
+                status: "pending",
                 restaurant: result.restaurant,
                 total: result.total,
               },
             });
+          } catch (e) {
+            console.warn("ITN: restaurant push failed", e);
           }
-        } catch (e) {
-          console.warn("ITN: dispatch failed", e);
+        } else {
+          // Kick off the targeted dispatch chain
+          try {
+            const { data: dispatchRes } = await supabase.rpc(
+              "dispatch_assign_next",
+              { p_order_id: result.order_id },
+            );
+            const d = dispatchRes as
+              | { phase?: string; offered_to?: string | null }
+              | null;
+            if (d?.offered_to && (d.phase === "offer_a" || d.phase === "offer_b")) {
+              await supabase.functions.invoke("push-notify", {
+                body: {
+                  order_id: result.order_id,
+                  order_number: result.order_number,
+                  status: "offer_pending",
+                  restaurant: result.restaurant,
+                  total: result.total,
+                  target_user_id: d.offered_to,
+                },
+              });
+            } else if (d?.phase === "waiting") {
+              await supabase.functions.invoke("push-notify", {
+                body: {
+                  order_id: result.order_id,
+                  order_number: result.order_number,
+                  status: "dispatch_broadcast",
+                  restaurant: result.restaurant,
+                  total: result.total,
+                },
+              });
+            }
+          } catch (e) {
+            console.warn("ITN: dispatch failed", e);
+          }
         }
       }
     } else if (
