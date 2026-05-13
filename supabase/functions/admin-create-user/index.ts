@@ -84,14 +84,23 @@ Deno.serve(async (req) => {
       if (!found) throw new Error("Email already registered but user could not be located");
       userId = found.id;
 
-      // Reset password to the value the admin just entered so they can hand it off.
-      await adminClient.auth.admin.updateUserById(userId, {
-        password,
-        email_confirm: true,
-        user_metadata: { full_name },
-      });
+      if (useInvite) {
+        const origin = req.headers.get("origin") || req.headers.get("referer") || undefined;
+        const redirectTo = origin ? `${origin}/reset-password` : undefined;
+        await adminClient.auth.admin.inviteUserByEmail(email, {
+          data: { full_name },
+          redirectTo,
+        });
+        invitedEmailSent = true;
+      } else {
+        await adminClient.auth.admin.updateUserById(userId, {
+          password,
+          email_confirm: true,
+          user_metadata: { full_name },
+        });
+      }
     } else {
-      userId = newUser.user.id;
+      userId = newUser.user?.id ?? newUser.id;
     }
 
     // Update profile
