@@ -498,6 +498,14 @@ const AdminDashboard = () => {
           </>
         )}
 
+        {/* Admins Tab — invite-by-email flow */}
+        {tab === "admins" && (
+          <AdminsTab
+            users={users}
+            onChanged={() => { fetchUsers(); }}
+          />
+        )}
+
         {/* Restaurants Tab */}
         {tab === "restaurants" && (
           <RestaurantsTab
