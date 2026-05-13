@@ -129,7 +129,7 @@ Deno.serve(async (req) => {
       await adminClient.from("restaurants").update({ owner_user_id: userId }).eq("id", restaurant_id);
     }
 
-    return new Response(JSON.stringify({ user_id: userId }), {
+    return new Response(JSON.stringify({ user_id: userId, invited: invitedEmailSent }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (err) {
