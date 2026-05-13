@@ -340,7 +340,7 @@ const AdminDashboard = () => {
     { label: "Today", value: stats.deliveredToday, icon: UserCheck, color: "bg-primary/10 text-primary" },
   ];
 
-  const tabs = ["overview", "orders", "earnings", "withdrawals", "refunds", "requests", "users", "restaurants", "menus", "drivers", "areas", "about"] as const;
+  const tabs = ["overview", "orders", "earnings", "withdrawals", "refunds", "requests", "users", "admins", "restaurants", "menus", "drivers", "areas", "about"] as const;
 
   return (
     <div className="min-h-screen bg-background">
