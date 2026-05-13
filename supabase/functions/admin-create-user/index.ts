@@ -28,18 +28,38 @@ Deno.serve(async (req) => {
     const { data: isAdmin } = await adminClient.rpc("has_role", { _user_id: caller.id, _role: "admin" });
     if (!isAdmin) throw new Error("Not authorized");
 
-    const { email, password, full_name, contact_number, role, vehicle_type, license_plate, restaurant_id } = await req.json();
+    const { email, password, full_name, contact_number, role, vehicle_type, license_plate, restaurant_id, invite } = await req.json();
 
-    if (!email || !password || !role) throw new Error("Missing required fields");
+    if (!email || !role) throw new Error("Missing required fields");
+    const useInvite = invite === true || !password;
+    if (!useInvite && !password) throw new Error("Password required");
 
-    // Create user with admin API (no email confirmation needed)
+    // Create user — either via invite email (sets own password) or directly with password
     let userId: string | null = null;
-    const { data: newUser, error: createErr } = await adminClient.auth.admin.createUser({
-      email,
-      password,
-      email_confirm: true,
-      user_metadata: { full_name },
-    });
+    let invitedEmailSent = false;
+    let createErr: any = null;
+    let newUser: any = null;
+
+    if (useInvite) {
+      const origin = req.headers.get("origin") || req.headers.get("referer") || undefined;
+      const redirectTo = origin ? `${origin}/reset-password` : undefined;
+      const res = await adminClient.auth.admin.inviteUserByEmail(email, {
+        data: { full_name },
+        redirectTo,
+      });
+      newUser = res.data;
+      createErr = res.error;
+      invitedEmailSent = !createErr;
+    } else {
+      const res = await adminClient.auth.admin.createUser({
+        email,
+        password,
+        email_confirm: true,
+        user_metadata: { full_name },
+      });
+      newUser = res.data;
+      createErr = res.error;
+    }
 
     if (createErr) {
       // If the email is already registered, look up the existing user and reuse them.
@@ -64,14 +84,23 @@ Deno.serve(async (req) => {
       if (!found) throw new Error("Email already registered but user could not be located");
       userId = found.id;
 
-      // Reset password to the value the admin just entered so they can hand it off.
-      await adminClient.auth.admin.updateUserById(userId, {
-        password,
-        email_confirm: true,
-        user_metadata: { full_name },
-      });
+      if (useInvite) {
+        const origin = req.headers.get("origin") || req.headers.get("referer") || undefined;
+        const redirectTo = origin ? `${origin}/reset-password` : undefined;
+        await adminClient.auth.admin.inviteUserByEmail(email, {
+          data: { full_name },
+          redirectTo,
+        });
+        invitedEmailSent = true;
+      } else {
+        await adminClient.auth.admin.updateUserById(userId, {
+          password,
+          email_confirm: true,
+          user_metadata: { full_name },
+        });
+      }
     } else {
-      userId = newUser.user.id;
+      userId = newUser.user?.id ?? newUser.id;
     }
 
     // Update profile
@@ -100,7 +129,7 @@ Deno.serve(async (req) => {
       await adminClient.from("restaurants").update({ owner_user_id: userId }).eq("id", restaurant_id);
     }
 
-    return new Response(JSON.stringify({ user_id: userId }), {
+    return new Response(JSON.stringify({ user_id: userId, invited: invitedEmailSent }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (err) {
