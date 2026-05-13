@@ -605,6 +605,143 @@ const adminCreateUser = async (payload: Record<string, any>) => {
   return res.data;
 };
 
+// Admins management — invite by email
+const AdminsTab = ({ users, onChanged }: { users: UserRecord[]; onChanged: () => void }) => {
+  const [showForm, setShowForm] = useState(false);
+  const [email, setEmail] = useState("");
+  const [fullName, setFullName] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [demoting, setDemoting] = useState<string | null>(null);
+  const { user: currentUser } = useAuth();
+
+  const admins = users.filter(u => u.role === "admin");
+
+  const handleInvite = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email.trim()) {
+      toast.error("Email is required");
+      return;
+    }
+    setBusy(true);
+    try {
+      const res = await adminCreateUser({
+        email: email.trim().toLowerCase(),
+        full_name: fullName.trim(),
+        role: "admin",
+        invite: true,
+      });
+      toast.success(res?.invited ? `Invitation email sent to ${email}` : `Admin access granted to ${email}`);
+      setEmail(""); setFullName(""); setShowForm(false);
+      onChanged();
+    } catch (err: any) {
+      toast.error(err.message || "Failed to invite admin");
+    }
+    setBusy(false);
+  };
+
+  const handleRevoke = async (userId: string) => {
+    if (currentUser?.id === userId) {
+      toast.error("You can't revoke your own admin access");
+      return;
+    }
+    setDemoting(userId);
+    try {
+      const { error } = await supabase
+        .from("user_roles")
+        .update({ role: "customer" as const })
+        .eq("user_id", userId)
+        .eq("role", "admin");
+      if (error) throw error;
+      toast.success("Admin access revoked");
+      onChanged();
+    } catch (err: any) {
+      toast.error(err.message || "Failed to revoke admin");
+    }
+    setDemoting(null);
+  };
+
+  return (
+    <>
+      <div className="flex items-center justify-between mb-3">
+        <h2 className="font-bold text-foreground">🛡️ Admins ({admins.length})</h2>
+        <button
+          onClick={() => setShowForm(!showForm)}
+          className="btn-glow flex items-center gap-1.5 rounded-xl gradient-maroon px-3 py-2 text-xs font-bold text-primary-foreground hover:opacity-90 transition-opacity"
+        >
+          <UserPlus className="h-3.5 w-3.5" />
+          {showForm ? "Cancel" : "Invite Admin"}
+        </button>
+      </div>
+
+      {showForm && (
+        <form onSubmit={handleInvite} className="mb-4 rounded-2xl border-2 border-primary bg-card p-4 shadow-card space-y-3">
+          <h3 className="font-bold text-sm text-foreground">Invite a new admin by email</h3>
+          <p className="text-xs text-muted-foreground">
+            We'll send an invitation email. The recipient sets their own password and is granted admin access on first sign-in.
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-semibold text-muted-foreground mb-1">Email *</label>
+              <input type="email" value={email} onChange={e => setEmail(e.target.value)} required
+                placeholder="newadmin@example.com"
+                className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20" />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-muted-foreground mb-1">Full Name</label>
+              <input value={fullName} onChange={e => setFullName(e.target.value)}
+                placeholder="Optional"
+                className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20" />
+            </div>
+          </div>
+          <button type="submit" disabled={busy}
+            className="btn-glow w-full rounded-xl gradient-maroon py-2.5 text-sm font-bold text-primary-foreground disabled:opacity-50 hover:opacity-90 transition-opacity">
+            {busy ? "Sending invite..." : "Send Invitation"}
+          </button>
+        </form>
+      )}
+
+      <div className="rounded-2xl border border-border bg-card overflow-hidden shadow-card">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-border bg-secondary">
+                <th className="px-4 py-2.5 text-left text-xs font-semibold text-muted-foreground">Name</th>
+                <th className="px-4 py-2.5 text-left text-xs font-semibold text-muted-foreground">Contact</th>
+                <th className="px-4 py-2.5 text-right text-xs font-semibold text-muted-foreground">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {admins.length === 0 && (
+                <tr><td colSpan={3} className="px-4 py-6 text-center text-muted-foreground">No admins yet</td></tr>
+              )}
+              {admins.map((u, i) => (
+                <tr key={u.user_id} className={`border-b border-border ${i % 2 ? 'bg-secondary/30' : ''}`}>
+                  <td className="px-4 py-2.5 font-medium text-foreground">
+                    {u.profile?.full_name || "—"}
+                    {currentUser?.id === u.user_id && (
+                      <span className="ml-2 text-[10px] font-bold text-primary">(you)</span>
+                    )}
+                  </td>
+                  <td className="px-4 py-2.5 text-muted-foreground text-xs">{u.profile?.contact_number || "—"}</td>
+                  <td className="px-4 py-2.5 text-right">
+                    <button
+                      onClick={() => handleRevoke(u.user_id)}
+                      disabled={demoting === u.user_id || currentUser?.id === u.user_id}
+                      className="rounded-lg border border-destructive/40 bg-destructive/10 px-2.5 py-1 text-xs font-bold text-destructive hover:bg-destructive/20 disabled:opacity-40"
+                    >
+                      {demoting === u.user_id ? "Revoking…" : "Revoke admin"}
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </>
+  );
+};
+
 // Driver registration + listing component
 const DriversTab = ({ drivers, onDriverAdded }: { drivers: DriverRecord[]; onDriverAdded: () => void }) => {
   const [showForm, setShowForm] = useState(false);
