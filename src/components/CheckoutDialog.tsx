@@ -307,7 +307,11 @@ const CheckoutDialog = ({
   }, [open]);
 
   const actualTip = customTip ? parseFloat(customTip) || 0 : tip;
-  const grossTotal = subtotal + tax + delivery + actualTip;
+  // Prefer the zone fee derived from the address selected INSIDE the dialog —
+  // it reflects the customer's verified coords. Fall back to the cart's prop
+  // (which may be stale if the address was changed mid-checkout).
+  const effectiveDelivery = zoneFee != null ? zoneFee : delivery;
+  const grossTotal = subtotal + tax + effectiveDelivery + actualTip;
   const creditsToApply = useWallet && walletBalance > 0 ? Math.min(walletBalance, grossTotal) : 0;
   const total = Math.max(0, grossTotal - creditsToApply);
 
