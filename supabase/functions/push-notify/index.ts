@@ -64,6 +64,7 @@ Deno.serve(async (req) => {
     const token = authHeader.replace("Bearer ", "");
     // Allow service-role calls (from other edge functions like dispatch-tick) to skip user-claim verification
     const isServiceRole = token === serviceRoleKey;
+    let callerUserId: string | null = null;
     if (!isServiceRole) {
       const userClient = createClient(supabaseUrl, anonKey, {
         global: { headers: { Authorization: authHeader } },
@@ -75,6 +76,7 @@ Deno.serve(async (req) => {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
+      callerUserId = claimsData.claims.sub as string;
     }
 
     const supabase = createClient(supabaseUrl, serviceRoleKey);
