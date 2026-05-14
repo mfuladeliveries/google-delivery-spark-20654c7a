@@ -26,6 +26,7 @@ const PaymentResult = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [resolvedOrderNumber, setResolvedOrderNumber] = useState<string>("");
   const [resolvedTotal, setResolvedTotal] = useState<number | null>(null);
+  const [deliveryPin, setDeliveryPin] = useState<string>("");
 
   const requestedStatus = (searchParams.get("payment_status") ?? "").trim().toUpperCase();
   const cachedOrder = useMemo(
