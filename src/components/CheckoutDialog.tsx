@@ -485,6 +485,35 @@ const CheckoutDialog = ({
         .filter(Boolean)
         .join(" | ");
 
+      // Re-validate driver coverage at submit time (state may be stale)
+      try {
+        const { data: freshCoverage, error: coverageError } = await supabase.rpc(
+          "check_area_coverage",
+          { p_lat: coords.lat, p_lng: coords.lng },
+        );
+        if (coverageError) throw coverageError;
+        const row = Array.isArray(freshCoverage) ? freshCoverage[0] : freshCoverage;
+        if (row) {
+          setCoverage({
+            covered: !!row.covered,
+            online_in_area: row.online_in_area ?? 0,
+            address_tag: row.address_tag ?? null,
+          });
+          if (!row.covered) {
+            toast.error(
+              "No drivers are online in your area right now. Please try again shortly.",
+            );
+            setLoading(false);
+            return;
+          }
+        }
+      } catch (err) {
+        console.error("[checkout] coverage re-check failed", err);
+        toast.error("Could not verify driver availability. Please try again.");
+        setLoading(false);
+        return;
+      }
+
       const { data: order, error: orderError } = await supabase.rpc("create_verified_order", {
         p_items: orderItems,
         p_restaurant_name: restaurants[0] || "",
