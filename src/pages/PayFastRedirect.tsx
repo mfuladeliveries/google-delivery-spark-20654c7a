@@ -208,6 +208,7 @@ const PayFastRedirect = () => {
             </div>
           </dl>
         </div>
+        )}
       </div>
     </div>
   );
