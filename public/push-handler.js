@@ -1,4 +1,11 @@
 // Push notification handler for service worker
+// Long, repeating vibration so a driver's phone keeps buzzing
+// even when the app is fully closed (background push).
+const DRIVER_ALERT_VIBRATION = [
+  800, 300, 800, 300, 800, 300, 800, 300, 800, 300, 800, 300, 800, 300, 800,
+];
+const DEFAULT_VIBRATION = [400, 200, 400, 200, 400];
+
 self.addEventListener("push", (event) => {
   if (!event.data) return;
 
@@ -6,12 +13,21 @@ self.addEventListener("push", (event) => {
     const data = event.data.json();
     const { title, body, icon, badge, data: notifData } = data;
 
+    // Driver-bound pushes (new offers, broadcasts) get the louder pattern.
+    const url = notifData?.url || "";
+    const kind = notifData?.kind || "";
+    const isDriverAlert =
+      url.startsWith("/driver") ||
+      kind === "offer" ||
+      kind === "missed" ||
+      (typeof title === "string" && /delivery|order offer/i.test(title));
+
     event.waitUntil(
       self.registration.showNotification(title || "Mfula Deliveries", {
         body: body || "",
         icon: icon || "/notification-logo.png",
         badge: badge || "/favicon.ico",
-        vibrate: [400, 200, 400, 200, 400, 200, 400],
+        vibrate: isDriverAlert ? DRIVER_ALERT_VIBRATION : DEFAULT_VIBRATION,
         sound: "/sounds/new-order.mp3",
         tag: `order-${notifData?.order_number || "general"}`,
         renotify: true,
@@ -26,6 +42,8 @@ self.addEventListener("push", (event) => {
       self.registration.showNotification("Mfula Deliveries", {
         body: event.data.text(),
         icon: "/notification-logo.png",
+        vibrate: DEFAULT_VIBRATION,
+        requireInteraction: true,
       })
     );
   }
