@@ -72,6 +72,7 @@ interface RestaurantRecord {
   closes_at: string | null;
   area_id: string | null;
   requires_confirmation: boolean;
+  approval_mode: 'auto' | 'restaurant' | 'admin';
 }
 
 interface DeliveryAreaOption {
@@ -275,7 +276,7 @@ const AdminDashboard = () => {
   };
 
   const fetchRestaurants = async () => {
-    const { data } = await supabase.from("restaurants").select("id, name, cuisine, is_active, owner_user_id, rating, location, lat, lng, logo_url, banner_url, gallery_images, opens_at, closes_at, area_id, requires_confirmation").order("name");
+    const { data } = await supabase.from("restaurants").select("id, name, cuisine, is_active, owner_user_id, rating, location, lat, lng, logo_url, banner_url, gallery_images, opens_at, closes_at, area_id, requires_confirmation, approval_mode").order("name");
     if (data) setRestaurants(data as RestaurantRecord[]);
   };
 
@@ -310,13 +311,21 @@ const AdminDashboard = () => {
     toast.success(`Restaurant ${!isActive ? 'activated' : 'deactivated'}`);
   };
 
-  const toggleRestaurantConfirmation = async (id: string, current: boolean) => {
-    const { error } = await supabase.from("restaurants").update({ requires_confirmation: !current }).eq("id", id);
+  const setRestaurantApprovalMode = async (id: string, mode: 'auto' | 'restaurant' | 'admin') => {
+    const requires = mode !== 'auto';
+    const { error } = await supabase
+      .from("restaurants")
+      .update({ approval_mode: mode, requires_confirmation: requires } as any)
+      .eq("id", id);
     if (error) { toast.error(error.message); return; }
-    setRestaurants(prev => prev.map(r => r.id === id ? { ...r, requires_confirmation: !current } : r));
-    toast.success(!current
-      ? "✅ Orders for this restaurant now require confirmation before driver dispatch"
-      : "🚀 Orders for this restaurant will go straight to drivers after payment");
+    setRestaurants(prev => prev.map(r => r.id === id ? { ...r, approval_mode: mode, requires_confirmation: requires } : r));
+    toast.success(
+      mode === 'auto'
+        ? "🚀 Auto Accept — paid orders go straight to drivers"
+        : mode === 'restaurant'
+        ? "🛎️ Restaurant must confirm before driver dispatch"
+        : "🛡️ Admin must approve before driver dispatch"
+    );
   };
 
   const updateUserRole = async (userId: string, newRole: string) => {
@@ -512,7 +521,7 @@ const AdminDashboard = () => {
             restaurants={restaurants}
             areas={areas}
             onToggleActive={toggleRestaurantActive}
-            onToggleConfirmation={toggleRestaurantConfirmation}
+            onSetApprovalMode={setRestaurantApprovalMode}
             onRestaurantChanged={() => { fetchRestaurants(); fetchStats(); }}
           />
         )}
@@ -1112,13 +1121,13 @@ const RestaurantsTab = ({
   restaurants,
   areas,
   onToggleActive,
-  onToggleConfirmation,
+  onSetApprovalMode,
   onRestaurantChanged,
 }: {
   restaurants: RestaurantRecord[];
   areas: DeliveryAreaOption[];
   onToggleActive: (id: string, isActive: boolean) => void;
-  onToggleConfirmation: (id: string, current: boolean) => void;
+  onSetApprovalMode: (id: string, mode: 'auto' | 'restaurant' | 'admin') => void;
   onRestaurantChanged: () => void;
 }) => {
   const [showForm, setShowForm] = useState(false);
@@ -1368,7 +1377,7 @@ const RestaurantsTab = ({
             restaurant={r}
             areas={areas}
             onToggleActive={onToggleActive}
-            onToggleConfirmation={onToggleConfirmation}
+            onSetApprovalMode={onSetApprovalMode}
             onDelete={handleDelete}
             deleting={deleting}
             onRestaurantChanged={onRestaurantChanged}
@@ -1384,7 +1393,7 @@ const RestaurantCard = ({
   restaurant: r,
   areas,
   onToggleActive,
-  onToggleConfirmation,
+  onSetApprovalMode,
   onDelete,
   deleting,
   onRestaurantChanged,
@@ -1392,7 +1401,7 @@ const RestaurantCard = ({
   restaurant: RestaurantRecord;
   areas: DeliveryAreaOption[];
   onToggleActive: (id: string, isActive: boolean) => void;
-  onToggleConfirmation: (id: string, current: boolean) => void;
+  onSetApprovalMode: (id: string, mode: 'auto' | 'restaurant' | 'admin') => void;
   onDelete: (id: string, name: string) => void;
   deleting: string | null;
   onRestaurantChanged: () => void;
@@ -1669,19 +1678,16 @@ const RestaurantCard = ({
           >
             {editing ? <X className="h-4 w-4" /> : <Pencil className="h-4 w-4" />}
           </button>
-          <button
-            onClick={() => onToggleConfirmation(r.id, r.requires_confirmation)}
-            className={`rounded-xl px-2.5 py-1.5 text-[11px] font-bold transition-colors ${
-              r.requires_confirmation
-                ? "bg-primary/15 text-primary hover:bg-primary/25"
-                : "bg-secondary text-muted-foreground hover:bg-secondary/80"
-            }`}
-            title={r.requires_confirmation
-              ? "Restaurant must confirm paid orders before they go to drivers. Click to disable."
-              : "Paid orders go straight to drivers. Click to require restaurant confirmation."}
+          <select
+            value={r.approval_mode ?? 'auto'}
+            onChange={(e) => onSetApprovalMode(r.id, e.target.value as 'auto' | 'restaurant' | 'admin')}
+            className="rounded-xl border border-border bg-background px-2 py-1.5 text-[11px] font-bold text-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+            title="Order Approval Mode"
           >
-            🛎️ {r.requires_confirmation ? "Confirms" : "Auto"}
-          </button>
+            <option value="auto">🚀 Auto Accept</option>
+            <option value="restaurant">🛎️ Restaurant Approves</option>
+            <option value="admin">🛡️ Admin Approves</option>
+          </select>
           <button
             onClick={() => onToggleActive(r.id, r.is_active)}
             className={`rounded-xl px-3 py-1.5 text-xs font-bold transition-colors ${
@@ -1705,32 +1711,21 @@ const RestaurantCard = ({
 
       {editing && (
         <div className="border-t border-border bg-secondary/30 p-4 space-y-4">
-          {/* Order confirmation requirement */}
+          {/* Order Approval Mode */}
           <div className="space-y-2 rounded-xl border border-border bg-background/60 p-3">
-            <div className="flex items-start justify-between gap-3">
-              <div className="flex-1">
-                <h4 className="font-bold text-xs text-foreground">🛎️ Restaurant Confirms Orders</h4>
-                <p className="mt-1 text-[10px] text-muted-foreground">
-                  When ON, paid orders go to <b>Pending</b> and wait for the restaurant to accept before a driver is dispatched.
-                  When OFF, paid orders go straight to drivers.
-                </p>
-              </div>
-              <button
-                type="button"
-                role="switch"
-                aria-checked={r.requires_confirmation}
-                onClick={() => onToggleConfirmation(r.id, r.requires_confirmation)}
-                className={`relative h-6 w-11 shrink-0 rounded-full transition-colors ${
-                  r.requires_confirmation ? "bg-primary" : "bg-muted"
-                }`}
-              >
-                <span
-                  className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${
-                    r.requires_confirmation ? "translate-x-5" : "translate-x-0.5"
-                  }`}
-                />
-              </button>
-            </div>
+            <h4 className="font-bold text-xs text-foreground">🛎️ Order Approval Mode</h4>
+            <p className="text-[10px] text-muted-foreground">
+              Controls what happens after a customer places an order, before a driver is dispatched.
+            </p>
+            <select
+              value={r.approval_mode ?? 'auto'}
+              onChange={(e) => onSetApprovalMode(r.id, e.target.value as 'auto' | 'restaurant' | 'admin')}
+              className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+            >
+              <option value="auto">🚀 Auto Accept — paid orders go straight to drivers</option>
+              <option value="restaurant">🛎️ Restaurant Approves — restaurant must confirm before payment & dispatch</option>
+              <option value="admin">🛡️ Admin Approves — admin must approve before payment & dispatch</option>
+            </select>
           </div>
 
           {/* Delivery area assignment */}
