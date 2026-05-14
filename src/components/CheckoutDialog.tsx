@@ -489,16 +489,14 @@ const CheckoutDialog = ({
       try {
         const { data: freshCoverage, error: coverageError } = await supabase.rpc(
           "check_area_coverage",
-          { p_lat: coords.lat, p_lng: coords.lng },
+          { p_lat: coords.lat, p_lng: coords.lng, p_address: address },
         );
         if (coverageError) throw coverageError;
-        const row = Array.isArray(freshCoverage) ? freshCoverage[0] : freshCoverage;
+        const row = (Array.isArray(freshCoverage) ? freshCoverage[0] : freshCoverage) as
+          | { covered: boolean; online_in_area: number; total_online: number; address_tag: string | null }
+          | null;
         if (row) {
-          setCoverage({
-            covered: !!row.covered,
-            online_in_area: row.online_in_area ?? 0,
-            address_tag: row.address_tag ?? null,
-          });
+          setCoverage(row);
           if (!row.covered) {
             toast.error(
               "No drivers are online in your area right now. Please try again shortly.",
