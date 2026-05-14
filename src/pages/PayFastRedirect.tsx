@@ -178,7 +178,8 @@ const PayFastRedirect = () => {
           </button>
         )}
 
-        {/* Sandbox test card info — visible while running against PayFast sandbox */}
+        {/* Sandbox test card info — only shown in dev/sandbox builds, hidden in production */}
+        {import.meta.env.DEV && (
         <div className="mt-5 rounded-2xl border border-dashed border-border bg-muted/40 p-4 text-left">
           <p className="text-[11px] font-bold uppercase tracking-wide text-primary">
             Sandbox test details
@@ -207,6 +208,7 @@ const PayFastRedirect = () => {
             </div>
           </dl>
         </div>
+        )}
       </div>
     </div>
   );
