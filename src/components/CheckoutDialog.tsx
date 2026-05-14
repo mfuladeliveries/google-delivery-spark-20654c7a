@@ -378,7 +378,9 @@ const CheckoutDialog = ({
         }
       }
 
-      const deliveryCode = String(Math.floor(100000 + Math.random() * 900000));
+      const pinBuf = new Uint32Array(1);
+      crypto.getRandomValues(pinBuf);
+      const deliveryCode = String(100000 + (pinBuf[0] % 900000));
 
       const orderItems = items.map((ci) => ({
         id: ci.item.id,
