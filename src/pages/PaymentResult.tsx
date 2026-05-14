@@ -84,6 +84,7 @@ const PaymentResult = () => {
       total?: number | string;
       status?: string;
       payment_status?: string;
+      delivery_code?: string | null;
     };
 
     setResolvedOrderNumber(String(payload.order_number ?? orderNumber ?? ""));
@@ -92,6 +93,7 @@ const PaymentResult = () => {
         ? payload.total
         : Number(payload.total ?? cachedOrder?.total ?? 0),
     );
+    if (payload.delivery_code) setDeliveryPin(payload.delivery_code);
 
     if (payload.payment_status === "paid" || payload.status !== "pending_payment") {
       clearPersistedCart();
