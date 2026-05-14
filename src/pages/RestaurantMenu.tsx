@@ -284,6 +284,12 @@ const RestaurantMenu = () => {
       );
       return;
     }
+    if (noDrivers) {
+      toast.error("No drivers are online in your area right now.", {
+        description: "Please try again in a few minutes.",
+      });
+      return;
+    }
     if (itemHasOptions(item)) {
       setCustomizeItem(item);
       return;
