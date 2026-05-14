@@ -447,6 +447,7 @@ const RestaurantDashboard = () => {
 
   const statusFilters = [
     { value: "all", label: "All" },
+    { value: "awaiting_restaurant", label: "Awaiting You" },
     { value: "pending", label: "Pending" },
     { value: "confirmed", label: "Accepted" },
     { value: "preparing", label: "Preparing" },
