@@ -17,6 +17,10 @@ interface ConfirmationState {
   paymentMethod?: "cash" | "online";
   restaurant?: string;
   paymentPending?: boolean;
+  awaitingRestaurant?: boolean;
+  rejected?: boolean;
+  rejectReason?: string;
+  orderId?: string;
 }
 
 // Parse our combined special_notes string (created in CheckoutDialog) into parts.
@@ -108,7 +112,7 @@ const OrderConfirmation = () => {
       const { data: order, error } = await supabase
         .from("orders")
         .select(
-          "order_number, delivery_code, special_notes, total, payment_method, restaurant, user_id, status, payment_status"
+          "id, order_number, delivery_code, special_notes, total, payment_method, restaurant, user_id, status, payment_status, cancel_reason"
         )
         .eq("order_number", orderNumInt)
         .eq("user_id", user.id)
@@ -131,6 +135,10 @@ const OrderConfirmation = () => {
         paymentMethod: (order.payment_method as "cash" | "online") || undefined,
         restaurant: order.restaurant || undefined,
         paymentPending: order.status === "pending_payment",
+        awaitingRestaurant: order.status === "awaiting_restaurant",
+        rejected: order.status === "rejected",
+        rejectReason: order.cancel_reason || undefined,
+        orderId: order.id,
       });
 
       if (order.payment_status === "paid" || order.status !== "pending_payment") {
@@ -163,6 +171,15 @@ const OrderConfirmation = () => {
 
       const status = (statusData as any).status as string;
       const paymentStatus = (statusData as any).payment_status as string | undefined;
+
+      // Awaiting restaurant confirmation — keep polling so we flip to Pay Now
+      // (or rejected) the moment the restaurant decides.
+      if (status === "awaiting_restaurant") {
+        await fetchFullOrder();
+        setLoading(false);
+        pollTimer = setTimeout(load, 4000);
+        return;
+      }
 
       // Payment is still being confirmed by PayFast (ITN webhook is async).
       // Show a friendly "confirming payment" state and poll until it flips.
@@ -278,28 +295,78 @@ const OrderConfirmation = () => {
     paymentMethod,
     restaurant,
     paymentPending,
+    awaitingRestaurant,
+    rejected,
+    rejectReason,
+    orderId,
   } = data;
+
+  const handlePayNow = () => {
+    navigate("/pay/payfast", {
+      state: {
+        orderId,
+        orderNumber,
+        total,
+        restaurant,
+      },
+    });
+  };
 
   return (
     <div className="min-h-screen bg-background pb-nav">
       <main className="mx-auto max-w-lg px-4 pt-8 md:pt-12">
         {/* Success header */}
         <div className="flex flex-col items-center text-center">
-          <div className={`flex h-20 w-20 items-center justify-center rounded-full ${paymentPending ? "bg-muted" : "bg-primary/10"}`}>
-            {paymentPending ? (
+          <div className={`flex h-20 w-20 items-center justify-center rounded-full ${rejected ? "bg-destructive/10" : (paymentPending || awaitingRestaurant) ? "bg-muted" : "bg-primary/10"}`}>
+            {rejected ? (
+              <span className="text-4xl">🚫</span>
+            ) : (paymentPending || awaitingRestaurant) ? (
               <Loader2 className="h-10 w-10 animate-spin text-primary" />
             ) : (
               <CheckCircle2 className="h-12 w-12 text-primary" strokeWidth={2.2} />
             )}
           </div>
           <h1 className="mt-4 font-display text-2xl font-bold text-foreground">
-            {paymentPending ? "Confirming payment…" : "Order Confirmed!"}
+            {rejected
+              ? "Restaurant couldn't accept"
+              : awaitingRestaurant
+              ? "Waiting for restaurant…"
+              : paymentPending
+              ? "Confirming payment…"
+              : "Order Confirmed!"}
           </h1>
-          {paymentPending ? (
+          {rejected ? (
+            <div className="mt-2 space-y-2">
+              <p className="text-sm text-muted-foreground max-w-xs">
+                {rejectReason || "The restaurant couldn't fulfil this order. You have not been charged."}
+              </p>
+            </div>
+          ) : awaitingRestaurant ? (
+            <div className="mt-2 flex flex-col items-center gap-3">
+              <p className="text-sm text-muted-foreground max-w-xs">
+                {restaurant ? <><RestaurantName as="span" name={restaurant} /> is reviewing your order. </> : "The restaurant is reviewing your order. "}
+                You won't be charged until they accept.
+              </p>
+              <button
+                onClick={handleManualRefresh}
+                disabled={refreshing}
+                className="inline-flex items-center gap-2 rounded-xl border border-border bg-card px-4 py-2 text-xs font-bold text-foreground transition-colors hover:bg-secondary disabled:opacity-50"
+              >
+                <RefreshCw className={`h-3.5 w-3.5 ${refreshing ? "animate-spin" : ""}`} />
+                {refreshing ? "Refreshing…" : "Refresh status"}
+              </button>
+            </div>
+          ) : paymentPending ? (
             <div className="mt-2 flex flex-col items-center gap-3">
               <p className="text-sm text-muted-foreground max-w-xs">
                 We're waiting for PayFast to confirm your payment. This usually takes a few seconds — this page will update automatically.
               </p>
+              <button
+                onClick={handlePayNow}
+                className="btn-glow inline-flex items-center gap-2 rounded-xl gradient-maroon px-5 py-2.5 text-sm font-bold text-primary-foreground transition-transform hover:scale-[1.02] active:scale-[0.98]"
+              >
+                💳 Pay Now
+              </button>
               <button
                 onClick={handleManualRefresh}
                 disabled={refreshing}

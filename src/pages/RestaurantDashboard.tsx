@@ -247,11 +247,56 @@ const RestaurantDashboard = () => {
   };
 
   const acceptOrder = async (orderId: string) => {
+    const order = orders.find(o => o.id === orderId);
+    if (order?.status === "awaiting_restaurant") {
+      const { data, error } = await supabase.rpc("restaurant_decide_availability", {
+        p_order_id: orderId, p_accept: true, p_reason: null,
+      });
+      if (error) {
+        toast.error("Couldn't accept: " + error.message);
+        return;
+      }
+      const res = data as any;
+      setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: "pending_payment" } : o));
+      toast.success("✅ Accepted — customer can now pay.");
+      sendPushNotification({
+        order_id: orderId,
+        order_number: res?.order_number || order.order_number,
+        status: "awaiting_payment",
+        restaurant: restaurant?.name || "",
+        total: order.total,
+        user_id: (order as any).user_id,
+        target_user_id: (order as any).user_id,
+      });
+      return;
+    }
     await updateOrderStatus(orderId, "confirmed");
     toast.success("✅ Order accepted!");
   };
 
   const rejectOrder = async (orderId: string) => {
+    const order = orders.find(o => o.id === orderId);
+    if (order?.status === "awaiting_restaurant") {
+      const { error } = await supabase.rpc("restaurant_decide_availability", {
+        p_order_id: orderId, p_accept: false, p_reason: "Restaurant unable to fulfil order",
+      });
+      if (error) {
+        toast.error("Couldn't reject: " + error.message);
+        return;
+      }
+      setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: "rejected" } : o));
+      toast.error("Order rejected — customer notified, no charge.");
+      sendPushNotification({
+        order_id: orderId,
+        order_number: order.order_number,
+        status: "rejected",
+        restaurant: restaurant?.name || "",
+        total: order.total,
+        user_id: (order as any).user_id,
+        target_user_id: (order as any).user_id,
+      });
+      return;
+    }
     await updateOrderStatus(orderId, "rejected");
     toast.error("Order rejected");
   };
@@ -402,6 +447,7 @@ const RestaurantDashboard = () => {
 
   const statusFilters = [
     { value: "all", label: "All" },
+    { value: "awaiting_restaurant", label: "Awaiting You" },
     { value: "pending", label: "Pending" },
     { value: "confirmed", label: "Accepted" },
     { value: "preparing", label: "Preparing" },
@@ -684,22 +730,29 @@ const RestaurantDashboard = () => {
 
                         {/* Action Buttons */}
                         <div className="p-4">
-                          {order.status === "pending" && (
-                            <div className="flex gap-2">
-                              <Button
-                                onClick={() => acceptOrder(order.id)}
-                                className="flex-1 gradient-orange text-primary-foreground shadow-orange h-12 text-sm font-display"
-                              >
-                                <CheckCircle className="h-5 w-5 mr-1.5" /> Accept Order
-                              </Button>
-                              <Button
-                                variant="outline"
-                                onClick={() => rejectOrder(order.id)}
-                                className="flex-1 border-destructive/30 text-destructive hover:bg-destructive/10 h-12 text-sm font-display"
-                              >
-                                <XCircle className="h-5 w-5 mr-1.5" /> Reject
-                              </Button>
-                            </div>
+                          {(order.status === "pending" || order.status === "awaiting_restaurant") && (
+                            <>
+                              {order.status === "awaiting_restaurant" && (
+                                <div className="mb-2 flex items-center gap-2 rounded-lg bg-amber-50 border border-amber-200 px-3 py-2">
+                                  <span className="text-xs font-semibold text-amber-700">⏳ Awaiting your confirmation — customer cannot pay yet</span>
+                                </div>
+                              )}
+                              <div className="flex gap-2">
+                                <Button
+                                  onClick={() => acceptOrder(order.id)}
+                                  className="flex-1 gradient-orange text-primary-foreground shadow-orange h-12 text-sm font-display"
+                                >
+                                  <CheckCircle className="h-5 w-5 mr-1.5" /> {order.status === "awaiting_restaurant" ? "Confirm Availability" : "Accept Order"}
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  onClick={() => rejectOrder(order.id)}
+                                  className="flex-1 border-destructive/30 text-destructive hover:bg-destructive/10 h-12 text-sm font-display"
+                                >
+                                  <XCircle className="h-5 w-5 mr-1.5" /> Reject
+                                </Button>
+                              </div>
+                            </>
                           )}
 
                           {["confirmed", "preparing"].includes(order.status) && (

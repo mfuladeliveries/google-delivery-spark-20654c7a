@@ -942,9 +942,11 @@ export type Database = {
       }
       restaurants: {
         Row: {
+          approval_mode: string
           area_id: string | null
           banner_url: string | null
           closes_at: string | null
+          confirmation_timeout_minutes: number
           contact_number: string | null
           created_at: string
           cuisine: string
@@ -970,9 +972,11 @@ export type Database = {
           total_reviews: number
         }
         Insert: {
+          approval_mode?: string
           area_id?: string | null
           banner_url?: string | null
           closes_at?: string | null
+          confirmation_timeout_minutes?: number
           contact_number?: string | null
           created_at?: string
           cuisine?: string
@@ -998,9 +1002,11 @@ export type Database = {
           total_reviews?: number
         }
         Update: {
+          approval_mode?: string
           area_id?: string | null
           banner_url?: string | null
           closes_at?: string | null
+          confirmation_timeout_minutes?: number
           contact_number?: string | null
           created_at?: string
           cuisine?: string
@@ -1172,6 +1178,7 @@ export type Database = {
         }
         Returns: undefined
       }
+      auto_cancel_stale_awaiting_orders: { Args: never; Returns: number }
       auto_cancel_stale_orders: { Args: never; Returns: number }
       calc_delivery_fee: {
         Args: { p_lat: number; p_lng: number; p_restaurant_name?: string }
@@ -1307,6 +1314,10 @@ export type Database = {
         Returns: undefined
       }
       request_withdrawal: { Args: { p_amount: number }; Returns: string }
+      restaurant_decide_availability: {
+        Args: { p_accept: boolean; p_order_id: string; p_reason?: string }
+        Returns: Json
+      }
       spend_customer_credits: {
         Args: { p_amount: number; p_note?: string; p_order_id: string }
         Returns: number

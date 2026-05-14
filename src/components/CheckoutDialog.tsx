@@ -478,15 +478,8 @@ const CheckoutDialog = ({
         localStorage.setItem("delivery_pins", JSON.stringify(pins));
       }
 
-      // Order is created in `pending_payment` — do NOT dispatch yet.
-      // Hand off to PayFast; ITN webhook will flip status to `ready` and
-      // start dispatch once payment is confirmed.
       const orderTotalNum = Number(orderResult?.total) || 0;
-
-      toast.success("Redirecting to secure payment…", {
-        description: `Order #${orderNum} · R${orderTotalNum.toFixed(2)}`,
-        duration: 3000,
-      });
+      const orderStatus = String(orderResult?.status || "pending_payment");
 
       if (orderId) {
         savePendingPaymentOrder({
@@ -500,6 +493,32 @@ const CheckoutDialog = ({
       setLoading(false);
       onOrderPlaced();
       onClose();
+
+      // If the restaurant must accept the order first, take the customer to a
+      // wait screen instead of PayFast. Payment is initiated only AFTER the
+      // restaurant confirms availability.
+      if (orderStatus === "awaiting_restaurant") {
+        toast.info("Waiting for the restaurant to confirm…", {
+          description: `Order #${orderNum} · You won't be charged until they accept.`,
+          duration: 5000,
+        });
+        navigate(`/order-confirmation/${orderNum}`, {
+          state: {
+            orderId,
+            orderNumber: orderNum,
+            total: orderTotalNum,
+            restaurant: restaurants[0] || undefined,
+            awaitingRestaurant: true,
+          },
+          replace: true,
+        });
+        return;
+      }
+
+      toast.success("Redirecting to secure payment…", {
+        description: `Order #${orderNum} · R${orderTotalNum.toFixed(2)}`,
+        duration: 3000,
+      });
 
       navigate("/pay/payfast", {
         state: {
