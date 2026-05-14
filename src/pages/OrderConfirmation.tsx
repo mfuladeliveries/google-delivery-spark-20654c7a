@@ -112,7 +112,7 @@ const OrderConfirmation = () => {
       const { data: order, error } = await supabase
         .from("orders")
         .select(
-          "order_number, delivery_code, special_notes, total, payment_method, restaurant, user_id, status, payment_status"
+          "id, order_number, delivery_code, special_notes, total, payment_method, restaurant, user_id, status, payment_status, cancel_reason"
         )
         .eq("order_number", orderNumInt)
         .eq("user_id", user.id)
@@ -135,6 +135,10 @@ const OrderConfirmation = () => {
         paymentMethod: (order.payment_method as "cash" | "online") || undefined,
         restaurant: order.restaurant || undefined,
         paymentPending: order.status === "pending_payment",
+        awaitingRestaurant: order.status === "awaiting_restaurant",
+        rejected: order.status === "rejected",
+        rejectReason: order.cancel_reason || undefined,
+        orderId: order.id,
       });
 
       if (order.payment_status === "paid" || order.status !== "pending_payment") {
@@ -167,6 +171,15 @@ const OrderConfirmation = () => {
 
       const status = (statusData as any).status as string;
       const paymentStatus = (statusData as any).payment_status as string | undefined;
+
+      // Awaiting restaurant confirmation — keep polling so we flip to Pay Now
+      // (or rejected) the moment the restaurant decides.
+      if (status === "awaiting_restaurant") {
+        await fetchFullOrder();
+        setLoading(false);
+        pollTimer = setTimeout(load, 4000);
+        return;
+      }
 
       // Payment is still being confirmed by PayFast (ITN webhook is async).
       // Show a friendly "confirming payment" state and poll until it flips.
