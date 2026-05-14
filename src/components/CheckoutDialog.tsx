@@ -673,6 +673,29 @@ const CheckoutDialog = ({
         </div>
 
         <div className="space-y-4">
+          {/* Selected restaurant */}
+          {(restaurantInfo?.name || primaryRestaurantName) && (
+            <div className="rounded-2xl border border-primary/30 bg-primary/5 p-3 flex items-start gap-3">
+              <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-primary/15 text-primary">
+                <Package className="h-4 w-4" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                  Ordering from
+                </p>
+                <p className="text-sm font-bold text-foreground truncate">
+                  {restaurantInfo?.name || primaryRestaurantName}
+                </p>
+                {restaurantInfo?.location && (
+                  <p className="mt-0.5 text-xs text-muted-foreground flex items-center gap-1">
+                    <MapPin className="h-3 w-3 flex-shrink-0" />
+                    <span className="truncate">{restaurantInfo.location}</span>
+                  </p>
+                )}
+              </div>
+            </div>
+          )}
+
           {/* Customer Details */}
           <div>
             <label className="mb-1.5 flex items-center gap-1.5 text-sm font-semibold text-foreground">
