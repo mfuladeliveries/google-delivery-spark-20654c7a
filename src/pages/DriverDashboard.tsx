@@ -375,6 +375,13 @@ const DriverDashboard = () => {
       (activeOffer && activeOffer.id === orderId ? activeOffer : null) ||
       pendingOrders.find((o) => o.id === orderId);
     if (!order) return;
+    // Stop ringtone + vibration immediately on user action — don't wait for RPC
+    stopNotificationSound();
+    try {
+      if ("vibrate" in navigator) navigator.vibrate(0);
+    } catch {
+      /* ignore */
+    }
     setAcceptingId(orderId);
 
     // Decide which RPC: targeted offer to me → driver_accept_offer, broadcast → claim_order
