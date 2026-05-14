@@ -247,11 +247,56 @@ const RestaurantDashboard = () => {
   };
 
   const acceptOrder = async (orderId: string) => {
+    const order = orders.find(o => o.id === orderId);
+    if (order?.status === "awaiting_restaurant") {
+      const { data, error } = await supabase.rpc("restaurant_decide_availability", {
+        p_order_id: orderId, p_accept: true, p_reason: null,
+      });
+      if (error) {
+        toast.error("Couldn't accept: " + error.message);
+        return;
+      }
+      const res = data as any;
+      setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: "pending_payment" } : o));
+      toast.success("✅ Accepted — customer can now pay.");
+      sendPushNotification({
+        order_id: orderId,
+        order_number: res?.order_number || order.order_number,
+        status: "awaiting_payment",
+        restaurant: restaurant?.name || "",
+        total: order.total,
+        user_id: (order as any).user_id,
+        target_user_id: (order as any).user_id,
+      });
+      return;
+    }
     await updateOrderStatus(orderId, "confirmed");
     toast.success("✅ Order accepted!");
   };
 
   const rejectOrder = async (orderId: string) => {
+    const order = orders.find(o => o.id === orderId);
+    if (order?.status === "awaiting_restaurant") {
+      const { error } = await supabase.rpc("restaurant_decide_availability", {
+        p_order_id: orderId, p_accept: false, p_reason: "Restaurant unable to fulfil order",
+      });
+      if (error) {
+        toast.error("Couldn't reject: " + error.message);
+        return;
+      }
+      setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: "rejected" } : o));
+      toast.error("Order rejected — customer notified, no charge.");
+      sendPushNotification({
+        order_id: orderId,
+        order_number: order.order_number,
+        status: "rejected",
+        restaurant: restaurant?.name || "",
+        total: order.total,
+        user_id: (order as any).user_id,
+        target_user_id: (order as any).user_id,
+      });
+      return;
+    }
     await updateOrderStatus(orderId, "rejected");
     toast.error("Order rejected");
   };
