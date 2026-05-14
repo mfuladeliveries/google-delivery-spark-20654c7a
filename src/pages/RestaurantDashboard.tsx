@@ -730,22 +730,29 @@ const RestaurantDashboard = () => {
 
                         {/* Action Buttons */}
                         <div className="p-4">
-                          {order.status === "pending" && (
-                            <div className="flex gap-2">
-                              <Button
-                                onClick={() => acceptOrder(order.id)}
-                                className="flex-1 gradient-orange text-primary-foreground shadow-orange h-12 text-sm font-display"
-                              >
-                                <CheckCircle className="h-5 w-5 mr-1.5" /> Accept Order
-                              </Button>
-                              <Button
-                                variant="outline"
-                                onClick={() => rejectOrder(order.id)}
-                                className="flex-1 border-destructive/30 text-destructive hover:bg-destructive/10 h-12 text-sm font-display"
-                              >
-                                <XCircle className="h-5 w-5 mr-1.5" /> Reject
-                              </Button>
-                            </div>
+                          {(order.status === "pending" || order.status === "awaiting_restaurant") && (
+                            <>
+                              {order.status === "awaiting_restaurant" && (
+                                <div className="mb-2 flex items-center gap-2 rounded-lg bg-amber-50 border border-amber-200 px-3 py-2">
+                                  <span className="text-xs font-semibold text-amber-700">⏳ Awaiting your confirmation — customer cannot pay yet</span>
+                                </div>
+                              )}
+                              <div className="flex gap-2">
+                                <Button
+                                  onClick={() => acceptOrder(order.id)}
+                                  className="flex-1 gradient-orange text-primary-foreground shadow-orange h-12 text-sm font-display"
+                                >
+                                  <CheckCircle className="h-5 w-5 mr-1.5" /> {order.status === "awaiting_restaurant" ? "Confirm Availability" : "Accept Order"}
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  onClick={() => rejectOrder(order.id)}
+                                  className="flex-1 border-destructive/30 text-destructive hover:bg-destructive/10 h-12 text-sm font-display"
+                                >
+                                  <XCircle className="h-5 w-5 mr-1.5" /> Reject
+                                </Button>
+                              </div>
+                            </>
                           )}
 
                           {["confirmed", "preparing"].includes(order.status) && (
