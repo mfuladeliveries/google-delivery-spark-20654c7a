@@ -132,9 +132,11 @@ const PaymentResult = () => {
 
   useEffect(() => {
     if (phase !== "success" || !resolvedOrderNumber) return;
+    // Give the customer enough time to read & screenshot the delivery PIN
+    // before bouncing them to the full order confirmation page.
     const timer = window.setTimeout(() => {
       navigate(`/order-confirmation?order=${resolvedOrderNumber}`, { replace: true });
-    }, 1200);
+    }, 6000);
     return () => window.clearTimeout(timer);
   }, [navigate, phase, resolvedOrderNumber]);
 
