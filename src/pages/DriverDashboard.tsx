@@ -421,6 +421,13 @@ const DriverDashboard = () => {
 
   const handleReject = async (orderId: string) => {
     setRejectingId(orderId);
+    // Stop ringtone + vibration immediately on user action — don't wait for RPC
+    stopNotificationSound();
+    try {
+      if ("vibrate" in navigator) navigator.vibrate(0);
+    } catch {
+      /* ignore */
+    }
     const order =
       activeOffer?.id === orderId ? activeOffer : pendingOrders.find((o) => o.id === orderId);
     const isTargetedToMe = order?.offered_to_driver_id === user!.id;
