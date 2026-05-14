@@ -304,6 +304,11 @@ const CheckoutDialog = ({
       return;
     }
 
+    if (coverage && !coverage.covered) {
+      toast.error("No drivers are online in your area right now. Please try again shortly.");
+      return;
+    }
+
     const result = checkoutSchema.safeParse({
       name, contact, address: fullAddress, notes, deliveryInstructions, tip: actualTip,
     });
