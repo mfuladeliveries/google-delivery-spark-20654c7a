@@ -134,6 +134,9 @@ const CheckoutDialog = ({
   const [restaurantCoords, setRestaurantCoords] = useState<{ lat: number; lng: number } | null>(
     null,
   );
+  const [restaurantInfo, setRestaurantInfo] = useState<{ name: string; location: string } | null>(
+    null,
+  );
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
 
   const restaurants = useMemo(
@@ -184,7 +187,10 @@ const CheckoutDialog = ({
     if (!open) return;
     if (!primaryRestaurantId && !primaryRestaurantName) return;
     let alive = true;
-    const query = supabase.from("restaurants").select("lat,lng").eq("is_active", true);
+    const query = supabase
+      .from("restaurants")
+      .select("name,location,lat,lng")
+      .eq("is_active", true);
     const filtered = primaryRestaurantId
       ? query.eq("id", primaryRestaurantId)
       : query.eq("name", primaryRestaurantName);
@@ -196,6 +202,14 @@ const CheckoutDialog = ({
           setRestaurantCoords({ lat: data.lat, lng: data.lng });
         } else {
           setRestaurantCoords(null);
+        }
+        if (data) {
+          setRestaurantInfo({
+            name: (data.name as string) || primaryRestaurantName,
+            location: ((data.location as string) || "").trim(),
+          });
+        } else {
+          setRestaurantInfo(null);
         }
       });
     return () => {
