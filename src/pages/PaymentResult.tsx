@@ -207,8 +207,25 @@ const PaymentResult = () => {
             </p>
           )}
 
-          <button
-            onClick={refreshStatus}
+          {/* Delivery PIN — shown immediately after payment is approved so the
+              customer can screenshot or memorise it before the redirect. */}
+          {phase === "success" && deliveryPin && (
+            <div className="mt-4 flex items-center gap-3 rounded-2xl border-2 border-primary/40 bg-primary/5 p-4 text-left">
+              <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl bg-primary/10">
+                <KeyRound className="h-5 w-5 text-primary" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-semibold text-foreground">Your Delivery PIN</p>
+                <p className="text-[11px] text-muted-foreground">
+                  Share this with the driver on arrival
+                </p>
+              </div>
+              <p className="font-display text-2xl font-bold tracking-[0.2em] text-primary">
+                {deliveryPin}
+              </p>
+            </div>
+          )}
+
             disabled={refreshing}
             className="btn-glow mt-5 inline-flex w-full items-center justify-center gap-2 rounded-2xl gradient-maroon px-5 py-3 text-sm font-bold text-primary-foreground disabled:opacity-60"
           >
