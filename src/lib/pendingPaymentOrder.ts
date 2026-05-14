@@ -11,9 +11,7 @@ const MAX_AGE_MS = 1000 * 60 * 60 * 6;
 
 const canUseStorage = () => typeof window !== "undefined" && !!window.localStorage;
 
-export const savePendingPaymentOrder = (
-  order: Omit<PendingPaymentOrder, "savedAt">,
-) => {
+export const savePendingPaymentOrder = (order: Omit<PendingPaymentOrder, "savedAt">) => {
   if (!canUseStorage()) return;
 
   const payload: PendingPaymentOrder = {
@@ -66,9 +64,7 @@ export const loadPendingPaymentOrder = (
   }
 };
 
-export const clearPendingPaymentOrder = (
-  orderNumber?: string | number | null,
-) => {
+export const clearPendingPaymentOrder = (orderNumber?: string | number | null) => {
   if (!canUseStorage()) return;
 
   if (orderNumber == null || String(orderNumber).trim() === "") {

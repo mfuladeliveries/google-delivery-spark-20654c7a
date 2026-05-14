@@ -19,14 +19,14 @@ async function runAdminCleanup(): Promise<void> {
 
   if (!url || !key) {
     console.warn(
-      "[e2e cleanup] Skipping: VITE_SUPABASE_URL / VITE_SUPABASE_PUBLISHABLE_KEY not set in .env.e2e."
+      "[e2e cleanup] Skipping: VITE_SUPABASE_URL / VITE_SUPABASE_PUBLISHABLE_KEY not set in .env.e2e.",
     );
     return;
   }
 
   if (!fs.existsSync(path.resolve(ADMIN_STORAGE))) {
     console.warn(
-      `[e2e cleanup] Skipping: admin storage state not found at ${ADMIN_STORAGE}. Did auth.setup.ts run?`
+      `[e2e cleanup] Skipping: admin storage state not found at ${ADMIN_STORAGE}. Did auth.setup.ts run?`,
     );
     return;
   }
@@ -61,9 +61,7 @@ async function runAdminCleanup(): Promise<void> {
   }
 
   if (!accessToken) {
-    console.warn(
-      "[e2e cleanup] Skipping: no Supabase access token found in admin storage state."
-    );
+    console.warn("[e2e cleanup] Skipping: no Supabase access token found in admin storage state.");
     return;
   }
 
@@ -97,7 +95,7 @@ async function runAdminCleanup(): Promise<void> {
   }
 
   const e2eOrders = (openOrders ?? []).filter((o) =>
-    (o.customer_name ?? "").toLowerCase().includes("e2e")
+    (o.customer_name ?? "").toLowerCase().includes("e2e"),
   );
 
   if (e2eOrders.length === 0) {
@@ -111,9 +109,7 @@ async function runAdminCleanup(): Promise<void> {
       p_reason: "E2E test cleanup",
     });
     if (cancelErr) {
-      console.warn(
-        `[e2e cleanup] Could not cancel order ${order.id}: ${cancelErr.message}`
-      );
+      console.warn(`[e2e cleanup] Could not cancel order ${order.id}: ${cancelErr.message}`);
     } else {
       console.log(`[e2e cleanup] Cancelled leftover order ${order.id}.`);
     }
@@ -148,12 +144,8 @@ test.describe("Admin dashboard", () => {
     // Prefer a stable testid if the admin tab renders shared order cards;
     // otherwise fall back to an accessible-name match.
     const testidOrder = page.locator('[data-testid="order-card"]').first();
-    const namedOrder = page
-      .getByRole("button", { name: /order #|view|details/i })
-      .first();
-    const target = (await testidOrder.isVisible().catch(() => false))
-      ? testidOrder
-      : namedOrder;
+    const namedOrder = page.getByRole("button", { name: /order #|view|details/i }).first();
+    const target = (await testidOrder.isVisible().catch(() => false)) ? testidOrder : namedOrder;
 
     if (await target.isVisible().catch(() => false)) {
       await target.click();
@@ -161,4 +153,3 @@ test.describe("Admin dashboard", () => {
     }
   });
 });
-

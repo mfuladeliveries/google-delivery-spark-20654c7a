@@ -1,4 +1,16 @@
-import { DollarSign, Package, TrendingUp, Calendar, MapPin, Clock, ChevronDown, ChevronUp, Wallet, Lock, FileDown } from "lucide-react";
+import {
+  DollarSign,
+  Package,
+  TrendingUp,
+  Calendar,
+  MapPin,
+  Clock,
+  ChevronDown,
+  ChevronUp,
+  Wallet,
+  Lock,
+  FileDown,
+} from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -80,8 +92,13 @@ const DriverEarnings = ({ driverProfile, completedOrders }: DriverEarningsProps)
       .channel("driver-earnings-live")
       .on(
         "postgres_changes",
-        { event: "INSERT", schema: "public", table: "driver_earnings", filter: `driver_id=eq.${user.id}` },
-        () => load()
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "driver_earnings",
+          filter: `driver_id=eq.${user.id}`,
+        },
+        () => load(),
       )
       .subscribe();
 
@@ -128,27 +145,31 @@ const DriverEarnings = ({ driverProfile, completedOrders }: DriverEarningsProps)
 
     setGeneratingStatement(true);
     try {
-      const [{ data: profileData }, { data: periodEarnings }, { data: priorEarnings }, { data: allWithdrawals }] =
-        await Promise.all([
-          supabase.from("profiles").select("full_name").eq("user_id", user.id).maybeSingle(),
-          supabase
-            .from("driver_earnings")
-            .select("order_id, driver_payout, created_at")
-            .eq("driver_id", user.id)
-            .gte("created_at", opt.start.toISOString())
-            .lt("created_at", opt.end.toISOString())
-            .order("created_at", { ascending: true }),
-          supabase
-            .from("driver_earnings")
-            .select("driver_payout")
-            .eq("driver_id", user.id)
-            .lt("created_at", opt.start.toISOString()),
-          supabase
-            .from("withdrawal_requests")
-            .select("id, amount, status, requested_at, paid_at, bank_name, bank_account_number")
-            .eq("driver_id", user.id)
-            .order("requested_at", { ascending: true }),
-        ]);
+      const [
+        { data: profileData },
+        { data: periodEarnings },
+        { data: priorEarnings },
+        { data: allWithdrawals },
+      ] = await Promise.all([
+        supabase.from("profiles").select("full_name").eq("user_id", user.id).maybeSingle(),
+        supabase
+          .from("driver_earnings")
+          .select("order_id, driver_payout, created_at")
+          .eq("driver_id", user.id)
+          .gte("created_at", opt.start.toISOString())
+          .lt("created_at", opt.end.toISOString())
+          .order("created_at", { ascending: true }),
+        supabase
+          .from("driver_earnings")
+          .select("driver_payout")
+          .eq("driver_id", user.id)
+          .lt("created_at", opt.start.toISOString()),
+        supabase
+          .from("withdrawal_requests")
+          .select("id, amount, status, requested_at, paid_at, bank_name, bank_account_number")
+          .eq("driver_id", user.id)
+          .order("requested_at", { ascending: true }),
+      ]);
 
       const orderIds = (periodEarnings || []).map((e: any) => e.order_id);
       const { data: orderRows } = orderIds.length
@@ -171,15 +192,17 @@ const DriverEarnings = ({ driverProfile, completedOrders }: DriverEarningsProps)
         };
       });
 
-      const priorEarned = (priorEarnings || []).reduce((s: number, r: any) => s + Number(r.driver_payout), 0);
+      const priorEarned = (priorEarnings || []).reduce(
+        (s: number, r: any) => s + Number(r.driver_payout),
+        0,
+      );
       const priorLocked = (allWithdrawals || [])
         .filter((w: any) => new Date(w.requested_at) < opt.start && w.status !== "rejected")
         .reduce((s: number, w: any) => s + Number(w.amount), 0);
       const opening_balance = Math.max(0, priorEarned - priorLocked);
 
       const periodWithdrawals = (allWithdrawals || []).filter(
-        (w: any) =>
-          new Date(w.requested_at) >= opt.start && new Date(w.requested_at) < opt.end
+        (w: any) => new Date(w.requested_at) >= opt.start && new Date(w.requested_at) < opt.end,
       );
 
       generateMonthlyStatement({
@@ -206,9 +229,13 @@ const DriverEarnings = ({ driverProfile, completedOrders }: DriverEarningsProps)
       <div className="rounded-2xl border border-border bg-gradient-to-br from-[hsl(var(--driver-success)/0.15)] to-[hsl(var(--driver-success)/0.05)] p-5 shadow-card">
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Available Balance</p>
+            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              Available Balance
+            </p>
             <p className="mt-1 text-4xl font-bold text-foreground">R{totalEarnings.toFixed(2)}</p>
-            <p className="mt-1 text-xs text-muted-foreground">{earnings.length} delivered orders · 70% commission</p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              {earnings.length} delivered orders · 70% commission
+            </p>
           </div>
           <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[hsl(var(--driver-success))] text-white shadow-md">
             <Wallet className="h-7 w-7" />
@@ -220,7 +247,9 @@ const DriverEarnings = ({ driverProfile, completedOrders }: DriverEarningsProps)
         >
           <Lock className="h-3.5 w-3.5" /> Request Withdrawal (Coming soon)
         </button>
-        <p className="mt-1.5 text-center text-[10px] text-muted-foreground">Minimum R{MIN_WITHDRAWAL}</p>
+        <p className="mt-1.5 text-center text-[10px] text-muted-foreground">
+          Minimum R{MIN_WITHDRAWAL}
+        </p>
       </div>
 
       {/* Stats grid */}
@@ -256,7 +285,8 @@ const DriverEarnings = ({ driverProfile, completedOrders }: DriverEarningsProps)
       {/* Earnings rate info */}
       <div className="rounded-2xl border border-primary/20 bg-primary/5 p-3">
         <p className="text-xs text-muted-foreground">
-          💡 <span className="font-semibold text-foreground">How it works:</span> You earn 70% of the R55 delivery fee (R38.50) per completed order. Platform retains 30%.
+          💡 <span className="font-semibold text-foreground">How it works:</span> You earn 70% of
+          the R55 delivery fee (R38.50) per completed order. Platform retains 30%.
         </p>
       </div>
 
@@ -310,21 +340,33 @@ const DriverEarnings = ({ driverProfile, completedOrders }: DriverEarningsProps)
                 const e = earningsByOrder.get(order.id);
                 const payout = e ? Number(e.driver_payout) : order.delivery_fee;
                 return (
-                  <div key={order.id} className="flex items-center gap-3 rounded-xl border border-border bg-card p-3">
+                  <div
+                    key={order.id}
+                    className="flex items-center gap-3 rounded-xl border border-border bg-card p-3"
+                  >
                     <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[hsl(var(--driver-success)/0.1)]">
                       <Package className="h-4 w-4 text-[hsl(var(--driver-success))]" />
                     </div>
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center justify-between">
-                        <span className="text-sm font-bold text-foreground">#{order.order_number}</span>
-                        <span className="text-sm font-bold text-[hsl(var(--driver-success))]">+R{payout.toFixed(2)}</span>
+                        <span className="text-sm font-bold text-foreground">
+                          #{order.order_number}
+                        </span>
+                        <span className="text-sm font-bold text-[hsl(var(--driver-success))]">
+                          +R{payout.toFixed(2)}
+                        </span>
                       </div>
                       <div className="mt-0.5 flex items-center gap-2">
-                        <span className="truncate text-[11px] text-muted-foreground">{order.restaurant}</span>
+                        <span className="truncate text-[11px] text-muted-foreground">
+                          {order.restaurant}
+                        </span>
                         <span className="text-[10px] text-muted-foreground">·</span>
                         <span className="flex shrink-0 items-center gap-0.5 text-[11px] text-muted-foreground">
                           <Clock className="h-3 w-3" />
-                          {new Date(order.created_at).toLocaleDateString("en-ZA", { day: "numeric", month: "short" })}
+                          {new Date(order.created_at).toLocaleDateString("en-ZA", {
+                            day: "numeric",
+                            month: "short",
+                          })}
                         </span>
                       </div>
                       <p className="mt-0.5 flex items-center gap-0.5 truncate text-[10px] text-muted-foreground">

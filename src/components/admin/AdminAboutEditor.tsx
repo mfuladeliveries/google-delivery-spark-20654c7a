@@ -94,8 +94,8 @@ const AdminAboutEditor = () => {
       <div className="flex items-start gap-2 rounded-xl border border-primary/30 bg-primary/5 p-3 text-xs text-muted-foreground">
         <Info className="h-4 w-4 text-primary shrink-0 mt-0.5" />
         <p>
-          Edit the public About page. Changes save to the database and update live for visitors —
-          no redeploy needed.
+          Edit the public About page. Changes save to the database and update live for visitors — no
+          redeploy needed.
         </p>
       </div>
 

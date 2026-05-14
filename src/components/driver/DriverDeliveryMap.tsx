@@ -36,7 +36,7 @@ const FitBounds = ({ positions }: { positions: [number, number][] }) => {
   const fitted = useRef(false);
   useEffect(() => {
     if (positions.length > 0 && !fitted.current) {
-      const bounds = L.latLngBounds(positions.map(p => L.latLng(p[0], p[1])));
+      const bounds = L.latLngBounds(positions.map((p) => L.latLng(p[0], p[1])));
       map.fitBounds(bounds, { padding: [40, 40], maxZoom: 15 });
       fitted.current = true;
     }
@@ -63,7 +63,13 @@ interface DriverDeliveryMapProps {
   restaurantName?: string;
 }
 
-const DriverDeliveryMap = ({ driverLocation, customerAddress, customerLat, customerLng, restaurantName }: DriverDeliveryMapProps) => {
+const DriverDeliveryMap = ({
+  driverLocation,
+  customerAddress,
+  customerLat,
+  customerLng,
+  restaurantName,
+}: DriverDeliveryMapProps) => {
   const [customerPos, setCustomerPos] = useState<{ lat: number; lng: number } | null>(
     typeof customerLat === "number" && typeof customerLng === "number"
       ? { lat: customerLat, lng: customerLng }
@@ -79,7 +85,7 @@ const DriverDeliveryMap = ({ driverLocation, customerAddress, customerLat, custo
     const geocode = async () => {
       try {
         const res = await fetch(
-          `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(customerAddress)}&format=json&limit=1`
+          `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(customerAddress)}&format=json&limit=1`,
         );
         const data = await res.json();
         if (data?.[0]) {
@@ -103,15 +109,18 @@ const DriverDeliveryMap = ({ driverLocation, customerAddress, customerLat, custo
   // Estimate times
   const getDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
     const R = 6371;
-    const dLat = (lat2 - lat1) * Math.PI / 180;
-    const dLon = (lon2 - lon1) * Math.PI / 180;
-    const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon / 2) ** 2;
+    const dLat = ((lat2 - lat1) * Math.PI) / 180;
+    const dLon = ((lon2 - lon1) * Math.PI) / 180;
+    const a =
+      Math.sin(dLat / 2) ** 2 +
+      Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) * Math.sin(dLon / 2) ** 2;
     return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   };
 
-  const distToCustomer = driverLocation && customerPos
-    ? getDistance(driverLocation.lat, driverLocation.lng, customerPos.lat, customerPos.lng)
-    : null;
+  const distToCustomer =
+    driverLocation && customerPos
+      ? getDistance(driverLocation.lat, driverLocation.lng, customerPos.lat, customerPos.lng)
+      : null;
   const etaMinutes = distToCustomer ? Math.round(distToCustomer * 2.5 + 5) : null;
 
   return (
@@ -131,7 +140,12 @@ const DriverDeliveryMap = ({ driverLocation, customerAddress, customerLat, custo
           {routePositions.length > 1 && (
             <Polyline
               positions={routePositions}
-              pathOptions={{ color: "hsl(24, 100%, 50%)", weight: 4, opacity: 0.7, dashArray: "10, 8" }}
+              pathOptions={{
+                color: "hsl(24, 100%, 50%)",
+                weight: 4,
+                opacity: 0.7,
+                dashArray: "10, 8",
+              }}
             />
           )}
 

@@ -29,7 +29,9 @@ const FoodImageUpload = ({ value, onChange, restaurantId }: FoodImageUploadProps
     const folder = restaurantId || "general";
     const path = `${folder}/${Date.now()}.${ext}`;
 
-    const { error } = await supabase.storage.from("food-images").upload(path, file, { upsert: true });
+    const { error } = await supabase.storage
+      .from("food-images")
+      .upload(path, file, { upsert: true });
     if (error) {
       toast.error("Upload failed: " + error.message);
       setUploading(false);
@@ -84,7 +86,7 @@ const FoodImageUpload = ({ value, onChange, restaurantId }: FoodImageUploadProps
             type="file"
             className="hidden"
             accept="image/*"
-            onChange={e => e.target.files?.[0] && handleUpload(e.target.files[0])}
+            onChange={(e) => e.target.files?.[0] && handleUpload(e.target.files[0])}
           />
         </label>
       )}

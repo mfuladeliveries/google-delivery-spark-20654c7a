@@ -61,7 +61,11 @@ const DriverDashboard = () => {
   const locationWatchRef = useRef<number | null>(null);
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
-  const fallbackBeepRef = useRef<{ ctx: AudioContext; osc: OscillatorNode; lfo: OscillatorNode } | null>(null);
+  const fallbackBeepRef = useRef<{
+    ctx: AudioContext;
+    osc: OscillatorNode;
+    lfo: OscillatorNode;
+  } | null>(null);
 
   const stopNotificationSound = useCallback(() => {
     try {
@@ -70,7 +74,9 @@ const DriverDashboard = () => {
         audioRef.current.currentTime = 0;
         audioRef.current.loop = false;
       }
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
     try {
       if (fallbackBeepRef.current) {
         fallbackBeepRef.current.osc.stop();
@@ -78,7 +84,9 @@ const DriverDashboard = () => {
         fallbackBeepRef.current.ctx.close();
         fallbackBeepRef.current = null;
       }
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
   }, []);
 
   const startNotificationSound = useCallback(() => {
@@ -99,7 +107,8 @@ const DriverDashboard = () => {
             const ctx = new AudioContext();
             const osc = ctx.createOscillator();
             const gain = ctx.createGain();
-            osc.connect(gain); gain.connect(ctx.destination);
+            osc.connect(gain);
+            gain.connect(ctx.destination);
             osc.type = "triangle";
             osc.frequency.value = 880;
             gain.gain.value = 0.5;
@@ -113,10 +122,14 @@ const DriverDashboard = () => {
             osc.start();
             lfo.start();
             fallbackBeepRef.current = { ctx, osc, lfo };
-          } catch { /* ignore */ }
+          } catch {
+            /* ignore */
+          }
         });
       }
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
   }, []);
 
   // Auth + role gating is handled by <RoleGuard> in App.tsx, so this
@@ -134,7 +147,9 @@ const DriverDashboard = () => {
       })
       .subscribe();
 
-    return () => { supabase.removeChannel(channel); };
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [user]);
 
   // Pop modal ONLY for orders explicitly offered to this driver
@@ -142,7 +157,10 @@ const DriverDashboard = () => {
     if (!driverProfile?.is_online || !user) return;
     if (activeOffer) return;
     const targeted = pendingOrders.find(
-      (o) => o.offered_to_driver_id === user.id && o.offer_expires_at && new Date(o.offer_expires_at).getTime() > Date.now()
+      (o) =>
+        o.offered_to_driver_id === user.id &&
+        o.offer_expires_at &&
+        new Date(o.offer_expires_at).getTime() > Date.now(),
     );
     if (targeted) {
       setActiveOffer(targeted);
@@ -153,7 +171,10 @@ const DriverDashboard = () => {
   useEffect(() => {
     if (!activeOffer?.offer_expires_at) return;
     const remaining = new Date(activeOffer.offer_expires_at).getTime() - Date.now();
-    if (remaining <= 0) { setActiveOffer(null); return; }
+    if (remaining <= 0) {
+      setActiveOffer(null);
+      return;
+    }
     const timer = setTimeout(() => setActiveOffer(null), remaining);
     return () => clearTimeout(timer);
   }, [activeOffer?.offer_expires_at, activeOffer?.id]);
@@ -172,7 +193,9 @@ const DriverDashboard = () => {
     const doVibrate = () => {
       try {
         if ("vibrate" in navigator) navigator.vibrate([500, 200, 500, 200, 500]);
-      } catch { /* ignore */ }
+      } catch {
+        /* ignore */
+      }
     };
     doVibrate();
     const vibrateInterval = setInterval(doVibrate, 2000);
@@ -185,13 +208,19 @@ const DriverDashboard = () => {
           icon: "/pwa-driver-192.png",
           tag: `offer-${activeOffer.id}`,
         } as NotificationOptions);
-      } catch { /* ignore */ }
+      } catch {
+        /* ignore */
+      }
     }
 
     return () => {
       clearInterval(vibrateInterval);
       stopNotificationSound();
-      try { if ("vibrate" in navigator) navigator.vibrate(0); } catch { /* ignore */ }
+      try {
+        if ("vibrate" in navigator) navigator.vibrate(0);
+      } catch {
+        /* ignore */
+      }
     };
   }, [activeOffer?.id, activeOffer, startNotificationSound, stopNotificationSound]);
 
@@ -208,18 +237,26 @@ const DriverDashboard = () => {
       async (pos) => {
         const loc = { lat: pos.coords.latitude, lng: pos.coords.longitude };
         setDriverLocation(loc);
-        await supabase.from("driver_profiles").update({
-          current_lat: loc.lat,
-          current_lng: loc.lng,
-          location_updated_at: new Date().toISOString(),
-        }).eq("user_id", user!.id);
+        await supabase
+          .from("driver_profiles")
+          .update({
+            current_lat: loc.lat,
+            current_lng: loc.lng,
+            location_updated_at: new Date().toISOString(),
+          })
+          .eq("user_id", user!.id);
         const activeIds = myOrders.map((o) => o.id);
         for (const id of activeIds) {
-          await supabase.rpc("driver_update_order", { p_order_id: id, p_status: null, p_lat: loc.lat, p_lng: loc.lng });
+          await supabase.rpc("driver_update_order", {
+            p_order_id: id,
+            p_status: null,
+            p_lat: loc.lat,
+            p_lng: loc.lng,
+          });
         }
       },
       () => {},
-      { enableHighAccuracy: true, maximumAge: 10000, timeout: 15000 }
+      { enableHighAccuracy: true, maximumAge: 10000, timeout: 15000 },
     );
     return () => {
       if (locationWatchRef.current !== null) {
@@ -230,7 +267,12 @@ const DriverDashboard = () => {
   }, [user, driverProfile?.is_online, myOrders.length]);
 
   const fetchAll = async () => {
-    await Promise.all([fetchOrders(), fetchDriverProfile(), fetchCompletedOrders(), fetchRejected()]);
+    await Promise.all([
+      fetchOrders(),
+      fetchDriverProfile(),
+      fetchCompletedOrders(),
+      fetchRejected(),
+    ]);
     setLoading(false);
   };
 
@@ -249,28 +291,56 @@ const DriverDashboard = () => {
       // Pull orders visible to me (RLS: targeted offer to me OR broadcast phase)
       supabase
         .from("orders")
-        .select("id, order_number, restaurant, customer_address, total, delivery_fee, created_at, items, offer_expires_at, offered_to_driver_id, dispatch_phase")
+        .select(
+          "id, order_number, restaurant, customer_address, total, delivery_fee, created_at, items, offer_expires_at, offered_to_driver_id, dispatch_phase",
+        )
         .eq("status", "ready")
         .is("driver_id", null)
         .gte("created_at", cutoff)
         .order("created_at"),
-      supabase.from("orders").select("*").eq("driver_id", user!.id).in("status", ["driver_assigned", "picking_up", "arrived_at_restaurant", "out_for_delivery"]).gte("created_at", cutoff).order("created_at"),
+      supabase
+        .from("orders")
+        .select("*")
+        .eq("driver_id", user!.id)
+        .in("status", [
+          "driver_assigned",
+          "picking_up",
+          "arrived_at_restaurant",
+          "out_for_delivery",
+        ])
+        .gte("created_at", cutoff)
+        .order("created_at"),
     ]);
-    if (pending) setPendingOrders((pending as any[]).map((o: any) => ({ ...o, items: (o.items as any[]) || [], customer_name: "", customer_contact: "", status: "ready" })));
+    if (pending)
+      setPendingOrders(
+        (pending as any[]).map((o: any) => ({
+          ...o,
+          items: (o.items as any[]) || [],
+          customer_name: "",
+          customer_contact: "",
+          status: "ready",
+        })),
+      );
     if (mine) setMyOrders(mine.map((o) => ({ ...o, items: (o.items as any[]) || [] })));
   };
 
   const fetchCompletedOrders = async () => {
     const { data } = await supabase
-      .from("orders").select("*").eq("driver_id", user!.id).eq("status", "delivered")
-      .order("created_at", { ascending: false }).limit(50);
+      .from("orders")
+      .select("*")
+      .eq("driver_id", user!.id)
+      .eq("status", "delivered")
+      .order("created_at", { ascending: false })
+      .limit(50);
     if (data) setCompletedOrders(data.map((o) => ({ ...o, items: (o.items as any[]) || [] })));
   };
 
   const fetchDriverProfile = async () => {
     const { data } = await supabase
-      .from("driver_profiles").select("is_online, total_earnings, total_deliveries, service_area_id")
-      .eq("user_id", user!.id).maybeSingle();
+      .from("driver_profiles")
+      .select("is_online, total_earnings, total_deliveries, service_area_id")
+      .eq("user_id", user!.id)
+      .maybeSingle();
     if (data) setDriverProfile(data);
     else {
       await supabase.from("driver_profiles").insert({ user_id: user!.id });
@@ -317,7 +387,9 @@ const DriverDashboard = () => {
       return;
     }
     if (data === false) {
-      toast.error(isTargetedToMe ? "Offer expired — too late!" : "Order already taken by another driver");
+      toast.error(
+        isTargetedToMe ? "Offer expired — too late!" : "Order already taken by another driver",
+      );
       if (activeOffer?.id === orderId) setActiveOffer(null);
       await fetchOrders();
       setAcceptingId(null);
@@ -342,7 +414,8 @@ const DriverDashboard = () => {
 
   const handleReject = async (orderId: string) => {
     setRejectingId(orderId);
-    const order = activeOffer?.id === orderId ? activeOffer : pendingOrders.find((o) => o.id === orderId);
+    const order =
+      activeOffer?.id === orderId ? activeOffer : pendingOrders.find((o) => o.id === orderId);
     const isTargetedToMe = order?.offered_to_driver_id === user!.id;
 
     if (isTargetedToMe) {
@@ -384,10 +457,12 @@ const DriverDashboard = () => {
   // Available list = only broadcast-phase orders (targeted offers go through the modal)
   const availableOrders = useMemo(
     () => pendingOrders.filter((o) => o.dispatch_phase === "broadcast" && !rejectedIds.has(o.id)),
-    [pendingOrders, rejectedIds]
+    [pendingOrders, rejectedIds],
   );
 
-  const expandedOrder = expandedOrderId ? myOrders.find((o) => o.id === expandedOrderId) ?? null : null;
+  const expandedOrder = expandedOrderId
+    ? (myOrders.find((o) => o.id === expandedOrderId) ?? null)
+    : null;
 
   // Auth/role loader is rendered by <RoleGuard> in App.tsx; here we
   // only need to cover the initial data fetch so the dashboard chrome
@@ -400,9 +475,7 @@ const DriverDashboard = () => {
   // First-time setup gate: a driver MUST pick their working area before they can
   // use the dashboard. Admins onboard the driver, but the driver chooses their area.
   const needsAreaSetup =
-    !roles.includes("admin") &&
-    driverProfile != null &&
-    !driverProfile.service_area_id;
+    !roles.includes("admin") && driverProfile != null && !driverProfile.service_area_id;
 
   if (needsAreaSetup) {
     return (
@@ -416,8 +489,8 @@ const DriverDashboard = () => {
               Welcome! Set your working area
             </h1>
             <p className="mt-2 text-sm text-muted-foreground">
-              Before you can go online and receive deliveries, please tell us where you'll be working.
-              You can change this anytime from your Profile.
+              Before you can go online and receive deliveries, please tell us where you'll be
+              working. You can change this anytime from your Profile.
             </p>
           </div>
           <DriverServiceArea onSaved={fetchDriverProfile} />

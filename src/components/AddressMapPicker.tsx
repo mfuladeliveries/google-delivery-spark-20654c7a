@@ -58,9 +58,7 @@ export const AddressMapPicker = ({
 }: AddressMapPickerProps) => {
   const [zones, setZones] = useState<DeliveryZone[]>([]);
   const [position, setPosition] = useState<[number, number]>(
-    initialCoords &&
-      Number.isFinite(initialCoords.lat) &&
-      Number.isFinite(initialCoords.lng)
+    initialCoords && Number.isFinite(initialCoords.lat) && Number.isFinite(initialCoords.lng)
       ? [initialCoords.lat, initialCoords.lng]
       : FALLBACK_CENTRE,
   );
@@ -190,12 +188,20 @@ export const AddressMapPicker = ({
             className="pl-9"
           />
         </div>
-        <Button type="submit" disabled={searching || !search.trim()} size="sm" className="h-10 px-4">
+        <Button
+          type="submit"
+          disabled={searching || !search.trim()}
+          size="sm"
+          className="h-10 px-4"
+        >
           {searching ? <Loader2 className="h-4 w-4 animate-spin" /> : "Go"}
         </Button>
       </form>
 
-      <div className="relative mx-4 overflow-hidden rounded-2xl border border-border" style={{ height: 280 }}>
+      <div
+        className="relative mx-4 overflow-hidden rounded-2xl border border-border"
+        style={{ height: 280 }}
+      >
         <MapContainer
           center={position}
           zoom={14}
@@ -214,7 +220,8 @@ export const AddressMapPicker = ({
                 center={[z.lat, z.lng]}
                 radius={Number(z.radius_km) * 1000}
                 pathOptions={{
-                  color: matchedZone?.zone.id === z.id ? "hsl(24 95% 53%)" : "hsl(24 95% 53% / 0.6)",
+                  color:
+                    matchedZone?.zone.id === z.id ? "hsl(24 95% 53%)" : "hsl(24 95% 53% / 0.6)",
                   weight: matchedZone?.zone.id === z.id ? 2 : 1.2,
                   fillColor: "hsl(24 95% 53%)",
                   fillOpacity: matchedZone?.zone.id === z.id ? 0.08 : 0.04,
@@ -246,7 +253,11 @@ export const AddressMapPicker = ({
           className="absolute right-3 top-3 z-[1000] inline-flex h-10 w-10 items-center justify-center rounded-full bg-card text-foreground shadow-lg ring-1 ring-border hover:bg-accent disabled:opacity-60"
           aria-label="Use my location"
         >
-          {locating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Crosshair className="h-4 w-4" />}
+          {locating ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <Crosshair className="h-4 w-4" />
+          )}
         </button>
       </div>
 
@@ -300,9 +311,7 @@ export const AddressMapPicker = ({
             disabled={!address || loadingAddress || !inRange}
             className={cn("h-12 w-full rounded-full text-sm font-bold")}
           >
-            {!inRange && address && !loadingAddress
-              ? "Outside delivery zone"
-              : "Use this address"}
+            {!inRange && address && !loadingAddress ? "Outside delivery zone" : "Use this address"}
           </Button>
         ) : (
           <div className="space-y-2 rounded-2xl border-2 border-primary/40 bg-primary/5 p-3 animate-in fade-in slide-in-from-bottom-1">
@@ -312,9 +321,7 @@ export const AddressMapPicker = ({
                 <p className="text-[11px] font-bold uppercase tracking-wider text-primary">
                   Confirm this address?
                 </p>
-                <p className="mt-0.5 text-sm font-medium text-foreground break-words">
-                  {address}
-                </p>
+                <p className="mt-0.5 text-sm font-medium text-foreground break-words">{address}</p>
                 <p className="mt-1 text-[11px] text-muted-foreground">
                   We'll save this exact spot and your GPS pin for delivery.
                 </p>

@@ -9,7 +9,13 @@ interface DriverHeaderProps {
   onProfileClick?: () => void;
 }
 
-const DriverHeader = ({ isOnline, togglingOnline, onToggleOnline, activeCount = 0, onProfileClick }: DriverHeaderProps) => {
+const DriverHeader = ({
+  isOnline,
+  togglingOnline,
+  onToggleOnline,
+  activeCount = 0,
+  onProfileClick,
+}: DriverHeaderProps) => {
   return (
     <header className="sticky top-0 z-50 border-b border-border bg-card/95 backdrop-blur-xl shadow-card">
       <div className="mx-auto flex max-w-2xl items-center justify-between px-4 py-3">
@@ -21,8 +27,12 @@ const DriverHeader = ({ isOnline, togglingOnline, onToggleOnline, activeCount = 
             <div>
               <h1 className="font-bold text-foreground text-sm">Mfula Driver</h1>
               <div className="flex items-center gap-1.5">
-                <span className={`inline-block h-2 w-2 rounded-full ${isOnline ? "bg-[hsl(var(--driver-success))] animate-pulse" : "bg-muted-foreground"}`} />
-                <p className="text-[11px] text-muted-foreground font-medium">{isOnline ? "Online" : "Offline"}</p>
+                <span
+                  className={`inline-block h-2 w-2 rounded-full ${isOnline ? "bg-[hsl(var(--driver-success))] animate-pulse" : "bg-muted-foreground"}`}
+                />
+                <p className="text-[11px] text-muted-foreground font-medium">
+                  {isOnline ? "Online" : "Offline"}
+                </p>
                 {activeCount > 0 && (
                   <span className="ml-1 inline-flex h-4 min-w-[16px] items-center justify-center rounded-full bg-primary px-1 text-[9px] font-bold text-primary-foreground">
                     {activeCount} active

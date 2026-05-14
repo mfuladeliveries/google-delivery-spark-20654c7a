@@ -109,7 +109,12 @@ export const RatingDialog = ({
   };
 
   return (
-    <Dialog open={open} onOpenChange={(o) => { if (!saving) onOpenChange(o); }}>
+    <Dialog
+      open={open}
+      onOpenChange={(o) => {
+        if (!saving) onOpenChange(o);
+      }}
+    >
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Rate your order</DialogTitle>
@@ -120,9 +125,7 @@ export const RatingDialog = ({
 
         <div className="space-y-4 py-2">
           <StarRow label="Food quality" value={foodRating} onChange={setFoodRating} />
-          {driverId && (
-            <StarRow label="Driver" value={driverRating} onChange={setDriverRating} />
-          )}
+          {driverId && <StarRow label="Driver" value={driverRating} onChange={setDriverRating} />}
           <div>
             <p className="mb-1.5 text-sm font-semibold text-foreground">
               Comment <span className="font-normal text-muted-foreground">(optional)</span>
@@ -138,11 +141,7 @@ export const RatingDialog = ({
         </div>
 
         <DialogFooter>
-          <Button
-            variant="outline"
-            onClick={() => onOpenChange(false)}
-            disabled={saving}
-          >
+          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>
             Skip
           </Button>
           <Button onClick={handleSubmit} disabled={saving || foodRating < 1}>

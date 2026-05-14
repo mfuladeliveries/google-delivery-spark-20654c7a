@@ -44,7 +44,7 @@ const RequestDriverAccess = ({ userEmail, onApproved }: Props) => {
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "driver_access_requests" },
-        () => fetchLatest()
+        () => fetchLatest(),
       )
       .subscribe();
     return () => {
@@ -163,8 +163,8 @@ const RequestDriverAccess = ({ userEmail, onApproved }: Props) => {
           </div>
         </div>
         <p className="mt-4 text-sm text-muted-foreground">
-          You're already signed in. Send a request to admin and we'll set up your driver
-          account — no need to register again.
+          You're already signed in. Send a request to admin and we'll set up your driver account —
+          no need to register again.
         </p>
 
         {wasRejected && request?.admin_notes && (
@@ -193,9 +193,7 @@ const RequestDriverAccess = ({ userEmail, onApproved }: Props) => {
             placeholder="e.g. I have a motorbike and want to deliver in Soweto evenings & weekends."
             className="w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:border-[hsl(var(--driver-info))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--driver-info)/0.2)] resize-none"
           />
-          <p className="mt-1 text-[10px] text-muted-foreground text-right">
-            {message.length}/500
-          </p>
+          <p className="mt-1 text-[10px] text-muted-foreground text-right">{message.length}/500</p>
         </div>
 
         <button

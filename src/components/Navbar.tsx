@@ -1,4 +1,16 @@
-import { ShoppingCart, MapPin, User, LogOut, ClipboardList, ChefHat, Truck, Shield, Menu, X, Search } from "lucide-react";
+import {
+  ShoppingCart,
+  MapPin,
+  User,
+  LogOut,
+  ClipboardList,
+  ChefHat,
+  Truck,
+  Shield,
+  Menu,
+  X,
+  Search,
+} from "lucide-react";
 import { storeInfo } from "@/data/menu";
 import { useAuth } from "@/hooks/useAuth";
 import { Link, useNavigate, useLocation } from "react-router-dom";
@@ -180,7 +192,10 @@ const Navbar = ({ cartCount, onCartClick }: NavbarProps) => {
                 Profile
               </Link>
               <button
-                onClick={() => { signOut(); setMobileOpen(false); }}
+                onClick={() => {
+                  signOut();
+                  setMobileOpen(false);
+                }}
                 className="flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors"
               >
                 <LogOut className="h-4 w-4" />

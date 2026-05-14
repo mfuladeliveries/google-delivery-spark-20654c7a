@@ -17,7 +17,12 @@ const tabs = [
   { id: "profile" as DriverTab, icon: UserCircle, label: "Profile" },
 ];
 
-const DriverBottomNav = ({ activeTab, onTabChange, jobCount = 0, activeCount = 0 }: DriverBottomNavProps) => {
+const DriverBottomNav = ({
+  activeTab,
+  onTabChange,
+  jobCount = 0,
+  activeCount = 0,
+}: DriverBottomNavProps) => {
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-card/95 backdrop-blur-xl shadow-lg md:hidden">
       <div className="flex items-center justify-around px-2 py-2">
@@ -29,9 +34,7 @@ const DriverBottomNav = ({ activeTab, onTabChange, jobCount = 0, activeCount = 0
               key={id}
               onClick={() => onTabChange(id)}
               className={`relative flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-xl transition-all ${
-                isActive
-                  ? "text-primary"
-                  : "text-muted-foreground hover:text-foreground"
+                isActive ? "text-primary" : "text-muted-foreground hover:text-foreground"
               }`}
             >
               <Icon className={`h-6 w-6 ${isActive ? "stroke-[2.5]" : ""}`} />

@@ -1,6 +1,18 @@
 import { useState, useEffect, useMemo } from "react";
 import { Link, useParams } from "react-router-dom";
-import { ArrowLeft, Download, Share, Plus, Check, ShoppingBag, Truck, Shield, ChefHat, Copy, Send } from "lucide-react";
+import {
+  ArrowLeft,
+  Download,
+  Share,
+  Plus,
+  Check,
+  ShoppingBag,
+  Truck,
+  Shield,
+  ChefHat,
+  Copy,
+  Send,
+} from "lucide-react";
 import { setPwaVariant, type PwaVariant } from "@/lib/pwaVariant";
 import { toast } from "sonner";
 
@@ -67,7 +79,7 @@ const Install = () => {
   const { variant: variantParam } = useParams<{ variant?: string }>();
   const focusedApp = useMemo(
     () => APPS.find((a) => a.variant === variantParam) ?? null,
-    [variantParam]
+    [variantParam],
   );
   const visibleApps = focusedApp ? [focusedApp] : APPS;
 
@@ -175,7 +187,8 @@ const Install = () => {
                     <h3 className="font-bold text-foreground text-sm truncate">{app.name}</h3>
                     <p className="text-xs text-muted-foreground truncate">{app.tagline}</p>
                     <p className="mt-1 text-[10px] text-muted-foreground/80 truncate">
-                      {window.location.origin}{app.installPath}
+                      {window.location.origin}
+                      {app.installPath}
                     </p>
                   </div>
                 </div>
@@ -203,10 +216,7 @@ const Install = () => {
 
         {focusedApp && (
           <div className="mt-4 text-center">
-            <Link
-              to="/install"
-              className="text-xs font-bold text-primary hover:underline"
-            >
+            <Link to="/install" className="text-xs font-bold text-primary hover:underline">
               ← See all Mfula apps
             </Link>
           </div>
@@ -221,37 +231,54 @@ const Install = () => {
             {isIOS ? (
               <div className="space-y-2.5">
                 <div className="flex items-start gap-3">
-                  <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/10 text-[11px] font-bold text-primary">1</div>
+                  <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/10 text-[11px] font-bold text-primary">
+                    1
+                  </div>
                   <p className="text-xs text-muted-foreground">
-                    Tap the <Share className="inline h-3.5 w-3.5 text-primary" /> <strong>Share</strong> button in Safari
+                    Tap the <Share className="inline h-3.5 w-3.5 text-primary" />{" "}
+                    <strong>Share</strong> button in Safari
                   </p>
                 </div>
                 <div className="flex items-start gap-3">
-                  <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/10 text-[11px] font-bold text-primary">2</div>
+                  <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/10 text-[11px] font-bold text-primary">
+                    2
+                  </div>
                   <p className="text-xs text-muted-foreground">
-                    Scroll down and tap <Plus className="inline h-3.5 w-3.5 text-primary" /> <strong>Add to Home Screen</strong>
+                    Scroll down and tap <Plus className="inline h-3.5 w-3.5 text-primary" />{" "}
+                    <strong>Add to Home Screen</strong>
                   </p>
                 </div>
                 <div className="flex items-start gap-3">
-                  <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/10 text-[11px] font-bold text-primary">3</div>
+                  <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/10 text-[11px] font-bold text-primary">
+                    3
+                  </div>
                   <p className="text-xs text-muted-foreground">
                     Tap <strong>Add</strong> to confirm.
                     {!focusedApp && " Tap your app variant above first to brand the icon."}
                   </p>
                 </div>
                 <p className="mt-2 text-[10px] text-muted-foreground italic">
-                  iOS doesn't show our install button. Use Safari's Share menu after picking your app variant above.
+                  iOS doesn't show our install button. Use Safari's Share menu after picking your
+                  app variant above.
                 </p>
               </div>
             ) : (
               <div className="space-y-2.5">
                 <div className="flex items-start gap-3">
-                  <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/10 text-[11px] font-bold text-primary">1</div>
-                  <p className="text-xs text-muted-foreground">Tap the <strong>⋮ menu</strong> in Chrome</p>
+                  <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/10 text-[11px] font-bold text-primary">
+                    1
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Tap the <strong>⋮ menu</strong> in Chrome
+                  </p>
                 </div>
                 <div className="flex items-start gap-3">
-                  <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/10 text-[11px] font-bold text-primary">2</div>
-                  <p className="text-xs text-muted-foreground">Tap <strong>Install app</strong> or <strong>Add to Home Screen</strong></p>
+                  <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/10 text-[11px] font-bold text-primary">
+                    2
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Tap <strong>Install app</strong> or <strong>Add to Home Screen</strong>
+                  </p>
                 </div>
               </div>
             )}
@@ -260,7 +287,9 @@ const Install = () => {
 
         {/* Why install */}
         <div className="mt-6 space-y-3">
-          <h3 className="font-bold text-xs text-foreground text-center uppercase tracking-wide">Why install?</h3>
+          <h3 className="font-bold text-xs text-foreground text-center uppercase tracking-wide">
+            Why install?
+          </h3>
           <div className="grid grid-cols-2 gap-2.5">
             {[
               { emoji: "⚡", title: "Faster", desc: "Loads instantly" },
@@ -268,7 +297,10 @@ const Install = () => {
               { emoji: "🔔", title: "Notifications", desc: "Order alerts" },
               { emoji: "📶", title: "Offline", desc: "Works offline" },
             ].map((item) => (
-              <div key={item.title} className="rounded-xl border border-border bg-card p-2.5 text-center">
+              <div
+                key={item.title}
+                className="rounded-xl border border-border bg-card p-2.5 text-center"
+              >
                 <span className="text-xl">{item.emoji}</span>
                 <p className="mt-0.5 text-[11px] font-bold text-foreground">{item.title}</p>
                 <p className="text-[10px] text-muted-foreground">{item.desc}</p>
@@ -406,9 +438,7 @@ const Install = () => {
 
         {/* Shareable install links — Driver & Customer */}
         <section className="mt-8 rounded-2xl border border-border bg-card p-4 shadow-card">
-          <h3 className="font-display text-base font-bold text-foreground">
-            Share install links
-          </h3>
+          <h3 className="font-display text-base font-bold text-foreground">Share install links</h3>
           <p className="mt-1 text-xs text-muted-foreground">
             Send these links to drivers or customers so they can install the right app.
           </p>
@@ -431,10 +461,7 @@ const Install = () => {
               const url = `${window.location.origin}${item.path}`;
               const Icon = item.icon;
               return (
-                <div
-                  key={item.path}
-                  className="rounded-xl border border-border bg-background p-3"
-                >
+                <div key={item.path} className="rounded-xl border border-border bg-background p-3">
                   <div className="flex items-center gap-2.5">
                     <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10">
                       <Icon className="h-4 w-4 text-primary" />
@@ -467,7 +494,7 @@ const Install = () => {
                   <div className="mt-2 grid grid-cols-2 gap-2">
                     <a
                       href={`https://wa.me/?text=${encodeURIComponent(
-                        `Install the Mfula ${item.label}: ${url}`
+                        `Install the Mfula ${item.label}: ${url}`,
                       )}`}
                       target="_blank"
                       rel="noopener noreferrer"
@@ -512,7 +539,9 @@ const Install = () => {
         </section>
 
         <p className="mt-6 text-center text-[10px] text-muted-foreground px-4">
-          Each app installs as a separate icon with its own scope. Customer opens on the food menu, Driver opens on the dashboard, Restaurant opens on the orders board, and Admin opens on the admin console.
+          Each app installs as a separate icon with its own scope. Customer opens on the food menu,
+          Driver opens on the dashboard, Restaurant opens on the orders board, and Admin opens on
+          the admin console.
         </p>
       </main>
     </div>

@@ -24,12 +24,13 @@ const PayFastRedirect = () => {
     const nav = location.state as PayState | null;
     if (nav?.orderId) return nav;
     const stored = loadPendingPaymentOrder();
-    if (stored?.orderId) return {
-      orderId: stored.orderId,
-      orderNumber: stored.orderNumber,
-      total: stored.total,
-      restaurant: stored.restaurant,
-    };
+    if (stored?.orderId)
+      return {
+        orderId: stored.orderId,
+        orderNumber: stored.orderNumber,
+        total: stored.total,
+        restaurant: stored.restaurant,
+      };
     return null;
     // Only recompute when the pathname actually changes (i.e. a real navigation).
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -48,15 +49,12 @@ const PayFastRedirect = () => {
     busyRef.current = true;
     setError(null);
     try {
-      const { data, error: fnErr } = await supabase.functions.invoke(
-        "payfast-create-payment",
-        {
-          body: {
-            order_id: state.orderId,
-            return_origin: window.location.origin,
-          },
+      const { data, error: fnErr } = await supabase.functions.invoke("payfast-create-payment", {
+        body: {
+          order_id: state.orderId,
+          return_origin: window.location.origin,
         },
-      );
+      });
 
       // Edge function returned a structured fallback error
       if (data && typeof data === "object" && (data as Record<string, unknown>).fallback) {
@@ -155,8 +153,7 @@ const PayFastRedirect = () => {
           </p>
         )}
         <div className="mt-5 flex items-center justify-center gap-2 text-xs text-muted-foreground">
-          <Loader2 className="h-4 w-4 animate-spin" /> Please don't close this
-          window.
+          <Loader2 className="h-4 w-4 animate-spin" /> Please don't close this window.
         </div>
 
         {fields && processUrl && (
@@ -180,34 +177,32 @@ const PayFastRedirect = () => {
 
         {/* Sandbox test card info — only shown in dev/sandbox builds, hidden in production */}
         {import.meta.env.DEV && (
-        <div className="mt-5 rounded-2xl border border-dashed border-border bg-muted/40 p-4 text-left">
-          <p className="text-[11px] font-bold uppercase tracking-wide text-primary">
-            Sandbox test details
-          </p>
-          <p className="mt-1 text-[11px] text-muted-foreground">
-            Use these on the PayFast sandbox checkout — no real money is charged.
-          </p>
-          <dl className="mt-3 space-y-1.5 text-xs">
-            <div className="flex justify-between gap-3">
-              <dt className="text-muted-foreground">Card number</dt>
-              <dd className="font-mono font-semibold text-foreground">
-                4000 0000 0000 0002
-              </dd>
-            </div>
-            <div className="flex justify-between gap-3">
-              <dt className="text-muted-foreground">Expiry</dt>
-              <dd className="font-mono font-semibold text-foreground">12/30</dd>
-            </div>
-            <div className="flex justify-between gap-3">
-              <dt className="text-muted-foreground">CVV</dt>
-              <dd className="font-mono font-semibold text-foreground">123</dd>
-            </div>
-            <div className="flex justify-between gap-3">
-              <dt className="text-muted-foreground">3D Secure password</dt>
-              <dd className="font-mono font-semibold text-foreground">12345</dd>
-            </div>
-          </dl>
-        </div>
+          <div className="mt-5 rounded-2xl border border-dashed border-border bg-muted/40 p-4 text-left">
+            <p className="text-[11px] font-bold uppercase tracking-wide text-primary">
+              Sandbox test details
+            </p>
+            <p className="mt-1 text-[11px] text-muted-foreground">
+              Use these on the PayFast sandbox checkout — no real money is charged.
+            </p>
+            <dl className="mt-3 space-y-1.5 text-xs">
+              <div className="flex justify-between gap-3">
+                <dt className="text-muted-foreground">Card number</dt>
+                <dd className="font-mono font-semibold text-foreground">4000 0000 0000 0002</dd>
+              </div>
+              <div className="flex justify-between gap-3">
+                <dt className="text-muted-foreground">Expiry</dt>
+                <dd className="font-mono font-semibold text-foreground">12/30</dd>
+              </div>
+              <div className="flex justify-between gap-3">
+                <dt className="text-muted-foreground">CVV</dt>
+                <dd className="font-mono font-semibold text-foreground">123</dd>
+              </div>
+              <div className="flex justify-between gap-3">
+                <dt className="text-muted-foreground">3D Secure password</dt>
+                <dd className="font-mono font-semibold text-foreground">12345</dd>
+              </div>
+            </dl>
+          </div>
         )}
       </div>
     </div>

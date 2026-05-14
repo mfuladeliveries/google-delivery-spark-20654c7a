@@ -66,7 +66,7 @@ const AdminDriverRequests = () => {
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "driver_access_requests" },
-        () => fetchRequests()
+        () => fetchRequests(),
       )
       .subscribe();
     return () => {
@@ -166,10 +166,7 @@ const AdminDriverRequests = () => {
       ) : (
         <div className="space-y-3">
           {visible.map((req) => (
-            <div
-              key={req.id}
-              className="rounded-2xl border border-border bg-card p-4 shadow-card"
-            >
+            <div key={req.id} className="rounded-2xl border border-border bg-card p-4 shadow-card">
               <div className="flex items-start justify-between gap-3 mb-3">
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2 mb-1">
@@ -183,9 +180,7 @@ const AdminDriverRequests = () => {
                     </span>
                   </div>
                   {req.profile?.contact_number && (
-                    <p className="text-xs text-muted-foreground">
-                      📞 {req.profile.contact_number}
-                    </p>
+                    <p className="text-xs text-muted-foreground">📞 {req.profile.contact_number}</p>
                   )}
                   <p className="text-[10px] text-muted-foreground mt-0.5 flex items-center gap-1">
                     <Clock className="h-3 w-3" />

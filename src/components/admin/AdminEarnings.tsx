@@ -57,10 +57,8 @@ const AdminEarnings = ({ drivers }: AdminEarningsProps) => {
 
     const channel = supabase
       .channel("admin-earnings-live")
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "driver_earnings" },
-        () => load()
+      .on("postgres_changes", { event: "*", schema: "public", table: "driver_earnings" }, () =>
+        load(),
       )
       .subscribe();
 
@@ -72,7 +70,7 @@ const AdminEarnings = ({ drivers }: AdminEarningsProps) => {
 
   const driverNameById = useMemo(
     () => new Map(drivers.map((d) => [d.user_id, d.profile?.full_name || "Unknown driver"])),
-    [drivers]
+    [drivers],
   );
 
   const filteredRows = useMemo(() => {
@@ -163,15 +161,17 @@ const AdminEarnings = ({ drivers }: AdminEarningsProps) => {
         };
       });
 
-      const priorEarned = (priorEarnings || []).reduce((s: number, r: any) => s + Number(r.driver_payout), 0);
+      const priorEarned = (priorEarnings || []).reduce(
+        (s: number, r: any) => s + Number(r.driver_payout),
+        0,
+      );
       const priorLocked = (allWithdrawals || [])
         .filter((w: any) => new Date(w.requested_at) < opt.start && w.status !== "rejected")
         .reduce((s: number, w: any) => s + Number(w.amount), 0);
       const opening_balance = Math.max(0, priorEarned - priorLocked);
 
       const periodWithdrawals = (allWithdrawals || []).filter(
-        (w: any) =>
-          new Date(w.requested_at) >= opt.start && new Date(w.requested_at) < opt.end
+        (w: any) => new Date(w.requested_at) >= opt.start && new Date(w.requested_at) < opt.end,
       );
 
       generateMonthlyStatement({
@@ -234,7 +234,9 @@ const AdminEarnings = ({ drivers }: AdminEarningsProps) => {
           <div className="mb-2 flex h-8 w-8 items-center justify-center rounded-xl bg-primary/10 text-primary">
             <DollarSign className="h-4 w-4" />
           </div>
-          <div className="text-xl font-bold text-foreground">R{totals.totalPlatform.toFixed(0)}</div>
+          <div className="text-xl font-bold text-foreground">
+            R{totals.totalPlatform.toFixed(0)}
+          </div>
           <div className="mt-0.5 text-[10px] text-muted-foreground">Platform commission (30%)</div>
         </div>
 
@@ -242,7 +244,9 @@ const AdminEarnings = ({ drivers }: AdminEarningsProps) => {
           <div className="mb-2 flex h-8 w-8 items-center justify-center rounded-xl bg-green-50 text-green-600">
             <Truck className="h-4 w-4" />
           </div>
-          <div className="text-xl font-bold text-foreground">R{totals.totalDriverPayout.toFixed(0)}</div>
+          <div className="text-xl font-bold text-foreground">
+            R{totals.totalDriverPayout.toFixed(0)}
+          </div>
           <div className="mt-0.5 text-[10px] text-muted-foreground">Driver payouts (70%)</div>
         </div>
 
@@ -269,7 +273,8 @@ const AdminEarnings = ({ drivers }: AdminEarningsProps) => {
           <FileDown className="h-4 w-4 text-primary" /> Driver Monthly Statement
         </h3>
         <p className="mb-3 text-xs text-muted-foreground">
-          Generate a detailed PDF statement for any driver — useful for dispute resolution and support.
+          Generate a detailed PDF statement for any driver — useful for dispute resolution and
+          support.
         </p>
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-[1fr_1fr_auto]">
           <select
@@ -319,11 +324,21 @@ const AdminEarnings = ({ drivers }: AdminEarningsProps) => {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-border">
-                <th className="px-4 py-2.5 text-left text-xs font-semibold text-muted-foreground">#</th>
-                <th className="px-4 py-2.5 text-left text-xs font-semibold text-muted-foreground">Driver</th>
-                <th className="px-4 py-2.5 text-right text-xs font-semibold text-muted-foreground">Deliveries</th>
-                <th className="px-4 py-2.5 text-right text-xs font-semibold text-muted-foreground">Earnings</th>
-                <th className="px-4 py-2.5 text-right text-xs font-semibold text-muted-foreground">Statement</th>
+                <th className="px-4 py-2.5 text-left text-xs font-semibold text-muted-foreground">
+                  #
+                </th>
+                <th className="px-4 py-2.5 text-left text-xs font-semibold text-muted-foreground">
+                  Driver
+                </th>
+                <th className="px-4 py-2.5 text-right text-xs font-semibold text-muted-foreground">
+                  Deliveries
+                </th>
+                <th className="px-4 py-2.5 text-right text-xs font-semibold text-muted-foreground">
+                  Earnings
+                </th>
+                <th className="px-4 py-2.5 text-right text-xs font-semibold text-muted-foreground">
+                  Statement
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -335,12 +350,17 @@ const AdminEarnings = ({ drivers }: AdminEarningsProps) => {
                 </tr>
               ) : (
                 perDriver.map((d, i) => (
-                  <tr key={d.id} className={`border-b border-border ${i % 2 === 0 ? "" : "bg-secondary/30"}`}>
+                  <tr
+                    key={d.id}
+                    className={`border-b border-border ${i % 2 === 0 ? "" : "bg-secondary/30"}`}
+                  >
                     <td className="px-4 py-2.5 font-bold text-foreground">
                       {i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : i + 1}
                     </td>
                     <td className="px-4 py-2.5 text-xs text-foreground">{d.name}</td>
-                    <td className="px-4 py-2.5 text-right text-xs text-muted-foreground">{d.deliveries}</td>
+                    <td className="px-4 py-2.5 text-right text-xs text-muted-foreground">
+                      {d.deliveries}
+                    </td>
                     <td className="px-4 py-2.5 text-right text-xs font-bold text-green-600">
                       R{d.payout.toFixed(2)}
                     </td>

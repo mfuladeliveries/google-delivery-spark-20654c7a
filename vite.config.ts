@@ -39,7 +39,8 @@ export default defineConfig(({ mode }) => ({
       manifest: {
         name: "Mfula Deliveries",
         short_name: "Mfula",
-        description: "Order food from KFC, McDonald's, Debonnairs and more — delivered to Mfuleni & surrounds.",
+        description:
+          "Order food from KFC, McDonald's, Debonnairs and more — delivered to Mfuleni & surrounds.",
         theme_color: "#ff6600",
         background_color: "#fafafa",
         display: "standalone",

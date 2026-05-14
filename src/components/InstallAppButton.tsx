@@ -10,12 +10,19 @@ interface InstallAppButtonProps {
   compact?: boolean;
 }
 
-const InstallAppButton = ({ variant, label = "Install App", className = "", compact = false }: InstallAppButtonProps) => {
+const InstallAppButton = ({
+  variant,
+  label = "Install App",
+  className = "",
+  compact = false,
+}: InstallAppButtonProps) => {
   const { canInstall, isInstalled, promptInstall } = useInstallPrompt({ variant });
 
   if (isInstalled) {
     return (
-      <span className={`inline-flex items-center gap-1.5 rounded-full bg-[hsl(var(--driver-success)/0.1)] px-3 py-1.5 text-[11px] font-bold text-[hsl(var(--driver-success))] ${className}`}>
+      <span
+        className={`inline-flex items-center gap-1.5 rounded-full bg-[hsl(var(--driver-success)/0.1)] px-3 py-1.5 text-[11px] font-bold text-[hsl(var(--driver-success))] ${className}`}
+      >
         <Check className="h-3 w-3" /> Installed
       </span>
     );

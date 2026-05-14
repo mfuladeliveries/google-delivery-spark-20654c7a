@@ -36,11 +36,13 @@ const ResetPassword = () => {
 
   // Parse Supabase params from BOTH hash and query string
   useEffect(() => {
-    const hashParams = new URLSearchParams(
-      (window.location.hash || "").replace(/^#/, "")
-    );
+    const hashParams = new URLSearchParams((window.location.hash || "").replace(/^#/, ""));
 
-    const errorCode = hashParams.get("error_code") || hashParams.get("error") || searchParams.get("error_code") || searchParams.get("error");
+    const errorCode =
+      hashParams.get("error_code") ||
+      hashParams.get("error") ||
+      searchParams.get("error_code") ||
+      searchParams.get("error");
     const errorDesc = hashParams.get("error_description") || searchParams.get("error_description");
     const type = hashParams.get("type") || searchParams.get("type");
     const hasAccessToken = !!hashParams.get("access_token");
@@ -58,7 +60,9 @@ const ResetPassword = () => {
     }
 
     // Listen for Supabase to surface the recovery event
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event) => {
       if (event === "PASSWORD_RECOVERY") setReady(true);
     });
 
@@ -110,7 +114,9 @@ const ResetPassword = () => {
       return;
     }
     setResendMessage(`Reset link sent to ${resendEmail.trim()}.`);
-    try { sessionStorage.setItem("mfula:reset-email", resendEmail.trim()); } catch {}
+    try {
+      sessionStorage.setItem("mfula:reset-email", resendEmail.trim());
+    } catch {}
   };
 
   // Countdown after success
@@ -165,209 +171,225 @@ const ResetPassword = () => {
             alt={storeInfo.name}
             className="mx-auto h-20 w-20 rounded-full object-cover ring-2 ring-[hsl(var(--gold))] shadow-gold"
           />
-          <h1 className="mt-4 font-display text-3xl font-bold text-primary tracking-tight">{storeInfo.name}</h1>
+          <h1 className="mt-4 font-display text-3xl font-bold text-primary tracking-tight">
+            {storeInfo.name}
+          </h1>
         </div>
 
         <div className="glass shadow-luxury rounded-3xl p-6 sm:p-7">
-
-        {success ? (
-          <div className="text-center">
-            <div className="mx-auto flex h-20 w-20 animate-in zoom-in fade-in items-center justify-center rounded-full bg-[hsl(142_76%_45%/0.15)] duration-500">
-              <CheckCircle2 className="h-12 w-12 text-[hsl(142_76%_45%)]" />
-            </div>
-            <h2 className="mt-5 font-display text-xl font-bold text-foreground">Password Updated!</h2>
-            <p className="mt-3 text-sm text-muted-foreground">
-              Your password has been changed successfully. You can now sign in with your new password.
-            </p>
-            <button
-              onClick={() => navigate("/auth", { replace: true })}
-              className="btn-glow mt-6 w-full rounded-xl gradient-maroon py-2.5 font-display font-bold text-primary-foreground transition-transform hover:scale-[1.02] active:scale-[0.98]"
-            >
-              Sign In Now
-            </button>
-            <p className="mt-3 text-xs text-muted-foreground">Redirecting in {countdown}…</p>
-          </div>
-        ) : linkInvalid ? (
-          <div className="text-center">
-            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-destructive/10">
-              <AlertTriangle className="h-8 w-8 text-destructive" />
-            </div>
-            <h2 className="mt-5 font-display text-xl font-bold text-foreground">Link Expired</h2>
-            <p className="mt-3 text-sm text-muted-foreground">
-              This password reset link has expired or already been used. Reset links are valid for 1 hour and can only be opened once.
-            </p>
-
-            {errorDescription && (
-              <div className="mt-4 rounded-xl border border-destructive/30 bg-destructive/5 p-3 text-left">
-                <p className="text-[11px] font-semibold uppercase tracking-wide text-destructive">
-                  Details
-                </p>
-                <p className="mt-1 break-words text-xs text-foreground">{errorDescription}</p>
+          {success ? (
+            <div className="text-center">
+              <div className="mx-auto flex h-20 w-20 animate-in zoom-in fade-in items-center justify-center rounded-full bg-[hsl(142_76%_45%/0.15)] duration-500">
+                <CheckCircle2 className="h-12 w-12 text-[hsl(142_76%_45%)]" />
               </div>
-            )}
-
-            <Link
-              to="/forgot-password"
-              className="btn-glow mt-6 inline-flex w-full items-center justify-center gap-2 rounded-xl gradient-maroon py-2.5 font-display font-bold text-primary-foreground transition-transform hover:scale-[1.02] active:scale-[0.98]"
-            >
-              <RefreshCw className="h-4 w-4" />
-              Request a New Reset Link
-            </Link>
-
-            <Link
-              to="/auth"
-              className="mt-4 inline-block text-sm text-muted-foreground hover:text-foreground"
-            >
-              ← Back to Sign In
-            </Link>
-          </div>
-        ) : awaitingEmail ? (
-          <div className="text-center">
-            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
-              <Mail className="h-8 w-8 text-primary" />
-            </div>
-            <h2 className="mt-5 font-display text-xl font-bold text-foreground">Check your email</h2>
-            <p className="mt-3 text-sm text-muted-foreground">
-              We've sent you a password reset link. Open it on this device to continue resetting your password. The link expires in 1 hour.
-            </p>
-            <a
-              href="mailto:"
-              className="btn-glow mt-6 inline-flex w-full items-center justify-center rounded-xl gradient-maroon py-2.5 font-display font-bold text-primary-foreground transition-transform hover:scale-[1.02] active:scale-[0.98]"
-            >
-              Open Email App
-            </a>
-
-            <div className="mt-6 rounded-xl border border-border bg-card p-4 text-left">
-              <p className="text-sm font-medium text-foreground">Didn't receive it?</p>
-              <p className="mt-1 text-xs text-muted-foreground">
-                Confirm your email address and we'll send another link.
+              <h2 className="mt-5 font-display text-xl font-bold text-foreground">
+                Password Updated!
+              </h2>
+              <p className="mt-3 text-sm text-muted-foreground">
+                Your password has been changed successfully. You can now sign in with your new
+                password.
               </p>
-              <input
-                type="email"
-                value={resendEmail}
-                onChange={(e) => { setResendEmail(e.target.value); setResendError(""); setResendMessage(""); }}
-                autoComplete="email"
-                className="mt-3 w-full rounded-xl border border-border bg-background px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-                placeholder="you@example.com"
-              />
               <button
-                type="button"
-                onClick={handleResend}
-                disabled={resendLoading || !resendEmail}
-                className="btn-glow mt-3 flex w-full items-center justify-center gap-2 rounded-xl gradient-maroon py-2.5 font-display font-bold text-primary-foreground transition-transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50"
+                onClick={() => navigate("/auth", { replace: true })}
+                className="btn-glow mt-6 w-full rounded-xl gradient-maroon py-2.5 font-display font-bold text-primary-foreground transition-transform hover:scale-[1.02] active:scale-[0.98]"
               >
-                {resendLoading && <Loader2 className="h-4 w-4 animate-spin" />}
-                {resendLoading ? "Sending..." : "Request a new link"}
+                Sign In Now
               </button>
-              {resendMessage && (
-                <p className="mt-3 text-sm text-primary">{resendMessage}</p>
-              )}
-              {resendError && (
-                <p className="mt-3 text-sm text-destructive">{resendError}</p>
-              )}
+              <p className="mt-3 text-xs text-muted-foreground">Redirecting in {countdown}…</p>
             </div>
-
-            <Link
-              to="/auth"
-              className="mt-6 block text-sm text-muted-foreground hover:text-foreground"
-            >
-              ← Back to Sign In
-            </Link>
-          </div>
-        ) : !ready ? (
-          <p className="text-center text-sm text-muted-foreground">Loading…</p>
-        ) : (
-          <>
-            <div className="mb-6">
-              <h2 className="font-display text-xl font-bold text-foreground">Create new password</h2>
-              <div className="mt-2 h-px bg-border" />
-            </div>
-
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <label className="mb-1 block text-sm font-medium text-foreground">New Password</label>
-                <div className="relative">
-                  <input
-                    type={showPw ? "text" : "password"}
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                    autoComplete="new-password"
-                    className="w-full rounded-xl border border-border bg-card px-4 py-2.5 pr-10 text-sm text-card-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-                    placeholder="••••••••"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPw((v) => !v)}
-                    aria-label={showPw ? "Hide password" : "Show password"}
-                    className="absolute inset-y-0 right-0 flex items-center px-3 text-muted-foreground hover:text-foreground"
-                  >
-                    {showPw ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  </button>
-                </div>
+          ) : linkInvalid ? (
+            <div className="text-center">
+              <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-destructive/10">
+                <AlertTriangle className="h-8 w-8 text-destructive" />
               </div>
+              <h2 className="mt-5 font-display text-xl font-bold text-foreground">Link Expired</h2>
+              <p className="mt-3 text-sm text-muted-foreground">
+                This password reset link has expired or already been used. Reset links are valid for
+                1 hour and can only be opened once.
+              </p>
 
-              <div>
-                <label className="mb-1 block text-sm font-medium text-foreground">Confirm New Password</label>
-                <div className="relative">
-                  <input
-                    type={showConfirm ? "text" : "password"}
-                    value={confirm}
-                    onChange={(e) => setConfirm(e.target.value)}
-                    required
-                    autoComplete="new-password"
-                    className="w-full rounded-xl border border-border bg-card px-4 py-2.5 pr-10 text-sm text-card-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-                    placeholder="••••••••"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowConfirm((v) => !v)}
-                    aria-label={showConfirm ? "Hide password" : "Show password"}
-                    className="absolute inset-y-0 right-0 flex items-center px-3 text-muted-foreground hover:text-foreground"
-                  >
-                    {showConfirm ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  </button>
+              {errorDescription && (
+                <div className="mt-4 rounded-xl border border-destructive/30 bg-destructive/5 p-3 text-left">
+                  <p className="text-[11px] font-semibold uppercase tracking-wide text-destructive">
+                    Details
+                  </p>
+                  <p className="mt-1 break-words text-xs text-foreground">{errorDescription}</p>
                 </div>
-                {confirm.length > 0 && !matches && (
-                  <p className="mt-2 text-sm text-destructive">Passwords do not match</p>
-                )}
-              </div>
+              )}
 
-              {/* Strength bar */}
-              <div>
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-muted-foreground">Password strength</span>
-                  <span className="font-semibold text-foreground">{password ? strength.label : "—"}</span>
-                </div>
-                <div className="mt-1 h-2 w-full overflow-hidden rounded-full bg-muted">
-                  <div
-                    className={`h-full transition-all ${password ? strength.barClass : ""}`}
-                    style={{ width: `${(strength.score / 4) * 100}%` }}
-                  />
-                </div>
-              </div>
-
-              {/* Checklist */}
-              <ul className="space-y-1 text-sm">
-                <ChecklistItem ok={checks.length} label="At least 8 characters" />
-                <ChecklistItem ok={checks.number} label="One number" />
-                <ChecklistItem ok={checks.capital} label="One capital letter" />
-                <ChecklistItem ok={checks.special} label="One special character" />
-              </ul>
-
-              {error && <p className="text-sm text-destructive">{error}</p>}
-
-              <button
-                type="submit"
-                disabled={!canSubmit}
-                className="btn-glow flex w-full items-center justify-center gap-2 rounded-xl gradient-maroon py-2.5 font-display font-bold text-primary-foreground transition-transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50"
+              <Link
+                to="/forgot-password"
+                className="btn-glow mt-6 inline-flex w-full items-center justify-center gap-2 rounded-xl gradient-maroon py-2.5 font-display font-bold text-primary-foreground transition-transform hover:scale-[1.02] active:scale-[0.98]"
               >
-                {loading && <Loader2 className="h-4 w-4 animate-spin" />}
-                {loading ? "Updating…" : "Update Password"}
-              </button>
-            </form>
-          </>
-        )}
+                <RefreshCw className="h-4 w-4" />
+                Request a New Reset Link
+              </Link>
+
+              <Link
+                to="/auth"
+                className="mt-4 inline-block text-sm text-muted-foreground hover:text-foreground"
+              >
+                ← Back to Sign In
+              </Link>
+            </div>
+          ) : awaitingEmail ? (
+            <div className="text-center">
+              <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
+                <Mail className="h-8 w-8 text-primary" />
+              </div>
+              <h2 className="mt-5 font-display text-xl font-bold text-foreground">
+                Check your email
+              </h2>
+              <p className="mt-3 text-sm text-muted-foreground">
+                We've sent you a password reset link. Open it on this device to continue resetting
+                your password. The link expires in 1 hour.
+              </p>
+              <a
+                href="mailto:"
+                className="btn-glow mt-6 inline-flex w-full items-center justify-center rounded-xl gradient-maroon py-2.5 font-display font-bold text-primary-foreground transition-transform hover:scale-[1.02] active:scale-[0.98]"
+              >
+                Open Email App
+              </a>
+
+              <div className="mt-6 rounded-xl border border-border bg-card p-4 text-left">
+                <p className="text-sm font-medium text-foreground">Didn't receive it?</p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Confirm your email address and we'll send another link.
+                </p>
+                <input
+                  type="email"
+                  value={resendEmail}
+                  onChange={(e) => {
+                    setResendEmail(e.target.value);
+                    setResendError("");
+                    setResendMessage("");
+                  }}
+                  autoComplete="email"
+                  className="mt-3 w-full rounded-xl border border-border bg-background px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                  placeholder="you@example.com"
+                />
+                <button
+                  type="button"
+                  onClick={handleResend}
+                  disabled={resendLoading || !resendEmail}
+                  className="btn-glow mt-3 flex w-full items-center justify-center gap-2 rounded-xl gradient-maroon py-2.5 font-display font-bold text-primary-foreground transition-transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50"
+                >
+                  {resendLoading && <Loader2 className="h-4 w-4 animate-spin" />}
+                  {resendLoading ? "Sending..." : "Request a new link"}
+                </button>
+                {resendMessage && <p className="mt-3 text-sm text-primary">{resendMessage}</p>}
+                {resendError && <p className="mt-3 text-sm text-destructive">{resendError}</p>}
+              </div>
+
+              <Link
+                to="/auth"
+                className="mt-6 block text-sm text-muted-foreground hover:text-foreground"
+              >
+                ← Back to Sign In
+              </Link>
+            </div>
+          ) : !ready ? (
+            <p className="text-center text-sm text-muted-foreground">Loading…</p>
+          ) : (
+            <>
+              <div className="mb-6">
+                <h2 className="font-display text-xl font-bold text-foreground">
+                  Create new password
+                </h2>
+                <div className="mt-2 h-px bg-border" />
+              </div>
+
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-foreground">
+                    New Password
+                  </label>
+                  <div className="relative">
+                    <input
+                      type={showPw ? "text" : "password"}
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      required
+                      autoComplete="new-password"
+                      className="w-full rounded-xl border border-border bg-card px-4 py-2.5 pr-10 text-sm text-card-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                      placeholder="••••••••"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPw((v) => !v)}
+                      aria-label={showPw ? "Hide password" : "Show password"}
+                      className="absolute inset-y-0 right-0 flex items-center px-3 text-muted-foreground hover:text-foreground"
+                    >
+                      {showPw ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-foreground">
+                    Confirm New Password
+                  </label>
+                  <div className="relative">
+                    <input
+                      type={showConfirm ? "text" : "password"}
+                      value={confirm}
+                      onChange={(e) => setConfirm(e.target.value)}
+                      required
+                      autoComplete="new-password"
+                      className="w-full rounded-xl border border-border bg-card px-4 py-2.5 pr-10 text-sm text-card-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                      placeholder="••••••••"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowConfirm((v) => !v)}
+                      aria-label={showConfirm ? "Hide password" : "Show password"}
+                      className="absolute inset-y-0 right-0 flex items-center px-3 text-muted-foreground hover:text-foreground"
+                    >
+                      {showConfirm ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
+                  </div>
+                  {confirm.length > 0 && !matches && (
+                    <p className="mt-2 text-sm text-destructive">Passwords do not match</p>
+                  )}
+                </div>
+
+                {/* Strength bar */}
+                <div>
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-muted-foreground">Password strength</span>
+                    <span className="font-semibold text-foreground">
+                      {password ? strength.label : "—"}
+                    </span>
+                  </div>
+                  <div className="mt-1 h-2 w-full overflow-hidden rounded-full bg-muted">
+                    <div
+                      className={`h-full transition-all ${password ? strength.barClass : ""}`}
+                      style={{ width: `${(strength.score / 4) * 100}%` }}
+                    />
+                  </div>
+                </div>
+
+                {/* Checklist */}
+                <ul className="space-y-1 text-sm">
+                  <ChecklistItem ok={checks.length} label="At least 8 characters" />
+                  <ChecklistItem ok={checks.number} label="One number" />
+                  <ChecklistItem ok={checks.capital} label="One capital letter" />
+                  <ChecklistItem ok={checks.special} label="One special character" />
+                </ul>
+
+                {error && <p className="text-sm text-destructive">{error}</p>}
+
+                <button
+                  type="submit"
+                  disabled={!canSubmit}
+                  className="btn-glow flex w-full items-center justify-center gap-2 rounded-xl gradient-maroon py-2.5 font-display font-bold text-primary-foreground transition-transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50"
+                >
+                  {loading && <Loader2 className="h-4 w-4 animate-spin" />}
+                  {loading ? "Updating…" : "Update Password"}
+                </button>
+              </form>
+            </>
+          )}
         </div>
       </div>
     </div>

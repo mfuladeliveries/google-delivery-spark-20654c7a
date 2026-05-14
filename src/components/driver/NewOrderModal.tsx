@@ -27,7 +27,15 @@ interface NewOrderModalProps {
   onReject: () => void;
 }
 
-const NewOrderModal = ({ open, offer, distanceKm, accepting, rejecting, onAccept, onReject }: NewOrderModalProps) => {
+const NewOrderModal = ({
+  open,
+  offer,
+  distanceKm,
+  accepting,
+  rejecting,
+  onAccept,
+  onReject,
+}: NewOrderModalProps) => {
   const [secondsLeft, setSecondsLeft] = useState<number | null>(null);
   const [dismissed, setDismissed] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -42,7 +50,11 @@ const NewOrderModal = ({ open, offer, distanceKm, accepting, rejecting, onAccept
     audioRef.current?.pause();
     if (audioRef.current) audioRef.current.currentTime = 0;
     if (typeof navigator !== "undefined" && "vibrate" in navigator) {
-      try { navigator.vibrate(0); } catch { /* noop */ }
+      try {
+        navigator.vibrate(0);
+      } catch {
+        /* noop */
+      }
     }
   };
 
@@ -52,16 +64,23 @@ const NewOrderModal = ({ open, offer, distanceKm, accepting, rejecting, onAccept
   const playFeedback = (variant: "accept" | "decline") => {
     if (!getNotificationPrefs().driver_action_sounds) return;
     try {
-      const Ctx = (window.AudioContext || (window as any).webkitAudioContext);
+      const Ctx = window.AudioContext || (window as any).webkitAudioContext;
       if (!Ctx) return;
       const ctx: AudioContext = feedbackCtxRef.current ?? new Ctx();
       feedbackCtxRef.current = ctx;
       if (ctx.state === "suspended") ctx.resume();
 
       const now = ctx.currentTime;
-      const notes = variant === "accept"
-        ? [{ f: 659.25, t: 0 }, { f: 880.0, t: 0.11 }] // E5 -> A5
-        : [{ f: 440.0, t: 0 }, { f: 293.66, t: 0.13 }]; // A4 -> D4
+      const notes =
+        variant === "accept"
+          ? [
+              { f: 659.25, t: 0 },
+              { f: 880.0, t: 0.11 },
+            ] // E5 -> A5
+          : [
+              { f: 440.0, t: 0 },
+              { f: 293.66, t: 0.13 },
+            ]; // A4 -> D4
 
       notes.forEach(({ f, t }) => {
         const osc = ctx.createOscillator();
@@ -107,21 +126,31 @@ const NewOrderModal = ({ open, offer, distanceKm, accepting, rejecting, onAccept
     audio.volume = 1;
     audioRef.current = audio;
 
-    audio.play().catch(() => { /* autoplay blocked — silent fallback */ });
+    audio.play().catch(() => {
+      /* autoplay blocked — silent fallback */
+    });
 
     // Vibration pattern: buzz 600ms, pause 300ms — repeated for ~10s
     // navigator.vibrate accepts an array of on/off durations in ms
     if (typeof navigator !== "undefined" && "vibrate" in navigator) {
       const pattern: number[] = [];
       for (let i = 0; i < 11; i++) pattern.push(600, 300);
-      try { navigator.vibrate(pattern); } catch { /* not supported */ }
+      try {
+        navigator.vibrate(pattern);
+      } catch {
+        /* not supported */
+      }
     }
 
     const stopTimer = setTimeout(() => {
       audio.pause();
       audio.currentTime = 0;
       if (typeof navigator !== "undefined" && "vibrate" in navigator) {
-        try { navigator.vibrate(0); } catch { /* noop */ }
+        try {
+          navigator.vibrate(0);
+        } catch {
+          /* noop */
+        }
       }
     }, 10000);
 
@@ -131,7 +160,11 @@ const NewOrderModal = ({ open, offer, distanceKm, accepting, rejecting, onAccept
       audio.currentTime = 0;
       audioRef.current = null;
       if (typeof navigator !== "undefined" && "vibrate" in navigator) {
-        try { navigator.vibrate(0); } catch { /* noop */ }
+        try {
+          navigator.vibrate(0);
+        } catch {
+          /* noop */
+        }
       }
     };
   }, [open, offer?.id]);
@@ -144,7 +177,7 @@ const NewOrderModal = ({ open, offer, distanceKm, accepting, rejecting, onAccept
     const tick = () => {
       const remaining = Math.max(
         0,
-        Math.ceil((new Date(offer.offer_expires_at!).getTime() - Date.now()) / 1000)
+        Math.ceil((new Date(offer.offer_expires_at!).getTime() - Date.now()) / 1000),
       );
       setSecondsLeft(remaining);
     };
@@ -154,7 +187,10 @@ const NewOrderModal = ({ open, offer, distanceKm, accepting, rejecting, onAccept
   }, [offer?.offer_expires_at, offer?.id]);
 
   if (!offer) return null;
-  const minutesAgo = Math.max(0, Math.floor((Date.now() - new Date(offer.created_at).getTime()) / 60000));
+  const minutesAgo = Math.max(
+    0,
+    Math.floor((Date.now() - new Date(offer.created_at).getTime()) / 60000),
+  );
 
   // Countdown ring math (5 min = 300s default)
   const totalSeconds = 300;
@@ -167,7 +203,12 @@ const NewOrderModal = ({ open, offer, distanceKm, accepting, rejecting, onAccept
   const dashOffset = circumference * (1 - progress);
 
   return (
-    <Dialog open={open && !dismissed} onOpenChange={() => { /* must Accept or Reject */ }}>
+    <Dialog
+      open={open && !dismissed}
+      onOpenChange={() => {
+        /* must Accept or Reject */
+      }}
+    >
       <DialogContent
         className="sm:max-w-md p-0 overflow-hidden border-2 border-primary max-h-[90vh] flex flex-col gap-0 top-[5vh] translate-y-0 sm:top-[50%] sm:translate-y-[-50%]"
         onPointerDownOutside={(e) => e.preventDefault()}
@@ -180,12 +221,21 @@ const NewOrderModal = ({ open, offer, distanceKm, accepting, rejecting, onAccept
               <Package className="h-5 w-5" />
               <h2 className="text-base font-bold">New Delivery Request</h2>
             </div>
-            <p className="text-xs opacity-90">Order #{offer.order_number} • {minutesAgo}m ago</p>
+            <p className="text-xs opacity-90">
+              Order #{offer.order_number} • {minutesAgo}m ago
+            </p>
           </div>
           {secondsLeft !== null && (
             <div className="relative h-12 w-12 shrink-0">
               <svg className="h-12 w-12 -rotate-90" viewBox="0 0 44 44">
-                <circle cx="22" cy="22" r={radius} fill="none" stroke="hsl(var(--primary-foreground) / 0.25)" strokeWidth="4" />
+                <circle
+                  cx="22"
+                  cy="22"
+                  r={radius}
+                  fill="none"
+                  stroke="hsl(var(--primary-foreground) / 0.25)"
+                  strokeWidth="4"
+                />
                 <circle
                   cx="22"
                   cy="22"
@@ -210,16 +260,22 @@ const NewOrderModal = ({ open, offer, distanceKm, accepting, rejecting, onAccept
         <div className="p-4 space-y-3 overflow-y-auto flex-1 min-h-0">
           <div className="flex items-center justify-between rounded-xl bg-[hsl(var(--driver-success)/0.08)] border border-[hsl(var(--driver-success)/0.2)] px-4 py-3">
             <div>
-              <p className="text-[10px] uppercase font-semibold tracking-wide text-muted-foreground">You'll earn</p>
+              <p className="text-[10px] uppercase font-semibold tracking-wide text-muted-foreground">
+                You'll earn
+              </p>
               <div className="flex items-center gap-2">
-                <p className="text-2xl font-bold text-[hsl(var(--driver-success))]">R{driverPayoutForFee(offer.delivery_fee)}</p>
+                <p className="text-2xl font-bold text-[hsl(var(--driver-success))]">
+                  R{driverPayoutForFee(offer.delivery_fee)}
+                </p>
               </div>
               <p className="mt-0.5 text-[10px] text-muted-foreground">
                 Customer pays R{offer.delivery_fee} delivery
               </p>
             </div>
             <div className="text-right">
-              <p className="text-[10px] uppercase font-semibold tracking-wide text-muted-foreground">Order value</p>
+              <p className="text-[10px] uppercase font-semibold tracking-wide text-muted-foreground">
+                Order value
+              </p>
               <p className="text-lg font-bold text-foreground">R{offer.total}</p>
             </div>
           </div>
@@ -229,7 +285,9 @@ const NewOrderModal = ({ open, offer, distanceKm, accepting, rejecting, onAccept
               <Store className="h-4 w-4 text-primary" />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-[10px] uppercase font-semibold tracking-wide text-muted-foreground">Pickup</p>
+              <p className="text-[10px] uppercase font-semibold tracking-wide text-muted-foreground">
+                Pickup
+              </p>
               <p className="text-sm font-semibold text-foreground truncate">{offer.restaurant}</p>
             </div>
           </div>
@@ -239,8 +297,12 @@ const NewOrderModal = ({ open, offer, distanceKm, accepting, rejecting, onAccept
               <MapPin className="h-4 w-4 text-[hsl(var(--driver-info))]" />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-[10px] uppercase font-semibold tracking-wide text-muted-foreground">Delivery</p>
-              <p className="text-sm font-semibold text-foreground truncate">{offer.customer_address}</p>
+              <p className="text-[10px] uppercase font-semibold tracking-wide text-muted-foreground">
+                Delivery
+              </p>
+              <p className="text-sm font-semibold text-foreground truncate">
+                {offer.customer_address}
+              </p>
             </div>
           </div>
 

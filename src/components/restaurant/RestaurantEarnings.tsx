@@ -43,9 +43,7 @@ const fmt = (n: number) =>
 const RestaurantEarnings = ({ restaurantId }: Props) => {
   const [loading, setLoading] = useState(true);
   const [orders, setOrders] = useState<DeliveredOrder[]>([]);
-  const [commissionPct, setCommissionPct] = useState<number>(
-    FALLBACK_COMMISSION_PERCENT,
-  );
+  const [commissionPct, setCommissionPct] = useState<number>(FALLBACK_COMMISSION_PERCENT);
   const [withdrawals, setWithdrawals] = useState<WithdrawalRow[]>([]);
   const [withdrawalsSupported, setWithdrawalsSupported] = useState(false);
 
@@ -61,9 +59,7 @@ const RestaurantEarnings = ({ restaurantId }: Props) => {
         .select("key, value")
         .eq("key", "platform_commission")
         .maybeSingle();
-      const pct = Number(
-        (settings?.value as { percent?: number } | null)?.percent,
-      );
+      const pct = Number((settings?.value as { percent?: number } | null)?.percent);
       if (Number.isFinite(pct) && pct > 0 && pct <= 100) {
         setCommissionPct(pct);
       }
@@ -178,9 +174,7 @@ const RestaurantEarnings = ({ restaurantId }: Props) => {
               <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">
                 Today's Sales
               </p>
-              <p className="text-xl font-display text-foreground mt-1">
-                {fmt(stats.todaySales)}
-              </p>
+              <p className="text-xl font-display text-foreground mt-1">{fmt(stats.todaySales)}</p>
             </div>
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10">
               <TrendingUp className="h-5 w-5 text-primary" />
@@ -206,12 +200,9 @@ const RestaurantEarnings = ({ restaurantId }: Props) => {
           <div className="flex items-start gap-3 rounded-xl border border-dashed border-border bg-background px-3 py-4">
             <Info className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
             <div>
-              <p className="text-xs font-semibold text-foreground">
-                Payouts coming soon
-              </p>
+              <p className="text-xs font-semibold text-foreground">Payouts coming soon</p>
               <p className="text-[11px] text-muted-foreground mt-0.5">
-                Restaurant withdrawals will appear here once the payout system
-                is enabled.
+                Restaurant withdrawals will appear here once the payout system is enabled.
               </p>
             </div>
           </div>
@@ -219,9 +210,7 @@ const RestaurantEarnings = ({ restaurantId }: Props) => {
           <div className="py-6 text-center text-muted-foreground">
             <ArrowDownToLine className="mx-auto h-7 w-7 opacity-40 mb-2" />
             <p className="text-xs">No withdrawals yet</p>
-            <p className="text-[10px] mt-0.5">
-              Once you request a payout it will show up here.
-            </p>
+            <p className="text-[10px] mt-0.5">Once you request a payout it will show up here.</p>
           </div>
         ) : (
           <div className="space-y-2">
@@ -231,9 +220,7 @@ const RestaurantEarnings = ({ restaurantId }: Props) => {
                 className="flex items-center justify-between rounded-xl border border-border bg-background px-3 py-2.5"
               >
                 <div className="min-w-0">
-                  <p className="text-xs font-semibold text-foreground">
-                    {fmt(Number(w.amount))}
-                  </p>
+                  <p className="text-xs font-semibold text-foreground">{fmt(Number(w.amount))}</p>
                   <p className="text-[10px] text-muted-foreground">
                     Requested{" "}
                     {new Date(w.requested_at).toLocaleDateString(undefined, {
@@ -295,9 +282,7 @@ const MetricCard = ({
           >
             {value}
           </p>
-          {sub && (
-            <p className="text-[10px] text-muted-foreground mt-0.5">{sub}</p>
-          )}
+          {sub && <p className="text-[10px] text-muted-foreground mt-0.5">{sub}</p>}
         </div>
         <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-background">
           {icon}

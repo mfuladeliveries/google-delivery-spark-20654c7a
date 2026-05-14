@@ -52,7 +52,9 @@ const ForgotPassword = () => {
     }
     setSent(true);
     setSecondsLeft(RESEND_COOLDOWN);
-    try { sessionStorage.setItem("mfula:reset-email", email.trim()); } catch {}
+    try {
+      sessionStorage.setItem("mfula:reset-email", email.trim());
+    } catch {}
     if (isResend) setResendCount((c) => c + 1);
   };
 
@@ -78,101 +80,113 @@ const ForgotPassword = () => {
             alt={storeInfo.name}
             className="mx-auto h-20 w-20 rounded-full object-cover ring-2 ring-[hsl(var(--gold))] shadow-gold"
           />
-          <h1 className="mt-4 font-display text-3xl font-bold text-primary tracking-tight">{storeInfo.name}</h1>
+          <h1 className="mt-4 font-display text-3xl font-bold text-primary tracking-tight">
+            {storeInfo.name}
+          </h1>
         </div>
 
         <div className="glass shadow-luxury rounded-3xl p-6 sm:p-7">
-
-        {!sent ? (
-          <>
-            <div className="mb-6">
-              <h2 className="font-display text-xl font-bold text-foreground">Reset your password</h2>
-              <div className="mt-2 h-px bg-border" />
-              <p className="mt-4 text-sm text-muted-foreground">
-                Enter the email address linked to your account and we'll send you a reset link.
-              </p>
-            </div>
-
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <label className="mb-1 block text-sm font-medium text-foreground">Email address</label>
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => { setEmail(e.target.value); setError(""); }}
-                  required
-                  autoComplete="email"
-                  className="w-full rounded-xl border border-border bg-card px-4 py-2.5 text-sm text-card-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-                  placeholder="you@example.com"
-                />
-                {error && <p className="mt-2 text-sm text-destructive">{error}</p>}
+          {!sent ? (
+            <>
+              <div className="mb-6">
+                <h2 className="font-display text-xl font-bold text-foreground">
+                  Reset your password
+                </h2>
+                <div className="mt-2 h-px bg-border" />
+                <p className="mt-4 text-sm text-muted-foreground">
+                  Enter the email address linked to your account and we'll send you a reset link.
+                </p>
               </div>
 
-              <button
-                type="submit"
-                disabled={loading || !email}
-                className="btn-glow flex w-full items-center justify-center gap-2 rounded-xl gradient-maroon py-2.5 font-display font-bold text-primary-foreground transition-transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50"
-              >
-                {loading && <Loader2 className="h-4 w-4 animate-spin" />}
-                {loading ? "Sending..." : "Send Reset Link"}
-              </button>
-            </form>
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-foreground">
+                    Email address
+                  </label>
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => {
+                      setEmail(e.target.value);
+                      setError("");
+                    }}
+                    required
+                    autoComplete="email"
+                    className="w-full rounded-xl border border-border bg-card px-4 py-2.5 text-sm text-card-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                    placeholder="you@example.com"
+                  />
+                  {error && <p className="mt-2 text-sm text-destructive">{error}</p>}
+                </div>
 
-            <Link
-              to="/auth"
-              className="mt-6 flex items-center justify-center gap-1 text-sm text-muted-foreground hover:text-foreground"
-            >
-              <ArrowLeft className="h-4 w-4" /> Back to Sign In
-            </Link>
-          </>
-        ) : (
-          <div className="text-center">
-            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
-              <Mail className="h-8 w-8 text-primary" />
-            </div>
-            <h2 className="mt-5 font-display text-xl font-bold text-foreground">Check your email!</h2>
-            <p className="mt-3 text-sm text-muted-foreground">
-              We sent a password reset link to:
-            </p>
-            <p className="mt-1 break-all text-sm font-semibold text-foreground">{email}</p>
-            <p className="mt-4 text-sm text-muted-foreground">
-              Tap the link in the email to reset your password. The link expires in 1 hour.
-            </p>
-
-            <a
-              href="mailto:"
-              className="btn-glow mt-6 inline-flex w-full items-center justify-center rounded-xl gradient-maroon py-2.5 font-display font-bold text-primary-foreground transition-transform hover:scale-[1.02] active:scale-[0.98]"
-            >
-              Open Email App
-            </a>
-
-            <div className="mt-5 text-sm">
-              <p className="text-muted-foreground">Didn't receive it?</p>
-              {resendsExhausted ? (
-                <p className="mt-1 text-destructive">Too many attempts. Please try again later.</p>
-              ) : secondsLeft > 0 ? (
-                <p className="mt-1 text-muted-foreground">Resend in {formatTime(secondsLeft)}</p>
-              ) : (
                 <button
-                  type="button"
-                  onClick={() => sendLink(true)}
-                  disabled={loading}
-                  className="mt-1 font-semibold text-primary hover:underline disabled:opacity-50"
+                  type="submit"
+                  disabled={loading || !email}
+                  className="btn-glow flex w-full items-center justify-center gap-2 rounded-xl gradient-maroon py-2.5 font-display font-bold text-primary-foreground transition-transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50"
                 >
-                  {loading ? "Sending..." : "Resend email"}
+                  {loading && <Loader2 className="h-4 w-4 animate-spin" />}
+                  {loading ? "Sending..." : "Send Reset Link"}
                 </button>
-              )}
-              {error && <p className="mt-2 text-destructive">{error}</p>}
-            </div>
+              </form>
 
-            <Link
-              to="/auth"
-              className="mt-6 flex items-center justify-center gap-1 text-sm text-muted-foreground hover:text-foreground"
-            >
-              <ArrowLeft className="h-4 w-4" /> Back to Sign In
-            </Link>
-          </div>
-        )}
+              <Link
+                to="/auth"
+                className="mt-6 flex items-center justify-center gap-1 text-sm text-muted-foreground hover:text-foreground"
+              >
+                <ArrowLeft className="h-4 w-4" /> Back to Sign In
+              </Link>
+            </>
+          ) : (
+            <div className="text-center">
+              <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
+                <Mail className="h-8 w-8 text-primary" />
+              </div>
+              <h2 className="mt-5 font-display text-xl font-bold text-foreground">
+                Check your email!
+              </h2>
+              <p className="mt-3 text-sm text-muted-foreground">
+                We sent a password reset link to:
+              </p>
+              <p className="mt-1 break-all text-sm font-semibold text-foreground">{email}</p>
+              <p className="mt-4 text-sm text-muted-foreground">
+                Tap the link in the email to reset your password. The link expires in 1 hour.
+              </p>
+
+              <a
+                href="mailto:"
+                className="btn-glow mt-6 inline-flex w-full items-center justify-center rounded-xl gradient-maroon py-2.5 font-display font-bold text-primary-foreground transition-transform hover:scale-[1.02] active:scale-[0.98]"
+              >
+                Open Email App
+              </a>
+
+              <div className="mt-5 text-sm">
+                <p className="text-muted-foreground">Didn't receive it?</p>
+                {resendsExhausted ? (
+                  <p className="mt-1 text-destructive">
+                    Too many attempts. Please try again later.
+                  </p>
+                ) : secondsLeft > 0 ? (
+                  <p className="mt-1 text-muted-foreground">Resend in {formatTime(secondsLeft)}</p>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => sendLink(true)}
+                    disabled={loading}
+                    className="mt-1 font-semibold text-primary hover:underline disabled:opacity-50"
+                  >
+                    {loading ? "Sending..." : "Resend email"}
+                  </button>
+                )}
+                {error && <p className="mt-2 text-destructive">{error}</p>}
+              </div>
+
+              <Link
+                to="/auth"
+                className="mt-6 flex items-center justify-center gap-1 text-sm text-muted-foreground hover:text-foreground"
+              >
+                <ArrowLeft className="h-4 w-4" /> Back to Sign In
+              </Link>
+            </div>
+          )}
         </div>
       </div>
     </div>

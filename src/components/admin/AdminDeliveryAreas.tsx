@@ -202,12 +202,7 @@ const AdminDeliveryAreas = () => {
   };
 
   const handleDelete = async (z: DeliveryZone) => {
-    if (
-      !confirm(
-        `Delete "${z.name}"? Drivers assigned to this zone will be unassigned.`,
-      )
-    )
-      return;
+    if (!confirm(`Delete "${z.name}"? Drivers assigned to this zone will be unassigned.`)) return;
     const { error } = await supabase.from("delivery_areas").delete().eq("id", z.id);
     if (error) toast.error(error.message);
     else {
@@ -230,9 +225,8 @@ const AdminDeliveryAreas = () => {
             <MapPin className="h-5 w-5 text-primary" /> Delivery Zones
           </h2>
           <p className="text-xs text-muted-foreground mt-1">
-            Each zone has a centre point, a delivery radius and dynamic pricing
-            (base + per-km, optionally clamped). Customers can only order if they
-            fall inside an active zone.
+            Each zone has a centre point, a delivery radius and dynamic pricing (base + per-km,
+            optionally clamped). Customers can only order if they fall inside an active zone.
           </p>
         </div>
         {!creating && (
@@ -247,9 +241,7 @@ const AdminDeliveryAreas = () => {
 
       {creating && (
         <div className="rounded-2xl border-2 border-primary/40 bg-primary/5 p-4 space-y-3">
-          <h3 className="font-bold text-foreground">
-            {editing ? "Edit zone" : "Add new zone"}
-          </h3>
+          <h3 className="font-bold text-foreground">{editing ? "Edit zone" : "Add new zone"}</h3>
           <div>
             <label className="text-xs font-semibold text-muted-foreground mb-1 block">
               Zone name <span className="text-destructive">*</span>
@@ -309,12 +301,8 @@ const AdminDeliveryAreas = () => {
           {/* Radius slider */}
           <div>
             <div className="flex items-center justify-between mb-1">
-              <label className="text-xs font-semibold text-muted-foreground">
-                Delivery radius
-              </label>
-              <span className="text-xs font-bold text-primary">
-                {form.radius_km} km
-              </span>
+              <label className="text-xs font-semibold text-muted-foreground">Delivery radius</label>
+              <span className="text-xs font-bold text-primary">{form.radius_km} km</span>
             </div>
             <input
               type="range"
@@ -322,9 +310,7 @@ const AdminDeliveryAreas = () => {
               max={20}
               step={0.5}
               value={form.radius_km}
-              onChange={(e) =>
-                setForm((f) => ({ ...f, radius_km: Number(e.target.value) }))
-              }
+              onChange={(e) => setForm((f) => ({ ...f, radius_km: Number(e.target.value) }))}
               className="w-full accent-primary"
             />
             <div className="flex justify-between text-[10px] text-muted-foreground mt-0.5">
@@ -344,9 +330,7 @@ const AdminDeliveryAreas = () => {
                 step="1"
                 min="0"
                 value={form.base_fee}
-                onChange={(e) =>
-                  setForm((f) => ({ ...f, base_fee: e.target.value }))
-                }
+                onChange={(e) => setForm((f) => ({ ...f, base_fee: e.target.value }))}
                 className="w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm text-foreground focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none"
               />
             </div>
@@ -359,9 +343,7 @@ const AdminDeliveryAreas = () => {
                 step="0.5"
                 min="0"
                 value={form.price_per_km}
-                onChange={(e) =>
-                  setForm((f) => ({ ...f, price_per_km: e.target.value }))
-                }
+                onChange={(e) => setForm((f) => ({ ...f, price_per_km: e.target.value }))}
                 className="w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm text-foreground focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none"
               />
             </div>
@@ -376,9 +358,7 @@ const AdminDeliveryAreas = () => {
                 step="1"
                 min="0"
                 value={form.min_fee}
-                onChange={(e) =>
-                  setForm((f) => ({ ...f, min_fee: e.target.value }))
-                }
+                onChange={(e) => setForm((f) => ({ ...f, min_fee: e.target.value }))}
                 placeholder="—"
                 className="w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm text-foreground focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none"
               />
@@ -392,9 +372,7 @@ const AdminDeliveryAreas = () => {
                 step="1"
                 min="0"
                 value={form.max_fee}
-                onChange={(e) =>
-                  setForm((f) => ({ ...f, max_fee: e.target.value }))
-                }
+                onChange={(e) => setForm((f) => ({ ...f, max_fee: e.target.value }))}
                 placeholder="—"
                 className="w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm text-foreground focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none"
               />
@@ -428,9 +406,7 @@ const AdminDeliveryAreas = () => {
         <div className="fixed inset-0 z-[70] bg-black/70 backdrop-blur-sm flex items-center justify-center p-3">
           <div className="relative w-full max-w-lg max-h-[92vh] overflow-y-auto rounded-3xl border border-border bg-background pt-4 shadow-xl">
             <div className="flex items-center justify-between px-4 pb-2">
-              <h3 className="font-display text-base font-bold text-foreground">
-                Pick zone centre
-              </h3>
+              <h3 className="font-display text-base font-bold text-foreground">Pick zone centre</h3>
               <button
                 onClick={() => setShowMap(false)}
                 className="rounded-full p-2 text-muted-foreground hover:bg-secondary"
@@ -452,9 +428,7 @@ const AdminDeliveryAreas = () => {
                 initialCoords={(() => {
                   const la = Number(form.lat);
                   const ln = Number(form.lng);
-                  return Number.isFinite(la) && Number.isFinite(ln)
-                    ? { lat: la, lng: ln }
-                    : null;
+                  return Number.isFinite(la) && Number.isFinite(ln) ? { lat: la, lng: ln } : null;
                 })()}
               />
             </Suspense>
@@ -502,16 +476,14 @@ const AdminDeliveryAreas = () => {
                   </div>
                   <p className="text-[11px] text-muted-foreground mt-1">
                     Base R{Number(z.base_fee).toFixed(0)}
-                    {Number(z.price_per_km) > 0 && (
-                      <> + R{Number(z.price_per_km).toFixed(2)}/km</>
-                    )}
+                    {Number(z.price_per_km) > 0 && <> + R{Number(z.price_per_km).toFixed(2)}/km</>}
                     {z.min_fee != null && <> · min R{Number(z.min_fee).toFixed(0)}</>}
                     {z.max_fee != null && <> · max R{Number(z.max_fee).toFixed(0)}</>}
                   </p>
                   <p className="text-[11px] text-muted-foreground mt-0.5">
                     {hasCoords ? (
                       <>
-                        Centre: {z.lat!.toFixed(4)}, {z.lng!.toFixed(4)} · {" "}
+                        Centre: {z.lat!.toFixed(4)}, {z.lng!.toFixed(4)} ·{" "}
                         <span className="font-semibold text-foreground">
                           {orders} order{orders === 1 ? "" : "s"}
                         </span>

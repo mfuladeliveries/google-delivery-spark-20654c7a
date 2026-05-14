@@ -4,11 +4,29 @@ import { useAuth } from "@/hooks/useAuth";
 
 type AppRole = "admin" | "customer" | "restaurant" | "driver";
 
-const APP_LINKS: Record<AppRole, { to: string; label: string; icon: React.ComponentType<{ className?: string }>; tint: string }> = {
+const APP_LINKS: Record<
+  AppRole,
+  { to: string; label: string; icon: React.ComponentType<{ className?: string }>; tint: string }
+> = {
   customer: { to: "/", label: "Customer App", icon: Home, tint: "bg-primary/10 text-primary" },
-  driver: { to: "/driver", label: "Driver App", icon: Truck, tint: "bg-blue-500/10 text-blue-600 dark:text-blue-400" },
-  restaurant: { to: "/restaurant/dashboard", label: "Restaurant Dashboard", icon: ChefHat, tint: "bg-orange-500/10 text-orange-600 dark:text-orange-400" },
-  admin: { to: "/admin", label: "Admin Console", icon: Shield, tint: "bg-purple-500/10 text-purple-600 dark:text-purple-400" },
+  driver: {
+    to: "/driver",
+    label: "Driver App",
+    icon: Truck,
+    tint: "bg-blue-500/10 text-blue-600 dark:text-blue-400",
+  },
+  restaurant: {
+    to: "/restaurant/dashboard",
+    label: "Restaurant Dashboard",
+    icon: ChefHat,
+    tint: "bg-orange-500/10 text-orange-600 dark:text-orange-400",
+  },
+  admin: {
+    to: "/admin",
+    label: "Admin Console",
+    icon: Shield,
+    tint: "bg-purple-500/10 text-purple-600 dark:text-purple-400",
+  },
 };
 
 const ORDER: AppRole[] = ["customer", "driver", "restaurant", "admin"];

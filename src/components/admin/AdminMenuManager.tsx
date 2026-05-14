@@ -23,7 +23,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Dialog,
   DialogContent,
@@ -46,15 +52,7 @@ import { isRestaurantOpen } from "@/lib/restaurantHours";
 import FoodImageUpload from "@/components/FoodImageUpload";
 
 const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"] as const;
-const CATEGORIES = [
-  "Braai",
-  "Sides",
-  "Drinks",
-  "Starters",
-  "Mains",
-  "Desserts",
-  "Specials",
-];
+const CATEGORIES = ["Braai", "Sides", "Drinks", "Starters", "Mains", "Desserts", "Specials"];
 
 interface Restaurant {
   id: string;
@@ -159,8 +157,8 @@ const AdminMenuManager = () => {
 
   const filtered = useMemo(() => {
     return restaurants
-      .filter(r => r.name.toLowerCase().includes(search.toLowerCase()))
-      .filter(r => {
+      .filter((r) => r.name.toLowerCase().includes(search.toLowerCase()))
+      .filter((r) => {
         if (filter === "all") return true;
         const open = isOpenNow(r);
         return filter === "open" ? open : !open;
@@ -175,7 +173,7 @@ const AdminMenuManager = () => {
           setSelected(null);
           fetchRestaurants();
         }}
-        onUpdated={updated => setSelected(updated)}
+        onUpdated={(updated) => setSelected(updated)}
       />
     );
   }
@@ -192,13 +190,13 @@ const AdminMenuManager = () => {
         <Input
           placeholder="Search restaurants..."
           value={search}
-          onChange={e => setSearch(e.target.value)}
+          onChange={(e) => setSearch(e.target.value)}
           className="pl-9"
         />
       </div>
 
       <div className="flex gap-2">
-        {(["all", "open", "closed"] as FilterMode[]).map(f => (
+        {(["all", "open", "closed"] as FilterMode[]).map((f) => (
           <button
             key={f}
             onClick={() => setFilter(f)}
@@ -223,7 +221,7 @@ const AdminMenuManager = () => {
         </div>
       ) : (
         <div className="space-y-2">
-          {filtered.map(r => {
+          {filtered.map((r) => {
             const open = isOpenNow(r);
             return (
               <button
@@ -245,7 +243,8 @@ const AdminMenuManager = () => {
                       {r.cuisine || "—"} · {menuCounts[r.id] ?? 0} menu items
                     </p>
                     <p className="mt-0.5 text-xs text-muted-foreground">
-                      ⭐ {Number(r.rating ?? 0).toFixed(1)} · Min R{Number(r.min_order ?? 0).toFixed(0)}
+                      ⭐ {Number(r.rating ?? 0).toFixed(1)} · Min R
+                      {Number(r.min_order ?? 0).toFixed(0)}
                     </p>
                   </div>
                 </div>
@@ -301,11 +300,11 @@ const RestaurantDetail = ({
 
   const categories = useMemo(() => {
     const set = new Set<string>();
-    items.forEach(i => i.category && set.add(i.category));
+    items.forEach((i) => i.category && set.add(i.category));
     return ["All", ...Array.from(set)];
   }, [items]);
 
-  const filteredItems = items.filter(i =>
+  const filteredItems = items.filter((i) =>
     categoryFilter === "All" ? true : i.category === categoryFilter,
   );
 
@@ -319,7 +318,7 @@ const RestaurantDetail = ({
       toast.error("Update failed");
       return;
     }
-    setItems(items.map(i => (i.id === item.id ? { ...i, is_available: next } : i)));
+    setItems(items.map((i) => (i.id === item.id ? { ...i, is_available: next } : i)));
     toast.success(`${item.name} ${next ? "🟢 is now Available" : "🔴 marked as Sold Out"}`);
   };
 
@@ -333,7 +332,7 @@ const RestaurantDetail = ({
       toast.error("Update failed");
       return;
     }
-    setItems(items.map(i => (i.id === item.id ? { ...i, is_popular: next } : i)));
+    setItems(items.map((i) => (i.id === item.id ? { ...i, is_popular: next } : i)));
     toast.success(next ? `⭐ ${item.name} marked Popular` : `${item.name} popular badge removed`);
   };
 
@@ -343,7 +342,7 @@ const RestaurantDetail = ({
       toast.error("Delete failed");
       return;
     }
-    setItems(items.filter(i => i.id !== item.id));
+    setItems(items.filter((i) => i.id !== item.id));
     toast.success(`🗑️ ${item.name} deleted`);
   };
 
@@ -358,7 +357,9 @@ const RestaurantDetail = ({
       return;
     }
     onUpdated({ ...restaurant, is_open: next });
-    toast.success(next ? `🟢 ${restaurant.name} is now Open` : `🔴 ${restaurant.name} is now Closed`);
+    toast.success(
+      next ? `🟢 ${restaurant.name} is now Open` : `🔴 ${restaurant.name} is now Closed`,
+    );
   };
 
   const heroImage = restaurant.image_url || restaurant.banner_url || restaurant.logo;
@@ -387,7 +388,12 @@ const RestaurantDetail = ({
           </p>
 
           <div className="mt-4 grid grid-cols-3 gap-2">
-            <Button variant="outline" size="sm" onClick={() => setShowEditInfo(true)} className="flex-col h-auto py-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowEditInfo(true)}
+              className="flex-col h-auto py-2"
+            >
               <Pencil className="h-4 w-4" />
               <span className="mt-1 text-[10px]">Edit Info</span>
             </Button>
@@ -412,11 +418,18 @@ const RestaurantDetail = ({
           </div>
 
           <div className="mt-4 space-y-1.5 text-xs text-foreground">
-            <p className="flex items-center gap-2"><MapPin className="h-3.5 w-3.5 text-muted-foreground" /> {restaurant.location || "—"}</p>
-            <p className="flex items-center gap-2"><Clock className="h-3.5 w-3.5 text-muted-foreground" /> {restaurant.delivery_time || "—"}</p>
+            <p className="flex items-center gap-2">
+              <MapPin className="h-3.5 w-3.5 text-muted-foreground" /> {restaurant.location || "—"}
+            </p>
+            <p className="flex items-center gap-2">
+              <Clock className="h-3.5 w-3.5 text-muted-foreground" />{" "}
+              {restaurant.delivery_time || "—"}
+            </p>
             <p>💰 Min order: R{Number(restaurant.min_order ?? 0).toFixed(0)}</p>
             {restaurant.contact_number && (
-              <p className="flex items-center gap-2"><Phone className="h-3.5 w-3.5 text-muted-foreground" /> {restaurant.contact_number}</p>
+              <p className="flex items-center gap-2">
+                <Phone className="h-3.5 w-3.5 text-muted-foreground" /> {restaurant.contact_number}
+              </p>
             )}
             <p>🏷️ Category: {restaurant.cuisine || "—"}</p>
           </div>
@@ -425,14 +438,18 @@ const RestaurantDetail = ({
 
       <div className="flex items-center justify-between">
         <h3 className="font-bold text-foreground">🍽️ Menu Items ({items.length})</h3>
-        <Button size="sm" onClick={() => setShowAddItem(true)} className="bg-primary hover:bg-primary/90">
+        <Button
+          size="sm"
+          onClick={() => setShowAddItem(true)}
+          className="bg-primary hover:bg-primary/90"
+        >
           <Plus className="h-4 w-4" /> Add Item
         </Button>
       </div>
 
       {categories.length > 1 && (
         <div className="flex gap-1.5 overflow-x-auto scrollbar-hide">
-          {categories.map(c => (
+          {categories.map((c) => (
             <button
               key={c}
               onClick={() => setCategoryFilter(c)}
@@ -458,7 +475,7 @@ const RestaurantDetail = ({
         </div>
       ) : (
         <div className="space-y-2">
-          {filteredItems.map(item => (
+          {filteredItems.map((item) => (
             <MenuItemAdminCard
               key={item.id}
               item={item}
@@ -466,8 +483,8 @@ const RestaurantDetail = ({
               onTogglePopular={() => togglePopular(item)}
               onEditFull={() => setEditingItem(item)}
               onDelete={() => deleteItem(item)}
-              onItemUpdated={updated =>
-                setItems(items.map(i => (i.id === updated.id ? updated : i)))
+              onItemUpdated={(updated) =>
+                setItems(items.map((i) => (i.id === updated.id ? updated : i)))
               }
             />
           ))}
@@ -506,7 +523,7 @@ const RestaurantDetail = ({
         <RestaurantInfoDialog
           restaurant={restaurant}
           onClose={() => setShowEditInfo(false)}
-          onSaved={updated => {
+          onSaved={(updated) => {
             setShowEditInfo(false);
             onUpdated(updated);
           }}
@@ -566,8 +583,8 @@ const MenuItemAdminCard = ({
   const cuts = Array.isArray(item.cuts) ? item.cuts : [];
   const sizes = Array.isArray(item.sizes) ? item.sizes : [];
   const addOns = Array.isArray(item.add_ons) ? item.add_ons : [];
-  const freeAddOns = addOns.filter(a => Number(a.price) === 0);
-  const paidAddOns = addOns.filter(a => Number(a.price) > 0);
+  const freeAddOns = addOns.filter((a) => Number(a.price) === 0);
+  const paidAddOns = addOns.filter((a) => Number(a.price) > 0);
 
   const [cutsOpen, setCutsOpen] = useState(cuts.length < 5);
   const [sizesOpen, setSizesOpen] = useState(sizes.length < 5);
@@ -612,13 +629,11 @@ const MenuItemAdminCard = ({
         >
           <span className="flex items-center gap-1.5">
             <Drumstick className="h-3 w-3" />
-            {item.has_cuts && cuts.length > 0
-              ? `Cuts (${cuts.length})`
-              : "No Cuts"}
+            {item.has_cuts && cuts.length > 0 ? `Cuts (${cuts.length})` : "No Cuts"}
           </span>
-          {item.has_cuts && cuts.length > 0 && (
-            cutsOpen ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />
-          )}
+          {item.has_cuts &&
+            cuts.length > 0 &&
+            (cutsOpen ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />)}
         </button>
 
         {item.has_cuts && cuts.length > 0 && cutsOpen && (
@@ -633,7 +648,9 @@ const MenuItemAdminCard = ({
                     <Star className="absolute -right-1 -top-1 h-3 w-3 fill-amber-400 text-amber-400" />
                   )}
                   <p className="text-[12px] font-bold text-primary">{c.name}</p>
-                  <p className="text-[13px] font-bold text-foreground">R{Number(c.price).toFixed(0)}</p>
+                  <p className="text-[13px] font-bold text-foreground">
+                    R{Number(c.price).toFixed(0)}
+                  </p>
                 </div>
               ))}
             </div>
@@ -667,9 +684,9 @@ const MenuItemAdminCard = ({
               ? `Sizes (${sizes.length})`
               : "No Sizes (single price)"}
           </span>
-          {item.has_sizes && sizes.length > 0 && (
-            sizesOpen ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />
-          )}
+          {item.has_sizes &&
+            sizes.length > 0 &&
+            (sizesOpen ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />)}
         </button>
 
         {item.has_sizes && sizes.length > 0 && sizesOpen && (
@@ -684,7 +701,9 @@ const MenuItemAdminCard = ({
                     <Star className="absolute -right-1 -top-1 h-3 w-3 fill-amber-400 text-amber-400" />
                   )}
                   <p className="text-[12px] font-bold text-primary">{s.name}</p>
-                  <p className="text-[13px] font-bold text-foreground">R{Number(s.price).toFixed(0)}</p>
+                  <p className="text-[13px] font-bold text-foreground">
+                    R{Number(s.price).toFixed(0)}
+                  </p>
                 </div>
               ))}
             </div>
@@ -718,9 +737,9 @@ const MenuItemAdminCard = ({
               ? `Sauces / Add-Ons (${addOns.length})`
               : "No Sauces"}
           </span>
-          {item.has_add_ons && addOns.length > 0 && (
-            addOnsOpen ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />
-          )}
+          {item.has_add_ons &&
+            addOns.length > 0 &&
+            (addOnsOpen ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />)}
         </button>
 
         {item.has_add_ons && addOns.length > 0 && addOnsOpen && (
@@ -793,7 +812,7 @@ const MenuItemAdminCard = ({
         <EditSizesDialog
           item={item}
           onClose={() => setEditSizes(false)}
-          onSaved={updated => {
+          onSaved={(updated) => {
             setEditSizes(false);
             onItemUpdated(updated);
           }}
@@ -803,7 +822,7 @@ const MenuItemAdminCard = ({
         <EditAddOnsDialog
           item={item}
           onClose={() => setEditAddOns(false)}
-          onSaved={updated => {
+          onSaved={(updated) => {
             setEditAddOns(false);
             onItemUpdated(updated);
           }}
@@ -813,7 +832,7 @@ const MenuItemAdminCard = ({
         <EditCutsDialog
           item={item}
           onClose={() => setEditCuts(false)}
-          onSaved={updated => {
+          onSaved={(updated) => {
             setEditCuts(false);
             onItemUpdated(updated);
           }}
@@ -845,12 +864,12 @@ const EditSizesDialog = ({
 
   const handleSave = async () => {
     const cleaned = sizes
-      .map(s => ({ ...s, name: s.name.trim(), price: Number(s.price) || 0 }))
-      .filter(s => s.name);
+      .map((s) => ({ ...s, name: s.name.trim(), price: Number(s.price) || 0 }))
+      .filter((s) => s.name);
     if (cleaned.length === 0) return toast.error("Add at least one size");
-    if (cleaned.some(s => s.price <= 0)) return toast.error("Each size price must be > R0");
+    if (cleaned.some((s) => s.price <= 0)) return toast.error("Each size price must be > R0");
     if (cleaned.length > 6) return toast.error("Max 6 sizes per item");
-    const names = cleaned.map(s => s.name.toLowerCase());
+    const names = cleaned.map((s) => s.name.toLowerCase());
     if (new Set(names).size !== names.length) return toast.error("Duplicate size names");
 
     setBusy(true);
@@ -877,7 +896,7 @@ const EditSizesDialog = ({
   };
 
   return (
-    <Dialog open onOpenChange={open => !open && onClose()}>
+    <Dialog open onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>📐 Edit Sizes</DialogTitle>
@@ -893,7 +912,7 @@ const EditSizesDialog = ({
                   <Input
                     value={s.name}
                     placeholder="Small"
-                    onChange={e => update(i, { name: e.target.value })}
+                    onChange={(e) => update(i, { name: e.target.value })}
                   />
                 </div>
                 <div>
@@ -902,7 +921,7 @@ const EditSizesDialog = ({
                     type="number"
                     step="0.01"
                     value={s.price}
-                    onChange={e => update(i, { price: parseFloat(e.target.value) || 0 })}
+                    onChange={(e) => update(i, { price: parseFloat(e.target.value) || 0 })}
                   />
                 </div>
               </div>
@@ -910,7 +929,7 @@ const EditSizesDialog = ({
                 <div className="flex items-center gap-2">
                   <Switch
                     checked={!!s.popular}
-                    onCheckedChange={v => update(i, { popular: v })}
+                    onCheckedChange={(v) => update(i, { popular: v })}
                   />
                   <span className="text-[11px] text-muted-foreground">⭐ Popular</span>
                 </div>
@@ -939,11 +958,18 @@ const EditSizesDialog = ({
 
         <DialogFooter className="flex-col-reverse gap-2 sm:flex-row">
           {item.has_sizes && (
-            <Button variant="ghost" onClick={handleRemoveAll} disabled={busy} className="text-destructive">
+            <Button
+              variant="ghost"
+              onClick={handleRemoveAll}
+              disabled={busy}
+              className="text-destructive"
+            >
               Remove All
             </Button>
           )}
-          <Button variant="outline" onClick={onClose}>Cancel</Button>
+          <Button variant="outline" onClick={onClose}>
+            Cancel
+          </Button>
           <Button onClick={handleSave} disabled={busy} className="bg-primary hover:bg-primary/90">
             Save Sizes
           </Button>
@@ -975,12 +1001,12 @@ const EditCutsDialog = ({
 
   const handleSave = async () => {
     const cleaned = cuts
-      .map(c => ({ ...c, name: c.name.trim(), price: Number(c.price) || 0 }))
-      .filter(c => c.name);
+      .map((c) => ({ ...c, name: c.name.trim(), price: Number(c.price) || 0 }))
+      .filter((c) => c.name);
     if (cleaned.length === 0) return toast.error("Add at least one cut");
-    if (cleaned.some(c => c.price <= 0)) return toast.error("Each cut price must be > R0");
+    if (cleaned.some((c) => c.price <= 0)) return toast.error("Each cut price must be > R0");
     if (cleaned.length > 8) return toast.error("Max 8 cuts per item");
-    const names = cleaned.map(c => c.name.toLowerCase());
+    const names = cleaned.map((c) => c.name.toLowerCase());
     if (new Set(names).size !== names.length) return toast.error("Duplicate cut names");
 
     setBusy(true);
@@ -1007,7 +1033,7 @@ const EditCutsDialog = ({
   };
 
   return (
-    <Dialog open onOpenChange={open => !open && onClose()}>
+    <Dialog open onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>🍗 Edit Cuts</DialogTitle>
@@ -1023,7 +1049,7 @@ const EditCutsDialog = ({
                   <Input
                     value={c.name}
                     placeholder="Drumsticks"
-                    onChange={e => update(i, { name: e.target.value })}
+                    onChange={(e) => update(i, { name: e.target.value })}
                   />
                 </div>
                 <div>
@@ -1032,7 +1058,7 @@ const EditCutsDialog = ({
                     type="number"
                     step="0.01"
                     value={c.price}
-                    onChange={e => update(i, { price: parseFloat(e.target.value) || 0 })}
+                    onChange={(e) => update(i, { price: parseFloat(e.target.value) || 0 })}
                   />
                 </div>
               </div>
@@ -1043,7 +1069,9 @@ const EditCutsDialog = ({
                     type="number"
                     min={1}
                     value={c.min_pieces ?? 1}
-                    onChange={e => update(i, { min_pieces: Math.max(1, parseInt(e.target.value) || 1) })}
+                    onChange={(e) =>
+                      update(i, { min_pieces: Math.max(1, parseInt(e.target.value) || 1) })
+                    }
                   />
                 </div>
                 <div>
@@ -1052,18 +1080,21 @@ const EditCutsDialog = ({
                     type="number"
                     min={1}
                     value={c.max_pieces ?? 1}
-                    onChange={e => update(i, { max_pieces: Math.max(1, parseInt(e.target.value) || 1) })}
+                    onChange={(e) =>
+                      update(i, { max_pieces: Math.max(1, parseInt(e.target.value) || 1) })
+                    }
                   />
                 </div>
               </div>
               <p className="text-[10px] text-muted-foreground">
-                Set Max &gt; 1 to let customers choose how many pieces (e.g. 1–10 drumsticks). Leave Max = 1 for fixed portions like Full / Half chicken.
+                Set Max &gt; 1 to let customers choose how many pieces (e.g. 1–10 drumsticks). Leave
+                Max = 1 for fixed portions like Full / Half chicken.
               </p>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Switch
                     checked={!!c.popular}
-                    onCheckedChange={v => update(i, { popular: v })}
+                    onCheckedChange={(v) => update(i, { popular: v })}
                   />
                   <span className="text-[11px] text-muted-foreground">⭐ Popular</span>
                 </div>
@@ -1092,11 +1123,18 @@ const EditCutsDialog = ({
 
         <DialogFooter className="flex-col-reverse gap-2 sm:flex-row">
           {item.has_cuts && (
-            <Button variant="ghost" onClick={handleRemoveAll} disabled={busy} className="text-destructive">
+            <Button
+              variant="ghost"
+              onClick={handleRemoveAll}
+              disabled={busy}
+              className="text-destructive"
+            >
               Remove All
             </Button>
           )}
-          <Button variant="outline" onClick={onClose}>Cancel</Button>
+          <Button variant="outline" onClick={onClose}>
+            Cancel
+          </Button>
           <Button onClick={handleSave} disabled={busy} className="bg-primary hover:bg-primary/90">
             Save Cuts
           </Button>
@@ -1118,27 +1156,25 @@ const EditAddOnsDialog = ({
   onClose: () => void;
   onSaved: (m: MenuItem) => void;
 }) => {
-  const [addOns, setAddOns] = useState<AddOnOption[]>(
-    item.add_ons?.length ? item.add_ons : [],
-  );
+  const [addOns, setAddOns] = useState<AddOnOption[]>(item.add_ons?.length ? item.add_ons : []);
   const [busy, setBusy] = useState(false);
 
   const update = (i: number, patch: Partial<AddOnOption>) =>
     setAddOns(addOns.map((s, idx) => (idx === i ? { ...s, ...patch } : s)));
 
   const addPreset = (preset: AddOnOption) => {
-    if (addOns.some(a => a.name.trim().toLowerCase() === preset.name.toLowerCase())) return;
+    if (addOns.some((a) => a.name.trim().toLowerCase() === preset.name.toLowerCase())) return;
     if (addOns.length >= 12) return toast.error("Max 12 sauces per item");
     setAddOns([...addOns, { ...preset }]);
   };
 
   const handleSave = async () => {
     const cleaned = addOns
-      .map(a => ({ ...a, name: a.name.trim(), price: Number(a.price) || 0 }))
-      .filter(a => a.name);
-    if (cleaned.some(a => a.price < 0)) return toast.error("Price cannot be negative");
+      .map((a) => ({ ...a, name: a.name.trim(), price: Number(a.price) || 0 }))
+      .filter((a) => a.name);
+    if (cleaned.some((a) => a.price < 0)) return toast.error("Price cannot be negative");
     if (cleaned.length > 12) return toast.error("Max 12 sauces per item");
-    const names = cleaned.map(a => a.name.toLowerCase());
+    const names = cleaned.map((a) => a.name.toLowerCase());
     if (new Set(names).size !== names.length) return toast.error("Duplicate sauce names");
 
     setBusy(true);
@@ -1156,7 +1192,7 @@ const EditAddOnsDialog = ({
   };
 
   return (
-    <Dialog open onOpenChange={open => !open && onClose()}>
+    <Dialog open onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>🫙 Edit Sauces & Add-Ons</DialogTitle>
@@ -1180,7 +1216,7 @@ const EditAddOnsDialog = ({
                   <Input
                     value={a.name}
                     placeholder="🫙 Sauce name"
-                    onChange={e => update(i, { name: e.target.value })}
+                    onChange={(e) => update(i, { name: e.target.value })}
                   />
                 </div>
                 <div>
@@ -1189,7 +1225,7 @@ const EditAddOnsDialog = ({
                     type="number"
                     step="0.01"
                     value={a.price}
-                    onChange={e => update(i, { price: parseFloat(e.target.value) || 0 })}
+                    onChange={(e) => update(i, { price: parseFloat(e.target.value) || 0 })}
                   />
                 </div>
               </div>
@@ -1228,9 +1264,9 @@ const EditAddOnsDialog = ({
               Quick Add Presets
             </p>
             <div className="mt-2 flex flex-wrap gap-1.5">
-              {SAUCE_PRESETS.map(p => {
+              {SAUCE_PRESETS.map((p) => {
                 const added = addOns.some(
-                  a => a.name.trim().toLowerCase() === p.name.toLowerCase(),
+                  (a) => a.name.trim().toLowerCase() === p.name.toLowerCase(),
                 );
                 return (
                   <button
@@ -1252,7 +1288,9 @@ const EditAddOnsDialog = ({
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={onClose}>Cancel</Button>
+          <Button variant="outline" onClick={onClose}>
+            Cancel
+          </Button>
           <Button onClick={handleSave} disabled={busy} className="bg-primary hover:bg-primary/90">
             Save Sauces
           </Button>
@@ -1269,7 +1307,12 @@ const DeleteItemButton = ({ item, onDeleted }: { item: MenuItem; onDeleted: () =
   const [open, setOpen] = useState(false);
   return (
     <>
-      <Button size="sm" variant="ghost" onClick={() => setOpen(true)} className="h-8 px-2 text-destructive">
+      <Button
+        size="sm"
+        variant="ghost"
+        onClick={() => setOpen(true)}
+        className="h-8 px-2 text-destructive"
+      >
         <Trash2 className="h-4 w-4" />
       </Button>
       <AlertDialog open={open} onOpenChange={setOpen}>
@@ -1341,25 +1384,23 @@ const DeleteRestaurantDialog = ({
         <DialogHeader>
           <DialogTitle>⚠️ Delete Restaurant?</DialogTitle>
           <DialogDescription>
-            Deleting "<strong>{restaurant.name}</strong>" will also delete ALL its menu items
-            ({itemCount} items). This cannot be undone.
+            Deleting "<strong>{restaurant.name}</strong>" will also delete ALL its menu items (
+            {itemCount} items). This cannot be undone.
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-2">
           <Label className="text-xs">Type the restaurant name to confirm:</Label>
           <Input
             value={confirm}
-            onChange={e => setConfirm(e.target.value)}
+            onChange={(e) => setConfirm(e.target.value)}
             placeholder={restaurant.name}
           />
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-          <Button
-            variant="destructive"
-            disabled={!canDelete || busy}
-            onClick={handleDelete}
-          >
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            Cancel
+          </Button>
+          <Button variant="destructive" disabled={!canDelete || busy} onClick={handleDelete}>
             Delete All
           </Button>
         </DialogFooter>
@@ -1423,9 +1464,9 @@ const MenuItemDialog = ({
       is_available: isAvailable,
       is_popular: isPopular,
       has_sizes: hasSizes,
-      sizes: (hasSizes ? sizes.filter(s => s.name.trim()) : []) as any,
+      sizes: (hasSizes ? sizes.filter((s) => s.name.trim()) : []) as any,
       has_add_ons: hasAddOns,
-      add_ons: (hasAddOns ? addOns.filter(a => a.name.trim()) : []) as any,
+      add_ons: (hasAddOns ? addOns.filter((a) => a.name.trim()) : []) as any,
     };
 
     setBusy(true);
@@ -1439,15 +1480,13 @@ const MenuItemDialog = ({
       return;
     }
     toast.success(
-      existing
-        ? `✅ ${name} updated successfully`
-        : `✅ ${name} added to ${restaurantName} menu`,
+      existing ? `✅ ${name} updated successfully` : `✅ ${name} added to ${restaurantName} menu`,
     );
     onSaved();
   };
 
   return (
-    <Dialog open onOpenChange={open => !open && onClose()}>
+    <Dialog open onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{existing ? "✏️ Edit Menu Item" : "➕ Add Menu Item"}</DialogTitle>
@@ -1458,26 +1497,34 @@ const MenuItemDialog = ({
           <div>
             <Label className="text-xs">Item Photo</Label>
             <div className="mt-1">
-              <FoodImageUpload value={imageUrl} onChange={setImageUrl} restaurantId={restaurantId} />
+              <FoodImageUpload
+                value={imageUrl}
+                onChange={setImageUrl}
+                restaurantId={restaurantId}
+              />
             </div>
             <Input
               placeholder="Or enter image URL"
               value={imageUrl}
-              onChange={e => setImageUrl(e.target.value)}
+              onChange={(e) => setImageUrl(e.target.value)}
               className="mt-2"
             />
           </div>
 
           <div>
             <Label className="text-xs">Item Name *</Label>
-            <Input value={name} onChange={e => setName(e.target.value)} placeholder="e.g. Chicken Piece" />
+            <Input
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="e.g. Chicken Piece"
+            />
           </div>
 
           <div>
             <Label className="text-xs">Description</Label>
             <Textarea
               value={description}
-              onChange={e => setDescription(e.target.value)}
+              onChange={(e) => setDescription(e.target.value)}
               placeholder="e.g. Grilled chicken with your choice of sauce"
               rows={2}
             />
@@ -1490,16 +1537,22 @@ const MenuItemDialog = ({
                 type="number"
                 step="0.01"
                 value={price}
-                onChange={e => setPrice(e.target.value)}
+                onChange={(e) => setPrice(e.target.value)}
                 placeholder="0.00"
               />
             </div>
             <div>
               <Label className="text-xs">Category *</Label>
               <Select value={category} onValueChange={setCategory}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
                 <SelectContent>
-                  {CATEGORIES.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                  {CATEGORIES.map((c) => (
+                    <SelectItem key={c} value={c}>
+                      {c}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
@@ -1510,7 +1563,9 @@ const MenuItemDialog = ({
             <div className="flex items-center justify-between">
               <div>
                 <Label className="text-xs font-bold">Has Sizes? (e.g. S/M/L)</Label>
-                <p className="text-[10px] text-muted-foreground">Customers pick a size at checkout</p>
+                <p className="text-[10px] text-muted-foreground">
+                  Customers pick a size at checkout
+                </p>
               </div>
               <Switch checked={hasSizes} onCheckedChange={setHasSizes} />
             </div>
@@ -1521,7 +1576,7 @@ const MenuItemDialog = ({
                     <Input
                       placeholder="Size name"
                       value={s.name}
-                      onChange={e => updateSize(i, { name: e.target.value })}
+                      onChange={(e) => updateSize(i, { name: e.target.value })}
                       className="flex-1"
                     />
                     <Input
@@ -1529,7 +1584,7 @@ const MenuItemDialog = ({
                       step="0.01"
                       placeholder="Price"
                       value={s.price}
-                      onChange={e => updateSize(i, { price: parseFloat(e.target.value) || 0 })}
+                      onChange={(e) => updateSize(i, { price: parseFloat(e.target.value) || 0 })}
                       className="w-24"
                     />
                     <Button
@@ -1579,7 +1634,7 @@ const MenuItemDialog = ({
                     <Input
                       placeholder="Add-on name"
                       value={a.name}
-                      onChange={e => updateAddOn(i, { name: e.target.value })}
+                      onChange={(e) => updateAddOn(i, { name: e.target.value })}
                       className="flex-1"
                     />
                     <Input
@@ -1587,7 +1642,7 @@ const MenuItemDialog = ({
                       step="0.01"
                       placeholder="0 = FREE"
                       value={a.price}
-                      onChange={e => updateAddOn(i, { price: parseFloat(e.target.value) || 0 })}
+                      onChange={(e) => updateAddOn(i, { price: parseFloat(e.target.value) || 0 })}
                       className="w-24"
                     />
                     <Button
@@ -1628,7 +1683,9 @@ const MenuItemDialog = ({
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={onClose}>Cancel</Button>
+          <Button variant="outline" onClick={onClose}>
+            Cancel
+          </Button>
           <Button onClick={handleSave} disabled={busy} className="bg-primary hover:bg-primary/90">
             {existing ? "Save Changes" : "Save Menu Item"}
           </Button>
@@ -1666,7 +1723,7 @@ const RestaurantInfoDialog = ({
   const [busy, setBusy] = useState(false);
 
   const toggleDay = (d: string) =>
-    setDays(days.includes(d) ? days.filter(x => x !== d) : [...days, d]);
+    setDays(days.includes(d) ? days.filter((x) => x !== d) : [...days, d]);
 
   const handleSave = async () => {
     if (!name.trim()) return toast.error("Name required");
@@ -1700,7 +1757,7 @@ const RestaurantInfoDialog = ({
   };
 
   return (
-    <Dialog open onOpenChange={open => !open && onClose()}>
+    <Dialog open onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>✏️ Edit Restaurant Info</DialogTitle>
@@ -1709,28 +1766,40 @@ const RestaurantInfoDialog = ({
         <div className="space-y-3">
           <div>
             <Label className="text-xs">Restaurant Name *</Label>
-            <Input value={name} onChange={e => setName(e.target.value)} />
+            <Input value={name} onChange={(e) => setName(e.target.value)} />
           </div>
           <div>
             <Label className="text-xs">Description</Label>
-            <Textarea value={description} onChange={e => setDescription(e.target.value)} rows={2} />
+            <Textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              rows={2}
+            />
           </div>
           <div>
             <Label className="text-xs">Category</Label>
-            <Input value={cuisine} onChange={e => setCuisine(e.target.value)} placeholder="e.g. Braai" />
+            <Input
+              value={cuisine}
+              onChange={(e) => setCuisine(e.target.value)}
+              placeholder="e.g. Braai"
+            />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
               <Label className="text-xs">Min Order (ZAR)</Label>
-              <Input type="number" value={minOrder} onChange={e => setMinOrder(e.target.value)} />
+              <Input type="number" value={minOrder} onChange={(e) => setMinOrder(e.target.value)} />
             </div>
             <div>
               <Label className="text-xs">Delivery Time</Label>
               <Select value={deliveryTime} onValueChange={setDeliveryTime}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
                 <SelectContent>
-                  {["15-20 min", "20-30 min", "30-45 min", "45-60 min"].map(d => (
-                    <SelectItem key={d} value={d}>{d}</SelectItem>
+                  {["15-20 min", "20-30 min", "30-45 min", "45-60 min"].map((d) => (
+                    <SelectItem key={d} value={d}>
+                      {d}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -1738,26 +1807,34 @@ const RestaurantInfoDialog = ({
           </div>
           <div>
             <Label className="text-xs">Contact Number</Label>
-            <Input value={contactNumber} onChange={e => setContactNumber(e.target.value)} placeholder="e.g. 068 281 9391" />
+            <Input
+              value={contactNumber}
+              onChange={(e) => setContactNumber(e.target.value)}
+              placeholder="e.g. 068 281 9391"
+            />
           </div>
           <div>
             <Label className="text-xs">Location / Area</Label>
-            <Input value={location} onChange={e => setLocation(e.target.value)} placeholder="e.g. Mfuleni, Cape Town" />
+            <Input
+              value={location}
+              onChange={(e) => setLocation(e.target.value)}
+              placeholder="e.g. Mfuleni, Cape Town"
+            />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
               <Label className="text-xs">Opens at</Label>
-              <Input type="time" value={opensAt} onChange={e => setOpensAt(e.target.value)} />
+              <Input type="time" value={opensAt} onChange={(e) => setOpensAt(e.target.value)} />
             </div>
             <div>
               <Label className="text-xs">Closes at</Label>
-              <Input type="time" value={closesAt} onChange={e => setClosesAt(e.target.value)} />
+              <Input type="time" value={closesAt} onChange={(e) => setClosesAt(e.target.value)} />
             </div>
           </div>
           <div>
             <Label className="text-xs">Operating Days</Label>
             <div className="mt-1 flex flex-wrap gap-1.5">
-              {DAYS.map(d => (
+              {DAYS.map((d) => (
                 <button
                   key={d}
                   type="button"
@@ -1780,7 +1857,9 @@ const RestaurantInfoDialog = ({
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={onClose}>Cancel</Button>
+          <Button variant="outline" onClick={onClose}>
+            Cancel
+          </Button>
           <Button onClick={handleSave} disabled={busy} className="bg-primary hover:bg-primary/90">
             Save Changes
           </Button>

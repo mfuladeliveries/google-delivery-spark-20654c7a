@@ -50,7 +50,7 @@ const OrderTrackingMap = ({ orderId, customerAddress }: OrderTrackingMapProps) =
     const geocode = async () => {
       try {
         const res = await fetch(
-          `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(customerAddress)}&format=json&limit=1`
+          `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(customerAddress)}&format=json&limit=1`,
         );
         const data = await res.json();
         if (data?.[0]) {
@@ -77,19 +77,25 @@ const OrderTrackingMap = ({ orderId, customerAddress }: OrderTrackingMapProps) =
 
     const channel = supabase
       .channel(`track-${orderId}`)
-      .on("postgres_changes", {
-        event: "UPDATE",
-        schema: "public",
-        table: "orders",
-        filter: `id=eq.${orderId}`,
-      }, (payload: any) => {
-        if (payload.new.driver_lat && payload.new.driver_lng) {
-          setDriverPos({ lat: payload.new.driver_lat, lng: payload.new.driver_lng });
-        }
-      })
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "orders",
+          filter: `id=eq.${orderId}`,
+        },
+        (payload: any) => {
+          if (payload.new.driver_lat && payload.new.driver_lng) {
+            setDriverPos({ lat: payload.new.driver_lat, lng: payload.new.driver_lng });
+          }
+        },
+      )
       .subscribe();
 
-    return () => { supabase.removeChannel(channel); };
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [orderId]);
 
   const center = driverPos || customerPos || { lat: -29.12, lng: 26.22 };

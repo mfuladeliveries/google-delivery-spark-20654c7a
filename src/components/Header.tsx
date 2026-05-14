@@ -1,4 +1,16 @@
-import { ShoppingCart, MapPin, User, LogOut, ClipboardList, ChefHat, Truck, Shield, Menu, Wallet, Info } from "lucide-react";
+import {
+  ShoppingCart,
+  MapPin,
+  User,
+  LogOut,
+  ClipboardList,
+  ChefHat,
+  Truck,
+  Shield,
+  Menu,
+  Wallet,
+  Info,
+} from "lucide-react";
 import { storeInfo } from "@/data/menu";
 import { useAuth } from "@/hooks/useAuth";
 import { useCustomerCredits } from "@/hooks/useCustomerCredits";
@@ -21,7 +33,7 @@ const Header = ({ cartCount, onCartClick, title }: HeaderProps) => {
     admin: { to: "/admin", icon: Shield, label: "Admin" },
   };
 
-  const roleLink = role && role !== 'customer' ? roleLinks[role as keyof typeof roleLinks] : null;
+  const roleLink = role && role !== "customer" ? roleLinks[role as keyof typeof roleLinks] : null;
 
   return (
     <header className="sticky top-0 z-50 border-b border-border/50 glass shadow-luxury">
@@ -97,7 +109,10 @@ const Header = ({ cartCount, onCartClick, title }: HeaderProps) => {
               title="Wallet balance"
             >
               <Wallet className="h-4 w-4" />
-              <span>{storeInfo.currency}{walletBalance.toFixed(0)}</span>
+              <span>
+                {storeInfo.currency}
+                {walletBalance.toFixed(0)}
+              </span>
             </Link>
           )}
 
@@ -110,7 +125,10 @@ const Header = ({ cartCount, onCartClick, title }: HeaderProps) => {
             >
               <ShoppingCart className="h-5 w-5" />
               {cartCount !== undefined && cartCount > 0 && (
-                <span data-testid="cart-count" className="flex h-5 w-5 items-center justify-center rounded-full bg-gold text-[10px] font-bold text-gold-foreground">
+                <span
+                  data-testid="cart-count"
+                  className="flex h-5 w-5 items-center justify-center rounded-full bg-gold text-[10px] font-bold text-gold-foreground"
+                >
                   {cartCount}
                 </span>
               )}

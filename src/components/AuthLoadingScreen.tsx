@@ -22,9 +22,7 @@ const AuthLoadingScreen = ({ label }: AuthLoadingScreenProps) => {
           />
         </div>
         <div className="h-8 w-8 luxury-pulse rounded-full border-[3px] border-primary border-t-gold" />
-        {label && (
-          <p className="text-sm font-medium text-muted-foreground">{label}</p>
-        )}
+        {label && <p className="text-sm font-medium text-muted-foreground">{label}</p>}
       </div>
     </div>
   );

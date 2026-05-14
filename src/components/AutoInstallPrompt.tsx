@@ -35,8 +35,15 @@ const isStandalone = () => {
  * - iOS Safari: bottom banner with Share → Add to Home Screen guide
  * - Hidden when already installed (standalone) or dismissed this session
  */
-const AutoInstallPrompt = ({ variant, delayMs = 3000, appName = "Mfula App" }: AutoInstallPromptProps) => {
-  const { canInstall, isInstalled, promptInstall } = useInstallPrompt({ variant, applyOnMount: true });
+const AutoInstallPrompt = ({
+  variant,
+  delayMs = 3000,
+  appName = "Mfula App",
+}: AutoInstallPromptProps) => {
+  const { canInstall, isInstalled, promptInstall } = useInstallPrompt({
+    variant,
+    applyOnMount: true,
+  });
   const [show, setShow] = useState(false);
   const [iosShow, setIosShow] = useState(false);
   const [iOS, setIOS] = useState(false);
@@ -95,8 +102,10 @@ const AutoInstallPrompt = ({ variant, delayMs = 3000, appName = "Mfula App" }: A
             <div className="min-w-0 flex-1">
               <p className="font-bold text-sm text-foreground">Install {appName}</p>
               <p className="mt-1 text-xs text-muted-foreground leading-relaxed">
-                Tap <Share className="inline h-3.5 w-3.5 text-primary mx-0.5" /> <strong>Share</strong> below, then{" "}
-                <Plus className="inline h-3.5 w-3.5 text-primary mx-0.5" /> <strong>Add to Home Screen</strong>
+                Tap <Share className="inline h-3.5 w-3.5 text-primary mx-0.5" />{" "}
+                <strong>Share</strong> below, then{" "}
+                <Plus className="inline h-3.5 w-3.5 text-primary mx-0.5" />{" "}
+                <strong>Add to Home Screen</strong>
               </p>
             </div>
             <button
@@ -133,7 +142,9 @@ const AutoInstallPrompt = ({ variant, delayMs = 3000, appName = "Mfula App" }: A
               <Download className="h-6 w-6 text-primary" />
             </div>
             <div className="min-w-0 flex-1">
-              <h3 className="font-display font-bold text-base text-foreground">Install {appName}</h3>
+              <h3 className="font-display font-bold text-base text-foreground">
+                Install {appName}
+              </h3>
               <p className="mt-1 text-xs text-muted-foreground leading-relaxed">
                 Faster ordering, push notifications, and one-tap access from your home screen.
               </p>

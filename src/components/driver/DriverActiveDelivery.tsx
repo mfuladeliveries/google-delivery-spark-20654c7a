@@ -1,5 +1,17 @@
 import { useState, Component, ReactNode, lazy, Suspense } from "react";
-import { Navigation, Phone, ExternalLink, MapPin, CheckCircle2, Truck, Package, ShieldCheck, XCircle, Store, Bike } from "lucide-react";
+import {
+  Navigation,
+  Phone,
+  ExternalLink,
+  MapPin,
+  CheckCircle2,
+  Truck,
+  Package,
+  ShieldCheck,
+  XCircle,
+  Store,
+  Bike,
+} from "lucide-react";
 import DeliveryVerification from "@/components/DeliveryVerification";
 import {
   AlertDialog,
@@ -16,10 +28,16 @@ const DriverDeliveryMap = lazy(() => import("@/components/driver/DriverDeliveryM
 
 class MapErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean }> {
   state = { hasError: false };
-  static getDerivedStateFromError() { return { hasError: true }; }
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
   render() {
     if (this.state.hasError) {
-      return <div className="h-56 w-full bg-muted rounded-t-2xl flex items-center justify-center text-muted-foreground text-sm">Map unavailable</div>;
+      return (
+        <div className="h-56 w-full bg-muted rounded-t-2xl flex items-center justify-center text-muted-foreground text-sm">
+          Map unavailable
+        </div>
+      );
     }
     return this.props.children;
   }
@@ -56,10 +74,11 @@ interface DriverActiveDeliveryProps {
 
 const openGoogleMaps = (address: string, lat?: number | null, lng?: number | null) => {
   // Prefer exact GPS coords when we have them; fall back to address text.
-  const dest = typeof lat === "number" && typeof lng === "number"
-    ? `${lat},${lng}`
-    : address;
-  window.open(`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(dest)}`, "_blank");
+  const dest = typeof lat === "number" && typeof lng === "number" ? `${lat},${lng}` : address;
+  window.open(
+    `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(dest)}`,
+    "_blank",
+  );
 };
 
 // Progress steps based on status
@@ -79,7 +98,12 @@ const getStepIndex = (status: string) => {
   return 0; // driver_assigned or default
 };
 
-const DriverActiveDelivery = ({ orders, driverLocation, onDeliveryComplete, onStatusChange }: DriverActiveDeliveryProps) => {
+const DriverActiveDelivery = ({
+  orders,
+  driverLocation,
+  onDeliveryComplete,
+  onStatusChange,
+}: DriverActiveDeliveryProps) => {
   const [updatingStatus, setUpdatingStatus] = useState<string | null>(null);
   const [cancelOrderId, setCancelOrderId] = useState<string | null>(null);
   const [cancelling, setCancelling] = useState(false);
@@ -88,7 +112,7 @@ const DriverActiveDelivery = ({ orders, driverLocation, onDeliveryComplete, onSt
   const handleCancelUnavailable = async () => {
     if (!cancelOrderId) return;
     setCancelling(true);
-    const order = orders.find(o => o.id === cancelOrderId);
+    const order = orders.find((o) => o.id === cancelOrderId);
     const { error } = await supabase.rpc("driver_cancel_order" as any, {
       p_order_id: cancelOrderId,
       p_reason: "Item not available at the restaurant",
@@ -118,10 +142,17 @@ const DriverActiveDelivery = ({ orders, driverLocation, onDeliveryComplete, onSt
     setCancelOrderId(null);
   };
 
-  const advanceStatus = async (orderId: string, newStatus: "picking_up" | "arrived_at_restaurant" | "out_for_delivery", successMsg: string) => {
+  const advanceStatus = async (
+    orderId: string,
+    newStatus: "picking_up" | "arrived_at_restaurant" | "out_for_delivery",
+    successMsg: string,
+  ) => {
     setUpdatingStatus(orderId);
-    const order = orders.find(o => o.id === orderId);
-    const { error } = await supabase.rpc("driver_update_order", { p_order_id: orderId, p_status: newStatus });
+    const order = orders.find((o) => o.id === orderId);
+    const { error } = await supabase.rpc("driver_update_order", {
+      p_order_id: orderId,
+      p_status: newStatus,
+    });
     if (error) {
       toast.error(error.message || "Failed to update status");
     } else {
@@ -144,9 +175,12 @@ const DriverActiveDelivery = ({ orders, driverLocation, onDeliveryComplete, onSt
     setUpdatingStatus(null);
   };
 
-  const handleGoToRestaurant = (orderId: string) => advanceStatus(orderId, "picking_up", "On your way to the restaurant 🚗");
-  const handleArrived = (orderId: string) => advanceStatus(orderId, "arrived_at_restaurant", "Arrived — pick up the order 🏪");
-  const handlePickedUp = (orderId: string) => advanceStatus(orderId, "out_for_delivery", "Pickup confirmed! Heading to customer.");
+  const handleGoToRestaurant = (orderId: string) =>
+    advanceStatus(orderId, "picking_up", "On your way to the restaurant 🚗");
+  const handleArrived = (orderId: string) =>
+    advanceStatus(orderId, "arrived_at_restaurant", "Arrived — pick up the order 🏪");
+  const handlePickedUp = (orderId: string) =>
+    advanceStatus(orderId, "out_for_delivery", "Pickup confirmed! Heading to customer.");
 
   if (orders.length === 0) {
     return (
@@ -164,19 +198,30 @@ const DriverActiveDelivery = ({ orders, driverLocation, onDeliveryComplete, onSt
         <p className="text-sm text-foreground font-semibold flex items-center gap-2">
           <Navigation className="h-4 w-4 text-primary" /> Current Trips
         </p>
-        <p className="text-xs text-muted-foreground mt-1">Follow the progress bar for each delivery.</p>
+        <p className="text-xs text-muted-foreground mt-1">
+          Follow the progress bar for each delivery.
+        </p>
       </div>
 
-      {orders.map(order => {
+      {orders.map((order) => {
         const currentStep = getStepIndex(order.status);
         const payout = driverPayoutForFee(order.delivery_fee);
 
         return (
-          <div key={order.id} className="rounded-2xl border-2 border-primary bg-card shadow-orange overflow-hidden">
+          <div
+            key={order.id}
+            className="rounded-2xl border-2 border-primary bg-card shadow-orange overflow-hidden"
+          >
             {/* Map */}
             {driverLocation ? (
               <MapErrorBoundary>
-                <Suspense fallback={<div className="h-56 w-full bg-muted rounded-t-2xl flex items-center justify-center text-muted-foreground text-sm">Loading map…</div>}>
+                <Suspense
+                  fallback={
+                    <div className="h-56 w-full bg-muted rounded-t-2xl flex items-center justify-center text-muted-foreground text-sm">
+                      Loading map…
+                    </div>
+                  }
+                >
                   <DriverDeliveryMap
                     driverLocation={driverLocation}
                     customerAddress={order.customer_address}
@@ -197,7 +242,9 @@ const DriverActiveDelivery = ({ orders, driverLocation, onDeliveryComplete, onSt
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className="font-bold text-foreground text-lg">Order #{order.order_number}</span>
+                    <span className="font-bold text-foreground text-lg">
+                      Order #{order.order_number}
+                    </span>
                     <span className="rounded-full bg-[hsl(var(--driver-info)/0.12)] px-2.5 py-1 text-xs font-bold text-[hsl(var(--driver-info))] border border-[hsl(var(--driver-info)/0.25)]">
                       +R{payout} payout
                     </span>
@@ -218,16 +265,20 @@ const DriverActiveDelivery = ({ orders, driverLocation, onDeliveryComplete, onSt
                     const isCurrent = i === currentStep;
                     return (
                       <div key={step.key} className="flex flex-col items-center z-10 relative">
-                        <div className={`flex h-8 w-8 items-center justify-center rounded-full transition-all ${
-                          isCurrent
-                            ? "bg-primary text-primary-foreground ring-4 ring-primary/20 scale-110"
-                            : isActive
-                              ? "bg-[hsl(var(--driver-success))] text-white"
-                              : "bg-secondary text-muted-foreground"
-                        }`}>
+                        <div
+                          className={`flex h-8 w-8 items-center justify-center rounded-full transition-all ${
+                            isCurrent
+                              ? "bg-primary text-primary-foreground ring-4 ring-primary/20 scale-110"
+                              : isActive
+                                ? "bg-[hsl(var(--driver-success))] text-white"
+                                : "bg-secondary text-muted-foreground"
+                          }`}
+                        >
                           <Icon className="h-4 w-4" />
                         </div>
-                        <span className={`text-[9px] mt-1 font-semibold ${isCurrent ? "text-primary" : isActive ? "text-[hsl(var(--driver-success))]" : "text-muted-foreground"}`}>
+                        <span
+                          className={`text-[9px] mt-1 font-semibold ${isCurrent ? "text-primary" : isActive ? "text-[hsl(var(--driver-success))]" : "text-muted-foreground"}`}
+                        >
                           {step.label}
                         </span>
                       </div>
@@ -278,7 +329,9 @@ const DriverActiveDelivery = ({ orders, driverLocation, onDeliveryComplete, onSt
               )}
 
               {/* Cancel — item not available (only before pickup) */}
-              {(order.status === "driver_assigned" || order.status === "picking_up" || order.status === "arrived_at_restaurant") && (
+              {(order.status === "driver_assigned" ||
+                order.status === "picking_up" ||
+                order.status === "arrived_at_restaurant") && (
                 <button
                   onClick={() => setCancelOrderId(order.id)}
                   disabled={cancelling || updatingStatus === order.id}
@@ -291,7 +344,9 @@ const DriverActiveDelivery = ({ orders, driverLocation, onDeliveryComplete, onSt
 
               {/* Navigate button — uses exact GPS pin when available */}
               <button
-                onClick={() => openGoogleMaps(order.customer_address, order.customer_lat, order.customer_lng)}
+                onClick={() =>
+                  openGoogleMaps(order.customer_address, order.customer_lat, order.customer_lng)
+                }
                 className="flex w-full items-center gap-3 rounded-2xl bg-[hsl(var(--driver-info)/0.08)] border border-[hsl(var(--driver-info)/0.2)] px-4 py-3.5 text-sm font-semibold text-[hsl(var(--driver-info))] hover:bg-[hsl(var(--driver-info)/0.15)] transition-colors"
               >
                 <Navigation className="h-5 w-5" />
@@ -325,18 +380,26 @@ const DriverActiveDelivery = ({ orders, driverLocation, onDeliveryComplete, onSt
 
               {/* Order items */}
               <div className="rounded-xl border border-border p-3">
-                <p className="text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wide">Order Items</p>
+                <p className="text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wide">
+                  Order Items
+                </p>
                 <div className="space-y-1">
                   {order.items.map((item: any, i: number) => (
                     <div key={i} className="flex justify-between text-sm">
-                      <span className="text-foreground">{item.quantity}× {item.name}</span>
-                      <span className="text-muted-foreground">R{(item.price * item.quantity).toFixed(0)}</span>
+                      <span className="text-foreground">
+                        {item.quantity}× {item.name}
+                      </span>
+                      <span className="text-muted-foreground">
+                        R{(item.price * item.quantity).toFixed(0)}
+                      </span>
                     </div>
                   ))}
                 </div>
                 <div className="mt-2 border-t border-border pt-2 flex justify-between">
                   <span className="text-sm font-bold text-foreground">Delivery Fee</span>
-                  <span className="text-sm font-bold text-[hsl(var(--driver-success))]">+R{order.delivery_fee}</span>
+                  <span className="text-sm font-bold text-[hsl(var(--driver-success))]">
+                    +R{order.delivery_fee}
+                  </span>
                 </div>
               </div>
 
@@ -354,7 +417,8 @@ const DriverActiveDelivery = ({ orders, driverLocation, onDeliveryComplete, onSt
           <AlertDialogHeader>
             <AlertDialogTitle>Cancel order — item not available?</AlertDialogTitle>
             <AlertDialogDescription>
-              The customer will be notified that their order was cancelled because the item is not available at the restaurant. This cannot be undone.
+              The customer will be notified that their order was cancelled because the item is not
+              available at the restaurant. This cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

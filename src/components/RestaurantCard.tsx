@@ -22,18 +22,23 @@ export interface RestaurantCardData {
   lng?: number | null;
 }
 
-const FALLBACK_IMG = "https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=800&h=400&fit=crop";
+const FALLBACK_IMG =
+  "https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=800&h=400&fit=crop";
 
 const restaurantImages: Record<string, string> = {
   Kitchen: "https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=800&h=400&fit=crop",
-  "Mdala Tshisanyama": "https://images.unsplash.com/photo-1544025162-d76694265947?w=800&h=400&fit=crop",
+  "Mdala Tshisanyama":
+    "https://images.unsplash.com/photo-1544025162-d76694265947?w=800&h=400&fit=crop",
   KFC: "https://images.unsplash.com/photo-1562967914-608f82629710?w=800&h=400&fit=crop",
-  "Debonnairs Pizza": "https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=800&h=400&fit=crop",
+  "Debonnairs Pizza":
+    "https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=800&h=400&fit=crop",
   McDonalds: "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=800&h=400&fit=crop",
   Pedros: "https://images.unsplash.com/photo-1598515214211-89d3c73ae83b?w=800&h=400&fit=crop",
-  "BURGER KING": "https://images.unsplash.com/photo-1571091718767-18b5b1457add?w=800&h=400&fit=crop",
+  "BURGER KING":
+    "https://images.unsplash.com/photo-1571091718767-18b5b1457add?w=800&h=400&fit=crop",
   "Hungry Lion": "https://images.unsplash.com/photo-1562967914-608f82629710?w=800&h=400&fit=crop",
-  "Fellos Fishery": "https://images.unsplash.com/photo-1559847844-5315695dadae?w=800&h=400&fit=crop",
+  "Fellos Fishery":
+    "https://images.unsplash.com/photo-1559847844-5315695dadae?w=800&h=400&fit=crop",
   Shop: "https://images.unsplash.com/photo-1578916171728-46686eac8d58?w=800&h=400&fit=crop",
   Liquor: "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&h=400&fit=crop",
   Steers: "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=800&h=400&fit=crop",
@@ -73,7 +78,9 @@ const RestaurantCard = ({ restaurant: r, variant = "standard", distanceKm, nearb
     }
     if (!open) {
       toast(`${r.name} is currently closed.`, {
-        description: r.opens_at ? `Opens at ${formatOpensAt(r.opens_at)}` : "Please check back later.",
+        description: r.opens_at
+          ? `Opens at ${formatOpensAt(r.opens_at)}`
+          : "Please check back later.",
       });
       return;
     }
@@ -115,7 +122,9 @@ const RestaurantCard = ({ restaurant: r, variant = "standard", distanceKm, nearb
             {distanceLabel && (
               <>
                 <span>·</span>
-                <span className={`flex items-center gap-0.5 font-semibold ${tooFar ? "text-destructive" : "text-foreground"}`}>
+                <span
+                  className={`flex items-center gap-0.5 font-semibold ${tooFar ? "text-destructive" : "text-foreground"}`}
+                >
                   <Navigation className="h-3 w-3" /> {distanceLabel}
                 </span>
               </>
@@ -245,7 +254,8 @@ const RestaurantCard = ({ restaurant: r, variant = "standard", distanceKm, nearb
           <div className="mt-3 flex items-start gap-2 rounded-xl border border-destructive/30 bg-destructive/5 p-2.5 text-[11px] text-destructive">
             <Ban className="mt-0.5 h-3.5 w-3.5 flex-shrink-0" />
             <span>
-              Outside delivery range. We only deliver within {DELIVERY_RADIUS_KM} km of your location.
+              Outside delivery range. We only deliver within {DELIVERY_RADIUS_KM} km of your
+              location.
             </span>
           </div>
         )}

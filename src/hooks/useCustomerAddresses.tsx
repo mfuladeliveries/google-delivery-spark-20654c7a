@@ -139,10 +139,7 @@ export const useCustomerAddresses = (): UseCustomerAddressesResult => {
     [user, refresh],
   );
 
-  const setDefault = useCallback(
-    async (id: string) => update(id, { is_default: true }),
-    [update],
-  );
+  const setDefault = useCallback(async (id: string) => update(id, { is_default: true }), [update]);
 
   const defaultAddress = addresses.find((a) => a.is_default) ?? null;
 

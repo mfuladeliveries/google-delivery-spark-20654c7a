@@ -44,7 +44,9 @@ const sendBrowserNotification = (title: string, body: string) => {
   if (!("Notification" in window) || Notification.permission !== "granted") return;
   try {
     new Notification(title, { body, icon: "/favicon.ico", badge: "/favicon.ico" });
-  } catch { /* silent */ }
+  } catch {
+    /* silent */
+  }
 };
 
 const OrderNotifications = () => {
@@ -68,43 +70,57 @@ const OrderNotifications = () => {
     if (role === "customer" || !role) {
       const ch = supabase
         .channel("customer-notifications")
-        .on("postgres_changes", {
-          event: "UPDATE",
-          schema: "public",
-          table: "orders",
-          filter: `user_id=eq.${user.id}`,
-        }, (payload: any) => {
-          const newStatus = payload.new?.status;
-          const orderNumber = payload.new?.order_number;
-          const orderId = payload.new?.id;
-          if (!newStatus || !orderNumber || !orderId) return;
+        .on(
+          "postgres_changes",
+          {
+            event: "UPDATE",
+            schema: "public",
+            table: "orders",
+            filter: `user_id=eq.${user.id}`,
+          },
+          (payload: any) => {
+            const newStatus = payload.new?.status;
+            const orderNumber = payload.new?.order_number;
+            const orderId = payload.new?.id;
+            if (!newStatus || !orderNumber || !orderId) return;
 
-          // Deduplication: only show cancellation and out_for_delivery once per order
-          const dedupeKey = `${orderId}-${newStatus}`;
-          if ((newStatus === "cancelled" || newStatus === "rejected" || newStatus === "out_for_delivery") && shownNotifications.has(dedupeKey)) {
-            return;
-          }
+            // Deduplication: only show cancellation and out_for_delivery once per order
+            const dedupeKey = `${orderId}-${newStatus}`;
+            if (
+              (newStatus === "cancelled" ||
+                newStatus === "rejected" ||
+                newStatus === "out_for_delivery") &&
+              shownNotifications.has(dedupeKey)
+            ) {
+              return;
+            }
 
-          // Respect user notification preferences for one-shot alerts
-          const prefs = getNotificationPrefs();
-          if (newStatus === "out_for_delivery" && !prefs.out_for_delivery) return;
-          if ((newStatus === "cancelled" || newStatus === "rejected") && !prefs.cancelled) return;
+            // Respect user notification preferences for one-shot alerts
+            const prefs = getNotificationPrefs();
+            if (newStatus === "out_for_delivery" && !prefs.out_for_delivery) return;
+            if ((newStatus === "cancelled" || newStatus === "rejected") && !prefs.cancelled) return;
 
-          const emoji = statusEmojis[newStatus] || "📋";
-          const label = statusLabels[newStatus] || newStatus;
-          const title = `${emoji} Order #${orderNumber}`;
+            const emoji = statusEmojis[newStatus] || "📋";
+            const label = statusLabels[newStatus] || newStatus;
+            const title = `${emoji} Order #${orderNumber}`;
 
-          if (newStatus === "delivered") toast.success(title, { description: label });
-          else if (newStatus === "cancelled" || newStatus === "rejected") toast.error(title, { description: label });
-          else toast.info(title, { description: label });
+            if (newStatus === "delivered") toast.success(title, { description: label });
+            else if (newStatus === "cancelled" || newStatus === "rejected")
+              toast.error(title, { description: label });
+            else toast.info(title, { description: label });
 
-          // Mark as shown for dedupe statuses
-          if (newStatus === "cancelled" || newStatus === "rejected" || newStatus === "out_for_delivery") {
-            shownNotifications.add(dedupeKey);
-          }
+            // Mark as shown for dedupe statuses
+            if (
+              newStatus === "cancelled" ||
+              newStatus === "rejected" ||
+              newStatus === "out_for_delivery"
+            ) {
+              shownNotifications.add(dedupeKey);
+            }
 
-          if (document.hidden) sendBrowserNotification(title, label);
-        })
+            if (document.hidden) sendBrowserNotification(title, label);
+          },
+        )
         .subscribe();
       channels.push(ch);
     }
@@ -113,18 +129,22 @@ const OrderNotifications = () => {
     if (role === "restaurant") {
       const ch = supabase
         .channel("restaurant-notifications")
-        .on("postgres_changes", {
-          event: "INSERT",
-          schema: "public",
-          table: "orders",
-        }, (payload: any) => {
-          const orderNumber = payload.new?.order_number;
-          if (!orderNumber) return;
-          const title = "🔔 New Order Received";
-          const body = `Order #${orderNumber} — R${payload.new?.total || 0}`;
-          toast.info(title, { description: body });
-          if (document.hidden) sendBrowserNotification(title, body);
-        })
+        .on(
+          "postgres_changes",
+          {
+            event: "INSERT",
+            schema: "public",
+            table: "orders",
+          },
+          (payload: any) => {
+            const orderNumber = payload.new?.order_number;
+            if (!orderNumber) return;
+            const title = "🔔 New Order Received";
+            const body = `Order #${orderNumber} — R${payload.new?.total || 0}`;
+            toast.info(title, { description: body });
+            if (document.hidden) sendBrowserNotification(title, body);
+          },
+        )
         .subscribe();
       channels.push(ch);
     }
@@ -141,22 +161,30 @@ const OrderNotifications = () => {
       };
       const ch = supabase
         .channel("driver-notifications")
-        .on("postgres_changes", {
-          event: "INSERT",
-          schema: "public",
-          table: "orders",
-        }, handleReady)
-        .on("postgres_changes", {
-          event: "UPDATE",
-          schema: "public",
-          table: "orders",
-        }, handleReady)
+        .on(
+          "postgres_changes",
+          {
+            event: "INSERT",
+            schema: "public",
+            table: "orders",
+          },
+          handleReady,
+        )
+        .on(
+          "postgres_changes",
+          {
+            event: "UPDATE",
+            schema: "public",
+            table: "orders",
+          },
+          handleReady,
+        )
         .subscribe();
       channels.push(ch);
     }
 
     return () => {
-      channels.forEach(ch => supabase.removeChannel(ch));
+      channels.forEach((ch) => supabase.removeChannel(ch));
     };
   }, [user, role]);
 

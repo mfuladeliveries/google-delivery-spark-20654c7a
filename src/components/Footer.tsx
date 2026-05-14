@@ -15,12 +15,11 @@ const Footer = () => {
                 alt={storeInfo.name}
                 className="h-8 w-8 rounded-full object-cover ring-2 ring-gold/40"
               />
-              <span className="font-display text-base font-bold text-gold">
-                {storeInfo.name}
-              </span>
+              <span className="font-display text-base font-bold text-gold">{storeInfo.name}</span>
             </div>
             <p className="text-sm text-primary-foreground/70 leading-relaxed">
-              Fast, reliable food delivery across Mfuleni and surrounding areas. Order from your favourite local restaurants.
+              Fast, reliable food delivery across Mfuleni and surrounding areas. Order from your
+              favourite local restaurants.
             </p>
           </div>
 
@@ -106,9 +105,7 @@ const Footer = () => {
           <p className="text-xs text-primary-foreground/50">
             © 2019 {storeInfo.name}. All rights reserved.
           </p>
-          <p className="text-xs text-primary-foreground/50">
-            {storeInfo.paymentNote}
-          </p>
+          <p className="text-xs text-primary-foreground/50">{storeInfo.paymentNote}</p>
         </div>
       </div>
     </footer>

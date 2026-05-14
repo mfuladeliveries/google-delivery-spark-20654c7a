@@ -9,7 +9,9 @@ test.describe("Driver dashboard & job board", () => {
 
     // The dashboard contains either an "Online/Offline" toggle or a job-board
     // heading. We look for any of these stable bits of copy.
-    const indicators = page.getByText(/(go online|go offline|online|offline|job board|available orders|earnings|today)/i);
+    const indicators = page.getByText(
+      /(go online|go offline|online|offline|job board|available orders|earnings|today)/i,
+    );
     await expect(indicators.first()).toBeVisible({ timeout: 15_000 });
   });
 

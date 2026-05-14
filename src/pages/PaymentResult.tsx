@@ -26,8 +26,11 @@ const PaymentResult = () => {
   );
   const orderId = searchParams.get("m_payment_id") ?? cachedOrder?.orderId ?? "";
   const orderNumber = searchParams.get("order") ?? cachedOrder?.orderNumber ?? "";
-  const amountGross = searchParams.get("amount_gross") ?? (typeof cachedOrder?.total === "number" ? cachedOrder.total.toFixed(2) : "");
-  const itemName = searchParams.get("item_name") ?? (orderNumber ? `Order #${orderNumber}` : "your order");
+  const amountGross =
+    searchParams.get("amount_gross") ??
+    (typeof cachedOrder?.total === "number" ? cachedOrder.total.toFixed(2) : "");
+  const itemName =
+    searchParams.get("item_name") ?? (orderNumber ? `Order #${orderNumber}` : "your order");
 
   // Redirect immediately if we have zero identifying information
   useEffect(() => {
@@ -76,7 +79,9 @@ const PaymentResult = () => {
 
     setResolvedOrderNumber(String(payload.order_number ?? orderNumber ?? ""));
     setResolvedTotal(
-      typeof payload.total === "number" ? payload.total : Number(payload.total ?? cachedOrder?.total ?? 0),
+      typeof payload.total === "number"
+        ? payload.total
+        : Number(payload.total ?? cachedOrder?.total ?? 0),
     );
 
     if (payload.payment_status === "paid" || payload.status !== "pending_payment") {
@@ -126,17 +131,17 @@ const PaymentResult = () => {
     phase === "success"
       ? "Payment Successful"
       : phase === "failed"
-      ? "Payment Failed or Cancelled"
-      : requestedStatus === "COMPLETE"
-      ? "Finalising your payment"
-      : "Checking payment status";
+        ? "Payment Failed or Cancelled"
+        : requestedStatus === "COMPLETE"
+          ? "Finalising your payment"
+          : "Checking payment status";
 
   const description =
     phase === "success"
       ? `Your payment for ${itemName} has been confirmed.`
       : phase === "failed"
-      ? "We couldn't confirm this payment return. You can refresh or check your orders."
-      : "We're parsing the PayFast return and syncing your order safely.";
+        ? "We couldn't confirm this payment return. You can refresh or check your orders."
+        : "We're parsing the PayFast return and syncing your order safely.";
 
   return (
     <div className="min-h-screen bg-background pb-nav">
@@ -166,19 +171,27 @@ const PaymentResult = () => {
             </div>
             <div className="flex items-center justify-between gap-4">
               <span className="text-muted-foreground">item_name</span>
-              <span className="max-w-[60%] truncate font-semibold text-foreground">{itemName || "Missing"}</span>
+              <span className="max-w-[60%] truncate font-semibold text-foreground">
+                {itemName || "Missing"}
+              </span>
             </div>
             <div className="flex items-center justify-between gap-4">
               <span className="text-muted-foreground">m_payment_id</span>
-              <span className="max-w-[60%] truncate font-mono text-xs font-semibold text-foreground">{orderId || "Missing"}</span>
+              <span className="max-w-[60%] truncate font-mono text-xs font-semibold text-foreground">
+                {orderId || "Missing"}
+              </span>
             </div>
           </div>
 
           {(resolvedOrderNumber || orderNumber) && (
-            <p className="mt-4 text-sm font-semibold text-primary">Order #{resolvedOrderNumber || orderNumber}</p>
+            <p className="mt-4 text-sm font-semibold text-primary">
+              Order #{resolvedOrderNumber || orderNumber}
+            </p>
           )}
           {typeof resolvedTotal === "number" && Number.isFinite(resolvedTotal) && (
-            <p className="mt-1 font-display text-xl font-bold text-foreground">R{resolvedTotal.toFixed(2)}</p>
+            <p className="mt-1 font-display text-xl font-bold text-foreground">
+              R{resolvedTotal.toFixed(2)}
+            </p>
           )}
 
           <button

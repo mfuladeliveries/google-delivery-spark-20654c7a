@@ -1,7 +1,19 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { Camera, Upload, Save, Car, FileText, CreditCard, LogOut, User, Star, Volume2, VolumeX } from "lucide-react";
+import {
+  Camera,
+  Upload,
+  Save,
+  Car,
+  FileText,
+  CreditCard,
+  LogOut,
+  User,
+  Star,
+  Volume2,
+  VolumeX,
+} from "lucide-react";
 import { toast } from "sonner";
 import { useNotificationPrefs } from "@/hooks/useNotificationPrefs";
 import { Switch } from "@/components/ui/switch";
@@ -22,8 +34,17 @@ interface DriverProfileData {
 const DriverProfileTab = () => {
   const { user, signOut } = useAuth();
   const { prefs, update: updatePrefs } = useNotificationPrefs();
-  const [profile, setProfile] = useState<ProfileData>({ full_name: "", contact_number: "", address: "" });
-  const [driverData, setDriverData] = useState<DriverProfileData>({ vehicle_type: "", license_plate: "", license_url: "", id_document_url: "" });
+  const [profile, setProfile] = useState<ProfileData>({
+    full_name: "",
+    contact_number: "",
+    address: "",
+  });
+  const [driverData, setDriverData] = useState<DriverProfileData>({
+    vehicle_type: "",
+    license_plate: "",
+    license_url: "",
+    id_document_url: "",
+  });
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState<string | null>(null);
   const [ratingAvg, setRatingAvg] = useState<number | null>(null);
@@ -36,20 +57,36 @@ const DriverProfileTab = () => {
 
   const fetchData = async () => {
     const [{ data: p }, { data: d }, { data: ratings }] = await Promise.all([
-      supabase.from("profiles").select("full_name, contact_number, address").eq("user_id", user!.id).maybeSingle(),
-      supabase.from("driver_profiles").select("vehicle_type, license_plate, license_url, id_document_url").eq("user_id", user!.id).maybeSingle(),
-      supabase.from("order_ratings").select("driver_rating").eq("driver_id", user!.id).not("driver_rating", "is", null),
+      supabase
+        .from("profiles")
+        .select("full_name, contact_number, address")
+        .eq("user_id", user!.id)
+        .maybeSingle(),
+      supabase
+        .from("driver_profiles")
+        .select("vehicle_type, license_plate, license_url, id_document_url")
+        .eq("user_id", user!.id)
+        .maybeSingle(),
+      supabase
+        .from("order_ratings")
+        .select("driver_rating")
+        .eq("driver_id", user!.id)
+        .not("driver_rating", "is", null),
     ]);
     if (p) setProfile(p);
     if (d) {
       // Generate signed URLs for private bucket documents
       const withSignedUrls = { ...d };
       if (d.license_url) {
-        const { data: s1 } = await supabase.storage.from("driver-documents").createSignedUrl(d.license_url, 3600);
+        const { data: s1 } = await supabase.storage
+          .from("driver-documents")
+          .createSignedUrl(d.license_url, 3600);
         if (s1?.signedUrl) withSignedUrls.license_url = s1.signedUrl;
       }
       if (d.id_document_url) {
-        const { data: s2 } = await supabase.storage.from("driver-documents").createSignedUrl(d.id_document_url, 3600);
+        const { data: s2 } = await supabase.storage
+          .from("driver-documents")
+          .createSignedUrl(d.id_document_url, 3600);
         if (s2?.signedUrl) withSignedUrls.id_document_url = s2.signedUrl;
       }
       setDriverData(withSignedUrls);
@@ -68,10 +105,13 @@ const DriverProfileTab = () => {
     setSaving(true);
     await Promise.all([
       supabase.from("profiles").update(profile).eq("user_id", user!.id),
-      supabase.from("driver_profiles").update({
-        vehicle_type: driverData.vehicle_type,
-        license_plate: driverData.license_plate,
-      }).eq("user_id", user!.id),
+      supabase
+        .from("driver_profiles")
+        .update({
+          vehicle_type: driverData.vehicle_type,
+          license_plate: driverData.license_plate,
+        })
+        .eq("user_id", user!.id),
     ]);
     toast.success("Profile updated!");
     setSaving(false);
@@ -83,7 +123,9 @@ const DriverProfileTab = () => {
     const ext = file.name.split(".").pop();
     const path = `${user.id}/${field}_${Date.now()}.${ext}`;
 
-    const { error } = await supabase.storage.from("driver-documents").upload(path, file, { upsert: true });
+    const { error } = await supabase.storage
+      .from("driver-documents")
+      .upload(path, file, { upsert: true });
     if (error) {
       toast.error("Upload failed: " + error.message);
       setUploading(null);
@@ -92,10 +134,15 @@ const DriverProfileTab = () => {
 
     // Store the path (not a public URL) since bucket is private
     const storagePath = path;
-    await supabase.from("driver_profiles").update({ [field]: storagePath }).eq("user_id", user.id);
+    await supabase
+      .from("driver_profiles")
+      .update({ [field]: storagePath })
+      .eq("user_id", user.id);
     // Generate a signed URL for display
-    const { data: signedData } = await supabase.storage.from("driver-documents").createSignedUrl(storagePath, 3600);
-    setDriverData(prev => ({ ...prev, [field]: signedData?.signedUrl || storagePath }));
+    const { data: signedData } = await supabase.storage
+      .from("driver-documents")
+      .createSignedUrl(storagePath, 3600);
+    setDriverData((prev) => ({ ...prev, [field]: signedData?.signedUrl || storagePath }));
     toast.success("Document uploaded!");
     setUploading(null);
   };
@@ -113,7 +160,9 @@ const DriverProfileTab = () => {
           <div className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1">
             <Star className="h-4 w-4 fill-primary text-primary" />
             <span className="text-sm font-bold text-primary">{ratingAvg.toFixed(1)}</span>
-            <span className="text-xs text-muted-foreground">({ratingCount} {ratingCount === 1 ? "rating" : "ratings"})</span>
+            <span className="text-xs text-muted-foreground">
+              ({ratingCount} {ratingCount === 1 ? "rating" : "ratings"})
+            </span>
           </div>
         ) : (
           <p className="mt-2 text-xs text-muted-foreground">No ratings yet</p>
@@ -126,18 +175,22 @@ const DriverProfileTab = () => {
           <User className="h-4 w-4 text-primary" /> Personal Info
         </h3>
         <div>
-          <label className="text-xs font-semibold text-muted-foreground mb-1 block">Full Name</label>
+          <label className="text-xs font-semibold text-muted-foreground mb-1 block">
+            Full Name
+          </label>
           <input
             value={profile.full_name}
-            onChange={e => setProfile(p => ({ ...p, full_name: e.target.value }))}
+            onChange={(e) => setProfile((p) => ({ ...p, full_name: e.target.value }))}
             className="w-full rounded-xl border border-border bg-background px-4 py-3 text-sm text-foreground focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none"
           />
         </div>
         <div>
-          <label className="text-xs font-semibold text-muted-foreground mb-1 block">Phone Number</label>
+          <label className="text-xs font-semibold text-muted-foreground mb-1 block">
+            Phone Number
+          </label>
           <input
             value={profile.contact_number}
-            onChange={e => setProfile(p => ({ ...p, contact_number: e.target.value }))}
+            onChange={(e) => setProfile((p) => ({ ...p, contact_number: e.target.value }))}
             className="w-full rounded-xl border border-border bg-background px-4 py-3 text-sm text-foreground focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none"
           />
         </div>
@@ -145,7 +198,7 @@ const DriverProfileTab = () => {
           <label className="text-xs font-semibold text-muted-foreground mb-1 block">Address</label>
           <input
             value={profile.address}
-            onChange={e => setProfile(p => ({ ...p, address: e.target.value }))}
+            onChange={(e) => setProfile((p) => ({ ...p, address: e.target.value }))}
             className="w-full rounded-xl border border-border bg-background px-4 py-3 text-sm text-foreground focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none"
           />
         </div>
@@ -157,10 +210,12 @@ const DriverProfileTab = () => {
           <Car className="h-4 w-4 text-primary" /> Vehicle Info
         </h3>
         <div>
-          <label className="text-xs font-semibold text-muted-foreground mb-1 block">Vehicle Type</label>
+          <label className="text-xs font-semibold text-muted-foreground mb-1 block">
+            Vehicle Type
+          </label>
           <select
             value={driverData.vehicle_type}
-            onChange={e => setDriverData(d => ({ ...d, vehicle_type: e.target.value }))}
+            onChange={(e) => setDriverData((d) => ({ ...d, vehicle_type: e.target.value }))}
             className="w-full rounded-xl border border-border bg-background px-4 py-3 text-sm text-foreground focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none"
           >
             <option value="">Select vehicle type</option>
@@ -171,10 +226,12 @@ const DriverProfileTab = () => {
           </select>
         </div>
         <div>
-          <label className="text-xs font-semibold text-muted-foreground mb-1 block">License Plate</label>
+          <label className="text-xs font-semibold text-muted-foreground mb-1 block">
+            License Plate
+          </label>
           <input
             value={driverData.license_plate}
-            onChange={e => setDriverData(d => ({ ...d, license_plate: e.target.value }))}
+            onChange={(e) => setDriverData((d) => ({ ...d, license_plate: e.target.value }))}
             placeholder="e.g. ABC 123 GP"
             className="w-full rounded-xl border border-border bg-background px-4 py-3 text-sm text-foreground focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none"
           />
@@ -189,14 +246,25 @@ const DriverProfileTab = () => {
 
         {/* Driver License */}
         <div>
-          <label className="text-xs font-semibold text-muted-foreground mb-1.5 block">Driver's License</label>
+          <label className="text-xs font-semibold text-muted-foreground mb-1.5 block">
+            Driver's License
+          </label>
           {driverData.license_url ? (
             <div className="flex items-center gap-2 rounded-xl bg-[hsl(var(--driver-success)/0.08)] border border-[hsl(var(--driver-success)/0.2)] px-4 py-2.5">
               <CreditCard className="h-4 w-4 text-[hsl(var(--driver-success))]" />
-              <span className="text-sm text-[hsl(var(--driver-success))] font-medium flex-1">Uploaded ✓</span>
+              <span className="text-sm text-[hsl(var(--driver-success))] font-medium flex-1">
+                Uploaded ✓
+              </span>
               <label className="text-xs text-primary font-semibold cursor-pointer">
                 Replace
-                <input type="file" className="hidden" accept="image/*,.pdf" onChange={e => e.target.files?.[0] && handleFileUpload("license_url", e.target.files[0])} />
+                <input
+                  type="file"
+                  className="hidden"
+                  accept="image/*,.pdf"
+                  onChange={(e) =>
+                    e.target.files?.[0] && handleFileUpload("license_url", e.target.files[0])
+                  }
+                />
               </label>
             </div>
           ) : (
@@ -205,21 +273,39 @@ const DriverProfileTab = () => {
               <span className="text-sm text-muted-foreground font-medium">
                 {uploading === "license_url" ? "Uploading..." : "Upload License"}
               </span>
-              <input type="file" className="hidden" accept="image/*,.pdf" onChange={e => e.target.files?.[0] && handleFileUpload("license_url", e.target.files[0])} />
+              <input
+                type="file"
+                className="hidden"
+                accept="image/*,.pdf"
+                onChange={(e) =>
+                  e.target.files?.[0] && handleFileUpload("license_url", e.target.files[0])
+                }
+              />
             </label>
           )}
         </div>
 
         {/* ID Document */}
         <div>
-          <label className="text-xs font-semibold text-muted-foreground mb-1.5 block">ID Document</label>
+          <label className="text-xs font-semibold text-muted-foreground mb-1.5 block">
+            ID Document
+          </label>
           {driverData.id_document_url ? (
             <div className="flex items-center gap-2 rounded-xl bg-[hsl(var(--driver-success)/0.08)] border border-[hsl(var(--driver-success)/0.2)] px-4 py-2.5">
               <FileText className="h-4 w-4 text-[hsl(var(--driver-success))]" />
-              <span className="text-sm text-[hsl(var(--driver-success))] font-medium flex-1">Uploaded ✓</span>
+              <span className="text-sm text-[hsl(var(--driver-success))] font-medium flex-1">
+                Uploaded ✓
+              </span>
               <label className="text-xs text-primary font-semibold cursor-pointer">
                 Replace
-                <input type="file" className="hidden" accept="image/*,.pdf" onChange={e => e.target.files?.[0] && handleFileUpload("id_document_url", e.target.files[0])} />
+                <input
+                  type="file"
+                  className="hidden"
+                  accept="image/*,.pdf"
+                  onChange={(e) =>
+                    e.target.files?.[0] && handleFileUpload("id_document_url", e.target.files[0])
+                  }
+                />
               </label>
             </div>
           ) : (
@@ -228,12 +314,18 @@ const DriverProfileTab = () => {
               <span className="text-sm text-muted-foreground font-medium">
                 {uploading === "id_document_url" ? "Uploading..." : "Upload ID Document"}
               </span>
-              <input type="file" className="hidden" accept="image/*,.pdf" onChange={e => e.target.files?.[0] && handleFileUpload("id_document_url", e.target.files[0])} />
+              <input
+                type="file"
+                className="hidden"
+                accept="image/*,.pdf"
+                onChange={(e) =>
+                  e.target.files?.[0] && handleFileUpload("id_document_url", e.target.files[0])
+                }
+              />
             </label>
           )}
         </div>
       </div>
-
 
       {/* Save button */}
       <button
