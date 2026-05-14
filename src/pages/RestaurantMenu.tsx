@@ -100,7 +100,34 @@ const RestaurantMenu = () => {
   const outOfRange =
     !locationBlocked &&
     (!restaurantHasCoords || (distance != null && distance > DELIVERY_RADIUS_KM));
-  const canOrder = !locationBlocked && !outOfRange;
+
+  // Driver-coverage check for the customer's current coords.
+  // null = unknown/loading; otherwise tells us whether any online driver covers this area.
+  const [coverage, setCoverage] = useState<{
+    covered: boolean;
+    online_in_area: number;
+    address_tag: string | null;
+  } | null>(null);
+  useEffect(() => {
+    if (locationBlocked || outOfRange || geo.lat == null || geo.lng == null) {
+      setCoverage(null);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase.rpc("check_area_coverage", {
+        p_lat: geo.lat as number,
+        p_lng: geo.lng as number,
+      });
+      if (!cancelled && data) setCoverage(data as any);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [geo.lat, geo.lng, locationBlocked, outOfRange]);
+
+  const noDrivers = !!coverage && !coverage.covered;
+  const canOrder = !locationBlocked && !outOfRange && !noDrivers;
 
   useEffect(() => {
     const fetchData = async () => {
