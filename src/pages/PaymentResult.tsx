@@ -1,6 +1,14 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import { AlertTriangle, CheckCircle2, Home, ListOrdered, Loader2, RefreshCw } from "lucide-react";
+import {
+  AlertTriangle,
+  CheckCircle2,
+  Home,
+  KeyRound,
+  ListOrdered,
+  Loader2,
+  RefreshCw,
+} from "lucide-react";
 import BottomNav from "@/components/BottomNav";
 import { useAuth } from "@/hooks/useAuth";
 import { clearPersistedCart } from "@/hooks/useCart";
@@ -18,6 +26,7 @@ const PaymentResult = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [resolvedOrderNumber, setResolvedOrderNumber] = useState<string>("");
   const [resolvedTotal, setResolvedTotal] = useState<number | null>(null);
+  const [deliveryPin, setDeliveryPin] = useState<string>("");
 
   const requestedStatus = (searchParams.get("payment_status") ?? "").trim().toUpperCase();
   const cachedOrder = useMemo(
@@ -75,6 +84,7 @@ const PaymentResult = () => {
       total?: number | string;
       status?: string;
       payment_status?: string;
+      delivery_code?: string | null;
     };
 
     setResolvedOrderNumber(String(payload.order_number ?? orderNumber ?? ""));
@@ -83,6 +93,7 @@ const PaymentResult = () => {
         ? payload.total
         : Number(payload.total ?? cachedOrder?.total ?? 0),
     );
+    if (payload.delivery_code) setDeliveryPin(payload.delivery_code);
 
     if (payload.payment_status === "paid" || payload.status !== "pending_payment") {
       clearPersistedCart();
@@ -121,9 +132,11 @@ const PaymentResult = () => {
 
   useEffect(() => {
     if (phase !== "success" || !resolvedOrderNumber) return;
+    // Give the customer enough time to read & screenshot the delivery PIN
+    // before bouncing them to the full order confirmation page.
     const timer = window.setTimeout(() => {
       navigate(`/order-confirmation?order=${resolvedOrderNumber}`, { replace: true });
-    }, 1200);
+    }, 6000);
     return () => window.clearTimeout(timer);
   }, [navigate, phase, resolvedOrderNumber]);
 
@@ -194,6 +207,24 @@ const PaymentResult = () => {
             </p>
           )}
 
+          {/* Delivery PIN — shown immediately after payment is approved so the
+              customer can screenshot or memorise it before the redirect. */}
+          {phase === "success" && deliveryPin && (
+            <div className="mt-4 flex items-center gap-3 rounded-2xl border-2 border-primary/40 bg-primary/5 p-4 text-left">
+              <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl bg-primary/10">
+                <KeyRound className="h-5 w-5 text-primary" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-semibold text-foreground">Your Delivery PIN</p>
+                <p className="text-[11px] text-muted-foreground">
+                  Share this with the driver on arrival
+                </p>
+              </div>
+              <p className="font-display text-2xl font-bold tracking-[0.2em] text-primary">
+                {deliveryPin}
+              </p>
+            </div>
+          )}
           <button
             onClick={refreshStatus}
             disabled={refreshing}

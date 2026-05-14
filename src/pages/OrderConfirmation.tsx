@@ -421,21 +421,24 @@ const OrderConfirmation = () => {
           <p className="mt-1 font-display text-3xl font-bold text-primary">#{orderNumber}</p>
         </div>
 
-        {/* Delivery PIN */}
-        <div className="mt-3 flex items-center gap-3 rounded-2xl border-2 border-primary/30 bg-primary/5 p-4">
-          <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl bg-primary/10">
-            <KeyRound className="h-5 w-5 text-primary" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-xs font-semibold text-foreground">Delivery PIN</p>
-            <p className="text-[11px] text-muted-foreground">
-              Share this with the driver on arrival
+        {/* Delivery PIN — only revealed once the order is fully placed:
+            online orders need payment approved; cash orders need restaurant acceptance. */}
+        {!paymentPending && !awaitingRestaurant && !rejected && deliveryPin !== "------" && (
+          <div className="mt-3 flex items-center gap-3 rounded-2xl border-2 border-primary/30 bg-primary/5 p-4">
+            <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl bg-primary/10">
+              <KeyRound className="h-5 w-5 text-primary" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-xs font-semibold text-foreground">Delivery PIN</p>
+              <p className="text-[11px] text-muted-foreground">
+                Share this with the driver on arrival
+              </p>
+            </div>
+            <p className="font-display text-2xl font-bold tracking-[0.2em] text-primary">
+              {deliveryPin}
             </p>
           </div>
-          <p className="font-display text-2xl font-bold tracking-[0.2em] text-primary">
-            {deliveryPin}
-          </p>
-        </div>
+        )}
 
         {/* Delivery time */}
         <div className="mt-3 flex items-center gap-3 rounded-2xl border border-border bg-card p-4">
