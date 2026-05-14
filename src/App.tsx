@@ -23,6 +23,7 @@ import AdminDashboard from "./pages/AdminDashboard";
 import Profile from "./pages/Profile";
 import Search from "./pages/Search";
 import Install from "./pages/Install";
+import GetApp from "./pages/GetApp";
 import About from "./pages/About";
 import RouteAwareInstallPrompt from "@/components/RouteAwareInstallPrompt";
 import SplashScreen from "@/components/SplashScreen";
