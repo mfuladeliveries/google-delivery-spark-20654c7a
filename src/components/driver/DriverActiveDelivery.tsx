@@ -409,10 +409,6 @@ const DriverActiveDelivery = ({
                 </div>
               </div>
 
-              {/* Verification - only show when out for delivery */}
-              {order.status === "out_for_delivery" && (
-                <DeliveryVerification orderId={order.id} onVerified={onDeliveryComplete} />
-              )}
             </div>
           </div>
         );
