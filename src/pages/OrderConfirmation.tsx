@@ -17,6 +17,10 @@ interface ConfirmationState {
   paymentMethod?: "cash" | "online";
   restaurant?: string;
   paymentPending?: boolean;
+  awaitingRestaurant?: boolean;
+  rejected?: boolean;
+  rejectReason?: string;
+  orderId?: string;
 }
 
 // Parse our combined special_notes string (created in CheckoutDialog) into parts.
