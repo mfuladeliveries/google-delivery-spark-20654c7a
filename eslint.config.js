@@ -38,7 +38,7 @@ export default tseslint.config(
       "@typescript-eslint/no-empty-object-type": "warn",
       "@typescript-eslint/prefer-as-const": "warn",
       "@typescript-eslint/no-require-imports": "warn",
-      "no-empty": ["warn", { "allowEmptyCatch": true }],
+      "no-empty": ["warn", { allowEmptyCatch: true }],
     },
   },
 );
