@@ -255,6 +255,7 @@ const RestaurantMenu = () => {
     id: item.id,
     name: item.name,
     category: item.category,
+    restaurantId: restaurant?.id,
     restaurantName: restaurant?.name || "",
     caption: item.description,
     image: item.image,
