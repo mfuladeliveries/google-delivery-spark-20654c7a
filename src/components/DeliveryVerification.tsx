@@ -33,30 +33,28 @@ const DeliveryVerification = ({ orderId, onVerified }: DeliveryVerificationProps
   };
 
   return (
-    <div className="space-y-3">
-      <div className="flex items-center gap-2 text-sm font-medium text-foreground">
-        <ShieldCheck className="h-4 w-4 text-primary" />
-        Enter customer's delivery code
+    <div className="space-y-3 rounded-2xl border-2 border-primary bg-primary/5 p-4">
+      <div className="flex items-center gap-2 text-sm font-bold text-foreground">
+        <ShieldCheck className="h-5 w-5 text-primary" />
+        Enter customer's 6-digit delivery PIN
       </div>
-      <div className="flex gap-2">
-        <input
-          type="text"
-          inputMode="numeric"
-          maxLength={6}
-          value={code}
-          onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
-          placeholder="000000"
-          className="flex-1 rounded-xl border border-border bg-card px-4 py-2.5 text-center text-lg tracking-[0.5em] text-card-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-        />
-        <button
-          onClick={handleVerify}
-          disabled={loading || code.length < 6}
-          className="btn-glow rounded-xl gradient-maroon px-5 py-2.5 text-sm font-bold text-primary-foreground disabled:opacity-50"
-        >
-          {loading ? "..." : "Verify"}
-        </button>
-      </div>
-      {error && <p className="text-sm text-destructive">{error}</p>}
+      <input
+        type="text"
+        inputMode="numeric"
+        maxLength={6}
+        value={code}
+        onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
+        placeholder="000000"
+        className="w-full rounded-xl border-2 border-border bg-card px-4 py-3 text-center text-2xl font-bold tracking-[0.5em] text-card-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/30"
+      />
+      <button
+        onClick={handleVerify}
+        disabled={loading || code.length < 6}
+        className="btn-glow w-full min-h-12 rounded-xl gradient-maroon px-5 py-3.5 text-base font-bold text-primary-foreground disabled:opacity-50"
+      >
+        {loading ? "Verifying…" : "Submit PIN & Complete Delivery"}
+      </button>
+      {error && <p className="text-sm font-semibold text-destructive">{error}</p>}
     </div>
   );
 };
