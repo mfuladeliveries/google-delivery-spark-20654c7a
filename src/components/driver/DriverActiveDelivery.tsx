@@ -256,6 +256,12 @@ const DriverActiveDelivery = ({
                 <span className="font-bold text-primary text-lg shrink-0">R{order.total}</span>
               </div>
 
+              {/* PIN entry — shown FIRST when out for delivery so the driver
+                  never has to scroll past chat/items to complete the trip. */}
+              {order.status === "out_for_delivery" && (
+                <DeliveryVerification orderId={order.id} onVerified={onDeliveryComplete} />
+              )}
+
               {/* Progress bar */}
               <div className="relative">
                 <div className="flex items-center justify-between mb-2">
