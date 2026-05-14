@@ -1670,6 +1670,19 @@ const RestaurantCard = ({
             {editing ? <X className="h-4 w-4" /> : <Pencil className="h-4 w-4" />}
           </button>
           <button
+            onClick={() => onToggleConfirmation(r.id, r.requires_confirmation)}
+            className={`rounded-xl px-2.5 py-1.5 text-[11px] font-bold transition-colors ${
+              r.requires_confirmation
+                ? "bg-primary/15 text-primary hover:bg-primary/25"
+                : "bg-secondary text-muted-foreground hover:bg-secondary/80"
+            }`}
+            title={r.requires_confirmation
+              ? "Restaurant must confirm paid orders before they go to drivers. Click to disable."
+              : "Paid orders go straight to drivers. Click to require restaurant confirmation."}
+          >
+            🛎️ {r.requires_confirmation ? "Confirms" : "Auto"}
+          </button>
+          <button
             onClick={() => onToggleActive(r.id, r.is_active)}
             className={`rounded-xl px-3 py-1.5 text-xs font-bold transition-colors ${
               r.is_active
