@@ -11,6 +11,7 @@ import {
   ChevronRight,
   MapPinOff,
   MapPin,
+  AlertTriangle,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useCart } from "@/hooks/useCart";
