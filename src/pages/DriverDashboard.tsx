@@ -182,7 +182,7 @@ const DriverDashboard = () => {
   // Continuous loud ringtone + repeating vibration while an offer is on-screen.
   // Stops automatically when the offer is accepted, rejected, or expires (modal closes).
   useEffect(() => {
-    if (!activeOffer) {
+    if (!activeOffer || acceptingId || rejectingId) {
       stopNotificationSound();
       return;
     }
@@ -222,7 +222,7 @@ const DriverDashboard = () => {
         /* ignore */
       }
     };
-  }, [activeOffer?.id, activeOffer, startNotificationSound, stopNotificationSound]);
+  }, [activeOffer?.id, activeOffer, startNotificationSound, stopNotificationSound, acceptingId, rejectingId]);
 
   // GPS tracking when online
   useEffect(() => {

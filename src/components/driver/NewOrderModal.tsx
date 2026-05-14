@@ -119,7 +119,7 @@ const NewOrderModal = ({
 
   // Play custom alert sound + vibrate on open, loop for ~10 seconds, then stop
   useEffect(() => {
-    if (!open || !offer) return;
+    if (!open || !offer || accepting || rejecting) return;
 
     const audio = new Audio("/sounds/new-order.mp3");
     audio.loop = true;
@@ -167,7 +167,7 @@ const NewOrderModal = ({
         }
       }
     };
-  }, [open, offer?.id]);
+  }, [open, offer?.id, accepting, rejecting]);
 
   useEffect(() => {
     if (!offer?.offer_expires_at) {
