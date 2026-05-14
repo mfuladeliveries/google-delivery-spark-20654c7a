@@ -32,9 +32,13 @@ export default tseslint.config(
       ...reactHooks.configs.recommended.rules,
       "react-refresh/only-export-components": ["warn", { allowConstantExport: true }],
       "@typescript-eslint/no-unused-vars": "off",
-      // Demote to warn — we have a large existing surface using `any` for third-party
-      // SDK shapes. CI enforces 0 errors but allows the existing warning baseline.
+      // Demote stylistic / legacy-baseline issues to warnings. CI fails on errors only;
+      // warnings are visible in PRs and capped via --max-warnings to prevent regressions.
       "@typescript-eslint/no-explicit-any": "warn",
+      "@typescript-eslint/no-empty-object-type": "warn",
+      "@typescript-eslint/prefer-as-const": "warn",
+      "@typescript-eslint/no-require-imports": "warn",
+      "no-empty": ["warn", { "allowEmptyCatch": true }],
     },
   },
 );
