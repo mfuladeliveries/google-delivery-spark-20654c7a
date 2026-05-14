@@ -304,6 +304,11 @@ const CheckoutDialog = ({
       return;
     }
 
+    if (coverage && !coverage.covered) {
+      toast.error("No drivers are online in your area right now. Please try again shortly.");
+      return;
+    }
+
     const result = checkoutSchema.safeParse({
       name, contact, address: fullAddress, notes, deliveryInstructions, tip: actualTip,
     });
@@ -759,12 +764,12 @@ const CheckoutDialog = ({
             )}
 
             {addressVerified && coords && !outOfRange && coverage && !coverage.covered && (
-              <div className="mt-2 flex items-start gap-2 rounded-xl border-2 border-amber-500/40 bg-amber-500/10 p-3">
-                <AlertTriangle className="h-4 w-4 flex-shrink-0 text-amber-600 mt-0.5" />
+              <div className="mt-2 flex items-start gap-2 rounded-xl border-2 border-destructive/40 bg-destructive/10 p-3">
+                <AlertTriangle className="h-4 w-4 flex-shrink-0 text-destructive mt-0.5" />
                 <div className="text-xs">
-                  <p className="font-bold text-amber-700">No drivers online in your area right now</p>
+                  <p className="font-bold text-destructive">No drivers online in your area</p>
                   <p className="mt-0.5 text-foreground">
-                    You can still place this order, but it may take longer than usual to be picked up while we wait for a driver to come online nearby.
+                    We can't accept orders for this location right now because no driver is currently online nearby. Please try again in a few minutes.
                   </p>
                 </div>
               </div>
@@ -996,7 +1001,7 @@ const CheckoutDialog = ({
 
           <button
             onClick={handleCheckout}
-            disabled={loading || !name.trim() || !contact.trim() || !addressVerified || !coords || outOfRange}
+            disabled={loading || !name.trim() || !contact.trim() || !addressVerified || !coords || outOfRange || (!!coverage && !coverage.covered)}
             data-testid="checkout-place-order-button"
             className="btn-glow flex w-full items-center justify-center gap-2 rounded-2xl gradient-maroon py-3.5 font-display font-bold text-primary-foreground transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:hover:scale-100 shadow-maroon"
           >
