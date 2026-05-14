@@ -1,6 +1,14 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import { AlertTriangle, CheckCircle2, Home, ListOrdered, Loader2, RefreshCw } from "lucide-react";
+import {
+  AlertTriangle,
+  CheckCircle2,
+  Home,
+  KeyRound,
+  ListOrdered,
+  Loader2,
+  RefreshCw,
+} from "lucide-react";
 import BottomNav from "@/components/BottomNav";
 import { useAuth } from "@/hooks/useAuth";
 import { clearPersistedCart } from "@/hooks/useCart";
