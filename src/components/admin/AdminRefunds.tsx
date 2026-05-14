@@ -42,7 +42,7 @@ const AdminRefunds = () => {
       const { data } = await supabase
         .from("orders")
         .select(
-          "id, order_number, user_id, customer_name, customer_contact, total, refund_amount, refund_method, refund_status, cancelled_at, cancel_reason, refunded_at, restaurant, payment_method"
+          "id, order_number, user_id, customer_name, customer_contact, total, refund_amount, refund_method, refund_status, cancelled_at, cancel_reason, refunded_at, restaurant, payment_method",
         )
         .not("refund_status", "is", null)
         .order("cancelled_at", { ascending: false });
@@ -73,7 +73,12 @@ const AdminRefunds = () => {
   const filtered = rows.filter((r) => r.refund_status === tab);
 
   const markPaid = async (r: RefundRow) => {
-    if (!window.confirm(`Mark R${Number(r.refund_amount).toFixed(2)} bank refund for order #${r.order_number} as paid?`)) return;
+    if (
+      !window.confirm(
+        `Mark R${Number(r.refund_amount).toFixed(2)} bank refund for order #${r.order_number} as paid?`,
+      )
+    )
+      return;
     setActingId(r.id);
     const { error } = await supabase.rpc("admin_mark_bank_refund_paid", { p_order_id: r.id });
     setActingId(null);
@@ -170,8 +175,12 @@ const AdminRefunds = () => {
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
-                    <span className="text-lg font-bold text-foreground">R{Number(r.refund_amount).toFixed(2)}</span>
-                    <span className="text-xs font-bold text-muted-foreground">#{r.order_number}</span>
+                    <span className="text-lg font-bold text-foreground">
+                      R{Number(r.refund_amount).toFixed(2)}
+                    </span>
+                    <span className="text-xs font-bold text-muted-foreground">
+                      #{r.order_number}
+                    </span>
                   </div>
                   <p className="mt-1 text-sm font-semibold text-foreground">{r.customer_name}</p>
                   <p className="text-[11px] text-muted-foreground">

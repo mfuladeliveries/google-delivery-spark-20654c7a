@@ -13,7 +13,7 @@ interface ProductCustomizeModalProps {
     cut?: CutOption,
     size?: SizeOption,
     addOns?: AddOnOption[],
-    pieces?: number
+    pieces?: number,
   ) => void;
 }
 
@@ -23,17 +23,14 @@ interface ProductCustomizeModalProps {
  * which the admin configures in AdminMenuManager.
  */
 const ProductCustomizeModal = ({ open, item, onClose, onAdd }: ProductCustomizeModalProps) => {
-  const cuts = useMemo<CutOption[]>(
-    () => (Array.isArray(item?.cuts) ? item!.cuts : []),
-    [item]
-  );
+  const cuts = useMemo<CutOption[]>(() => (Array.isArray(item?.cuts) ? item!.cuts : []), [item]);
   const sizes = useMemo<SizeOption[]>(
     () => (Array.isArray(item?.sizes) ? item!.sizes : []),
-    [item]
+    [item],
   );
   const addOns = useMemo<AddOnOption[]>(
     () => (Array.isArray(item?.add_ons) ? item!.add_ons : []),
-    [item]
+    [item],
   );
   const hasCuts = !!item?.has_cuts && cuts.length > 0;
   const hasSizes = !!item?.has_sizes && sizes.length > 0;
@@ -53,7 +50,7 @@ const ProductCustomizeModal = ({ open, item, onClose, onAdd }: ProductCustomizeM
     if (open && item) {
       // Cuts have NO default — user must explicitly pick one (required).
       setSelectedCut(undefined);
-      setSelectedSize(sizes.find(s => s.popular) || sizes[0]);
+      setSelectedSize(sizes.find((s) => s.popular) || sizes[0]);
       setSelectedAddOns([]);
       setPieces(1);
       setQty(1);
@@ -68,7 +65,7 @@ const ProductCustomizeModal = ({ open, item, onClose, onAdd }: ProductCustomizeM
     if (!selectedCut) return;
     const min = Math.max(1, Number(selectedCut.min_pieces ?? 1));
     const max = Math.max(min, Number(selectedCut.max_pieces ?? 1));
-    setPieces(p => Math.min(Math.max(p, min), max));
+    setPieces((p) => Math.min(Math.max(p, min), max));
   }, [selectedCut]);
 
   if (!open || !item) return null;
@@ -78,9 +75,9 @@ const ProductCustomizeModal = ({ open, item, onClose, onAdd }: ProductCustomizeM
   const showPiecesStepper = !!selectedCut && cutMax > 1;
 
   const toggleAddOn = (a: AddOnOption) => {
-    const isSelected = selectedAddOns.some(x => x.name === a.name);
+    const isSelected = selectedAddOns.some((x) => x.name === a.name);
     if (isSelected) {
-      setSelectedAddOns(selectedAddOns.filter(x => x.name !== a.name));
+      setSelectedAddOns(selectedAddOns.filter((x) => x.name !== a.name));
     } else if (maxAddOns === 1) {
       setSelectedAddOns([a]); // radio behavior
     } else if (selectedAddOns.length < maxAddOns) {
@@ -93,15 +90,15 @@ const ProductCustomizeModal = ({ open, item, onClose, onAdd }: ProductCustomizeM
     hasCuts ? selectedCut : undefined,
     hasSizes ? selectedSize : undefined,
     selectedAddOns,
-    showPiecesStepper ? pieces : undefined
+    showPiecesStepper ? pieces : undefined,
   );
   const lineTotal = unitPrice * qty;
 
   const fromPrice = hasCuts
-    ? Math.min(...cuts.map(c => Number(c.price) * Math.max(1, Number(c.min_pieces ?? 1))))
+    ? Math.min(...cuts.map((c) => Number(c.price) * Math.max(1, Number(c.min_pieces ?? 1))))
     : hasSizes
-    ? Math.min(...sizes.map(s => Number(s.price)))
-    : Number(item.price);
+      ? Math.min(...sizes.map((s) => Number(s.price)))
+      : Number(item.price);
 
   const handleAdd = () => {
     if (hasCuts && !selectedCut) {
@@ -119,7 +116,7 @@ const ProductCustomizeModal = ({ open, item, onClose, onAdd }: ProductCustomizeM
       hasCuts ? selectedCut : undefined,
       hasSizes ? selectedSize : undefined,
       selectedAddOns.length > 0 ? selectedAddOns : undefined,
-      showPiecesStepper ? pieces : undefined
+      showPiecesStepper ? pieces : undefined,
     );
     onClose();
   };
@@ -129,10 +126,7 @@ const ProductCustomizeModal = ({ open, item, onClose, onAdd }: ProductCustomizeM
   return (
     <>
       {/* Overlay */}
-      <div
-        className="fixed inset-0 z-[70] bg-black/60 backdrop-blur-sm"
-        onClick={onClose}
-      />
+      <div className="fixed inset-0 z-[70] bg-black/60 backdrop-blur-sm" onClick={onClose} />
 
       {/* Sheet */}
       <div className="fixed inset-x-0 bottom-0 z-[70] flex max-h-[92vh] flex-col rounded-t-3xl border-t border-border bg-background shadow-2xl animate-in slide-in-from-bottom duration-300">
@@ -162,9 +156,7 @@ const ProductCustomizeModal = ({ open, item, onClose, onAdd }: ProductCustomizeM
         {/* Scrollable body */}
         <div className="flex-1 overflow-y-auto px-5 py-4">
           <h2 className="font-display text-xl font-bold text-foreground">{item.name}</h2>
-          {item.caption && (
-            <p className="mt-1 text-sm text-muted-foreground">{item.caption}</p>
-          )}
+          {item.caption && <p className="mt-1 text-sm text-muted-foreground">{item.caption}</p>}
           <p className="mt-2 font-display text-lg font-bold text-primary">
             {hasCuts || hasSizes ? "From " : ""}
             {storeInfo.currency}
@@ -178,9 +170,7 @@ const ProductCustomizeModal = ({ open, item, onClose, onAdd }: ProductCustomizeM
                 <h3 className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-foreground">
                   <Drumstick className="h-3.5 w-3.5 text-primary" /> Choose your cut
                 </h3>
-                <span className="text-[10px] font-bold uppercase text-destructive">
-                  Required
-                </span>
+                <span className="text-[10px] font-bold uppercase text-destructive">Required</span>
               </div>
               <div className="space-y-2">
                 {cuts.map((c, i) => {
@@ -261,13 +251,14 @@ const ProductCustomizeModal = ({ open, item, onClose, onAdd }: ProductCustomizeM
                       How many pieces?
                     </p>
                     <p className="mt-0.5 text-[11px] text-muted-foreground">
-                      {storeInfo.currency}{Number(selectedCut!.price).toFixed(0)} per piece · min {cutMin}, max {cutMax}
+                      {storeInfo.currency}
+                      {Number(selectedCut!.price).toFixed(0)} per piece · min {cutMin}, max {cutMax}
                     </p>
                   </div>
                   <div className="flex items-center gap-2">
                     <button
                       type="button"
-                      onClick={() => setPieces(p => Math.max(cutMin, p - 1))}
+                      onClick={() => setPieces((p) => Math.max(cutMin, p - 1))}
                       disabled={pieces <= cutMin}
                       aria-label="Fewer pieces"
                       className="rounded-full bg-card p-1.5 text-foreground shadow-sm ring-1 ring-border disabled:opacity-40"
@@ -279,7 +270,7 @@ const ProductCustomizeModal = ({ open, item, onClose, onAdd }: ProductCustomizeM
                     </span>
                     <button
                       type="button"
-                      onClick={() => setPieces(p => Math.min(cutMax, p + 1))}
+                      onClick={() => setPieces((p) => Math.min(cutMax, p + 1))}
                       disabled={pieces >= cutMax}
                       aria-label="More pieces"
                       className="rounded-full bg-primary p-1.5 text-primary-foreground shadow-sm disabled:opacity-40"
@@ -299,9 +290,7 @@ const ProductCustomizeModal = ({ open, item, onClose, onAdd }: ProductCustomizeM
                 <h3 className="text-xs font-bold uppercase tracking-wider text-foreground">
                   Choose a size
                 </h3>
-                <span className="text-[10px] font-bold uppercase text-destructive">
-                  Required
-                </span>
+                <span className="text-[10px] font-bold uppercase text-destructive">Required</span>
               </div>
               <div className="space-y-2">
                 {sizes.map((s, i) => {
@@ -386,7 +375,7 @@ const ProductCustomizeModal = ({ open, item, onClose, onAdd }: ProductCustomizeM
               </div>
               <div className="space-y-2">
                 {addOns.map((a, i) => {
-                  const checked = selectedAddOns.some(x => x.name === a.name);
+                  const checked = selectedAddOns.some((x) => x.name === a.name);
                   const reachedCap =
                     !checked && maxAddOns > 1 && selectedAddOns.length >= maxAddOns;
                   const isFree = Number(a.price) === 0;
@@ -397,8 +386,8 @@ const ProductCustomizeModal = ({ open, item, onClose, onAdd }: ProductCustomizeM
                         checked
                           ? "border-primary bg-primary/5"
                           : reachedCap
-                          ? "border-border bg-card opacity-50 cursor-not-allowed"
-                          : "border-border bg-card cursor-pointer hover:border-primary/40"
+                            ? "border-border bg-card opacity-50 cursor-not-allowed"
+                            : "border-border bg-card cursor-pointer hover:border-primary/40"
                       }`}
                     >
                       <div className="flex items-center gap-3 min-w-0">
@@ -411,9 +400,7 @@ const ProductCustomizeModal = ({ open, item, onClose, onAdd }: ProductCustomizeM
                         >
                           {checked && <Check className="h-3 w-3 text-primary-foreground" />}
                         </span>
-                        <p className="truncate text-sm font-semibold text-foreground">
-                          {a.name}
-                        </p>
+                        <p className="truncate text-sm font-semibold text-foreground">{a.name}</p>
                       </div>
                       <span
                         className={`ml-2 flex-shrink-0 text-xs font-bold ${

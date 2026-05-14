@@ -13,27 +13,28 @@ const HeroBanner = () => {
           straight to your door <span className="text-gold">✦</span>
         </h2>
         <p className="mt-2 max-w-lg text-sm text-muted-foreground">
-          Order from KFC, McDonald's, Debonnairs, Pedros, Burger King & more — all delivered across {storeInfo.areas}.
+          Order from KFC, McDonald's, Debonnairs, Pedros, Burger King & more — all delivered across{" "}
+          {storeInfo.areas}.
         </p>
 
         <div className="mt-5 flex flex-wrap gap-4">
           <div className="flex items-center gap-2 rounded-xl glass px-4 py-2 shadow-luxury">
             <Truck className="h-4 w-4 text-gold" />
             <span className="text-xs font-medium text-card-foreground">
-              Delivery: {storeInfo.currency}{storeInfo.deliveryCharge}
+              Delivery: {storeInfo.currency}
+              {storeInfo.deliveryCharge}
             </span>
           </div>
           <div className="flex items-center gap-2 rounded-xl glass px-4 py-2 shadow-luxury">
             <CreditCard className="h-4 w-4 text-gold" />
             <span className="text-xs font-medium text-card-foreground">
-              Min: {storeInfo.currency}{storeInfo.minimumOrder}
+              Min: {storeInfo.currency}
+              {storeInfo.minimumOrder}
             </span>
           </div>
           <div className="flex items-center gap-2 rounded-xl glass px-4 py-2 shadow-luxury">
             <Clock className="h-4 w-4 text-gold" />
-            <span className="text-xs font-medium text-card-foreground">
-              Delivery Only
-            </span>
+            <span className="text-xs font-medium text-card-foreground">Delivery Only</span>
           </div>
         </div>
       </div>

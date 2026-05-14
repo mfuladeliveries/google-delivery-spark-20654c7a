@@ -1,10 +1,25 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Star, Clock, Plus, Minus, ShoppingCart, Search, ChevronRight, MapPinOff, MapPin } from "lucide-react";
+import {
+  ArrowLeft,
+  Star,
+  Clock,
+  Plus,
+  Minus,
+  ShoppingCart,
+  Search,
+  ChevronRight,
+  MapPinOff,
+  MapPin,
+} from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useCart } from "@/hooks/useCart";
 import { useAuth } from "@/hooks/useAuth";
-import { useGeoLocation, DELIVERY_RADIUS_KM, DELIVERY_RADIUS_LABEL_KM } from "@/hooks/useGeoLocation";
+import {
+  useGeoLocation,
+  DELIVERY_RADIUS_KM,
+  DELIVERY_RADIUS_LABEL_KM,
+} from "@/hooks/useGeoLocation";
 import { menuItems as staticMenuItems, SizeOption, AddOnOption, CutOption } from "@/data/menu";
 import Cart from "@/components/Cart";
 import CheckoutDialog from "@/components/CheckoutDialog";
@@ -47,14 +62,18 @@ interface DbMenuItem {
 }
 
 const foodImages: Record<string, string> = {
-  'Kitchen': 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=800&h=300&fit=crop',
-  'KFC': 'https://images.unsplash.com/photo-1562967914-608f82629710?w=800&h=300&fit=crop',
-  'Debonnairs Pizza': 'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=800&h=300&fit=crop',
-  'McDonalds': 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=800&h=300&fit=crop',
-  'Pedros': 'https://images.unsplash.com/photo-1598515214211-89d3c73ae83b?w=800&h=300&fit=crop',
-  'BURGER KING': 'https://images.unsplash.com/photo-1571091718767-18b5b1457add?w=800&h=300&fit=crop',
-  'Mdala Tshisanyama': 'https://images.unsplash.com/photo-1544025162-d76694265947?w=800&h=300&fit=crop',
-  'Fellos Fishery': 'https://images.unsplash.com/photo-1559847844-5315695dadae?w=800&h=300&fit=crop',
+  Kitchen: "https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=800&h=300&fit=crop",
+  KFC: "https://images.unsplash.com/photo-1562967914-608f82629710?w=800&h=300&fit=crop",
+  "Debonnairs Pizza":
+    "https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=800&h=300&fit=crop",
+  McDonalds: "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=800&h=300&fit=crop",
+  Pedros: "https://images.unsplash.com/photo-1598515214211-89d3c73ae83b?w=800&h=300&fit=crop",
+  "BURGER KING":
+    "https://images.unsplash.com/photo-1571091718767-18b5b1457add?w=800&h=300&fit=crop",
+  "Mdala Tshisanyama":
+    "https://images.unsplash.com/photo-1544025162-d76694265947?w=800&h=300&fit=crop",
+  "Fellos Fishery":
+    "https://images.unsplash.com/photo-1559847844-5315695dadae?w=800&h=300&fit=crop",
 };
 
 const RestaurantMenu = () => {
@@ -78,18 +97,18 @@ const RestaurantMenu = () => {
   const restaurantHasCoords = !!restaurant && restaurant.lat != null && restaurant.lng != null;
   const locationBlocked = !geo.ready || !geo.hasCoords;
   const outOfRange =
-    !locationBlocked && (!restaurantHasCoords || (distance != null && distance > DELIVERY_RADIUS_KM));
+    !locationBlocked &&
+    (!restaurantHasCoords || (distance != null && distance > DELIVERY_RADIUS_KM));
   const canOrder = !locationBlocked && !outOfRange;
 
   useEffect(() => {
     const fetchData = async () => {
-      const { data: rest } = await supabase
-        .from("restaurants")
-        .select("*")
-        .eq("id", id)
-        .single();
-      
-      if (!rest) { navigate("/"); return; }
+      const { data: rest } = await supabase.from("restaurants").select("*").eq("id", id).single();
+
+      if (!rest) {
+        navigate("/");
+        return;
+      }
       setRestaurant(rest as Restaurant);
 
       // Try DB menu items first, fall back to static data
@@ -119,13 +138,13 @@ const RestaurantMenu = () => {
       } else {
         // Use static data filtered by restaurant name
         const staticItems: DbMenuItem[] = staticMenuItems
-          .filter(i => i.available && i.price > 0 && i.category === rest.name)
-          .map(i => ({
+          .filter((i) => i.available && i.price > 0 && i.category === rest.name)
+          .map((i) => ({
             id: i.id,
             name: i.name,
             description: i.caption,
             price: i.price,
-            image: i.image || '',
+            image: i.image || "",
             category: i.category,
             is_available: i.available,
           }));
@@ -171,8 +190,11 @@ const RestaurantMenu = () => {
       toast.success(
         `${added} item${added > 1 ? "s" : ""} added to your cart`,
         skipped > 0
-          ? { description: `${skipped} item${skipped > 1 ? "s" : ""} need${skipped === 1 ? "s" : ""} customisation — please add ${skipped === 1 ? "it" : "them"} manually.`, duration: 5000 }
-          : { description: "Review your order, then check out.", duration: 4000 }
+          ? {
+              description: `${skipped} item${skipped > 1 ? "s" : ""} need${skipped === 1 ? "s" : ""} customisation — please add ${skipped === 1 ? "it" : "them"} manually.`,
+              duration: 5000,
+            }
+          : { description: "Review your order, then check out.", duration: 4000 },
       );
     } else if (skipped > 0) {
       toast.info("Couldn't auto-add items", {
@@ -183,9 +205,9 @@ const RestaurantMenu = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, loading, menuItems.length]);
 
-  const categories = ["All", ...Array.from(new Set(menuItems.map(i => i.category)))];
+  const categories = ["All", ...Array.from(new Set(menuItems.map((i) => i.category)))];
 
-  const filtered = menuItems.filter(item => {
+  const filtered = menuItems.filter((item) => {
     const matchesCat = selectedCategory === "All" || item.category === selectedCategory;
     const matchesSearch = !search.trim() || item.name.toLowerCase().includes(search.toLowerCase());
     return matchesCat && matchesSearch;
@@ -193,9 +215,7 @@ const RestaurantMenu = () => {
 
   const getItemQty = (itemId: string) => {
     // Sum across all cart lines that refer to this base item (different size/sauce variants)
-    return cart.items
-      .filter(c => c.item.id === itemId)
-      .reduce((sum, c) => sum + c.quantity, 0);
+    return cart.items.filter((c) => c.item.id === itemId).reduce((sum, c) => sum + c.quantity, 0);
   };
 
   const itemHasOptions = (item: DbMenuItem) =>
@@ -228,9 +248,12 @@ const RestaurantMenu = () => {
       return;
     }
     if (outOfRange) {
-      toast.error(`This restaurant is outside your delivery range (${DELIVERY_RADIUS_LABEL_KM} km).`, {
-        description: "Please choose a closer restaurant.",
-      });
+      toast.error(
+        `This restaurant is outside your delivery range (${DELIVERY_RADIUS_LABEL_KM} km).`,
+        {
+          description: "Please choose a closer restaurant.",
+        },
+      );
       return;
     }
     if (itemHasOptions(item)) {
@@ -241,7 +264,10 @@ const RestaurantMenu = () => {
   };
 
   const handleCheckout = (note?: string) => {
-    if (!user) { navigate("/auth"); return; }
+    if (!user) {
+      navigate("/auth");
+      return;
+    }
     if (!canOrder) {
       toast.error(
         locationBlocked
@@ -255,15 +281,19 @@ const RestaurantMenu = () => {
     setCheckoutOpen(true);
   };
 
-  if (loading) return (
-    <div className="flex min-h-screen items-center justify-center bg-background">
-      <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-    </div>
-  );
+  if (loading)
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+      </div>
+    );
 
   if (!restaurant) return null;
 
-  const bannerImg = restaurant.banner_url || foodImages[restaurant.name] || 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=800&h=300&fit=crop';
+  const bannerImg =
+    restaurant.banner_url ||
+    foodImages[restaurant.name] ||
+    "https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=800&h=300&fit=crop";
 
   return (
     <div className="min-h-screen bg-background">
@@ -312,7 +342,8 @@ const RestaurantMenu = () => {
             <div className="flex-1">
               <p className="text-sm font-bold text-foreground">Location is off</p>
               <p className="mt-0.5 text-xs text-muted-foreground">
-                Please enable location services to see restaurants available near you. Ordering is disabled until location is enabled.
+                Please enable location services to see restaurants available near you. Ordering is
+                disabled until location is enabled.
               </p>
               <button
                 onClick={() => geo.refresh()}
@@ -352,15 +383,20 @@ const RestaurantMenu = () => {
         {/* Gallery */}
         {restaurant.gallery_images && restaurant.gallery_images.length > 0 && (
           <section className="mb-4">
-            <h3 className="mb-2 text-xs font-bold uppercase tracking-wide text-muted-foreground">Gallery</h3>
+            <h3 className="mb-2 text-xs font-bold uppercase tracking-wide text-muted-foreground">
+              Gallery
+            </h3>
             <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-1">
               {restaurant.gallery_images.map((url, i) => (
-                <div key={`${url}-${i}`} className="relative h-24 w-32 shrink-0 overflow-hidden rounded-xl border border-border bg-muted">
+                <div
+                  key={`${url}-${i}`}
+                  className="relative h-24 w-32 shrink-0 overflow-hidden rounded-xl border border-border bg-muted"
+                >
                   <img
                     src={url}
                     alt={`${restaurant.name} ${i + 1}`}
                     className="h-full w-full object-cover transition-transform duration-300 hover:scale-110"
-                    onError={(e) => ((e.target as HTMLImageElement).style.display = 'none')}
+                    onError={(e) => ((e.target as HTMLImageElement).style.display = "none")}
                   />
                 </div>
               ))}
@@ -383,7 +419,7 @@ const RestaurantMenu = () => {
         {/* Category tabs */}
         {categories.length > 1 && (
           <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-3 mb-4">
-            {categories.map(cat => (
+            {categories.map((cat) => (
               <button
                 key={cat}
                 onClick={() => setSelectedCategory(cat)}
@@ -407,14 +443,19 @@ const RestaurantMenu = () => {
           </div>
         ) : (
           <div className="space-y-3">
-            {filtered.map(item => {
+            {filtered.map((item) => {
               const qty = getItemQty(item.id);
               const hasOptions = itemHasOptions(item);
-              const fromPrice = item.has_cuts && (item.cuts?.length ?? 0) > 0
-                ? Math.min(...item.cuts!.map(c => Number(c.price) * Math.max(1, Number(c.min_pieces ?? 1))))
-                : item.has_sizes && (item.sizes?.length ?? 0) > 0
-                ? Math.min(...item.sizes!.map(s => Number(s.price)))
-                : Number(item.price);
+              const fromPrice =
+                item.has_cuts && (item.cuts?.length ?? 0) > 0
+                  ? Math.min(
+                      ...item.cuts!.map(
+                        (c) => Number(c.price) * Math.max(1, Number(c.min_pieces ?? 1)),
+                      ),
+                    )
+                  : item.has_sizes && (item.sizes?.length ?? 0) > 0
+                    ? Math.min(...item.sizes!.map((s) => Number(s.price)))
+                    : Number(item.price);
               return (
                 <div
                   key={item.id}
@@ -428,17 +469,22 @@ const RestaurantMenu = () => {
                         alt={item.name}
                         className="h-full w-full object-cover"
                         onError={(e) => {
-                          (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1567620905732-2d1ec7ab7445?w=200&h=200&fit=crop';
+                          (e.target as HTMLImageElement).src =
+                            "https://images.unsplash.com/photo-1567620905732-2d1ec7ab7445?w=200&h=200&fit=crop";
                         }}
                       />
                     ) : (
-                      <div className="h-full w-full flex items-center justify-center text-2xl">🍽️</div>
+                      <div className="h-full w-full flex items-center justify-center text-2xl">
+                        🍽️
+                      </div>
                     )}
                   </div>
                   <div className="flex flex-1 flex-col justify-between min-w-0">
                     <div>
                       <div className="flex items-center gap-1.5">
-                        <h4 className="font-semibold text-sm text-foreground truncate">{item.name}</h4>
+                        <h4 className="font-semibold text-sm text-foreground truncate">
+                          {item.name}
+                        </h4>
                         {hasOptions && (
                           <span className="shrink-0 rounded-full bg-primary/10 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-primary">
                             Options
@@ -446,7 +492,9 @@ const RestaurantMenu = () => {
                         )}
                       </div>
                       {item.description && (
-                        <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{item.description}</p>
+                        <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">
+                          {item.description}
+                        </p>
                       )}
                     </div>
                     <div className="flex items-center justify-between mt-2">
@@ -455,15 +503,22 @@ const RestaurantMenu = () => {
                       </span>
                       {qty === 0 ? (
                         <button
-                          onClick={(e) => { e.stopPropagation(); handleAddItem(item); }}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleAddItem(item);
+                          }}
                           disabled={!canOrder}
                           data-testid="menu-add-button"
                           className="btn-glow flex items-center gap-1 rounded-xl gradient-maroon px-3 py-1.5 text-xs font-bold text-primary-foreground transition-transform hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
                         >
                           {hasOptions ? (
-                            <>Customize <ChevronRight className="h-3.5 w-3.5" /></>
+                            <>
+                              Customize <ChevronRight className="h-3.5 w-3.5" />
+                            </>
                           ) : (
-                            <><Plus className="h-3.5 w-3.5" /> Add</>
+                            <>
+                              <Plus className="h-3.5 w-3.5" /> Add
+                            </>
                           )}
                         </button>
                       ) : (
@@ -546,7 +601,8 @@ const RestaurantMenu = () => {
         item={customizeItem ? toMenuItem(customizeItem) : null}
         onClose={() => setCustomizeItem(null)}
         onAdd={(menuItem, qty, cut, size, addOns, pieces) => {
-          for (let i = 0; i < qty; i++) cart.addItemWithOptions(menuItem, cut, size, addOns, pieces);
+          for (let i = 0; i < qty; i++)
+            cart.addItemWithOptions(menuItem, cut, size, addOns, pieces);
         }}
       />
       <BottomNav />

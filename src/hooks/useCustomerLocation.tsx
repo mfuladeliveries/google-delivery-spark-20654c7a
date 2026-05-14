@@ -65,9 +65,7 @@ export const useCustomerLocation = (): UseCustomerLocationResult => {
   }, [authLoading, load]);
 
   const zone =
-    typeof lat === "number" && typeof lng === "number"
-      ? findNearestZone(lat, lng, zones)
-      : null;
+    typeof lat === "number" && typeof lng === "number" ? findNearestZone(lat, lng, zones) : null;
 
   const needsAddress = !!user && !loading && !address;
   const needsCoords = !!user && !loading && !!address && (lat === null || lng === null);

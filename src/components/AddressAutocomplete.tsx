@@ -300,81 +300,83 @@ export const AddressAutocomplete = ({
         )}
       </div>
 
-      {open && !hasValidSelection && (loading || suggestions.length > 0 || (searched && !error)) && (
-        <div
-          role="listbox"
-          aria-busy={loading}
-          className="absolute left-0 right-0 top-full z-50 mt-1 max-h-64 overflow-y-auto rounded-xl border border-border bg-popover p-1 shadow-lg"
-        >
-          {loading && (
-            <div className="flex items-center gap-2 px-3 py-2 text-sm text-muted-foreground">
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              <span>Searching addresses…</span>
-            </div>
-          )}
-          {!loading && fallback && suggestions.length > 0 && (
-            <div className="mx-1 mt-1 mb-0.5 rounded-md border border-amber-500/30 bg-amber-500/10 px-2.5 py-1.5 text-[11px] text-amber-200">
-              Live address lookup is unavailable. Showing saved matches from your recent searches.
-            </div>
-          )}
-          {!loading && suggestions.length === 0 && searched && (
-            <div className="px-3 py-2 text-sm text-muted-foreground">
-              No matching addresses. Try adding a suburb or city.
-            </div>
-          )}
-          {!loading &&
-            suggestions.map((s) => (
-              <button
-                key={s.place_id}
-                type="button"
-                onClick={() => handlePick(s)}
-                className="flex w-full items-start gap-2 rounded-lg px-3 py-2 text-left text-sm text-popover-foreground hover:bg-accent"
-              >
-                <MapPin className="mt-0.5 h-3.5 w-3.5 flex-shrink-0 text-primary" />
-                <span className="break-words">{s.display_name}</span>
-              </button>
-            ))}
-          {!loading && cacheCount > 0 && !confirmingClear && (
-            <div className="mt-1 flex items-center justify-between border-t border-border/60 px-3 py-1.5">
-              <span className="text-[11px] text-muted-foreground">
-                {cacheCount} saved {cacheCount === 1 ? "search" : "searches"}
-              </span>
-              <button
-                type="button"
-                onClick={() => setConfirmingClear(true)}
-                className="flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[11px] text-muted-foreground hover:bg-secondary hover:text-foreground"
-              >
-                <Trash2 className="h-3 w-3" />
-                Clear saved searches
-              </button>
-            </div>
-          )}
-          {!loading && cacheCount > 0 && confirmingClear && (
-            <div className="mt-1 flex items-center justify-between gap-2 border-t border-border/60 bg-destructive/5 px-3 py-1.5">
-              <span className="text-[11px] text-destructive">
-                Clear all {cacheCount} saved {cacheCount === 1 ? "search" : "searches"}?
-              </span>
-              <div className="flex items-center gap-1">
+      {open &&
+        !hasValidSelection &&
+        (loading || suggestions.length > 0 || (searched && !error)) && (
+          <div
+            role="listbox"
+            aria-busy={loading}
+            className="absolute left-0 right-0 top-full z-50 mt-1 max-h-64 overflow-y-auto rounded-xl border border-border bg-popover p-1 shadow-lg"
+          >
+            {loading && (
+              <div className="flex items-center gap-2 px-3 py-2 text-sm text-muted-foreground">
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                <span>Searching addresses…</span>
+              </div>
+            )}
+            {!loading && fallback && suggestions.length > 0 && (
+              <div className="mx-1 mt-1 mb-0.5 rounded-md border border-amber-500/30 bg-amber-500/10 px-2.5 py-1.5 text-[11px] text-amber-200">
+                Live address lookup is unavailable. Showing saved matches from your recent searches.
+              </div>
+            )}
+            {!loading && suggestions.length === 0 && searched && (
+              <div className="px-3 py-2 text-sm text-muted-foreground">
+                No matching addresses. Try adding a suburb or city.
+              </div>
+            )}
+            {!loading &&
+              suggestions.map((s) => (
                 <button
+                  key={s.place_id}
                   type="button"
-                  onClick={() => setConfirmingClear(false)}
-                  className="rounded-md px-1.5 py-0.5 text-[11px] text-muted-foreground hover:bg-secondary hover:text-foreground"
+                  onClick={() => handlePick(s)}
+                  className="flex w-full items-start gap-2 rounded-lg px-3 py-2 text-left text-sm text-popover-foreground hover:bg-accent"
                 >
-                  Cancel
+                  <MapPin className="mt-0.5 h-3.5 w-3.5 flex-shrink-0 text-primary" />
+                  <span className="break-words">{s.display_name}</span>
                 </button>
+              ))}
+            {!loading && cacheCount > 0 && !confirmingClear && (
+              <div className="mt-1 flex items-center justify-between border-t border-border/60 px-3 py-1.5">
+                <span className="text-[11px] text-muted-foreground">
+                  {cacheCount} saved {cacheCount === 1 ? "search" : "searches"}
+                </span>
                 <button
                   type="button"
-                  onClick={handleClearCache}
-                  className="flex items-center gap-1 rounded-md bg-destructive px-1.5 py-0.5 text-[11px] font-medium text-destructive-foreground hover:bg-destructive/90"
+                  onClick={() => setConfirmingClear(true)}
+                  className="flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[11px] text-muted-foreground hover:bg-secondary hover:text-foreground"
                 >
                   <Trash2 className="h-3 w-3" />
-                  Clear
+                  Clear saved searches
                 </button>
               </div>
-            </div>
-          )}
-        </div>
-      )}
+            )}
+            {!loading && cacheCount > 0 && confirmingClear && (
+              <div className="mt-1 flex items-center justify-between gap-2 border-t border-border/60 bg-destructive/5 px-3 py-1.5">
+                <span className="text-[11px] text-destructive">
+                  Clear all {cacheCount} saved {cacheCount === 1 ? "search" : "searches"}?
+                </span>
+                <div className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={() => setConfirmingClear(false)}
+                    className="rounded-md px-1.5 py-0.5 text-[11px] text-muted-foreground hover:bg-secondary hover:text-foreground"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleClearCache}
+                    className="flex items-center gap-1 rounded-md bg-destructive px-1.5 py-0.5 text-[11px] font-medium text-destructive-foreground hover:bg-destructive/90"
+                  >
+                    <Trash2 className="h-3 w-3" />
+                    Clear
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
 
       {loading && !open && (
         <p className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground">

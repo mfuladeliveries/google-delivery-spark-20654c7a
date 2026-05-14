@@ -44,7 +44,10 @@ export const SavedAddressManager = () => {
       <div className="flex items-center justify-between">
         <h2 className="font-bold text-sm text-foreground">My Delivery Addresses</h2>
         <button
-          onClick={() => { setEditing(null); setAdding(true); }}
+          onClick={() => {
+            setEditing(null);
+            setAdding(true);
+          }}
           className="inline-flex items-center gap-1 rounded-full bg-primary px-3 py-1.5 text-xs font-bold text-primary-foreground hover:bg-primary/90"
         >
           <Plus className="h-3.5 w-3.5" /> Add
@@ -96,7 +99,10 @@ export const SavedAddressManager = () => {
                   </button>
                 )}
                 <button
-                  onClick={() => { setEditing(a); setAdding(false); }}
+                  onClick={() => {
+                    setEditing(a);
+                    setAdding(false);
+                  }}
                   className="rounded-md p-1.5 text-muted-foreground hover:bg-secondary hover:text-foreground"
                   aria-label="Edit"
                 >
@@ -117,7 +123,10 @@ export const SavedAddressManager = () => {
 
       <SavedAddressDialog
         open={adding || editing !== null}
-        onClose={() => { setAdding(false); setEditing(null); }}
+        onClose={() => {
+          setAdding(false);
+          setEditing(null);
+        }}
         onSave={handleSave}
         zones={zones}
         initial={editing}

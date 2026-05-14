@@ -13,16 +13,33 @@ interface ActiveOrder {
   delivery_code: string | null;
 }
 
-const ACTIVE_STATUSES = ["driver_assigned", "picking_up", "arrived_at_restaurant", "out_for_delivery"];
+const ACTIVE_STATUSES = [
+  "driver_assigned",
+  "picking_up",
+  "arrived_at_restaurant",
+  "out_for_delivery",
+];
 
 const statusMeta: Record<string, { label: string; eta: string; Icon: any }> = {
   driver_assigned: { label: "Driver accepted", eta: "Heading to restaurant", Icon: UserCheck },
   picking_up: { label: "Driver en route", eta: "~10 min to pickup", Icon: Bike },
-  arrived_at_restaurant: { label: "Driver at restaurant", eta: "Picking up your order", Icon: Store },
+  arrived_at_restaurant: {
+    label: "Driver at restaurant",
+    eta: "Picking up your order",
+    Icon: Store,
+  },
   out_for_delivery: { label: "On the way to you", eta: "~15 min", Icon: Truck },
 };
 
-const HIDDEN_ROUTES = ["/orders", "/auth", "/driver", "/restaurant", "/admin", "/install", "/reset-password"];
+const HIDDEN_ROUTES = [
+  "/orders",
+  "/auth",
+  "/driver",
+  "/restaurant",
+  "/admin",
+  "/install",
+  "/reset-password",
+];
 
 const ActiveOrderBanner = () => {
   const { user, roles } = useAuth();
@@ -52,15 +69,21 @@ const ActiveOrderBanner = () => {
 
     const channel = supabase
       .channel("active-order-banner")
-      .on("postgres_changes", {
-        event: "*",
-        schema: "public",
-        table: "orders",
-        filter: `user_id=eq.${user.id}`,
-      }, () => fetchActive())
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "orders",
+          filter: `user_id=eq.${user.id}`,
+        },
+        () => fetchActive(),
+      )
       .subscribe();
 
-    return () => { supabase.removeChannel(channel); };
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [user, isProviderRole]);
 
   if (!user || isProviderRole || onHiddenRoute || !order) return null;

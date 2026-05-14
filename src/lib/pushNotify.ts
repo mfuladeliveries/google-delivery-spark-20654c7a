@@ -27,7 +27,7 @@ export const dispatchAndNotify = async (
   orderId: string,
   orderNumber: number,
   restaurant: string,
-  total: number
+  total: number,
 ) => {
   try {
     const { data } = await supabase.rpc("dispatch_assign_next", { p_order_id: orderId });

@@ -63,7 +63,9 @@ const AdminWithdrawals = ({ drivers }: AdminWithdrawalsProps) => {
 
     const channel = supabase
       .channel("admin-withdrawals-live")
-      .on("postgres_changes", { event: "*", schema: "public", table: "withdrawal_requests" }, () => load())
+      .on("postgres_changes", { event: "*", schema: "public", table: "withdrawal_requests" }, () =>
+        load(),
+      )
       .subscribe();
 
     return () => {
@@ -74,7 +76,7 @@ const AdminWithdrawals = ({ drivers }: AdminWithdrawalsProps) => {
 
   const driverNameById = useMemo(
     () => new Map(drivers.map((d) => [d.user_id, d.profile?.full_name || "Unknown driver"])),
-    [drivers]
+    [drivers],
   );
 
   const filtered = rows.filter((r) => r.status === tab);
@@ -90,12 +92,14 @@ const AdminWithdrawals = ({ drivers }: AdminWithdrawalsProps) => {
   const totalPendingAmount = rows
     .filter((r) => r.status === "pending" || r.status === "approved")
     .reduce((s, r) => s + Number(r.amount), 0);
-  const totalPaidAmount = rows.filter((r) => r.status === "paid").reduce((s, r) => s + Number(r.amount), 0);
+  const totalPaidAmount = rows
+    .filter((r) => r.status === "paid")
+    .reduce((s, r) => s + Number(r.amount), 0);
 
   const updateStatus = async (
     request: WithdrawalRow,
     newStatus: "approved" | "paid" | "rejected",
-    rejectionReason?: string
+    rejectionReason?: string,
   ) => {
     setActingId(request.id);
     const { error } = await supabase.rpc("admin_update_withdrawal", {
@@ -203,8 +207,12 @@ const AdminWithdrawals = ({ drivers }: AdminWithdrawalsProps) => {
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
-                      <span className="text-lg font-bold text-foreground">R{Number(r.amount).toFixed(2)}</span>
-                      <span className={`flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold ${STATUS_STYLE[r.status]}`}>
+                      <span className="text-lg font-bold text-foreground">
+                        R{Number(r.amount).toFixed(2)}
+                      </span>
+                      <span
+                        className={`flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold ${STATUS_STYLE[r.status]}`}
+                      >
                         <Icon className="h-3 w-3" />
                         {r.status}
                       </span>
@@ -213,7 +221,8 @@ const AdminWithdrawals = ({ drivers }: AdminWithdrawalsProps) => {
                       {driverNameById.get(r.driver_id) || "Unknown driver"}
                     </p>
                     <p className="text-[11px] text-muted-foreground">
-                      Requested {new Date(r.requested_at).toLocaleString("en-ZA", {
+                      Requested{" "}
+                      {new Date(r.requested_at).toLocaleString("en-ZA", {
                         day: "numeric",
                         month: "short",
                         hour: "2-digit",
@@ -227,7 +236,8 @@ const AdminWithdrawals = ({ drivers }: AdminWithdrawalsProps) => {
                 <div className="mt-3 rounded-xl bg-secondary p-3 text-xs">
                   <p className="font-semibold text-foreground">{r.bank_account_holder}</p>
                   <p className="text-muted-foreground">
-                    {r.bank_name} · {r.bank_account_type} · Acct {r.bank_account_number} · Branch {r.bank_branch_code}
+                    {r.bank_name} · {r.bank_account_type} · Acct {r.bank_account_number} · Branch{" "}
+                    {r.bank_branch_code}
                   </p>
                 </div>
 

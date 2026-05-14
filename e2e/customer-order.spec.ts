@@ -78,9 +78,7 @@ test.describe("Customer order flow", () => {
     if (/\/orders/.test(page.url())) {
       const orderCard = page.locator('[data-testid="order-card"]').first();
       await expect(orderCard).toBeVisible({ timeout: 10_000 });
-      await expect(
-        orderCard.locator('[data-testid="order-status-label"]')
-      ).toBeVisible();
+      await expect(orderCard.locator('[data-testid="order-status-label"]')).toBeVisible();
     }
   });
 });

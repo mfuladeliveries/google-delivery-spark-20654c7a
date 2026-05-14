@@ -2,7 +2,15 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
-import { Wallet, Clock, CheckCircle2, XCircle, Banknote, AlertCircle, Download } from "lucide-react";
+import {
+  Wallet,
+  Clock,
+  CheckCircle2,
+  XCircle,
+  Banknote,
+  AlertCircle,
+  Download,
+} from "lucide-react";
 import { z } from "zod";
 import { generateWithdrawalReceipt } from "@/lib/withdrawalReceipt";
 
@@ -36,14 +44,27 @@ interface WithdrawalRequest {
 const bankSchema = z.object({
   bank_account_holder: z.string().trim().min(2, "Holder name is required").max(120),
   bank_name: z.string().trim().min(2, "Bank name is required").max(80),
-  bank_account_number: z.string().trim().regex(/^\d{6,20}$/, "Account must be 6–20 digits"),
-  bank_branch_code: z.string().trim().regex(/^\d{3,10}$/, "Branch code must be 3–10 digits"),
+  bank_account_number: z
+    .string()
+    .trim()
+    .regex(/^\d{6,20}$/, "Account must be 6–20 digits"),
+  bank_branch_code: z
+    .string()
+    .trim()
+    .regex(/^\d{3,10}$/, "Branch code must be 3–10 digits"),
   bank_account_type: z.enum(["cheque", "savings", "transmission", "business"]),
 });
 
-const STATUS_META: Record<WithdrawalRequest["status"], { label: string; className: string; icon: typeof Clock }> = {
+const STATUS_META: Record<
+  WithdrawalRequest["status"],
+  { label: string; className: string; icon: typeof Clock }
+> = {
   pending: { label: "Pending review", className: "bg-amber-100 text-amber-700", icon: Clock },
-  approved: { label: "Approved — awaiting payout", className: "bg-blue-100 text-blue-700", icon: CheckCircle2 },
+  approved: {
+    label: "Approved — awaiting payout",
+    className: "bg-blue-100 text-blue-700",
+    icon: CheckCircle2,
+  },
   paid: { label: "Paid", className: "bg-green-100 text-green-700", icon: CheckCircle2 },
   rejected: { label: "Rejected", className: "bg-red-100 text-red-600", icon: XCircle },
 };
@@ -67,7 +88,10 @@ const DriverWithdrawals = () => {
   const [driverName, setDriverName] = useState("");
 
   const hasBankDetails =
-    !!bank.bank_account_holder && !!bank.bank_name && !!bank.bank_account_number && !!bank.bank_branch_code;
+    !!bank.bank_account_holder &&
+    !!bank.bank_name &&
+    !!bank.bank_account_number &&
+    !!bank.bank_branch_code;
 
   const pendingRequest = requests.find((r) => r.status === "pending" || r.status === "approved");
 
@@ -76,16 +100,25 @@ const DriverWithdrawals = () => {
     let active = true;
 
     const load = async () => {
-      const [{ data: profileData }, { data: balanceData }, { data: reqData }, { data: userProfile }] = await Promise.all([
+      const [
+        { data: profileData },
+        { data: balanceData },
+        { data: reqData },
+        { data: userProfile },
+      ] = await Promise.all([
         supabase
           .from("driver_profiles")
-          .select("bank_account_holder, bank_name, bank_account_number, bank_branch_code, bank_account_type")
+          .select(
+            "bank_account_holder, bank_name, bank_account_number, bank_branch_code, bank_account_type",
+          )
           .eq("user_id", user.id)
           .maybeSingle(),
         supabase.rpc("get_driver_balance", { p_driver_id: user.id }),
         supabase
           .from("withdrawal_requests")
-          .select("id, amount, status, rejection_reason, admin_notes, requested_at, approved_at, paid_at, rejected_at, bank_account_holder, bank_name, bank_account_number, bank_branch_code, bank_account_type")
+          .select(
+            "id, amount, status, rejection_reason, admin_notes, requested_at, approved_at, paid_at, rejected_at, bank_account_holder, bank_name, bank_account_number, bank_branch_code, bank_account_type",
+          )
           .eq("driver_id", user.id)
           .order("requested_at", { ascending: false }),
         supabase.from("profiles").select("full_name").eq("user_id", user.id).maybeSingle(),
@@ -112,9 +145,20 @@ const DriverWithdrawals = () => {
       .channel("driver-withdrawals-live")
       .on(
         "postgres_changes",
-        { event: "UPDATE", schema: "public", table: "withdrawal_requests", filter: `driver_id=eq.${user.id}` },
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "withdrawal_requests",
+          filter: `driver_id=eq.${user.id}`,
+        },
         (payload) => {
-          const next = payload.new as { status: string; amount: number; bank_name: string; bank_account_number: string; rejection_reason: string | null };
+          const next = payload.new as {
+            status: string;
+            amount: number;
+            bank_name: string;
+            bank_account_number: string;
+            rejection_reason: string | null;
+          };
           const prev = payload.old as { status: string };
           if (next.status !== prev.status) {
             const amt = `R${Number(next.amount).toFixed(2)}`;
@@ -127,16 +171,23 @@ const DriverWithdrawals = () => {
             } else if (next.status === "approved") {
               toast.success(`${amt} approved — payout is being processed.`);
             } else if (next.status === "rejected") {
-              toast.error(`${amt} rejected${next.rejection_reason ? `: ${next.rejection_reason}` : ""}`);
+              toast.error(
+                `${amt} rejected${next.rejection_reason ? `: ${next.rejection_reason}` : ""}`,
+              );
             }
           }
           load();
-        }
+        },
       )
       .on(
         "postgres_changes",
-        { event: "INSERT", schema: "public", table: "withdrawal_requests", filter: `driver_id=eq.${user.id}` },
-        () => load()
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "withdrawal_requests",
+          filter: `driver_id=eq.${user.id}`,
+        },
+        () => load(),
       )
       .subscribe();
 
@@ -207,7 +258,9 @@ const DriverWithdrawals = () => {
       <div className="rounded-2xl border border-border bg-gradient-to-br from-[hsl(var(--driver-success)/0.15)] to-[hsl(var(--driver-success)/0.05)] p-5 shadow-card">
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Withdrawable Balance</p>
+            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              Withdrawable Balance
+            </p>
             <p className="mt-1 text-4xl font-bold text-foreground">R{balance.toFixed(2)}</p>
             <p className="mt-1 text-xs text-muted-foreground">After pending & paid withdrawals</p>
           </div>
@@ -252,7 +305,9 @@ const DriverWithdrawals = () => {
               </div>
             )}
             <div>
-              <label className="mb-1 block text-xs font-semibold text-muted-foreground">Account Holder</label>
+              <label className="mb-1 block text-xs font-semibold text-muted-foreground">
+                Account Holder
+              </label>
               <input
                 value={bank.bank_account_holder}
                 onChange={(e) => setBank((b) => ({ ...b, bank_account_holder: e.target.value }))}
@@ -263,7 +318,9 @@ const DriverWithdrawals = () => {
             </div>
             <div className="grid grid-cols-2 gap-2.5">
               <div>
-                <label className="mb-1 block text-xs font-semibold text-muted-foreground">Bank</label>
+                <label className="mb-1 block text-xs font-semibold text-muted-foreground">
+                  Bank
+                </label>
                 <input
                   value={bank.bank_name}
                   onChange={(e) => setBank((b) => ({ ...b, bank_name: e.target.value }))}
@@ -273,7 +330,9 @@ const DriverWithdrawals = () => {
                 />
               </div>
               <div>
-                <label className="mb-1 block text-xs font-semibold text-muted-foreground">Type</label>
+                <label className="mb-1 block text-xs font-semibold text-muted-foreground">
+                  Type
+                </label>
                 <select
                   value={bank.bank_account_type}
                   onChange={(e) => setBank((b) => ({ ...b, bank_account_type: e.target.value }))}
@@ -288,10 +347,17 @@ const DriverWithdrawals = () => {
             </div>
             <div className="grid grid-cols-2 gap-2.5">
               <div>
-                <label className="mb-1 block text-xs font-semibold text-muted-foreground">Account Number</label>
+                <label className="mb-1 block text-xs font-semibold text-muted-foreground">
+                  Account Number
+                </label>
                 <input
                   value={bank.bank_account_number}
-                  onChange={(e) => setBank((b) => ({ ...b, bank_account_number: e.target.value.replace(/\D/g, "") }))}
+                  onChange={(e) =>
+                    setBank((b) => ({
+                      ...b,
+                      bank_account_number: e.target.value.replace(/\D/g, ""),
+                    }))
+                  }
                   inputMode="numeric"
                   placeholder="Digits only"
                   maxLength={20}
@@ -299,10 +365,14 @@ const DriverWithdrawals = () => {
                 />
               </div>
               <div>
-                <label className="mb-1 block text-xs font-semibold text-muted-foreground">Branch Code</label>
+                <label className="mb-1 block text-xs font-semibold text-muted-foreground">
+                  Branch Code
+                </label>
                 <input
                   value={bank.bank_branch_code}
-                  onChange={(e) => setBank((b) => ({ ...b, bank_branch_code: e.target.value.replace(/\D/g, "") }))}
+                  onChange={(e) =>
+                    setBank((b) => ({ ...b, bank_branch_code: e.target.value.replace(/\D/g, "") }))
+                  }
                   inputMode="numeric"
                   placeholder="e.g. 250655"
                   maxLength={10}
@@ -340,7 +410,8 @@ const DriverWithdrawals = () => {
         {pendingRequest ? (
           <div className="rounded-xl bg-secondary p-3 text-sm">
             <p className="font-semibold text-foreground">
-              R{Number(pendingRequest.amount).toFixed(2)} · {STATUS_META[pendingRequest.status].label}
+              R{Number(pendingRequest.amount).toFixed(2)} ·{" "}
+              {STATUS_META[pendingRequest.status].label}
             </p>
             <p className="mt-1 text-xs text-muted-foreground">
               You can only submit another request once this one is paid or rejected.
@@ -353,7 +424,9 @@ const DriverWithdrawals = () => {
                 Amount (min R{MIN_WITHDRAWAL})
               </label>
               <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-semibold text-muted-foreground">R</span>
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-semibold text-muted-foreground">
+                  R
+                </span>
                 <input
                   value={amount}
                   onChange={(e) => setAmount(e.target.value.replace(/[^0-9.]/g, ""))}
@@ -396,14 +469,23 @@ const DriverWithdrawals = () => {
               return (
                 <div key={r.id} className="rounded-xl border border-border bg-card p-3">
                   <div className="flex items-center justify-between">
-                    <span className="text-base font-bold text-foreground">R{Number(r.amount).toFixed(2)}</span>
-                    <span className={`flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold ${meta.className}`}>
+                    <span className="text-base font-bold text-foreground">
+                      R{Number(r.amount).toFixed(2)}
+                    </span>
+                    <span
+                      className={`flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold ${meta.className}`}
+                    >
                       <Icon className="h-3 w-3" />
                       {meta.label}
                     </span>
                   </div>
                   <p className="mt-1 text-[11px] text-muted-foreground">
-                    {new Date(r.requested_at).toLocaleString("en-ZA", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
+                    {new Date(r.requested_at).toLocaleString("en-ZA", {
+                      day: "numeric",
+                      month: "short",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
                     {" · "}
                     {r.bank_name} ••••{r.bank_account_number.slice(-4)}
                   </p>
@@ -415,7 +497,11 @@ const DriverWithdrawals = () => {
                   {r.status === "paid" && r.paid_at && (
                     <div className="mt-2 flex items-center justify-between">
                       <p className="text-[10px] text-green-600">
-                        Paid {new Date(r.paid_at).toLocaleDateString("en-ZA", { day: "numeric", month: "short" })}
+                        Paid{" "}
+                        {new Date(r.paid_at).toLocaleDateString("en-ZA", {
+                          day: "numeric",
+                          month: "short",
+                        })}
                       </p>
                       <button
                         onClick={() =>

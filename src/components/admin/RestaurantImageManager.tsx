@@ -1,9 +1,25 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import imageCompression from "browser-image-compression";
 import { supabase } from "@/integrations/supabase/client";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Upload, Image as ImageIcon, X, Trash2, Save, Loader2, XCircle, RotateCw } from "lucide-react";
+import {
+  Upload,
+  Image as ImageIcon,
+  X,
+  Trash2,
+  Save,
+  Loader2,
+  XCircle,
+  RotateCw,
+} from "lucide-react";
 import { toast } from "sonner";
 
 // Custom error thrown when a user cancels an in-flight upload.
@@ -16,17 +32,21 @@ class UploadCancelledError extends Error {
 
 const ACCEPTED_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
 const MAX_BYTES = 2 * 1024 * 1024; // 2MB original-file cap (pre-compression)
-const FALLBACK_IMG = "https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=600&h=300&fit=crop";
+const FALLBACK_IMG =
+  "https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=600&h=300&fit=crop";
 
 // Compression presets per image kind — keeps quality high where it matters
 // (banner/gallery) and shrinks logos aggressively since they render small.
-const COMPRESSION_OPTS: Record<"logo" | "banner" | "gallery", {
-  maxSizeMB: number;
-  maxWidthOrHeight: number;
-}> = {
-  logo:    { maxSizeMB: 0.15, maxWidthOrHeight: 512 },
-  banner:  { maxSizeMB: 0.5,  maxWidthOrHeight: 1600 },
-  gallery: { maxSizeMB: 0.4,  maxWidthOrHeight: 1400 },
+const COMPRESSION_OPTS: Record<
+  "logo" | "banner" | "gallery",
+  {
+    maxSizeMB: number;
+    maxWidthOrHeight: number;
+  }
+> = {
+  logo: { maxSizeMB: 0.15, maxWidthOrHeight: 512 },
+  banner: { maxSizeMB: 0.5, maxWidthOrHeight: 1600 },
+  gallery: { maxSizeMB: 0.4, maxWidthOrHeight: 1400 },
 };
 
 const compressImage = async (
@@ -92,7 +112,8 @@ interface UploadProgress {
 
 const validateFile = (file: File): string | null => {
   if (!ACCEPTED_TYPES.includes(file.type)) return "Only JPG, PNG, or WebP images are allowed";
-  if (file.size > MAX_BYTES) return `Image must be under 2MB (got ${(file.size / 1024 / 1024).toFixed(1)}MB)`;
+  if (file.size > MAX_BYTES)
+    return `Image must be under 2MB (got ${(file.size / 1024 / 1024).toFixed(1)}MB)`;
   return null;
 };
 
@@ -126,7 +147,10 @@ const uploadToBucket = async (
   const { error } = await Promise.race([uploadPromise, abortPromise]);
   if (signal.aborted) {
     // Best-effort cleanup if the upload actually completed before we noticed.
-    supabase.storage.from("food-images").remove([path]).catch(() => {});
+    supabase.storage
+      .from("food-images")
+      .remove([path])
+      .catch(() => {});
     throw new UploadCancelledError();
   }
   if (error) throw error;
@@ -135,8 +159,18 @@ const uploadToBucket = async (
   return data.publicUrl;
 };
 
-const RestaurantImageManager = ({ open, onClose, restaurantId, restaurantName, onSaved }: Props) => {
-  const [state, setState] = useState<ImageState>({ logo_url: null, banner_url: null, gallery_images: [] });
+const RestaurantImageManager = ({
+  open,
+  onClose,
+  restaurantId,
+  restaurantName,
+  onSaved,
+}: Props) => {
+  const [state, setState] = useState<ImageState>({
+    logo_url: null,
+    banner_url: null,
+    gallery_images: [],
+  });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploadingKind, setUploadingKind] = useState<"logo" | "banner" | "gallery" | null>(null);
@@ -200,8 +234,12 @@ const RestaurantImageManager = ({ open, onClose, restaurantId, restaurantName, o
       const ctrl = controllersRef.current.get(entry.id);
       if (!ctrl || ctrl.signal.aborted) return null;
       try {
-        const url = await uploadToBucket(entry.file, restaurantId, entry.kind, ctrl.signal, (stage, percent) =>
-          updateProgress(entry.id, { stage, percent }),
+        const url = await uploadToBucket(
+          entry.file,
+          restaurantId,
+          entry.kind,
+          ctrl.signal,
+          (stage, percent) => updateProgress(entry.id, { stage, percent }),
         );
         return url;
       } catch (err: any) {
@@ -347,7 +385,8 @@ const RestaurantImageManager = ({ open, onClose, restaurantId, restaurantName, o
         <DialogHeader>
           <DialogTitle className="text-base">🖼️ Manage images — {restaurantName}</DialogTitle>
           <DialogDescription className="text-xs">
-            JPG, PNG or WebP · max 2MB per image · auto-compressed before upload · changes save when you click "Save Changes"
+            JPG, PNG or WebP · max 2MB per image · auto-compressed before upload · changes save when
+            you click "Save Changes"
           </DialogDescription>
         </DialogHeader>
 
@@ -355,9 +394,16 @@ const RestaurantImageManager = ({ open, onClose, restaurantId, restaurantName, o
           <div className="rounded-2xl border border-border bg-muted/40 p-3 space-y-2">
             <div className="flex items-center justify-between">
               <h4 className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
-                Processing ({progress.filter((p) => p.stage === "compressing" || p.stage === "uploading").length} active)
+                Processing (
+                {
+                  progress.filter((p) => p.stage === "compressing" || p.stage === "uploading")
+                    .length
+                }{" "}
+                active)
               </h4>
-              {progress.every((p) => p.stage === "done" || p.stage === "error" || p.stage === "cancelled") && (
+              {progress.every(
+                (p) => p.stage === "done" || p.stage === "error" || p.stage === "cancelled",
+              ) && (
                 <button
                   type="button"
                   onClick={() => setProgress([])}
@@ -374,26 +420,26 @@ const RestaurantImageManager = ({ open, onClose, restaurantId, restaurantName, o
                   p.stage === "compressing"
                     ? "Compressing…"
                     : p.stage === "uploading"
-                    ? "Uploading…"
-                    : p.stage === "done"
-                    ? "Done"
-                    : p.stage === "cancelled"
-                    ? "Cancelled"
-                    : "Failed";
+                      ? "Uploading…"
+                      : p.stage === "done"
+                        ? "Done"
+                        : p.stage === "cancelled"
+                          ? "Cancelled"
+                          : "Failed";
                 const barColor =
                   p.stage === "error"
                     ? "bg-destructive"
                     : p.stage === "cancelled"
-                    ? "bg-muted-foreground"
-                    : p.stage === "done"
-                    ? "bg-emerald-500"
-                    : "bg-primary";
+                      ? "bg-muted-foreground"
+                      : p.stage === "done"
+                        ? "bg-emerald-500"
+                        : "bg-primary";
                 const labelColor =
                   p.stage === "error"
                     ? "text-destructive"
                     : p.stage === "cancelled"
-                    ? "text-muted-foreground italic"
-                    : "text-muted-foreground";
+                      ? "text-muted-foreground italic"
+                      : "text-muted-foreground";
                 return (
                   <li key={p.id} className="space-y-1">
                     <div className="flex items-center justify-between gap-2 text-[11px]">
@@ -437,7 +483,9 @@ const RestaurantImageManager = ({ open, onClose, restaurantId, restaurantName, o
                     <div className="h-1.5 w-full overflow-hidden rounded-full bg-card">
                       <div
                         className={`h-full ${barColor} transition-all duration-200`}
-                        style={{ width: `${p.stage === "error" || p.stage === "cancelled" ? 100 : p.percent}%` }}
+                        style={{
+                          width: `${p.stage === "error" || p.stage === "cancelled" ? 100 : p.percent}%`,
+                        }}
                       />
                     </div>
                   </li>
@@ -455,7 +503,9 @@ const RestaurantImageManager = ({ open, onClose, restaurantId, restaurantName, o
           <div className="space-y-5">
             {/* LOGO */}
             <section>
-              <h3 className="mb-2 text-xs font-bold uppercase tracking-wide text-muted-foreground">Logo</h3>
+              <h3 className="mb-2 text-xs font-bold uppercase tracking-wide text-muted-foreground">
+                Logo
+              </h3>
               <div
                 onDragOver={(e) => {
                   e.preventDefault();
@@ -469,7 +519,12 @@ const RestaurantImageManager = ({ open, onClose, restaurantId, restaurantName, o
               >
                 <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-full border border-border bg-muted">
                   {state.logo_url ? (
-                    <img src={state.logo_url} alt="Logo" className="h-full w-full object-cover" onError={(e) => ((e.target as HTMLImageElement).src = FALLBACK_IMG)} />
+                    <img
+                      src={state.logo_url}
+                      alt="Logo"
+                      className="h-full w-full object-cover"
+                      onError={(e) => ((e.target as HTMLImageElement).src = FALLBACK_IMG)}
+                    />
                   ) : (
                     <div className="flex h-full w-full items-center justify-center">
                       <ImageIcon className="h-6 w-6 text-muted-foreground" />
@@ -477,10 +532,16 @@ const RestaurantImageManager = ({ open, onClose, restaurantId, restaurantName, o
                   )}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-xs text-muted-foreground mb-2">Round logo shown on cards. Recommended square image.</p>
+                  <p className="text-xs text-muted-foreground mb-2">
+                    Round logo shown on cards. Recommended square image.
+                  </p>
                   <div className="flex flex-wrap gap-2">
                     <label className="btn-glow inline-flex cursor-pointer items-center gap-1.5 rounded-xl gradient-maroon px-3 py-1.5 text-xs font-bold text-primary-foreground hover:opacity-90 disabled:opacity-50">
-                      {uploadingKind === "logo" ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />}
+                      {uploadingKind === "logo" ? (
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      ) : (
+                        <Upload className="h-3.5 w-3.5" />
+                      )}
                       {state.logo_url ? "Replace" : "Upload"} logo
                       <input
                         type="file"
@@ -506,7 +567,9 @@ const RestaurantImageManager = ({ open, onClose, restaurantId, restaurantName, o
 
             {/* BANNER */}
             <section>
-              <h3 className="mb-2 text-xs font-bold uppercase tracking-wide text-muted-foreground">Banner</h3>
+              <h3 className="mb-2 text-xs font-bold uppercase tracking-wide text-muted-foreground">
+                Banner
+              </h3>
               <div
                 onDragOver={(e) => {
                   e.preventDefault();
@@ -520,7 +583,12 @@ const RestaurantImageManager = ({ open, onClose, restaurantId, restaurantName, o
               >
                 <div className="relative aspect-[3/1] w-full overflow-hidden rounded-xl bg-muted mb-3">
                   {state.banner_url ? (
-                    <img src={state.banner_url} alt="Banner" className="h-full w-full object-cover" onError={(e) => ((e.target as HTMLImageElement).src = FALLBACK_IMG)} />
+                    <img
+                      src={state.banner_url}
+                      alt="Banner"
+                      className="h-full w-full object-cover"
+                      onError={(e) => ((e.target as HTMLImageElement).src = FALLBACK_IMG)}
+                    />
                   ) : (
                     <div className="flex h-full w-full flex-col items-center justify-center gap-1 text-muted-foreground">
                       <ImageIcon className="h-8 w-8" />
@@ -530,7 +598,11 @@ const RestaurantImageManager = ({ open, onClose, restaurantId, restaurantName, o
                 </div>
                 <div className="flex flex-wrap gap-2">
                   <label className="btn-glow inline-flex cursor-pointer items-center gap-1.5 rounded-xl gradient-maroon px-3 py-1.5 text-xs font-bold text-primary-foreground hover:opacity-90 disabled:opacity-50">
-                    {uploadingKind === "banner" ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />}
+                    {uploadingKind === "banner" ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <Upload className="h-3.5 w-3.5" />
+                    )}
                     {state.banner_url ? "Replace" : "Upload"} banner
                     <input
                       type="file"
@@ -549,7 +621,9 @@ const RestaurantImageManager = ({ open, onClose, restaurantId, restaurantName, o
                       <Trash2 className="h-3.5 w-3.5" /> Remove
                     </button>
                   )}
-                  <span className="ml-auto self-center text-[10px] text-muted-foreground">Tip: drag & drop a file here</span>
+                  <span className="ml-auto self-center text-[10px] text-muted-foreground">
+                    Tip: drag & drop a file here
+                  </span>
                 </div>
               </div>
             </section>
@@ -561,7 +635,11 @@ const RestaurantImageManager = ({ open, onClose, restaurantId, restaurantName, o
                   Gallery ({state.gallery_images.length})
                 </h3>
                 <label className="btn-glow inline-flex cursor-pointer items-center gap-1.5 rounded-xl gradient-maroon px-3 py-1.5 text-xs font-bold text-primary-foreground hover:opacity-90 disabled:opacity-50">
-                  {uploadingKind === "gallery" ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />}
+                  {uploadingKind === "gallery" ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <Upload className="h-3.5 w-3.5" />
+                  )}
                   Add images
                   <input
                     ref={galleryRef}

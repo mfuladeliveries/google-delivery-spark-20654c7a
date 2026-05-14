@@ -25,8 +25,13 @@ export const useCustomerCredits = () => {
       .channel(`credits-${user.id}`)
       .on(
         "postgres_changes",
-        { event: "*", schema: "public", table: "customer_credits", filter: `user_id=eq.${user.id}` },
-        () => refresh()
+        {
+          event: "*",
+          schema: "public",
+          table: "customer_credits",
+          filter: `user_id=eq.${user.id}`,
+        },
+        () => refresh(),
       )
       .subscribe();
     return () => {

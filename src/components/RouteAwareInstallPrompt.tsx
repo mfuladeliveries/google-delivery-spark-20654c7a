@@ -29,7 +29,11 @@ const RouteAwareInstallPrompt = () => {
   } else if (pathname === "/driver" || pathname.startsWith("/driver/")) {
     variant = "driver";
     appName = "Mfula Driver";
-  } else if (pathname.startsWith("/restaurant/dashboard") || pathname.startsWith("/restaurant/orders") || pathname.startsWith("/restaurant/menu")) {
+  } else if (
+    pathname.startsWith("/restaurant/dashboard") ||
+    pathname.startsWith("/restaurant/orders") ||
+    pathname.startsWith("/restaurant/menu")
+  ) {
     variant = "restaurant";
     appName = "Mfula Restaurant";
   } else {

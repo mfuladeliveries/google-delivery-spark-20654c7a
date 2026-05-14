@@ -59,12 +59,9 @@ export const generateMonthlyStatement = (s: MonthlyStatementData) => {
   doc.text(s.period_label, pageW - margin, 42, { align: "right" });
   doc.setFont("helvetica", "normal");
   doc.setFontSize(9);
-  doc.text(
-    `${fmtDateLong(s.period_start)} – ${fmtDateLong(s.period_end)}`,
-    pageW - margin,
-    58,
-    { align: "right" }
-  );
+  doc.text(`${fmtDateLong(s.period_start)} – ${fmtDateLong(s.period_end)}`, pageW - margin, 58, {
+    align: "right",
+  });
 
   // Driver
   let y = 104;
@@ -112,8 +109,18 @@ export const generateMonthlyStatement = (s: MonthlyStatementData) => {
     }
   };
   drawTile(margin, "Deliveries", String(s.deliveries.length), `${fmtMoney(totalEarned)} earned`);
-  drawTile(margin + tileW + 10, "Paid out", fmtMoney(paidWithdrawals), `${s.withdrawals.filter((w) => w.status === "paid").length} withdrawals`);
-  drawTile(margin + (tileW + 10) * 2, "Closing balance", fmtMoney(Math.max(0, closingBalance)), "After pending");
+  drawTile(
+    margin + tileW + 10,
+    "Paid out",
+    fmtMoney(paidWithdrawals),
+    `${s.withdrawals.filter((w) => w.status === "paid").length} withdrawals`,
+  );
+  drawTile(
+    margin + (tileW + 10) * 2,
+    "Closing balance",
+    fmtMoney(Math.max(0, closingBalance)),
+    "After pending",
+  );
 
   y += tileH + 20;
 
@@ -215,7 +222,8 @@ export const generateMonthlyStatement = (s: MonthlyStatementData) => {
       doc.text(d.order_number ? `#${d.order_number}` : "—", col.order, y + 4);
       const rest = doc.splitTextToSize(d.restaurant || "—", col.addr - col.rest - 6)[0] || "—";
       doc.text(rest, col.rest, y + 4);
-      const addr = doc.splitTextToSize(d.customer_address || "—", col.payout - col.addr - 50)[0] || "—";
+      const addr =
+        doc.splitTextToSize(d.customer_address || "—", col.payout - col.addr - 50)[0] || "—";
       doc.text(addr, col.addr, y + 4);
       doc.setFont("helvetica", "bold");
       doc.setTextColor(34, 139, 34);
@@ -293,7 +301,11 @@ export const generateMonthlyStatement = (s: MonthlyStatementData) => {
       const last4 = (w.bank_account_number || "").slice(-4);
       doc.text(`${w.bank_name} ••••${last4}`, wcol.bank, y + 4);
       doc.setFont("helvetica", "bold");
-      doc.setTextColor(w.status === "paid" ? 34 : 60, w.status === "paid" ? 139 : 60, w.status === "paid" ? 34 : 60);
+      doc.setTextColor(
+        w.status === "paid" ? 34 : 60,
+        w.status === "paid" ? 139 : 60,
+        w.status === "paid" ? 34 : 60,
+      );
       doc.text(`- ${fmtMoney(Number(w.amount))}`, wcol.amount - 4, y + 4, { align: "right" });
       doc.setFont("helvetica", "normal");
       doc.setTextColor(60, 60, 60);
@@ -315,7 +327,7 @@ export const generateMonthlyStatement = (s: MonthlyStatementData) => {
     doc.text(
       `Mfula · ${s.period_label} statement · Generated ${new Date().toLocaleString("en-ZA")}`,
       margin,
-      pageH - 24
+      pageH - 24,
     );
     doc.text(`Page ${i} of ${pageCount}`, pageW - margin, pageH - 24, { align: "right" });
   }

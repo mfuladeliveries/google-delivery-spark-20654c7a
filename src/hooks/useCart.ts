@@ -23,14 +23,18 @@ export function buildLineKey(
   cut?: CutOption,
   size?: SizeOption,
   addOns?: AddOnOption[],
-  pieces?: number
+  pieces?: number,
 ): string {
   const cutPart = cut?.name ? `c:${cut.name}` : "c:-";
   const piecesPart = pieces && pieces > 1 ? `p:${pieces}` : "p:1";
   const sizePart = size?.name ? `s:${size.name}` : "s:-";
-  const addPart = addOns && addOns.length
-    ? `a:${[...addOns].map(a => a.name).sort().join("|")}`
-    : "a:-";
+  const addPart =
+    addOns && addOns.length
+      ? `a:${[...addOns]
+          .map((a) => a.name)
+          .sort()
+          .join("|")}`
+      : "a:-";
   return `${itemId}::${cutPart}::${piecesPart}::${sizePart}::${addPart}`;
 }
 
@@ -39,7 +43,7 @@ export function computeUnitPrice(
   cut?: CutOption,
   size?: SizeOption,
   addOns?: AddOnOption[],
-  pieces?: number
+  pieces?: number,
 ): number {
   // Base price priority: cut > size > item.price. When a cut has a piece-range,
   // the cut price is per-piece and multiplied by the chosen piece count.
@@ -140,15 +144,15 @@ export function useCart() {
       cut?: CutOption,
       size?: SizeOption,
       addOns?: AddOnOption[],
-      pieces?: number
+      pieces?: number,
     ) => {
       const lineKey = buildLineKey(item.id, cut, size, addOns, pieces);
       const unitPrice = computeUnitPrice(item, cut, size, addOns, pieces);
-      setItems(prev => {
-        const existing = prev.find(ci => ci.lineKey === lineKey);
+      setItems((prev) => {
+        const existing = prev.find((ci) => ci.lineKey === lineKey);
         if (existing) {
-          return prev.map(ci =>
-            ci.lineKey === lineKey ? { ...ci, quantity: ci.quantity + 1 } : ci
+          return prev.map((ci) =>
+            ci.lineKey === lineKey ? { ...ci, quantity: ci.quantity + 1 } : ci,
           );
         }
         return [
@@ -166,7 +170,7 @@ export function useCart() {
         ];
       });
     },
-    []
+    [],
   );
 
   /** Quick-add for items with no options (back-compat). */
@@ -174,29 +178,29 @@ export function useCart() {
     (item: MenuItem) => {
       addItemWithOptions(item, undefined, undefined, undefined, undefined);
     },
-    [addItemWithOptions]
+    [addItemWithOptions],
   );
 
   /** Increment quantity for an existing line by lineKey. */
   const incrementLine = useCallback((lineKey: string) => {
-    setItems(prev =>
-      prev.map(ci => (ci.lineKey === lineKey ? { ...ci, quantity: ci.quantity + 1 } : ci))
+    setItems((prev) =>
+      prev.map((ci) => (ci.lineKey === lineKey ? { ...ci, quantity: ci.quantity + 1 } : ci)),
     );
   }, []);
 
   /** Remove one unit from a specific line. Falls back to first line for legacy callers passing item.id. */
   const removeItem = useCallback((lineKeyOrItemId: string) => {
-    setItems(prev => {
+    setItems((prev) => {
       const target =
-        prev.find(ci => ci.lineKey === lineKeyOrItemId) ||
-        prev.find(ci => ci.item.id === lineKeyOrItemId);
+        prev.find((ci) => ci.lineKey === lineKeyOrItemId) ||
+        prev.find((ci) => ci.item.id === lineKeyOrItemId);
       if (!target) return prev;
       if (target.quantity > 1) {
-        return prev.map(ci =>
-          ci.lineKey === target.lineKey ? { ...ci, quantity: ci.quantity - 1 } : ci
+        return prev.map((ci) =>
+          ci.lineKey === target.lineKey ? { ...ci, quantity: ci.quantity - 1 } : ci,
         );
       }
-      return prev.filter(ci => ci.lineKey !== target.lineKey);
+      return prev.filter((ci) => ci.lineKey !== target.lineKey);
     });
   }, []);
 

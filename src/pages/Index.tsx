@@ -1,20 +1,44 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { Search, ChevronRight, Flame, Utensils, Pizza, Fish, ShoppingBasket, Trophy, UtensilsCrossed, MapPin, MapPinOff, RefreshCw, Pencil, X } from "lucide-react";
+import {
+  Search,
+  ChevronRight,
+  Flame,
+  Utensils,
+  Pizza,
+  Fish,
+  ShoppingBasket,
+  Trophy,
+  UtensilsCrossed,
+  MapPin,
+  MapPinOff,
+  RefreshCw,
+  Pencil,
+  X,
+} from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import BottomNav from "@/components/BottomNav";
 import Cart from "@/components/Cart";
 import CheckoutDialog from "@/components/CheckoutDialog";
-import RestaurantCard, { RestaurantCardSkeleton, type RestaurantCardData } from "@/components/RestaurantCard";
+import RestaurantCard, {
+  RestaurantCardSkeleton,
+  type RestaurantCardData,
+} from "@/components/RestaurantCard";
 import { useGeoLocation, DELIVERY_RADIUS_KM } from "@/hooks/useGeoLocation";
 import { useCart } from "@/hooks/useCart";
 import { useAuth } from "@/hooks/useAuth";
 import { menuItems } from "@/data/menu";
 import mfulaLogo from "@/assets/mfula-logo.png";
 import AddressAutocomplete, { type ValidatedAddress } from "@/components/AddressAutocomplete";
-import { distanceKm, getActiveZones, findNearestZone, type DeliveryZone, type ZoneMatch } from "@/lib/serviceArea";
+import {
+  distanceKm,
+  getActiveZones,
+  findNearestZone,
+  type DeliveryZone,
+  type ZoneMatch,
+} from "@/lib/serviceArea";
 import { toast } from "sonner";
 
 interface Restaurant extends RestaurantCardData {
@@ -63,16 +87,20 @@ const Index = () => {
       try {
         const res = await fetch(
           `https://nominatim.openstreetmap.org/reverse?lat=${geo.lat}&lon=${geo.lng}&format=json`,
-          { headers: { Accept: "application/json" } }
+          { headers: { Accept: "application/json" } },
         );
         if (!res.ok || cancelled) return;
         const data = await res.json();
         if (!cancelled && data?.display_name) {
           setGpsAddress(data.display_name);
         }
-      } catch {/* ignore */}
+      } catch {
+        /* ignore */
+      }
     })();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [geo.ready, geo.hasCoords, geo.lat, geo.lng]);
 
   // Manual address override — when set, restaurants are filtered/sorted from
@@ -82,8 +110,15 @@ const Index = () => {
       const raw = localStorage.getItem("mfula-manual-area-v1");
       if (!raw) return null;
       const v = JSON.parse(raw);
-      if (typeof v?.lat === "number" && typeof v?.lng === "number" && typeof v?.address === "string") return v;
-    } catch {/* ignore */}
+      if (
+        typeof v?.lat === "number" &&
+        typeof v?.lng === "number" &&
+        typeof v?.address === "string"
+      )
+        return v;
+    } catch {
+      /* ignore */
+    }
     return null;
   });
   const [manualOpen, setManualOpen] = useState(false);
@@ -147,7 +182,9 @@ const Index = () => {
       if (val) localStorage.setItem("mfula-manual-area-v1", JSON.stringify(val));
       else localStorage.removeItem("mfula-manual-area-v1");
       window.dispatchEvent(new Event("mfula-manual-area-changed"));
-    } catch {/* ignore */}
+    } catch {
+      /* ignore */
+    }
   };
 
   // Auth/role gating + redirect to the right dashboard is handled by
@@ -158,22 +195,26 @@ const Index = () => {
 
   useEffect(() => {
     const fetchRestaurants = async () => {
-      const { data } = await supabase.
-      from("restaurants").
-      select("*").
-      eq("is_active", true).
-      order("rating", { ascending: false });
+      const { data } = await supabase
+        .from("restaurants")
+        .select("*")
+        .eq("is_active", true)
+        .order("rating", { ascending: false });
       if (data) setRestaurants(data as Restaurant[]);
       setLoading(false);
     };
     fetchRestaurants();
-    getActiveZones().then(setZones).catch(() => setZones([]));
+    getActiveZones()
+      .then(setZones)
+      .catch(() => setZones([]));
   }, []);
 
   // Effective coords: manual address override wins, else GPS/profile fallback.
   const effectiveCoords = manualAddress
     ? { lat: manualAddress.lat, lng: manualAddress.lng }
-    : geo.hasCoords ? { lat: geo.lat as number, lng: geo.lng as number } : null;
+    : geo.hasCoords
+      ? { lat: geo.lat as number, lng: geo.lng as number }
+      : null;
   const hasEffectiveCoords = effectiveCoords != null;
 
   // Determine which delivery area the customer is in (if any).
@@ -197,7 +238,10 @@ const Index = () => {
 
   const filtered = annotated.filter((r) => {
     const matchesCuisine = selectedCuisine === "All" || r.cuisine === selectedCuisine;
-    const matchesSearch = !search.trim() || r.name.toLowerCase().includes(search.toLowerCase()) || r.cuisine.toLowerCase().includes(search.toLowerCase());
+    const matchesSearch =
+      !search.trim() ||
+      r.name.toLowerCase().includes(search.toLowerCase()) ||
+      r.cuisine.toLowerCase().includes(search.toLowerCase());
     // Strict area gating: once we know where the customer is, only show
     // restaurants assigned to their current delivery area. Without coords
     // (denied/unsupported) we show everything so the list isn't empty.
@@ -226,7 +270,10 @@ const Index = () => {
 
   const [foodNote, setFoodNote] = useState<string | undefined>(undefined);
   const handleCheckout = (note?: string) => {
-    if (!user) {navigate("/auth");return;}
+    if (!user) {
+      navigate("/auth");
+      return;
+    }
     setFoodNote(note);
     setCartOpen(false);
     setCheckoutOpen(true);
@@ -245,8 +292,7 @@ const Index = () => {
         {/* Hero */}
         <div className="mb-6 rounded-2xl overflow-hidden relative gradient-maroon shadow-luxury">
           <div className="px-6 py-8 relative">
-            <p className="text-primary-foreground/80 text-sm font-medium mb-1">
-            </p>
+            <p className="text-primary-foreground/80 text-sm font-medium mb-1"></p>
             <div className="relative flex items-center justify-center mb-1">
               <img
                 src={mfulaLogo}
@@ -260,16 +306,20 @@ const Index = () => {
                 MFULA DELIVERIES
               </h2>
             </div>
-            <h2 className="text-2xl font-bold text-primary-foreground mb-5">What you would like to order?</h2>
-            
+            <h2 className="text-2xl font-bold text-primary-foreground mb-5">
+              What you would like to order?
+            </h2>
+
             {/* Search */}
             <div className="relative">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <input type="text" value={search}
+              <input
+                type="text"
+                value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search restaurants or cuisines..."
-                className="w-full rounded-xl border-0 bg-card py-3 pl-10 pr-4 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary shadow-card" />
-
+                className="w-full rounded-xl border-0 bg-card py-3 pl-10 pr-4 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary shadow-card"
+              />
             </div>
           </div>
           <div className="absolute right-4 bottom-0 text-6xl opacity-20">🍽️</div>
@@ -282,7 +332,8 @@ const Index = () => {
             <div className="flex-1">
               <p className="text-sm font-bold text-foreground">Location is off</p>
               <p className="mt-0.5 text-xs text-muted-foreground">
-                Please enable location services to see restaurants available near you. Ordering is disabled until location is enabled.
+                Please enable location services to see restaurants available near you. Ordering is
+                disabled until location is enabled.
               </p>
               <button
                 onClick={() => geo.refresh()}
@@ -298,7 +349,10 @@ const Index = () => {
             <MapPin className="mt-0.5 h-4 w-4 flex-shrink-0 text-primary" />
             <div className="flex-1 text-xs text-foreground">
               <span className="font-bold">Using your saved address.</span>{" "}
-              <button onClick={() => geo.refresh()} className="font-bold text-primary hover:underline">
+              <button
+                onClick={() => geo.refresh()}
+                className="font-bold text-primary hover:underline"
+              >
                 Use live location
               </button>{" "}
               for more accurate nearby restaurants.
@@ -324,7 +378,9 @@ const Index = () => {
               >
                 <MapPin className="h-3 w-3" /> Saved address
                 {geo.gpsDiscrepancyKm != null && (
-                  <span className="opacity-80">· GPS off by {geo.gpsDiscrepancyKm.toFixed(1)} km</span>
+                  <span className="opacity-80">
+                    · GPS off by {geo.gpsDiscrepancyKm.toFixed(1)} km
+                  </span>
                 )}
               </span>
             )}
@@ -426,181 +482,202 @@ const Index = () => {
             </button>
           ) : null}
 
-          {manualOpen && (() => {
-            const baseline = manualAddress ? manualAddress.address : "";
-            const isDirty = manualText.trim() !== baseline.trim() && manualText.trim().length > 0;
-            const closeWithoutSaving = () => {
-              setManualOpen(false);
-              setManualText(baseline);
-              setConfirmingCancel(false);
-            };
-            const requestCancel = () => {
-              if (isDirty) setConfirmingCancel(true);
-              else closeWithoutSaving();
-            };
-            const handlePanelBlur: React.FocusEventHandler<HTMLDivElement> = (e) => {
-              // Only fire when focus leaves the panel entirely (not when it
-              // just moves between children like input → suggestion button).
-              const next = e.relatedTarget as Node | null;
-              if (next && e.currentTarget.contains(next)) return;
-              if (blurConfirmedRef.current) return;
-              const trimmed = manualText.trim();
-              if (
-                manualAddress &&
-                trimmed === baseline.trim() &&
-                trimmed.length > 0 &&
-                !confirmingCancel
-              ) {
-                blurConfirmedRef.current = true;
+          {manualOpen &&
+            (() => {
+              const baseline = manualAddress ? manualAddress.address : "";
+              const isDirty = manualText.trim() !== baseline.trim() && manualText.trim().length > 0;
+              const closeWithoutSaving = () => {
                 setManualOpen(false);
-                setManualUpdatedAt(Date.now());
-                toast.success("Address confirmed", {
-                  description: "Restaurant list refreshed for your saved area.",
-                  action: {
-                    label: "Undo",
-                    onClick: () => {
-                      setManualText(baseline);
-                      setManualOpen(true);
-                      setConfirmingCancel(false);
+                setManualText(baseline);
+                setConfirmingCancel(false);
+              };
+              const requestCancel = () => {
+                if (isDirty) setConfirmingCancel(true);
+                else closeWithoutSaving();
+              };
+              const handlePanelBlur: React.FocusEventHandler<HTMLDivElement> = (e) => {
+                // Only fire when focus leaves the panel entirely (not when it
+                // just moves between children like input → suggestion button).
+                const next = e.relatedTarget as Node | null;
+                if (next && e.currentTarget.contains(next)) return;
+                if (blurConfirmedRef.current) return;
+                const trimmed = manualText.trim();
+                if (
+                  manualAddress &&
+                  trimmed === baseline.trim() &&
+                  trimmed.length > 0 &&
+                  !confirmingCancel
+                ) {
+                  blurConfirmedRef.current = true;
+                  setManualOpen(false);
+                  setManualUpdatedAt(Date.now());
+                  toast.success("Address confirmed", {
+                    description: "Restaurant list refreshed for your saved area.",
+                    action: {
+                      label: "Undo",
+                      onClick: () => {
+                        setManualText(baseline);
+                        setManualOpen(true);
+                        setConfirmingCancel(false);
+                      },
                     },
-                  },
-                });
-              }
-            };
-            return (
-              <div
-                className="mt-2 rounded-2xl border border-border bg-card p-3 shadow-card"
-                onBlur={handlePanelBlur}
-              >
-                <div className="mb-2 flex items-center justify-between">
-                  <p className="text-xs font-bold text-foreground">
-                    {manualAddress ? "Update your saved address" : "Type your delivery area"}
-                  </p>
-                  <button
-                    type="button"
-                    onClick={requestCancel}
-                    className="rounded-full p-1 text-muted-foreground hover:bg-secondary"
-                    aria-label="Close"
-                  >
-                    <X className="h-3.5 w-3.5" />
-                  </button>
-                </div>
-                {manualAddress && (
-                  <p className="mb-2 truncate text-[11px] text-muted-foreground" title={manualAddress.address}>
-                    Current: <span className="font-medium text-foreground">{manualAddress.address}</span>
-                  </p>
-                )}
-                <input
-                  type="text"
-                  inputMode="text"
-                  value={houseNumber}
-                  onChange={(e) => setHouseNumber(e.target.value.slice(0, 20))}
-                  placeholder="House / unit number (optional)"
-                  aria-label="House or unit number"
-                  className="mb-2 w-full rounded-xl border border-border bg-card px-3 py-2.5 text-sm text-card-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
-                />
-                <AddressAutocomplete
-                  value={manualText}
-                  hasValidSelection={false}
-                  onTextChange={(t) => {
-                    setManualText(t);
-                    if (confirmingCancel) setConfirmingCancel(false);
-                  }}
-                  onSelect={(addr) => {
-                    const unit = houseNumber.trim();
-                    const finalAddress = unit
-                      ? `${unit} ${addr.address}`
-                      : addr.address;
-                    const merged = { ...addr, address: finalAddress };
-                    setManualAddress(merged);
-                    persistManual(merged);
-                    setManualText(finalAddress);
-                    setManualOpen(false);
-                    setManualUpdatedAt(Date.now());
-                    setConfirmingCancel(false);
-                  }}
-                  placeholder={manualAddress ? "Search a new street or suburb…" : "Start typing a suburb or street…"}
-                />
-                {(() => {
-                  const unit = houseNumber.trim();
-                  const street = manualText.trim();
-                  if (!unit && !street) return null;
-                  // ZA postcodes are 4 digits — pull the first match from the
-                  // selected suggestion text so we can surface it on its own.
-                  const postcodeMatch = street.match(/\b\d{4}\b/);
-                  const postcode = postcodeMatch ? postcodeMatch[0] : null;
-                  const streetSansPostcode = postcode
-                    ? street.replace(postcode, "").replace(/,\s*,/g, ",").replace(/,\s*$/, "").trim()
-                    : street;
-                  const parts = [unit, streetSansPostcode, postcode].filter(Boolean);
-                  const preview = unit && streetSansPostcode
-                    ? `${unit} ${streetSansPostcode}${postcode ? `, ${postcode}` : ""}`
-                    : parts.join(", ");
-                  return (
-                    <div className="mt-2 rounded-xl border border-primary/30 bg-primary/5 px-3 py-2">
-                      <p className="text-[10px] font-semibold uppercase tracking-wide text-primary">
-                        Preview
-                      </p>
-                      <p className="mt-0.5 break-words text-xs text-foreground" title={preview}>
-                        {preview}
-                      </p>
-                      <div className="mt-1.5 flex flex-wrap gap-1">
-                        {unit && (
-                          <span className="rounded-full bg-card px-1.5 py-0.5 text-[10px] text-muted-foreground">
-                            House #: <span className="font-semibold text-foreground">{unit}</span>
-                          </span>
-                        )}
-                        {streetSansPostcode && (
-                          <span className="rounded-full bg-card px-1.5 py-0.5 text-[10px] text-muted-foreground">
-                            Street/suburb: <span className="font-semibold text-foreground">{streetSansPostcode.length > 40 ? streetSansPostcode.slice(0, 40) + "…" : streetSansPostcode}</span>
-                          </span>
-                        )}
-                        <span className="rounded-full bg-card px-1.5 py-0.5 text-[10px] text-muted-foreground">
-                          Postcode: <span className="font-semibold text-foreground">{postcode ?? "—"}</span>
-                        </span>
-                      </div>
-                    </div>
-                  );
-                })()}
-                <p className="mt-2 text-[11px] text-muted-foreground">
-                  Add your house number above, then pick a street suggestion to {manualAddress ? "replace your saved address" : "see restaurants"} within {DELIVERY_RADIUS_KM} km.
-                </p>
-                {confirmingCancel ? (
-                  <div className="mt-3 rounded-xl border border-amber-500/30 bg-amber-500/10 p-2.5">
-                    <p className="text-[11px] font-semibold text-amber-700 dark:text-amber-300">
-                      Discard your changes? You haven't picked a suggestion yet, so nothing will be saved.
+                  });
+                }
+              };
+              return (
+                <div
+                  className="mt-2 rounded-2xl border border-border bg-card p-3 shadow-card"
+                  onBlur={handlePanelBlur}
+                >
+                  <div className="mb-2 flex items-center justify-between">
+                    <p className="text-xs font-bold text-foreground">
+                      {manualAddress ? "Update your saved address" : "Type your delivery area"}
                     </p>
-                    <div className="mt-2 flex justify-end gap-1.5">
-                      <button
-                        type="button"
-                        onClick={() => setConfirmingCancel(false)}
-                        className="inline-flex items-center gap-1 rounded-full border border-border bg-card px-3 py-1.5 text-[11px] font-semibold text-foreground hover:bg-secondary"
-                      >
-                        Keep editing
-                      </button>
-                      <button
-                        type="button"
-                        onClick={closeWithoutSaving}
-                        className="inline-flex items-center gap-1 rounded-full bg-destructive px-3 py-1.5 text-[11px] font-semibold text-destructive-foreground hover:bg-destructive/90"
-                      >
-                        Discard changes
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="mt-3 flex justify-end">
                     <button
                       type="button"
                       onClick={requestCancel}
-                      className="inline-flex items-center gap-1 rounded-full border border-border bg-card px-3 py-1.5 text-xs font-semibold text-foreground hover:bg-secondary"
+                      className="rounded-full p-1 text-muted-foreground hover:bg-secondary"
+                      aria-label="Close"
                     >
-                      Cancel
+                      <X className="h-3.5 w-3.5" />
                     </button>
                   </div>
-                )}
-              </div>
-            );
-          })()}
+                  {manualAddress && (
+                    <p
+                      className="mb-2 truncate text-[11px] text-muted-foreground"
+                      title={manualAddress.address}
+                    >
+                      Current:{" "}
+                      <span className="font-medium text-foreground">{manualAddress.address}</span>
+                    </p>
+                  )}
+                  <input
+                    type="text"
+                    inputMode="text"
+                    value={houseNumber}
+                    onChange={(e) => setHouseNumber(e.target.value.slice(0, 20))}
+                    placeholder="House / unit number (optional)"
+                    aria-label="House or unit number"
+                    className="mb-2 w-full rounded-xl border border-border bg-card px-3 py-2.5 text-sm text-card-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                  />
+                  <AddressAutocomplete
+                    value={manualText}
+                    hasValidSelection={false}
+                    onTextChange={(t) => {
+                      setManualText(t);
+                      if (confirmingCancel) setConfirmingCancel(false);
+                    }}
+                    onSelect={(addr) => {
+                      const unit = houseNumber.trim();
+                      const finalAddress = unit ? `${unit} ${addr.address}` : addr.address;
+                      const merged = { ...addr, address: finalAddress };
+                      setManualAddress(merged);
+                      persistManual(merged);
+                      setManualText(finalAddress);
+                      setManualOpen(false);
+                      setManualUpdatedAt(Date.now());
+                      setConfirmingCancel(false);
+                    }}
+                    placeholder={
+                      manualAddress
+                        ? "Search a new street or suburb…"
+                        : "Start typing a suburb or street…"
+                    }
+                  />
+                  {(() => {
+                    const unit = houseNumber.trim();
+                    const street = manualText.trim();
+                    if (!unit && !street) return null;
+                    // ZA postcodes are 4 digits — pull the first match from the
+                    // selected suggestion text so we can surface it on its own.
+                    const postcodeMatch = street.match(/\b\d{4}\b/);
+                    const postcode = postcodeMatch ? postcodeMatch[0] : null;
+                    const streetSansPostcode = postcode
+                      ? street
+                          .replace(postcode, "")
+                          .replace(/,\s*,/g, ",")
+                          .replace(/,\s*$/, "")
+                          .trim()
+                      : street;
+                    const parts = [unit, streetSansPostcode, postcode].filter(Boolean);
+                    const preview =
+                      unit && streetSansPostcode
+                        ? `${unit} ${streetSansPostcode}${postcode ? `, ${postcode}` : ""}`
+                        : parts.join(", ");
+                    return (
+                      <div className="mt-2 rounded-xl border border-primary/30 bg-primary/5 px-3 py-2">
+                        <p className="text-[10px] font-semibold uppercase tracking-wide text-primary">
+                          Preview
+                        </p>
+                        <p className="mt-0.5 break-words text-xs text-foreground" title={preview}>
+                          {preview}
+                        </p>
+                        <div className="mt-1.5 flex flex-wrap gap-1">
+                          {unit && (
+                            <span className="rounded-full bg-card px-1.5 py-0.5 text-[10px] text-muted-foreground">
+                              House #: <span className="font-semibold text-foreground">{unit}</span>
+                            </span>
+                          )}
+                          {streetSansPostcode && (
+                            <span className="rounded-full bg-card px-1.5 py-0.5 text-[10px] text-muted-foreground">
+                              Street/suburb:{" "}
+                              <span className="font-semibold text-foreground">
+                                {streetSansPostcode.length > 40
+                                  ? streetSansPostcode.slice(0, 40) + "…"
+                                  : streetSansPostcode}
+                              </span>
+                            </span>
+                          )}
+                          <span className="rounded-full bg-card px-1.5 py-0.5 text-[10px] text-muted-foreground">
+                            Postcode:{" "}
+                            <span className="font-semibold text-foreground">{postcode ?? "—"}</span>
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })()}
+                  <p className="mt-2 text-[11px] text-muted-foreground">
+                    Add your house number above, then pick a street suggestion to{" "}
+                    {manualAddress ? "replace your saved address" : "see restaurants"} within{" "}
+                    {DELIVERY_RADIUS_KM} km.
+                  </p>
+                  {confirmingCancel ? (
+                    <div className="mt-3 rounded-xl border border-amber-500/30 bg-amber-500/10 p-2.5">
+                      <p className="text-[11px] font-semibold text-amber-700 dark:text-amber-300">
+                        Discard your changes? You haven't picked a suggestion yet, so nothing will
+                        be saved.
+                      </p>
+                      <div className="mt-2 flex justify-end gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => setConfirmingCancel(false)}
+                          className="inline-flex items-center gap-1 rounded-full border border-border bg-card px-3 py-1.5 text-[11px] font-semibold text-foreground hover:bg-secondary"
+                        >
+                          Keep editing
+                        </button>
+                        <button
+                          type="button"
+                          onClick={closeWithoutSaving}
+                          className="inline-flex items-center gap-1 rounded-full bg-destructive px-3 py-1.5 text-[11px] font-semibold text-destructive-foreground hover:bg-destructive/90"
+                        >
+                          Discard changes
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="mt-3 flex justify-end">
+                      <button
+                        type="button"
+                        onClick={requestCancel}
+                        className="inline-flex items-center gap-1 rounded-full border border-border bg-card px-3 py-1.5 text-xs font-semibold text-foreground hover:bg-secondary"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
 
           {manualUpdatedAt && Date.now() - manualUpdatedAt < 3500 && (
             <div className="mt-2 inline-flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-1 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
@@ -613,20 +690,20 @@ const Index = () => {
         <section className="mb-6">
           <h3 className="mb-3 text-base font-bold text-foreground">Cuisines</h3>
           <div className="flex gap-3 overflow-x-auto scrollbar-hide pb-1">
-            {cuisineCategories.map(({ label, icon: Icon }) =>
-            <button
-              key={label}
-              onClick={() => setSelectedCuisine(label)}
-              className={`flex flex-shrink-0 flex-col items-center gap-1.5 rounded-2xl px-4 py-3 text-xs font-semibold transition-all ${
-              selectedCuisine === label ?
-              "bg-primary text-primary-foreground shadow-orange scale-105" :
-              "bg-card text-muted-foreground hover:bg-secondary border border-border shadow-card"}`
-              }>
-
+            {cuisineCategories.map(({ label, icon: Icon }) => (
+              <button
+                key={label}
+                onClick={() => setSelectedCuisine(label)}
+                className={`flex flex-shrink-0 flex-col items-center gap-1.5 rounded-2xl px-4 py-3 text-xs font-semibold transition-all ${
+                  selectedCuisine === label
+                    ? "bg-primary text-primary-foreground shadow-orange scale-105"
+                    : "bg-card text-muted-foreground hover:bg-secondary border border-border shadow-card"
+                }`}
+              >
                 <Icon className="h-5 w-5" />
                 {label}
               </button>
-            )}
+            ))}
           </div>
         </section>
 
@@ -673,9 +750,10 @@ const Index = () => {
               //   3) Otherwise → generic "no results" for the current search/cuisine filter.
               const matchesFilters = annotated.filter((r) => {
                 const matchesCuisine = selectedCuisine === "All" || r.cuisine === selectedCuisine;
-                const matchesSearch = !search.trim()
-                  || r.name.toLowerCase().includes(search.toLowerCase())
-                  || r.cuisine.toLowerCase().includes(search.toLowerCase());
+                const matchesSearch =
+                  !search.trim() ||
+                  r.name.toLowerCase().includes(search.toLowerCase()) ||
+                  r.cuisine.toLowerCase().includes(search.toLowerCase());
                 return matchesCuisine && matchesSearch;
               });
 
@@ -685,7 +763,8 @@ const Index = () => {
                     <MapPinOff className="mx-auto mb-3 h-12 w-12 text-primary/60" />
                     <p className="font-semibold text-foreground">Not available in your area yet</p>
                     <p className="mx-auto mt-1 max-w-xs text-sm text-muted-foreground">
-                      We don't currently deliver to your location. We're expanding fast — check back soon, or update your address if it looks wrong.
+                      We don't currently deliver to your location. We're expanding fast — check back
+                      soon, or update your address if it looks wrong.
                     </p>
                     <div className="mt-5 flex flex-wrap items-center justify-center gap-2">
                       <button
@@ -693,7 +772,9 @@ const Index = () => {
                         disabled={geo.status === "prompt"}
                         className="btn-glow inline-flex items-center gap-1.5 rounded-full gradient-maroon px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-maroon transition-transform hover:scale-105 disabled:cursor-not-allowed disabled:opacity-60"
                       >
-                        <RefreshCw className={`h-4 w-4 ${geo.status === "prompt" ? "animate-spin" : ""}`} />
+                        <RefreshCw
+                          className={`h-4 w-4 ${geo.status === "prompt" ? "animate-spin" : ""}`}
+                        />
                         {geo.status === "prompt" ? "Checking…" : "Retry GPS"}
                       </button>
                       <button
@@ -707,11 +788,18 @@ const Index = () => {
                 );
               }
 
-              if (currentZone && matchesFilters.length === 0 && !search.trim() && selectedCuisine === "All") {
+              if (
+                currentZone &&
+                matchesFilters.length === 0 &&
+                !search.trim() &&
+                selectedCuisine === "All"
+              ) {
                 return (
                   <div className="rounded-2xl border border-border bg-card py-16 text-center shadow-card">
                     <UtensilsCrossed className="mx-auto mb-3 h-12 w-12 text-muted-foreground/50" />
-                    <p className="font-semibold text-foreground">No restaurants in {currentZone.zone.name} yet</p>
+                    <p className="font-semibold text-foreground">
+                      No restaurants in {currentZone.zone.name} yet
+                    </p>
                     <p className="mx-auto mt-1 max-w-xs text-sm text-muted-foreground">
                       We're onboarding restaurants in your area. Check back soon!
                     </p>
@@ -796,7 +884,8 @@ const Index = () => {
         onAdd={(lineKey) => cart.incrementLine(lineKey)}
         onRemove={cart.removeItem}
         onClear={cart.clearCart}
-        onCheckout={handleCheckout} />
+        onCheckout={handleCheckout}
+      />
 
       <CheckoutDialog
         open={checkoutOpen}
@@ -806,12 +895,13 @@ const Index = () => {
         tax={cart.tax}
         delivery={cart.delivery}
         initialFoodNote={foodNote}
-        onOrderPlaced={cart.clearCart} />
+        onOrderPlaced={cart.clearCart}
+      />
 
       <Footer />
       <BottomNav />
-    </div>);
-
+    </div>
+  );
 };
 
 export default Index;

@@ -1,5 +1,22 @@
 import { useState, useEffect, useMemo, lazy, Suspense } from "react";
-import { X, Package, MapPin, Phone, User, StickyNote, CreditCard, Wallet, Clock, Navigation, AlertTriangle, Map as MapIcon, Check, Plus, Star, BookmarkPlus } from "lucide-react";
+import {
+  X,
+  Package,
+  MapPin,
+  Phone,
+  User,
+  StickyNote,
+  CreditCard,
+  Wallet,
+  Clock,
+  Navigation,
+  AlertTriangle,
+  Map as MapIcon,
+  Check,
+  Plus,
+  Star,
+  BookmarkPlus,
+} from "lucide-react";
 import { CartItem } from "@/hooks/useCart";
 import { storeInfo } from "@/data/menu";
 import { supabase } from "@/integrations/supabase/client";
@@ -25,17 +42,32 @@ const CLOSING_MINUTE = 0;
 const PREP_LEAD_MINUTES = 30; // earliest schedule from now
 
 const checkoutSchema = z.object({
-  name: z.string().trim().min(2, "Name must be at least 2 characters").max(100, "Name must be less than 100 characters"),
-  contact: z.string().trim().min(7, "Contact number is too short").max(20, "Contact number is too long").regex(/^[0-9\s+()-]+$/, "Invalid phone number format"),
+  name: z
+    .string()
+    .trim()
+    .min(2, "Name must be at least 2 characters")
+    .max(100, "Name must be less than 100 characters"),
+  contact: z
+    .string()
+    .trim()
+    .min(7, "Contact number is too short")
+    .max(20, "Contact number is too long")
+    .regex(/^[0-9\s+()-]+$/, "Invalid phone number format"),
   address: z
     .string()
     .trim()
     .min(8, 'Full address looks too short. Try e.g. "12 Oak Street, Khayelitsha".')
     .max(300, "Address must be less than 300 characters")
     .regex(/[A-Za-z]/, 'Address needs a street or suburb name, e.g. "12 Oak Street, Khayelitsha".')
-    .regex(/^[A-Za-z0-9\s,.\-/#'’()]+$/, 'Address has invalid characters. Use letters, numbers, and , . - / # only (e.g. "12A Oak St, Mfuleni").'),
+    .regex(
+      /^[A-Za-z0-9\s,.\-/#'’()]+$/,
+      'Address has invalid characters. Use letters, numbers, and , . - / # only (e.g. "12A Oak St, Mfuleni").',
+    ),
   notes: z.string().max(500, "Notes must be less than 500 characters").optional(),
-  deliveryInstructions: z.string().max(300, "Delivery instructions must be less than 300 characters").optional(),
+  deliveryInstructions: z
+    .string()
+    .max(300, "Delivery instructions must be less than 300 characters")
+    .optional(),
   tip: z.number().min(0, "Tip cannot be negative").max(10000, "Tip amount is too large"),
 });
 
@@ -68,7 +100,12 @@ const CheckoutDialog = ({
   const { user } = useAuth();
   const { balance: walletBalance, refresh: refreshWallet } = useCustomerCredits();
   const { refresh: refreshLocation, zones } = useCustomerLocation();
-  const { addresses: savedAddresses, defaultAddress, add: addSavedAddress, refresh: refreshAddresses } = useCustomerAddresses();
+  const {
+    addresses: savedAddresses,
+    defaultAddress,
+    add: addSavedAddress,
+    refresh: refreshAddresses,
+  } = useCustomerAddresses();
   const [selectedSavedId, setSelectedSavedId] = useState<string | null>(null);
   const [showAddSaved, setShowAddSaved] = useState(false);
   const [saveForNextTime, setSaveForNextTime] = useState(false);
@@ -94,12 +131,16 @@ const CheckoutDialog = ({
   const setPaymentMethod = (_: "online") => {}; // no-op kept for legacy refs
   const [loading, setLoading] = useState(false);
   const [profileLoaded, setProfileLoaded] = useState(false);
-  const [restaurantCoords, setRestaurantCoords] = useState<{ lat: number; lng: number } | null>(null);
+  const [restaurantCoords, setRestaurantCoords] = useState<{ lat: number; lng: number } | null>(
+    null,
+  );
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
 
   const restaurants = useMemo(
-    () => [...new Set(items.map((ci) => ci.item.restaurantName || ci.item.category).filter(Boolean))],
-    [items]
+    () => [
+      ...new Set(items.map((ci) => ci.item.restaurantName || ci.item.category).filter(Boolean)),
+    ],
+    [items],
   );
   const primaryRestaurantName = restaurants[0] || "";
 
@@ -169,7 +210,12 @@ const CheckoutDialog = ({
 
   // Driver-coverage check: when the customer's coords change, ask the server whether any
   // online driver covers this delivery location. Non-blocking — we only warn the customer.
-  const [coverage, setCoverage] = useState<{ covered: boolean; online_in_area: number; total_online: number; address_tag: string | null } | null>(null);
+  const [coverage, setCoverage] = useState<{
+    covered: boolean;
+    online_in_area: number;
+    total_online: number;
+    address_tag: string | null;
+  } | null>(null);
   useEffect(() => {
     if (!coords) {
       setCoverage(null);
@@ -177,10 +223,16 @@ const CheckoutDialog = ({
     }
     let cancelled = false;
     (async () => {
-      const { data } = await supabase.rpc("check_area_coverage", { p_lat: coords.lat, p_lng: coords.lng, p_address: address });
+      const { data } = await supabase.rpc("check_area_coverage", {
+        p_lat: coords.lat,
+        p_lng: coords.lng,
+        p_address: address,
+      });
       if (!cancelled && data) setCoverage(data as any);
     })();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [coords, address]);
 
   const handleAddressSelect = (result: ValidatedAddress) => {
@@ -226,7 +278,11 @@ const CheckoutDialog = ({
     return {
       minTime: `${pad(earliest.getHours())}:${pad(earliest.getMinutes())}`,
       maxTime: `${pad(CLOSING_HOUR)}:${pad(CLOSING_MINUTE)}`,
-      todayLabel: now.toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short" }),
+      todayLabel: now.toLocaleDateString(undefined, {
+        weekday: "short",
+        day: "numeric",
+        month: "short",
+      }),
       isPastClosing: past,
     };
   }, [open]);
@@ -285,13 +341,16 @@ const CheckoutDialog = ({
       toast.error("House/unit number contains invalid characters.");
       setValidationErrors((prev) => ({
         ...prev,
-        address: 'House/unit number can only contain letters, numbers, spaces, and - / # (e.g. "12A", "Unit 3", "B-4").',
+        address:
+          'House/unit number can only contain letters, numbers, spaces, and - / # (e.g. "12A", "Unit 3", "B-4").',
       }));
       return;
     }
 
     if (!addressVerified || !coords) {
-      toast.error("Please pick your delivery address from the suggestions or confirm it on the map.");
+      toast.error(
+        "Please pick your delivery address from the suggestions or confirm it on the map.",
+      );
       setValidationErrors((prev) => ({
         ...prev,
         address: "Select a valid address from the suggestions.",
@@ -310,7 +369,12 @@ const CheckoutDialog = ({
     }
 
     const result = checkoutSchema.safeParse({
-      name, contact, address: fullAddress, notes, deliveryInstructions, tip: actualTip,
+      name,
+      contact,
+      address: fullAddress,
+      notes,
+      deliveryInstructions,
+      tip: actualTip,
     });
 
     if (!result.success) {
@@ -389,23 +453,24 @@ const CheckoutDialog = ({
 
       // Build a per-item options summary so the kitchen + driver see what was picked.
       const optionsLines = items
-        .filter(ci =>
-          ci.selectedCut ||
-          ci.selectedSize ||
-          (ci.selectedAddOns && ci.selectedAddOns.length > 0)
+        .filter(
+          (ci) =>
+            ci.selectedCut ||
+            ci.selectedSize ||
+            (ci.selectedAddOns && ci.selectedAddOns.length > 0),
         )
-        .map(ci => {
+        .map((ci) => {
           const parts: string[] = [];
           if (ci.selectedCut) {
             parts.push(
               ci.selectedPieces && ci.selectedPieces > 1
                 ? `${ci.selectedPieces}× ${ci.selectedCut.name}`
-                : ci.selectedCut.name
+                : ci.selectedCut.name,
             );
           }
           if (ci.selectedSize) parts.push(ci.selectedSize.name);
           if (ci.selectedAddOns && ci.selectedAddOns.length > 0) {
-            parts.push(`with ${ci.selectedAddOns.map(a => a.name).join(", ")}`);
+            parts.push(`with ${ci.selectedAddOns.map((a) => a.name).join(", ")}`);
           }
           return `${ci.quantity}× ${ci.item.name} (${parts.join(" — ")})`;
         });
@@ -416,7 +481,9 @@ const CheckoutDialog = ({
         notes.trim() ? `Food note: ${notes.trim()}` : "",
         deliveryInstructions.trim() ? `Delivery instructions: ${deliveryInstructions.trim()}` : "",
         scheduledLabel ? `Scheduled for: ${scheduledLabel}` : "Deliver ASAP",
-      ].filter(Boolean).join(" | ");
+      ]
+        .filter(Boolean)
+        .join(" | ");
 
       const { data: order, error: orderError } = await supabase.rpc("create_verified_order", {
         p_items: orderItems,
@@ -433,23 +500,27 @@ const CheckoutDialog = ({
       });
 
       if (orderError) {
-        console.error("Order placement failed:", orderError.message, orderError.details, orderError.hint);
+        console.error(
+          "Order placement failed:",
+          orderError.message,
+          orderError.details,
+          orderError.hint,
+        );
         const isRateLimited =
-          orderError.code === "42901" ||
-          /too many orders/i.test(orderError.message || "");
+          orderError.code === "42901" || /too many orders/i.test(orderError.message || "");
         const isOutOfRange =
           orderError.code === "22023" ||
           /not available in your area/i.test(orderError.message || "");
         const title = isRateLimited
           ? "You're placing orders too quickly"
           : isOutOfRange
-          ? "Delivery not available in your area"
-          : "Failed to place your order, try again.";
+            ? "Delivery not available in your area"
+            : "Failed to place your order, try again.";
         const description = isRateLimited
           ? "Please wait about a minute before placing another order."
           : isOutOfRange
-          ? "Please pick a delivery location closer to our service area."
-          : orderError.message;
+            ? "Please pick a delivery location closer to our service area."
+            : orderError.message;
         toast.error(title, { description });
         setLoading(false);
         return;
@@ -546,7 +617,10 @@ const CheckoutDialog = ({
       <div className="fixed inset-x-4 top-1/2 z-[60] mx-auto max-w-lg -translate-y-1/2 rounded-3xl border border-border bg-background p-5 max-h-[90vh] overflow-y-auto shadow-xl">
         <div className="flex items-center justify-between mb-5">
           <h2 className="font-display text-xl font-bold text-foreground">Checkout</h2>
-          <button onClick={onClose} className="rounded-full p-2 text-muted-foreground hover:bg-secondary transition-colors">
+          <button
+            onClick={onClose}
+            className="rounded-full p-2 text-muted-foreground hover:bg-secondary transition-colors"
+          >
             <X className="h-5 w-5" />
           </button>
         </div>
@@ -563,7 +637,9 @@ const CheckoutDialog = ({
               placeholder="Your full name"
               className="w-full rounded-xl border border-border bg-card px-4 py-3 text-sm text-card-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
             />
-            {validationErrors.name && <p className="mt-1 text-xs text-destructive">{validationErrors.name}</p>}
+            {validationErrors.name && (
+              <p className="mt-1 text-xs text-destructive">{validationErrors.name}</p>
+            )}
           </div>
           <div>
             <label className="mb-1.5 flex items-center gap-1.5 text-sm font-semibold text-foreground">
@@ -575,7 +651,9 @@ const CheckoutDialog = ({
               placeholder="e.g. 072 123 4567"
               className="w-full rounded-xl border border-border bg-card px-4 py-3 text-sm text-card-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
             />
-            {validationErrors.contact && <p className="mt-1 text-xs text-destructive">{validationErrors.contact}</p>}
+            {validationErrors.contact && (
+              <p className="mt-1 text-xs text-destructive">{validationErrors.contact}</p>
+            )}
           </div>
           <div>
             <label className="mb-1.5 flex items-center gap-1.5 text-sm font-semibold text-foreground">
@@ -585,7 +663,9 @@ const CheckoutDialog = ({
             {savedAddresses.length > 0 && (
               <div className="mb-3 rounded-xl border border-border bg-card p-2.5">
                 <div className="mb-1.5 flex items-center justify-between">
-                  <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Saved addresses</p>
+                  <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+                    Saved addresses
+                  </p>
                   <button
                     type="button"
                     onClick={() => setShowAddSaved(true)}
@@ -609,9 +689,17 @@ const CheckoutDialog = ({
                         }`}
                         title={a.address}
                       >
-                        {a.is_default && <Star className={`h-3 w-3 flex-shrink-0 ${active ? "" : "text-primary"}`} />}
+                        {a.is_default && (
+                          <Star
+                            className={`h-3 w-3 flex-shrink-0 ${active ? "" : "text-primary"}`}
+                          />
+                        )}
                         <span className="font-bold">{a.label}</span>
-                        <span className={`truncate max-w-[140px] ${active ? "opacity-90" : "text-muted-foreground"}`}>· {a.address}</span>
+                        <span
+                          className={`truncate max-w-[140px] ${active ? "opacity-90" : "text-muted-foreground"}`}
+                        >
+                          · {a.address}
+                        </span>
                       </button>
                     );
                   })}
@@ -656,10 +744,14 @@ const CheckoutDialog = ({
                 </p>
                 <div className="mt-1.5 flex flex-wrap gap-1">
                   <span className="rounded-full bg-card px-1.5 py-0.5 text-[10px] text-muted-foreground">
-                    House #: <span className="font-semibold text-foreground">{houseNumber.trim() || "—"}</span>
+                    House #:{" "}
+                    <span className="font-semibold text-foreground">
+                      {houseNumber.trim() || "—"}
+                    </span>
                   </span>
                   <span className="rounded-full bg-card px-1.5 py-0.5 text-[10px] text-muted-foreground">
-                    Street &amp; suburb: <span className="font-semibold text-foreground">{address.trim() || "—"}</span>
+                    Street &amp; suburb:{" "}
+                    <span className="font-semibold text-foreground">{address.trim() || "—"}</span>
                   </span>
                 </div>
               </div>
@@ -680,7 +772,9 @@ const CheckoutDialog = ({
             {!addressVerified && address.trim().length >= 3 && (
               <p className="mt-1.5 flex items-start gap-1.5 text-xs text-amber-600">
                 <AlertTriangle className="h-3.5 w-3.5 flex-shrink-0 mt-0.5" />
-                <span>Please select a valid address from the suggestions or confirm it on the map.</span>
+                <span>
+                  Please select a valid address from the suggestions or confirm it on the map.
+                </span>
               </p>
             )}
 
@@ -700,7 +794,8 @@ const CheckoutDialog = ({
                   </span>
                   {zoneFee != null && (
                     <span className="inline-flex items-center gap-1 rounded-full bg-secondary px-2.5 py-1 text-xs font-semibold text-secondary-foreground">
-                      Delivery fee: {storeInfo.currency}{zoneFee.toFixed(2)}
+                      Delivery fee: {storeInfo.currency}
+                      {zoneFee.toFixed(2)}
                     </span>
                   )}
                 </div>
@@ -713,7 +808,9 @@ const CheckoutDialog = ({
                 <label className="flex items-center justify-between gap-3">
                   <div className="flex items-center gap-2">
                     <BookmarkPlus className="h-4 w-4 text-primary" />
-                    <span className="text-xs font-bold text-foreground">Save this for next time</span>
+                    <span className="text-xs font-bold text-foreground">
+                      Save this for next time
+                    </span>
                   </div>
                   <input
                     type="checkbox"
@@ -755,11 +852,9 @@ const CheckoutDialog = ({
                 <div className="text-xs">
                   <p className="font-bold text-destructive">Outside delivery range</p>
                   <p className="mt-0.5 text-foreground">
-                    {OUT_OF_ZONE_MESSAGE} Please pick an address within {DEFAULT_ZONE_RADIUS_KM} km of one of our active zones
-                    {zones.length > 0 && (
-                      <> ({zones.map((z) => z.name).join(", ")})</>
-                    )}
-                    .
+                    {OUT_OF_ZONE_MESSAGE} Please pick an address within {DEFAULT_ZONE_RADIUS_KM} km
+                    of one of our active zones
+                    {zones.length > 0 && <> ({zones.map((z) => z.name).join(", ")})</>}.
                   </p>
                 </div>
               </div>
@@ -790,7 +885,8 @@ const CheckoutDialog = ({
                 <div className="text-xs">
                   <p className="font-bold text-destructive">No drivers online in your area</p>
                   <p className="mt-0.5 text-foreground">
-                    We can't accept orders for this location right now because no driver is currently online nearby. Please try again in a few minutes.
+                    We can't accept orders for this location right now because no driver is
+                    currently online nearby. Please try again in a few minutes.
                   </p>
                 </div>
               </div>
@@ -801,7 +897,9 @@ const CheckoutDialog = ({
             <div className="fixed inset-0 z-[70] bg-black/70 backdrop-blur-sm flex items-center justify-center p-3">
               <div className="relative w-full max-w-lg max-h-[92vh] overflow-y-auto rounded-3xl border border-border bg-background pt-4 shadow-xl">
                 <div className="flex items-center justify-between px-4 pb-2">
-                  <h3 className="font-display text-base font-bold text-foreground">Confirm delivery location</h3>
+                  <h3 className="font-display text-base font-bold text-foreground">
+                    Confirm delivery location
+                  </h3>
                   <button
                     onClick={() => setShowMapPicker(false)}
                     className="rounded-full p-2 text-muted-foreground hover:bg-secondary"
@@ -840,7 +938,11 @@ const CheckoutDialog = ({
               maxLength={300}
               className="w-full rounded-xl border border-border bg-card px-4 py-3 text-sm text-card-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all resize-none"
             />
-            {validationErrors.deliveryInstructions && <p className="mt-1 text-xs text-destructive">{validationErrors.deliveryInstructions}</p>}
+            {validationErrors.deliveryInstructions && (
+              <p className="mt-1 text-xs text-destructive">
+                {validationErrors.deliveryInstructions}
+              </p>
+            )}
           </div>
 
           {/* Delivery Schedule */}
@@ -876,7 +978,9 @@ const CheckoutDialog = ({
             {deliveryWhen === "schedule" && (
               <div className="mt-2 rounded-xl border border-border bg-card p-3">
                 <p className="mb-2 text-[11px] text-muted-foreground">
-                  Same day only · between <span className="font-semibold text-foreground">{minTime}</span> and <span className="font-semibold text-foreground">{maxTime}</span> ({todayLabel})
+                  Same day only · between{" "}
+                  <span className="font-semibold text-foreground">{minTime}</span> and{" "}
+                  <span className="font-semibold text-foreground">{maxTime}</span> ({todayLabel})
                 </p>
                 <input
                   type="time"
@@ -893,7 +997,9 @@ const CheckoutDialog = ({
                 Too late to schedule today (we close at {maxTime}). Choose ASAP or order tomorrow.
               </p>
             )}
-            {validationErrors.schedule && <p className="mt-1 text-xs text-destructive">{validationErrors.schedule}</p>}
+            {validationErrors.schedule && (
+              <p className="mt-1 text-xs text-destructive">{validationErrors.schedule}</p>
+            )}
           </div>
 
           <div>
@@ -908,7 +1014,9 @@ const CheckoutDialog = ({
               maxLength={500}
               className="w-full rounded-xl border border-border bg-card px-4 py-3 text-sm text-card-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all resize-none"
             />
-            {validationErrors.notes && <p className="mt-1 text-xs text-destructive">{validationErrors.notes}</p>}
+            {validationErrors.notes && (
+              <p className="mt-1 text-xs text-destructive">{validationErrors.notes}</p>
+            )}
           </div>
 
           {/* Wallet Credits */}
@@ -922,9 +1030,14 @@ const CheckoutDialog = ({
                   <div>
                     <p className="text-sm font-bold text-foreground">Use Wallet Credits</p>
                     <p className="text-[11px] text-muted-foreground">
-                      Balance: {storeInfo.currency}{walletBalance.toFixed(2)}
+                      Balance: {storeInfo.currency}
+                      {walletBalance.toFixed(2)}
                       {useWallet && creditsToApply > 0 && (
-                        <> · Applying {storeInfo.currency}{creditsToApply.toFixed(2)}</>
+                        <>
+                          {" "}
+                          · Applying {storeInfo.currency}
+                          {creditsToApply.toFixed(2)}
+                        </>
                       )}
                     </p>
                   </div>
@@ -941,16 +1054,22 @@ const CheckoutDialog = ({
 
           {/* Payment Method — PayFast only */}
           <div>
-            <label className="mb-2 block text-sm font-semibold text-foreground">💳 Payment Method</label>
+            <label className="mb-2 block text-sm font-semibold text-foreground">
+              💳 Payment Method
+            </label>
             <div className="flex items-center gap-3 rounded-xl border-2 border-primary bg-primary/5 p-3.5 text-sm">
               <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10">
                 <CreditCard className="h-4.5 w-4.5 text-primary" />
               </div>
               <div className="text-left flex-1">
                 <p className="font-bold text-xs text-foreground">Pay online with PayFast</p>
-                <p className="text-[10px] text-muted-foreground">Card · Instant EFT · QR · SnapScan</p>
+                <p className="text-[10px] text-muted-foreground">
+                  Card · Instant EFT · QR · SnapScan
+                </p>
               </div>
-              <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-bold text-primary">Secure</span>
+              <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-bold text-primary">
+                Secure
+              </span>
             </div>
           </div>
 
@@ -961,7 +1080,10 @@ const CheckoutDialog = ({
               {tipOptions.map((t) => (
                 <button
                   key={t}
-                  onClick={() => { setTip(t); setCustomTip(""); }}
+                  onClick={() => {
+                    setTip(t);
+                    setCustomTip("");
+                  }}
                   className={`rounded-xl px-3.5 py-2 text-sm font-bold transition-all ${
                     tip === t && !customTip
                       ? "bg-primary text-primary-foreground shadow-sm scale-105"
@@ -974,7 +1096,10 @@ const CheckoutDialog = ({
             </div>
             <input
               value={customTip}
-              onChange={(e) => { setCustomTip(e.target.value); setTip(0); }}
+              onChange={(e) => {
+                setCustomTip(e.target.value);
+                setTip(0);
+              }}
               placeholder="Or enter custom amount"
               type="number"
               min="0"
@@ -986,31 +1111,49 @@ const CheckoutDialog = ({
           <div className="space-y-1.5 rounded-2xl border border-border bg-card p-4 text-sm">
             <div className="flex justify-between text-muted-foreground">
               <span>Subtotal</span>
-              <span>{storeInfo.currency}{subtotal.toFixed(2)}</span>
+              <span>
+                {storeInfo.currency}
+                {subtotal.toFixed(2)}
+              </span>
             </div>
             <div className="flex justify-between text-muted-foreground">
               <span>Service Fee (5%)</span>
-              <span>{storeInfo.currency}{tax.toFixed(2)}</span>
+              <span>
+                {storeInfo.currency}
+                {tax.toFixed(2)}
+              </span>
             </div>
             <div className="flex justify-between text-muted-foreground">
               <span>Delivery</span>
-              <span>{storeInfo.currency}{delivery}</span>
+              <span>
+                {storeInfo.currency}
+                {delivery}
+              </span>
             </div>
             {actualTip > 0 && (
               <div className="flex justify-between text-muted-foreground">
                 <span>Tip</span>
-                <span>{storeInfo.currency}{actualTip.toFixed(2)}</span>
+                <span>
+                  {storeInfo.currency}
+                  {actualTip.toFixed(2)}
+                </span>
               </div>
             )}
             {creditsToApply > 0 && (
               <div className="flex justify-between text-primary">
                 <span>Wallet credit</span>
-                <span>−{storeInfo.currency}{creditsToApply.toFixed(2)}</span>
+                <span>
+                  −{storeInfo.currency}
+                  {creditsToApply.toFixed(2)}
+                </span>
               </div>
             )}
             <div className="flex justify-between border-t border-border pt-2 text-lg font-bold text-foreground">
               <span>Total</span>
-              <span className="text-primary">{storeInfo.currency}{total.toFixed(2)}</span>
+              <span className="text-primary">
+                {storeInfo.currency}
+                {total.toFixed(2)}
+              </span>
             </div>
             <div className="flex items-center justify-between pt-1">
               <p className="text-xs text-muted-foreground">🍽️ {restaurants.join(", ")}</p>
@@ -1022,7 +1165,15 @@ const CheckoutDialog = ({
 
           <button
             onClick={handleCheckout}
-            disabled={loading || !name.trim() || !contact.trim() || !addressVerified || !coords || outOfRange || (!!coverage && !coverage.covered)}
+            disabled={
+              loading ||
+              !name.trim() ||
+              !contact.trim() ||
+              !addressVerified ||
+              !coords ||
+              outOfRange ||
+              (!!coverage && !coverage.covered)
+            }
             data-testid="checkout-place-order-button"
             className="btn-glow flex w-full items-center justify-center gap-2 rounded-2xl gradient-maroon py-3.5 font-display font-bold text-primary-foreground transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:hover:scale-100 shadow-maroon"
           >
@@ -1030,9 +1181,7 @@ const CheckoutDialog = ({
             {loading ? "Placing Order..." : "Place Order"}
           </button>
 
-          <p className="text-center text-[10px] text-muted-foreground">
-            {storeInfo.paymentNote}
-          </p>
+          <p className="text-center text-[10px] text-muted-foreground">{storeInfo.paymentNote}</p>
         </div>
       </div>
 

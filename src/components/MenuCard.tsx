@@ -8,7 +8,11 @@ interface MenuCardProps {
 
 const MenuCard = ({ item, onAdd }: MenuCardProps) => {
   return (
-    <div data-testid="menu-card" data-menu-item-id={item.id} className="group relative overflow-hidden rounded-2xl border border-border bg-card shadow-card transition-all hover:border-primary/30 hover:shadow-glow">
+    <div
+      data-testid="menu-card"
+      data-menu-item-id={item.id}
+      className="group relative overflow-hidden rounded-2xl border border-border bg-card shadow-card transition-all hover:border-primary/30 hover:shadow-glow"
+    >
       <div className="aspect-[4/3] w-full overflow-hidden bg-muted">
         {item.image ? (
           <img
@@ -30,12 +34,11 @@ const MenuCard = ({ item, onAdd }: MenuCardProps) => {
         <h3 className="font-display text-sm font-semibold leading-tight text-card-foreground">
           {item.name}
         </h3>
-        <p className="mt-0.5 line-clamp-2 text-xs text-muted-foreground">
-          {item.caption}
-        </p>
+        <p className="mt-0.5 line-clamp-2 text-xs text-muted-foreground">{item.caption}</p>
         <div className="mt-2 flex items-center justify-between">
           <span className="font-display text-lg font-bold text-primary">
-            {storeInfo.currency}{item.price}
+            {storeInfo.currency}
+            {item.price}
           </span>
           <button
             onClick={() => onAdd(item)}

@@ -5,15 +5,7 @@ import { storeInfo } from "@/data/menu";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import BottomNav from "@/components/BottomNav";
-import {
-  Target,
-  Sparkles,
-  MapPin,
-  Phone,
-  Mail,
-  ArrowLeft,
-  CheckCircle2,
-} from "lucide-react";
+import { Target, Sparkles, MapPin, Phone, Mail, ArrowLeft, CheckCircle2 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export interface AboutContent {
@@ -164,7 +156,10 @@ const About = () => {
           ) : (
             <ul className="space-y-2.5">
               {content.services.map((service, idx) => (
-                <li key={idx} className="flex items-start gap-2.5 text-sm sm:text-base text-foreground">
+                <li
+                  key={idx}
+                  className="flex items-start gap-2.5 text-sm sm:text-base text-foreground"
+                >
                   <CheckCircle2 className="h-5 w-5 mt-0.5 shrink-0 text-primary" />
                   <span>{service}</span>
                 </li>
@@ -206,7 +201,9 @@ const About = () => {
             >
               <Phone className="h-4 w-4 text-primary shrink-0" />
               <div className="flex-1 min-w-0">
-                <div className="text-[11px] uppercase tracking-wide text-muted-foreground">Phone</div>
+                <div className="text-[11px] uppercase tracking-wide text-muted-foreground">
+                  Phone
+                </div>
                 <div className="font-medium truncate">{content.phone}</div>
               </div>
             </a>
@@ -217,7 +214,9 @@ const About = () => {
             >
               <Mail className="h-4 w-4 text-primary shrink-0" />
               <div className="flex-1 min-w-0">
-                <div className="text-[11px] uppercase tracking-wide text-muted-foreground">Email</div>
+                <div className="text-[11px] uppercase tracking-wide text-muted-foreground">
+                  Email
+                </div>
                 <div className="font-medium truncate">{content.email}</div>
               </div>
             </a>

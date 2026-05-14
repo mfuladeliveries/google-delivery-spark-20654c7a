@@ -136,13 +136,9 @@ export const generateWithdrawalReceipt = (r: WithdrawalReceiptData) => {
   doc.text(
     "This is an electronic receipt from Mfula. Account numbers are masked for security.",
     margin,
-    footerY + 18
+    footerY + 18,
   );
-  doc.text(
-    `Generated ${new Date().toLocaleString("en-ZA")}`,
-    margin,
-    footerY + 32
-  );
+  doc.text(`Generated ${new Date().toLocaleString("en-ZA")}`, margin, footerY + 32);
 
   const filename = `mfula-withdrawal-${r.id.slice(0, 8)}.pdf`;
   doc.save(filename);

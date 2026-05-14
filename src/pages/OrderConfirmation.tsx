@@ -1,6 +1,17 @@
 import { useEffect, useState, useCallback } from "react";
 import { useLocation, useNavigate, useSearchParams, Link } from "react-router-dom";
-import { CheckCircle2, Clock, KeyRound, StickyNote, Navigation, Package, Home, ListOrdered, Loader2, RefreshCw } from "lucide-react";
+import {
+  CheckCircle2,
+  Clock,
+  KeyRound,
+  StickyNote,
+  Navigation,
+  Package,
+  Home,
+  ListOrdered,
+  Loader2,
+  RefreshCw,
+} from "lucide-react";
 import BottomNav from "@/components/BottomNav";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -30,7 +41,10 @@ interface ConfirmationState {
 const parseSpecialNotes = (raw: string | null | undefined) => {
   const out: { foodNote?: string; deliveryInstructions?: string; scheduledLabel?: string } = {};
   if (!raw) return out;
-  const parts = raw.split("|").map((p) => p.trim()).filter(Boolean);
+  const parts = raw
+    .split("|")
+    .map((p) => p.trim())
+    .filter(Boolean);
   for (const part of parts) {
     const lower = part.toLowerCase();
     if (lower.startsWith("food note:")) {
@@ -56,18 +70,19 @@ const OrderConfirmation = () => {
   const queryOrderNumber = searchParams.get("order");
   const cachedPendingOrder = loadPendingPaymentOrder(queryOrderNumber);
 
-  const [data, setData] = useState<ConfirmationState | null>(() =>
-    navState ??
-    (cachedPendingOrder
-      ? {
-          orderNumber: cachedPendingOrder.orderNumber,
-          deliveryPin: "------",
-          total: cachedPendingOrder.total,
-          paymentMethod: "online",
-          restaurant: cachedPendingOrder.restaurant,
-          paymentPending: true,
-        }
-      : null),
+  const [data, setData] = useState<ConfirmationState | null>(
+    () =>
+      navState ??
+      (cachedPendingOrder
+        ? {
+            orderNumber: cachedPendingOrder.orderNumber,
+            deliveryPin: "------",
+            total: cachedPendingOrder.total,
+            paymentMethod: "online",
+            restaurant: cachedPendingOrder.restaurant,
+            paymentPending: true,
+          }
+        : null),
   );
   const [loading, setLoading] = useState(!navState && !cachedPendingOrder);
   const [notFound, setNotFound] = useState(false);
@@ -112,7 +127,7 @@ const OrderConfirmation = () => {
       const { data: order, error } = await supabase
         .from("orders")
         .select(
-          "id, order_number, delivery_code, special_notes, total, payment_method, restaurant, user_id, status, payment_status, cancel_reason"
+          "id, order_number, delivery_code, special_notes, total, payment_method, restaurant, user_id, status, payment_status, cancel_reason",
         )
         .eq("order_number", orderNumInt)
         .eq("user_id", user.id)
@@ -155,7 +170,7 @@ const OrderConfirmation = () => {
       // freshest status/payment_status without pulling the full row each time.
       const { data: statusData, error: statusErr } = await supabase.functions.invoke(
         "get-order-status",
-        { body: { orderNumber: orderNumInt } }
+        { body: { orderNumber: orderNumInt } },
       );
 
       if (cancelled) return;
@@ -228,7 +243,6 @@ const OrderConfirmation = () => {
     // refreshing spinner is cosmetic — the effect will set loading/data
     setTimeout(() => setRefreshing(false), 2000);
   }, []);
-
 
   // If there's nothing to look up at all, send to Orders
   useEffect(() => {
@@ -317,10 +331,12 @@ const OrderConfirmation = () => {
       <main className="mx-auto max-w-lg px-4 pt-8 md:pt-12">
         {/* Success header */}
         <div className="flex flex-col items-center text-center">
-          <div className={`flex h-20 w-20 items-center justify-center rounded-full ${rejected ? "bg-destructive/10" : (paymentPending || awaitingRestaurant) ? "bg-muted" : "bg-primary/10"}`}>
+          <div
+            className={`flex h-20 w-20 items-center justify-center rounded-full ${rejected ? "bg-destructive/10" : paymentPending || awaitingRestaurant ? "bg-muted" : "bg-primary/10"}`}
+          >
             {rejected ? (
               <span className="text-4xl">🚫</span>
-            ) : (paymentPending || awaitingRestaurant) ? (
+            ) : paymentPending || awaitingRestaurant ? (
               <Loader2 className="h-10 w-10 animate-spin text-primary" />
             ) : (
               <CheckCircle2 className="h-12 w-12 text-primary" strokeWidth={2.2} />
@@ -330,21 +346,28 @@ const OrderConfirmation = () => {
             {rejected
               ? "Restaurant couldn't accept"
               : awaitingRestaurant
-              ? "Waiting for restaurant…"
-              : paymentPending
-              ? "Confirming payment…"
-              : "Order Confirmed!"}
+                ? "Waiting for restaurant…"
+                : paymentPending
+                  ? "Confirming payment…"
+                  : "Order Confirmed!"}
           </h1>
           {rejected ? (
             <div className="mt-2 space-y-2">
               <p className="text-sm text-muted-foreground max-w-xs">
-                {rejectReason || "The restaurant couldn't fulfil this order. You have not been charged."}
+                {rejectReason ||
+                  "The restaurant couldn't fulfil this order. You have not been charged."}
               </p>
             </div>
           ) : awaitingRestaurant ? (
             <div className="mt-2 flex flex-col items-center gap-3">
               <p className="text-sm text-muted-foreground max-w-xs">
-                {restaurant ? <><RestaurantName as="span" name={restaurant} /> is reviewing your order. </> : "The restaurant is reviewing your order. "}
+                {restaurant ? (
+                  <>
+                    <RestaurantName as="span" name={restaurant} /> is reviewing your order.{" "}
+                  </>
+                ) : (
+                  "The restaurant is reviewing your order. "
+                )}
                 You won't be charged until they accept.
               </p>
               <button
@@ -359,7 +382,8 @@ const OrderConfirmation = () => {
           ) : paymentPending ? (
             <div className="mt-2 flex flex-col items-center gap-3">
               <p className="text-sm text-muted-foreground max-w-xs">
-                We're waiting for PayFast to confirm your payment. This usually takes a few seconds — this page will update automatically.
+                We're waiting for PayFast to confirm your payment. This usually takes a few seconds
+                — this page will update automatically.
               </p>
               <button
                 onClick={handlePayNow}
@@ -394,9 +418,7 @@ const OrderConfirmation = () => {
           <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
             Order Number
           </p>
-          <p className="mt-1 font-display text-3xl font-bold text-primary">
-            #{orderNumber}
-          </p>
+          <p className="mt-1 font-display text-3xl font-bold text-primary">#{orderNumber}</p>
         </div>
 
         {/* Delivery PIN */}
@@ -426,9 +448,7 @@ const OrderConfirmation = () => {
               {scheduledLabel ? scheduledLabel : "As soon as possible (ASAP)"}
             </p>
             {!scheduledLabel && (
-              <p className="text-[11px] text-muted-foreground">
-                A driver will be assigned shortly
-              </p>
+              <p className="text-[11px] text-muted-foreground">A driver will be assigned shortly</p>
             )}
           </div>
         </div>
@@ -443,12 +463,8 @@ const OrderConfirmation = () => {
               <div className="flex gap-2.5 rounded-xl bg-secondary/60 p-3">
                 <StickyNote className="h-4 w-4 flex-shrink-0 text-primary mt-0.5" />
                 <div className="min-w-0">
-                  <p className="text-[11px] font-semibold text-foreground">
-                    Food note
-                  </p>
-                  <p className="mt-0.5 text-xs text-muted-foreground break-words">
-                    {foodNote}
-                  </p>
+                  <p className="text-[11px] font-semibold text-foreground">Food note</p>
+                  <p className="mt-0.5 text-xs text-muted-foreground break-words">{foodNote}</p>
                 </div>
               </div>
             )}
@@ -456,9 +472,7 @@ const OrderConfirmation = () => {
               <div className="flex gap-2.5 rounded-xl bg-secondary/60 p-3">
                 <Navigation className="h-4 w-4 flex-shrink-0 text-primary mt-0.5" />
                 <div className="min-w-0">
-                  <p className="text-[11px] font-semibold text-foreground">
-                    Delivery instructions
-                  </p>
+                  <p className="text-[11px] font-semibold text-foreground">Delivery instructions</p>
                   <p className="mt-0.5 text-xs text-muted-foreground break-words">
                     {deliveryInstructions}
                   </p>
@@ -480,11 +494,13 @@ const OrderConfirmation = () => {
               )}
             </div>
             {paymentMethod && (
-              <span className={`rounded-full px-3 py-1 text-[11px] font-bold ${
-                paymentMethod === "cash"
-                  ? "bg-green-100 text-green-700"
-                  : "bg-blue-100 text-blue-700"
-              }`}>
+              <span
+                className={`rounded-full px-3 py-1 text-[11px] font-bold ${
+                  paymentMethod === "cash"
+                    ? "bg-green-100 text-green-700"
+                    : "bg-blue-100 text-blue-700"
+                }`}
+              >
                 {paymentMethod === "cash" ? "💵 Cash on delivery" : "💳 Paid online (PayFast)"}
               </span>
             )}

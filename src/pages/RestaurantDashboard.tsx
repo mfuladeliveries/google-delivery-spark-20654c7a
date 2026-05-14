@@ -3,8 +3,24 @@ import { useNavigate, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import {
-  ChefHat, Package, CheckCircle, Clock, Plus, Trash2, ArrowLeft, XCircle,
-  ShieldCheck, Search, Download, Filter, TrendingUp, AlertCircle, Utensils, Pencil, Save, X
+  ChefHat,
+  Package,
+  CheckCircle,
+  Clock,
+  Plus,
+  Trash2,
+  ArrowLeft,
+  XCircle,
+  ShieldCheck,
+  Search,
+  Download,
+  Filter,
+  TrendingUp,
+  AlertCircle,
+  Utensils,
+  Pencil,
+  Save,
+  X,
 } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
 import { toast } from "sonner";
@@ -59,14 +75,54 @@ interface RestaurantOption {
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string; icon: string }> = {
   pending: { label: "Pending", color: "text-muted-foreground", bg: "bg-muted", icon: "🕐" },
-  confirmed: { label: "Accepted", color: "text-blue-700", bg: "bg-blue-50 border-blue-200", icon: "✅" },
-  preparing: { label: "Preparing", color: "text-blue-700", bg: "bg-blue-50 border-blue-200", icon: "👨‍🍳" },
-  ready: { label: "Ready for Pickup", color: "text-emerald-700", bg: "bg-emerald-50 border-emerald-200", icon: "📦" },
-  driver_assigned: { label: "Driver Assigned", color: "text-emerald-700", bg: "bg-emerald-50 border-emerald-200", icon: "🧑‍✈️" },
-  out_for_delivery: { label: "Out for Delivery", color: "text-primary", bg: "bg-primary/5 border-primary/20", icon: "🚗" },
-  delivered: { label: "Delivered", color: "text-emerald-700", bg: "bg-emerald-50 border-emerald-200", icon: "🎉" },
-  cancelled: { label: "Cancelled", color: "text-destructive", bg: "bg-destructive/5 border-destructive/20", icon: "❌" },
-  rejected: { label: "Rejected", color: "text-destructive", bg: "bg-destructive/5 border-destructive/20", icon: "🚫" },
+  confirmed: {
+    label: "Accepted",
+    color: "text-blue-700",
+    bg: "bg-blue-50 border-blue-200",
+    icon: "✅",
+  },
+  preparing: {
+    label: "Preparing",
+    color: "text-blue-700",
+    bg: "bg-blue-50 border-blue-200",
+    icon: "👨‍🍳",
+  },
+  ready: {
+    label: "Ready for Pickup",
+    color: "text-emerald-700",
+    bg: "bg-emerald-50 border-emerald-200",
+    icon: "📦",
+  },
+  driver_assigned: {
+    label: "Driver Assigned",
+    color: "text-emerald-700",
+    bg: "bg-emerald-50 border-emerald-200",
+    icon: "🧑‍✈️",
+  },
+  out_for_delivery: {
+    label: "Out for Delivery",
+    color: "text-primary",
+    bg: "bg-primary/5 border-primary/20",
+    icon: "🚗",
+  },
+  delivered: {
+    label: "Delivered",
+    color: "text-emerald-700",
+    bg: "bg-emerald-50 border-emerald-200",
+    icon: "🎉",
+  },
+  cancelled: {
+    label: "Cancelled",
+    color: "text-destructive",
+    bg: "bg-destructive/5 border-destructive/20",
+    icon: "❌",
+  },
+  rejected: {
+    label: "Rejected",
+    color: "text-destructive",
+    bg: "bg-destructive/5 border-destructive/20",
+    icon: "🚫",
+  },
 };
 
 const statusFlow = ["confirmed", "preparing", "ready"];
@@ -81,9 +137,21 @@ const RestaurantDashboard = () => {
   const [allRestaurants, setAllRestaurants] = useState<RestaurantOption[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddItem, setShowAddItem] = useState(false);
-  const [newItem, setNewItem] = useState({ name: "", description: "", price: "", image: "", category: "" });
+  const [newItem, setNewItem] = useState({
+    name: "",
+    description: "",
+    price: "",
+    image: "",
+    category: "",
+  });
   const [editingItem, setEditingItem] = useState<string | null>(null);
-  const [editData, setEditData] = useState({ name: "", description: "", price: "", image: "", category: "" });
+  const [editData, setEditData] = useState({
+    name: "",
+    description: "",
+    price: "",
+    image: "",
+    category: "",
+  });
   const [savingEdit, setSavingEdit] = useState(false);
   const [saving, setSaving] = useState(false);
   const prevOrderCountRef = useRef(0);
@@ -94,7 +162,7 @@ const RestaurantDashboard = () => {
   const [dateFilter, setDateFilter] = useState<"today" | "week" | "all">("all");
 
   useEffect(() => {
-    if (!authLoading && (!user || (role !== 'restaurant' && role !== 'admin'))) {
+    if (!authLoading && (!user || (role !== "restaurant" && role !== "admin"))) {
       navigate("/auth");
     }
   }, [user, role, authLoading, navigate]);
@@ -122,7 +190,9 @@ const RestaurantDashboard = () => {
         osc2.start();
         osc2.stop(ctx.currentTime + 0.3);
       }, 200);
-    } catch { /* silent */ }
+    } catch {
+      /* silent */
+    }
   }, []);
 
   useEffect(() => {
@@ -135,21 +205,25 @@ const RestaurantDashboard = () => {
     if (!user) return;
 
     const channel = supabase
-      .channel('restaurant-orders')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, (payload) => {
-        if (payload.eventType === 'INSERT') {
+      .channel("restaurant-orders")
+      .on("postgres_changes", { event: "*", schema: "public", table: "orders" }, (payload) => {
+        if (payload.eventType === "INSERT") {
           playNotificationSound();
-          toast.info("🔔 New Order!", { description: `Order #${(payload.new as any).order_number} received` });
+          toast.info("🔔 New Order!", {
+            description: `Order #${(payload.new as any).order_number} received`,
+          });
         }
         if (restaurant?.id) {
           fetchOrdersFor(restaurant.id);
-        } else if (role === 'admin') {
+        } else if (role === "admin") {
           fetchOrders();
         }
       })
       .subscribe();
 
-    return () => { supabase.removeChannel(channel); };
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [user, restaurant?.id]);
 
   const fetchAll = async () => {
@@ -164,7 +238,7 @@ const RestaurantDashboard = () => {
       const first = restList[0];
       setRestaurant(first as Restaurant);
       await Promise.all([fetchOrdersFor(first.id), fetchMenuFor(first.id)]);
-    } else if (role === 'admin') {
+    } else if (role === "admin") {
       // Admin without restaurant ownership - fetch all
       const { data: allRest } = await supabase.from("restaurants").select("id, name").order("name");
       if (allRest && allRest.length > 0) {
@@ -179,7 +253,7 @@ const RestaurantDashboard = () => {
   };
 
   const switchRestaurant = async (restId: string) => {
-    const selected = allRestaurants.find(r => r.id === restId);
+    const selected = allRestaurants.find((r) => r.id === restId);
     if (!selected) return;
     setRestaurant(selected as Restaurant);
     setLoading(true);
@@ -192,7 +266,7 @@ const RestaurantDashboard = () => {
       .from("orders")
       .select("*")
       .order("created_at", { ascending: false });
-    if (data) setOrders(data.map(o => ({ ...o, items: (o.items as any[]) || [] })));
+    if (data) setOrders(data.map((o) => ({ ...o, items: (o.items as any[]) || [] })));
   };
 
   const fetchOrdersFor = async (restaurantId: string) => {
@@ -201,7 +275,7 @@ const RestaurantDashboard = () => {
       .select("*")
       .eq("restaurant_id", restaurantId)
       .order("created_at", { ascending: false });
-    if (data) setOrders(data.map(o => ({ ...o, items: (o.items as any[]) || [] })));
+    if (data) setOrders(data.map((o) => ({ ...o, items: (o.items as any[]) || [] })));
   };
 
   const fetchMenuFor = async (restaurantId: string) => {
@@ -214,10 +288,10 @@ const RestaurantDashboard = () => {
   };
 
   const updateOrderStatus = async (orderId: string, status: string) => {
-    const order = orders.find(o => o.id === orderId);
+    const order = orders.find((o) => o.id === orderId);
     const oldStatus = order?.status;
     await supabase.from("orders").update({ status }).eq("id", orderId);
-    setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status } : o));
+    setOrders((prev) => prev.map((o) => (o.id === orderId ? { ...o, status } : o)));
 
     // When restaurant marks an order ready, start the targeted dispatch chain
     // and push the first offered driver immediately (works even if their app is closed).
@@ -226,7 +300,7 @@ const RestaurantDashboard = () => {
         orderId,
         order.order_number,
         restaurant?.name || "",
-        Number(order.total) || 0
+        Number(order.total) || 0,
       );
     }
 
@@ -247,17 +321,21 @@ const RestaurantDashboard = () => {
   };
 
   const acceptOrder = async (orderId: string) => {
-    const order = orders.find(o => o.id === orderId);
+    const order = orders.find((o) => o.id === orderId);
     if (order?.status === "awaiting_restaurant") {
       const { data, error } = await supabase.rpc("restaurant_decide_availability", {
-        p_order_id: orderId, p_accept: true, p_reason: null,
+        p_order_id: orderId,
+        p_accept: true,
+        p_reason: null,
       });
       if (error) {
         toast.error("Couldn't accept: " + error.message);
         return;
       }
       const res = data as any;
-      setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: "pending_payment" } : o));
+      setOrders((prev) =>
+        prev.map((o) => (o.id === orderId ? { ...o, status: "pending_payment" } : o)),
+      );
       toast.success("✅ Accepted — customer can now pay.");
       sendPushNotification({
         order_id: orderId,
@@ -275,16 +353,18 @@ const RestaurantDashboard = () => {
   };
 
   const rejectOrder = async (orderId: string) => {
-    const order = orders.find(o => o.id === orderId);
+    const order = orders.find((o) => o.id === orderId);
     if (order?.status === "awaiting_restaurant") {
       const { error } = await supabase.rpc("restaurant_decide_availability", {
-        p_order_id: orderId, p_accept: false, p_reason: "Restaurant unable to fulfil order",
+        p_order_id: orderId,
+        p_accept: false,
+        p_reason: "Restaurant unable to fulfil order",
       });
       if (error) {
         toast.error("Couldn't reject: " + error.message);
         return;
       }
-      setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: "rejected" } : o));
+      setOrders((prev) => prev.map((o) => (o.id === orderId ? { ...o, status: "rejected" } : o)));
       toast.error("Order rejected — customer notified, no charge.");
       sendPushNotification({
         order_id: orderId,
@@ -310,16 +390,20 @@ const RestaurantDashboard = () => {
   const addMenuItem = async () => {
     if (!restaurant || !newItem.name || !newItem.price) return;
     setSaving(true);
-    const { data } = await supabase.from("menu_items").insert({
-      restaurant_id: restaurant.id,
-      name: newItem.name,
-      description: newItem.description,
-      price: parseFloat(newItem.price),
-      image: newItem.image,
-      category: newItem.category || "General",
-    }).select().single();
+    const { data } = await supabase
+      .from("menu_items")
+      .insert({
+        restaurant_id: restaurant.id,
+        name: newItem.name,
+        description: newItem.description,
+        price: parseFloat(newItem.price),
+        image: newItem.image,
+        category: newItem.category || "General",
+      })
+      .select()
+      .single();
     if (data) {
-      setMenuItems(prev => [data as MenuItem, ...prev]);
+      setMenuItems((prev) => [data as MenuItem, ...prev]);
       setNewItem({ name: "", description: "", price: "", image: "", category: "" });
       setShowAddItem(false);
       toast.success("Menu item added!");
@@ -329,7 +413,7 @@ const RestaurantDashboard = () => {
 
   const deleteMenuItem = async (itemId: string) => {
     await supabase.from("menu_items").delete().eq("id", itemId);
-    setMenuItems(prev => prev.filter(i => i.id !== itemId));
+    setMenuItems((prev) => prev.filter((i) => i.id !== itemId));
     toast.success("Item deleted");
   };
 
@@ -358,7 +442,7 @@ const RestaurantDashboard = () => {
     if (error) {
       toast.error("Failed to update: " + error.message);
     } else {
-      setMenuItems(prev => prev.map(i => i.id === editingItem ? { ...i, ...updates } : i));
+      setMenuItems((prev) => prev.map((i) => (i.id === editingItem ? { ...i, ...updates } : i)));
       setEditingItem(null);
       toast.success("Menu item updated!");
     }
@@ -368,42 +452,62 @@ const RestaurantDashboard = () => {
   const toggleAvailability = async (item: MenuItem) => {
     const newVal = !item.is_available;
     await supabase.from("menu_items").update({ is_available: newVal }).eq("id", item.id);
-    setMenuItems(prev => prev.map(i => i.id === item.id ? { ...i, is_available: newVal } : i));
+    setMenuItems((prev) =>
+      prev.map((i) => (i.id === item.id ? { ...i, is_available: newVal } : i)),
+    );
     toast.success(newVal ? "Item marked available" : "Item marked unavailable");
   };
 
   // Metrics
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  const todayOrders = useMemo(() => orders.filter(o => new Date(o.created_at) >= today), [orders]);
-  const pendingOrders = useMemo(() => orders.filter(o => o.status === "pending"), [orders]);
-  const inProgressOrders = useMemo(() => orders.filter(o => ["confirmed", "preparing", "ready", "driver_assigned", "out_for_delivery"].includes(o.status)), [orders]);
-  const completedOrders = useMemo(() => orders.filter(o => o.status === "delivered"), [orders]);
-  const todayRevenue = useMemo(() => todayOrders.filter(o => o.status === "delivered").reduce((sum, o) => sum + Number(o.total), 0), [todayOrders]);
+  const todayOrders = useMemo(
+    () => orders.filter((o) => new Date(o.created_at) >= today),
+    [orders],
+  );
+  const pendingOrders = useMemo(() => orders.filter((o) => o.status === "pending"), [orders]);
+  const inProgressOrders = useMemo(
+    () =>
+      orders.filter((o) =>
+        ["confirmed", "preparing", "ready", "driver_assigned", "out_for_delivery"].includes(
+          o.status,
+        ),
+      ),
+    [orders],
+  );
+  const completedOrders = useMemo(() => orders.filter((o) => o.status === "delivered"), [orders]);
+  const todayRevenue = useMemo(
+    () =>
+      todayOrders
+        .filter((o) => o.status === "delivered")
+        .reduce((sum, o) => sum + Number(o.total), 0),
+    [todayOrders],
+  );
 
   // Filtered orders
   const filteredOrders = useMemo(() => {
     let result = orders;
 
     if (statusFilter !== "all") {
-      result = result.filter(o => o.status === statusFilter);
+      result = result.filter((o) => o.status === statusFilter);
     }
 
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
-      result = result.filter(o =>
-        o.customer_name.toLowerCase().includes(q) ||
-        o.order_number.toString().includes(q) ||
-        o.customer_contact.includes(q)
+      result = result.filter(
+        (o) =>
+          o.customer_name.toLowerCase().includes(q) ||
+          o.order_number.toString().includes(q) ||
+          o.customer_contact.includes(q),
       );
     }
 
     if (dateFilter === "today") {
-      result = result.filter(o => new Date(o.created_at) >= today);
+      result = result.filter((o) => new Date(o.created_at) >= today);
     } else if (dateFilter === "week") {
       const weekAgo = new Date();
       weekAgo.setDate(weekAgo.getDate() - 7);
-      result = result.filter(o => new Date(o.created_at) >= weekAgo);
+      result = result.filter((o) => new Date(o.created_at) >= weekAgo);
     }
 
     return result;
@@ -411,8 +515,23 @@ const RestaurantDashboard = () => {
 
   // CSV Export
   const exportCSV = () => {
-    const headers = ["Order #", "Date", "Delivered At", "Customer", "Contact", "Address", "Items", "Subtotal", "Tax", "Delivery Fee", "Tip", "Total", "Status", "Payment"];
-    const rows = filteredOrders.map(o => [
+    const headers = [
+      "Order #",
+      "Date",
+      "Delivered At",
+      "Customer",
+      "Contact",
+      "Address",
+      "Items",
+      "Subtotal",
+      "Tax",
+      "Delivery Fee",
+      "Tip",
+      "Total",
+      "Status",
+      "Payment",
+    ];
+    const rows = filteredOrders.map((o) => [
       o.order_number,
       new Date(o.created_at).toLocaleString("en-ZA"),
       (o as any).delivered_at ? new Date((o as any).delivered_at).toLocaleString("en-ZA") : "",
@@ -428,7 +547,9 @@ const RestaurantDashboard = () => {
       o.status,
       o.payment_method,
     ]);
-    const csv = [headers.join(","), ...rows.map(r => r.map(v => `"${v}"`).join(","))].join("\n");
+    const csv = [headers.join(","), ...rows.map((r) => r.map((v) => `"${v}"`).join(","))].join(
+      "\n",
+    );
     const blob = new Blob([csv], { type: "text/csv" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -439,11 +560,12 @@ const RestaurantDashboard = () => {
     toast.success("Orders exported!");
   };
 
-  if (authLoading || loading) return (
-    <div className="flex min-h-screen items-center justify-center bg-background">
-      <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-    </div>
-  );
+  if (authLoading || loading)
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+      </div>
+    );
 
   const statusFilters = [
     { value: "all", label: "All" },
@@ -472,15 +594,19 @@ const RestaurantDashboard = () => {
                 {allRestaurants.length > 1 ? (
                   <select
                     value={restaurant?.id || ""}
-                    onChange={e => switchRestaurant(e.target.value)}
+                    onChange={(e) => switchRestaurant(e.target.value)}
                     className="font-display text-sm text-foreground bg-transparent border-none focus:outline-none focus:ring-0 cursor-pointer pr-4 -ml-1 max-w-[140px] sm:max-w-[200px]"
                   >
-                    {allRestaurants.map(r => (
-                      <option key={r.id} value={r.id}>{r.name}</option>
+                    {allRestaurants.map((r) => (
+                      <option key={r.id} value={r.id}>
+                        {r.name}
+                      </option>
                     ))}
                   </select>
                 ) : (
-                  <h1 className="font-display text-sm text-foreground">{restaurant?.name || "Restaurant"}</h1>
+                  <h1 className="font-display text-sm text-foreground">
+                    {restaurant?.name || "Restaurant"}
+                  </h1>
                 )}
                 <p className="text-[10px] text-muted-foreground">Management Dashboard</p>
               </div>
@@ -488,12 +614,14 @@ const RestaurantDashboard = () => {
           </div>
           <div className="flex items-center gap-2">
             <InstallAppButton variant="restaurant" compact />
-            {(["orders", "menu", "earnings"] as const).map(t => (
+            {(["orders", "menu", "earnings"] as const).map((t) => (
               <button
                 key={t}
                 onClick={() => setTab(t)}
                 className={`rounded-lg px-3 py-1.5 text-xs font-semibold capitalize transition-colors ${
-                  tab === t ? "gradient-orange text-primary-foreground shadow-orange" : "text-muted-foreground hover:bg-secondary"
+                  tab === t
+                    ? "gradient-orange text-primary-foreground shadow-orange"
+                    : "text-muted-foreground hover:bg-secondary"
                 }`}
               >
                 {t === "orders" ? "Orders" : t === "menu" ? "Menu" : "Earnings"}
@@ -512,8 +640,12 @@ const RestaurantDashboard = () => {
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">Today's Orders</p>
-                      <p className="text-2xl font-display text-foreground mt-1">{todayOrders.length}</p>
+                      <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">
+                        Today's Orders
+                      </p>
+                      <p className="text-2xl font-display text-foreground mt-1">
+                        {todayOrders.length}
+                      </p>
                     </div>
                     <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10">
                       <TrendingUp className="h-5 w-5 text-primary" />
@@ -525,8 +657,12 @@ const RestaurantDashboard = () => {
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">Pending</p>
-                      <p className="text-2xl font-display text-foreground mt-1">{pendingOrders.length}</p>
+                      <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">
+                        Pending
+                      </p>
+                      <p className="text-2xl font-display text-foreground mt-1">
+                        {pendingOrders.length}
+                      </p>
                     </div>
                     <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-100">
                       <AlertCircle className="h-5 w-5 text-amber-600" />
@@ -538,8 +674,12 @@ const RestaurantDashboard = () => {
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">In Progress</p>
-                      <p className="text-2xl font-display text-foreground mt-1">{inProgressOrders.length}</p>
+                      <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">
+                        In Progress
+                      </p>
+                      <p className="text-2xl font-display text-foreground mt-1">
+                        {inProgressOrders.length}
+                      </p>
                     </div>
                     <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-100">
                       <Clock className="h-5 w-5 text-blue-600" />
@@ -551,8 +691,12 @@ const RestaurantDashboard = () => {
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">Revenue Today</p>
-                      <p className="text-2xl font-display text-foreground mt-1">R{todayRevenue.toFixed(0)}</p>
+                      <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">
+                        Revenue Today
+                      </p>
+                      <p className="text-2xl font-display text-foreground mt-1">
+                        R{todayRevenue.toFixed(0)}
+                      </p>
                     </div>
                     <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-100">
                       <CheckCircle className="h-5 w-5 text-emerald-600" />
@@ -570,14 +714,14 @@ const RestaurantDashboard = () => {
                   <Input
                     placeholder="Search by customer, order # or phone..."
                     value={searchQuery}
-                    onChange={e => setSearchQuery(e.target.value)}
+                    onChange={(e) => setSearchQuery(e.target.value)}
                     className="pl-9"
                   />
                 </div>
                 <div className="flex gap-2">
                   <select
                     value={dateFilter}
-                    onChange={e => setDateFilter(e.target.value as any)}
+                    onChange={(e) => setDateFilter(e.target.value as any)}
                     className="rounded-lg border border-input bg-background px-3 py-2 text-sm"
                   >
                     <option value="all">All time</option>
@@ -593,7 +737,7 @@ const RestaurantDashboard = () => {
 
               {/* Status filter chips */}
               <div className="flex gap-1.5 overflow-x-auto scrollbar-hide pb-1">
-                {statusFilters.map(sf => (
+                {statusFilters.map((sf) => (
                   <button
                     key={sf.value}
                     onClick={() => setStatusFilter(sf.value)}
@@ -606,7 +750,7 @@ const RestaurantDashboard = () => {
                     {sf.label}
                     {sf.value !== "all" && (
                       <span className="ml-1 opacity-70">
-                        ({orders.filter(o => o.status === sf.value).length})
+                        ({orders.filter((o) => o.status === sf.value).length})
                       </span>
                     )}
                   </button>
@@ -623,7 +767,7 @@ const RestaurantDashboard = () => {
               </div>
             ) : (
               <div className="space-y-3">
-                {filteredOrders.map(order => {
+                {filteredOrders.map((order) => {
                   const sc = STATUS_CONFIG[order.status] || STATUS_CONFIG.pending;
                   const isPending = order.status === "pending";
 
@@ -631,7 +775,9 @@ const RestaurantDashboard = () => {
                     <Card
                       key={order.id}
                       className={`overflow-hidden transition-all ${
-                        isPending ? "border-primary border-2 ring-2 ring-primary/20 animate-pulse" : "border-border"
+                        isPending
+                          ? "border-primary border-2 ring-2 ring-primary/20 animate-pulse"
+                          : "border-border"
                       }`}
                     >
                       <CardContent className="p-0">
@@ -639,19 +785,28 @@ const RestaurantDashboard = () => {
                         <div className="flex items-start justify-between p-4 pb-3">
                           <div className="space-y-1">
                             <div className="flex items-center gap-2">
-                              <span className="font-display text-base text-foreground">#{order.order_number}</span>
+                              <span className="font-display text-base text-foreground">
+                                #{order.order_number}
+                              </span>
                               {isPending && (
-                                <Badge variant="destructive" className="text-[10px] animate-bounce">NEW</Badge>
+                                <Badge variant="destructive" className="text-[10px] animate-bounce">
+                                  NEW
+                                </Badge>
                               )}
                             </div>
                             <p className="text-xs text-muted-foreground">
                               {new Date(order.created_at).toLocaleString("en-ZA", {
-                                day: "2-digit", month: "short", year: "numeric",
-                                hour: "2-digit", minute: "2-digit"
+                                day: "2-digit",
+                                month: "short",
+                                year: "numeric",
+                                hour: "2-digit",
+                                minute: "2-digit",
                               })}
                             </p>
                           </div>
-                          <span className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-bold ${sc.bg} ${sc.color}`}>
+                          <span
+                            className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-bold ${sc.bg} ${sc.color}`}
+                          >
                             <span>{sc.icon}</span> {sc.label}
                           </span>
                         </div>
@@ -659,10 +814,16 @@ const RestaurantDashboard = () => {
                         {/* Customer Info */}
                         <div className="px-4 pb-3 border-b border-border">
                           <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4">
-                            <p className="text-sm font-semibold text-foreground">{order.customer_name}</p>
-                            <p className="text-xs text-muted-foreground">{order.customer_contact}</p>
+                            <p className="text-sm font-semibold text-foreground">
+                              {order.customer_name}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              {order.customer_contact}
+                            </p>
                           </div>
-                          <p className="text-xs text-muted-foreground mt-0.5">📍 {order.customer_address}</p>
+                          <p className="text-xs text-muted-foreground mt-0.5">
+                            📍 {order.customer_address}
+                          </p>
                         </div>
 
                         {/* Items Table */}
@@ -676,7 +837,9 @@ const RestaurantDashboard = () => {
                                   </span>
                                   {item.name}
                                 </span>
-                                <span className="font-semibold text-foreground">R{(item.price * item.quantity).toFixed(2)}</span>
+                                <span className="font-semibold text-foreground">
+                                  R{(item.price * item.quantity).toFixed(2)}
+                                </span>
                               </div>
                             ))}
                           </div>
@@ -690,17 +853,21 @@ const RestaurantDashboard = () => {
                         {/* Pricing Breakdown */}
                         <div className="px-4 py-3 border-b border-border text-xs space-y-1">
                           <div className="flex justify-between text-muted-foreground">
-                            <span>Subtotal</span><span>R{Number(order.subtotal).toFixed(2)}</span>
+                            <span>Subtotal</span>
+                            <span>R{Number(order.subtotal).toFixed(2)}</span>
                           </div>
                           <div className="flex justify-between text-muted-foreground">
-                            <span>Tax</span><span>R{Number(order.tax).toFixed(2)}</span>
+                            <span>Tax</span>
+                            <span>R{Number(order.tax).toFixed(2)}</span>
                           </div>
                           <div className="flex justify-between text-muted-foreground">
-                            <span>Delivery</span><span>R{Number(order.delivery_fee).toFixed(2)}</span>
+                            <span>Delivery</span>
+                            <span>R{Number(order.delivery_fee).toFixed(2)}</span>
                           </div>
                           {Number(order.tip) > 0 && (
                             <div className="flex justify-between text-muted-foreground">
-                              <span>Tip</span><span>R{Number(order.tip).toFixed(2)}</span>
+                              <span>Tip</span>
+                              <span>R{Number(order.tip).toFixed(2)}</span>
                             </div>
                           )}
                           <div className="flex justify-between font-display text-sm text-foreground pt-1 border-t border-border">
@@ -711,30 +878,39 @@ const RestaurantDashboard = () => {
                             <Badge variant="outline" className="text-[10px]">
                               {order.payment_method === "online" ? "💳 Online" : "💵 Cash"}
                             </Badge>
-                            <Badge variant={order.payment_status === "paid" ? "default" : "secondary"} className="text-[10px]">
+                            <Badge
+                              variant={order.payment_status === "paid" ? "default" : "secondary"}
+                              className="text-[10px]"
+                            >
                               {order.payment_status}
                             </Badge>
                           </div>
                         </div>
 
                         {/* Delivery PIN */}
-                        {order.delivery_code && !["delivered", "cancelled", "rejected"].includes(order.status) && (
-                          <div className="px-4 py-2.5 border-b border-border">
-                            <div className="flex items-center gap-2 rounded-lg bg-primary/5 border border-primary/20 px-3 py-2">
-                              <ShieldCheck className="h-4 w-4 text-primary" />
-                              <span className="text-xs text-muted-foreground">Delivery PIN:</span>
-                              <span className="font-display text-sm tracking-[0.25em] text-primary">{order.delivery_code}</span>
+                        {order.delivery_code &&
+                          !["delivered", "cancelled", "rejected"].includes(order.status) && (
+                            <div className="px-4 py-2.5 border-b border-border">
+                              <div className="flex items-center gap-2 rounded-lg bg-primary/5 border border-primary/20 px-3 py-2">
+                                <ShieldCheck className="h-4 w-4 text-primary" />
+                                <span className="text-xs text-muted-foreground">Delivery PIN:</span>
+                                <span className="font-display text-sm tracking-[0.25em] text-primary">
+                                  {order.delivery_code}
+                                </span>
+                              </div>
                             </div>
-                          </div>
-                        )}
+                          )}
 
                         {/* Action Buttons */}
                         <div className="p-4">
-                          {(order.status === "pending" || order.status === "awaiting_restaurant") && (
+                          {(order.status === "pending" ||
+                            order.status === "awaiting_restaurant") && (
                             <>
                               {order.status === "awaiting_restaurant" && (
                                 <div className="mb-2 flex items-center gap-2 rounded-lg bg-amber-50 border border-amber-200 px-3 py-2">
-                                  <span className="text-xs font-semibold text-amber-700">⏳ Awaiting your confirmation — customer cannot pay yet</span>
+                                  <span className="text-xs font-semibold text-amber-700">
+                                    ⏳ Awaiting your confirmation — customer cannot pay yet
+                                  </span>
                                 </div>
                               )}
                               <div className="flex gap-2">
@@ -742,7 +918,10 @@ const RestaurantDashboard = () => {
                                   onClick={() => acceptOrder(order.id)}
                                   className="flex-1 gradient-orange text-primary-foreground shadow-orange h-12 text-sm font-display"
                                 >
-                                  <CheckCircle className="h-5 w-5 mr-1.5" /> {order.status === "awaiting_restaurant" ? "Confirm Availability" : "Accept Order"}
+                                  <CheckCircle className="h-5 w-5 mr-1.5" />{" "}
+                                  {order.status === "awaiting_restaurant"
+                                    ? "Confirm Availability"
+                                    : "Accept Order"}
                                 </Button>
                                 <Button
                                   variant="outline"
@@ -759,10 +938,14 @@ const RestaurantDashboard = () => {
                             <div className="flex gap-2">
                               {getNextStatus(order.status) && (
                                 <Button
-                                  onClick={() => updateOrderStatus(order.id, getNextStatus(order.status)!)}
+                                  onClick={() =>
+                                    updateOrderStatus(order.id, getNextStatus(order.status)!)
+                                  }
                                   className="flex-1 gradient-orange text-primary-foreground shadow-orange h-12 text-sm font-display"
                                 >
-                                  {order.status === "confirmed" ? "🍳 Start Preparing" : "📦 Ready for Pickup"}
+                                  {order.status === "confirmed"
+                                    ? "🍳 Start Preparing"
+                                    : "📦 Ready for Pickup"}
                                 </Button>
                               )}
                               <Button
@@ -786,24 +969,35 @@ const RestaurantDashboard = () => {
 
                           {order.status === "driver_assigned" && (
                             <div className="flex items-center gap-2 rounded-xl bg-blue-50 border border-blue-200 px-4 py-3">
-                              <span className="text-sm font-semibold text-blue-700">✅ Driver assigned — awaiting pickup</span>
+                              <span className="text-sm font-semibold text-blue-700">
+                                ✅ Driver assigned — awaiting pickup
+                              </span>
                             </div>
                           )}
 
                           {order.status === "out_for_delivery" && (
                             <div className="flex items-center gap-2 rounded-xl bg-primary/5 border border-primary/20 px-4 py-3">
-                              <span className="text-sm font-semibold text-primary">🚗 Driver is delivering to customer</span>
+                              <span className="text-sm font-semibold text-primary">
+                                🚗 Driver is delivering to customer
+                              </span>
                             </div>
                           )}
 
                           {order.status === "delivered" && (
                             <div className="rounded-xl bg-emerald-50 border border-emerald-200 px-4 py-3 space-y-1">
-                              <span className="text-sm font-semibold text-emerald-700">🎉 Order completed</span>
+                              <span className="text-sm font-semibold text-emerald-700">
+                                🎉 Order completed
+                              </span>
                               {(order as any).delivered_at && (
                                 <p className="text-xs text-emerald-600">
-                                  📅 Delivered: {new Date((order as any).delivered_at).toLocaleString("en-ZA", {
-                                    day: "2-digit", month: "short", year: "numeric",
-                                    hour: "2-digit", minute: "2-digit", second: "2-digit"
+                                  📅 Delivered:{" "}
+                                  {new Date((order as any).delivered_at).toLocaleString("en-ZA", {
+                                    day: "2-digit",
+                                    month: "short",
+                                    year: "numeric",
+                                    hour: "2-digit",
+                                    minute: "2-digit",
+                                    second: "2-digit",
                                   })}
                                 </p>
                               )}
@@ -824,7 +1018,11 @@ const RestaurantDashboard = () => {
           <>
             <div className="flex items-center justify-between mb-4">
               <h2 className="font-display text-foreground">Menu Items ({menuItems.length})</h2>
-              <Button onClick={() => setShowAddItem(!showAddItem)} size="sm" className="gradient-orange text-primary-foreground shadow-orange gap-1.5">
+              <Button
+                onClick={() => setShowAddItem(!showAddItem)}
+                size="sm"
+                className="gradient-orange text-primary-foreground shadow-orange gap-1.5"
+              >
                 <Plus className="h-4 w-4" /> Add Item
               </Button>
             </div>
@@ -832,7 +1030,9 @@ const RestaurantDashboard = () => {
             {!restaurant && (
               <Card className="mb-4 border-amber-200 bg-amber-50">
                 <CardContent className="p-4">
-                  <p className="text-sm text-amber-800 font-medium">⚠️ No restaurant linked to your account. Contact admin to link your restaurant.</p>
+                  <p className="text-sm text-amber-800 font-medium">
+                    ⚠️ No restaurant linked to your account. Contact admin to link your restaurant.
+                  </p>
                 </CardContent>
               </Card>
             )}
@@ -843,22 +1043,47 @@ const RestaurantDashboard = () => {
                   <CardTitle className="text-sm">Add New Menu Item</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-2">
-                  <Input value={newItem.name} onChange={e => setNewItem(p => ({ ...p, name: e.target.value }))} placeholder="Item name *" />
-                  <Input value={newItem.description} onChange={e => setNewItem(p => ({ ...p, description: e.target.value }))} placeholder="Description" />
+                  <Input
+                    value={newItem.name}
+                    onChange={(e) => setNewItem((p) => ({ ...p, name: e.target.value }))}
+                    placeholder="Item name *"
+                  />
+                  <Input
+                    value={newItem.description}
+                    onChange={(e) => setNewItem((p) => ({ ...p, description: e.target.value }))}
+                    placeholder="Description"
+                  />
                   <div className="flex gap-2">
-                    <Input value={newItem.price} onChange={e => setNewItem(p => ({ ...p, price: e.target.value }))} placeholder="Price (R) *" type="number" className="flex-1" />
-                    <Input value={newItem.category} onChange={e => setNewItem(p => ({ ...p, category: e.target.value }))} placeholder="Category" className="flex-1" />
+                    <Input
+                      value={newItem.price}
+                      onChange={(e) => setNewItem((p) => ({ ...p, price: e.target.value }))}
+                      placeholder="Price (R) *"
+                      type="number"
+                      className="flex-1"
+                    />
+                    <Input
+                      value={newItem.category}
+                      onChange={(e) => setNewItem((p) => ({ ...p, category: e.target.value }))}
+                      placeholder="Category"
+                      className="flex-1"
+                    />
                   </div>
                   <FoodImageUpload
                     value={newItem.image}
-                    onChange={(url) => setNewItem(p => ({ ...p, image: url }))}
+                    onChange={(url) => setNewItem((p) => ({ ...p, image: url }))}
                     restaurantId={restaurant?.id}
                   />
                   <div className="flex gap-2 pt-1">
-                    <Button onClick={addMenuItem} disabled={saving || !newItem.name || !newItem.price} className="flex-1 gradient-orange text-primary-foreground shadow-orange">
+                    <Button
+                      onClick={addMenuItem}
+                      disabled={saving || !newItem.name || !newItem.price}
+                      className="flex-1 gradient-orange text-primary-foreground shadow-orange"
+                    >
                       {saving ? "Adding..." : "Add Item"}
                     </Button>
-                    <Button variant="outline" onClick={() => setShowAddItem(false)}>Cancel</Button>
+                    <Button variant="outline" onClick={() => setShowAddItem(false)}>
+                      Cancel
+                    </Button>
                   </div>
                 </CardContent>
               </Card>
@@ -872,34 +1097,66 @@ const RestaurantDashboard = () => {
               </div>
             ) : (
               <div className="space-y-2">
-                {menuItems.map(item => (
+                {menuItems.map((item) => (
                   <Card key={item.id} className="shadow-card overflow-hidden">
                     {editingItem === item.id ? (
                       /* Inline Edit Mode */
                       <CardContent className="p-3 space-y-2">
                         <div className="flex items-center justify-between mb-1">
                           <h4 className="font-semibold text-sm text-foreground">Edit Item</h4>
-                          <button onClick={() => setEditingItem(null)} className="rounded-lg p-1 text-muted-foreground hover:bg-secondary">
+                          <button
+                            onClick={() => setEditingItem(null)}
+                            className="rounded-lg p-1 text-muted-foreground hover:bg-secondary"
+                          >
                             <X className="h-4 w-4" />
                           </button>
                         </div>
                         <FoodImageUpload
                           value={editData.image}
-                          onChange={(url) => setEditData(p => ({ ...p, image: url }))}
+                          onChange={(url) => setEditData((p) => ({ ...p, image: url }))}
                           restaurantId={restaurant?.id}
                         />
-                        <Input value={editData.name} onChange={e => setEditData(p => ({ ...p, name: e.target.value }))} placeholder="Item name *" />
-                        <Input value={editData.description} onChange={e => setEditData(p => ({ ...p, description: e.target.value }))} placeholder="Description" />
+                        <Input
+                          value={editData.name}
+                          onChange={(e) => setEditData((p) => ({ ...p, name: e.target.value }))}
+                          placeholder="Item name *"
+                        />
+                        <Input
+                          value={editData.description}
+                          onChange={(e) =>
+                            setEditData((p) => ({ ...p, description: e.target.value }))
+                          }
+                          placeholder="Description"
+                        />
                         <div className="flex gap-2">
-                          <Input value={editData.price} onChange={e => setEditData(p => ({ ...p, price: e.target.value }))} placeholder="Price (R) *" type="number" className="flex-1" />
-                          <Input value={editData.category} onChange={e => setEditData(p => ({ ...p, category: e.target.value }))} placeholder="Category" className="flex-1" />
+                          <Input
+                            value={editData.price}
+                            onChange={(e) => setEditData((p) => ({ ...p, price: e.target.value }))}
+                            placeholder="Price (R) *"
+                            type="number"
+                            className="flex-1"
+                          />
+                          <Input
+                            value={editData.category}
+                            onChange={(e) =>
+                              setEditData((p) => ({ ...p, category: e.target.value }))
+                            }
+                            placeholder="Category"
+                            className="flex-1"
+                          />
                         </div>
                         <div className="flex gap-2 pt-1">
-                          <Button onClick={saveEditItem} disabled={savingEdit || !editData.name || !editData.price} className="flex-1 gradient-orange text-primary-foreground shadow-orange gap-1.5">
+                          <Button
+                            onClick={saveEditItem}
+                            disabled={savingEdit || !editData.name || !editData.price}
+                            className="flex-1 gradient-orange text-primary-foreground shadow-orange gap-1.5"
+                          >
                             <Save className="h-3.5 w-3.5" />
                             {savingEdit ? "Saving..." : "Save Changes"}
                           </Button>
-                          <Button variant="outline" onClick={() => setEditingItem(null)}>Cancel</Button>
+                          <Button variant="outline" onClick={() => setEditingItem(null)}>
+                            Cancel
+                          </Button>
                         </div>
                       </CardContent>
                     ) : (
@@ -907,19 +1164,36 @@ const RestaurantDashboard = () => {
                       <CardContent className="flex items-center gap-3 p-3">
                         <div className="h-14 w-14 flex-shrink-0 overflow-hidden rounded-xl bg-muted">
                           {item.image ? (
-                            <img src={item.image} alt={item.name} className="h-full w-full object-cover" />
+                            <img
+                              src={item.image}
+                              alt={item.name}
+                              className="h-full w-full object-cover"
+                            />
                           ) : (
-                            <div className="h-full w-full flex items-center justify-center text-lg">🍽️</div>
+                            <div className="h-full w-full flex items-center justify-center text-lg">
+                              🍽️
+                            </div>
                           )}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <h4 className="font-semibold text-sm text-foreground truncate">{item.name}</h4>
-                          <p className="text-xs text-muted-foreground truncate">{item.description}</p>
+                          <h4 className="font-semibold text-sm text-foreground truncate">
+                            {item.name}
+                          </h4>
+                          <p className="text-xs text-muted-foreground truncate">
+                            {item.description}
+                          </p>
                           <div className="flex items-center gap-2 mt-1">
                             <span className="font-display text-xs text-primary">R{item.price}</span>
-                            <Badge variant="secondary" className="text-[10px]">{item.category}</Badge>
+                            <Badge variant="secondary" className="text-[10px]">
+                              {item.category}
+                            </Badge>
                             {!item.is_available && (
-                              <Badge variant="outline" className="text-[10px] text-destructive border-destructive/30">Unavailable</Badge>
+                              <Badge
+                                variant="outline"
+                                className="text-[10px] text-destructive border-destructive/30"
+                              >
+                                Unavailable
+                              </Badge>
                             )}
                           </div>
                         </div>
@@ -935,10 +1209,16 @@ const RestaurantDashboard = () => {
                           >
                             {item.is_available ? "✓" : "✗"}
                           </button>
-                          <button onClick={() => startEditItem(item)} className="rounded-lg p-2 text-muted-foreground hover:bg-primary/10 hover:text-primary transition-colors">
+                          <button
+                            onClick={() => startEditItem(item)}
+                            className="rounded-lg p-2 text-muted-foreground hover:bg-primary/10 hover:text-primary transition-colors"
+                          >
                             <Pencil className="h-4 w-4" />
                           </button>
-                          <button onClick={() => deleteMenuItem(item.id)} className="rounded-lg p-2 text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors">
+                          <button
+                            onClick={() => deleteMenuItem(item.id)}
+                            className="rounded-lg p-2 text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors"
+                          >
                             <Trash2 className="h-4 w-4" />
                           </button>
                         </div>

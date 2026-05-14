@@ -81,7 +81,12 @@ const App = () => (
             <Route
               path="/restaurant/dashboard"
               element={
-                <RoleGuard allow={["restaurant", "admin"]} requireAuth redirectUnauthedTo="/auth" loadingLabel="Loading restaurant dashboard…">
+                <RoleGuard
+                  allow={["restaurant", "admin"]}
+                  requireAuth
+                  redirectUnauthedTo="/auth"
+                  loadingLabel="Loading restaurant dashboard…"
+                >
                   <RestaurantDashboard />
                 </RoleGuard>
               }
@@ -90,7 +95,12 @@ const App = () => (
             <Route
               path="/restaurant/orders"
               element={
-                <RoleGuard allow={["restaurant", "admin"]} requireAuth redirectUnauthedTo="/auth" loadingLabel="Loading restaurant dashboard…">
+                <RoleGuard
+                  allow={["restaurant", "admin"]}
+                  requireAuth
+                  redirectUnauthedTo="/auth"
+                  loadingLabel="Loading restaurant dashboard…"
+                >
                   <RestaurantDashboard />
                 </RoleGuard>
               }
@@ -98,7 +108,12 @@ const App = () => (
             <Route
               path="/restaurant/menu"
               element={
-                <RoleGuard allow={["restaurant", "admin"]} requireAuth redirectUnauthedTo="/auth" loadingLabel="Loading restaurant dashboard…">
+                <RoleGuard
+                  allow={["restaurant", "admin"]}
+                  requireAuth
+                  redirectUnauthedTo="/auth"
+                  loadingLabel="Loading restaurant dashboard…"
+                >
                   <RestaurantDashboard />
                 </RoleGuard>
               }
@@ -133,7 +148,12 @@ const App = () => (
             <Route
               path="/admin"
               element={
-                <RoleGuard allow={["admin"]} requireAuth redirectUnauthedTo="/auth" loadingLabel="Loading admin dashboard…">
+                <RoleGuard
+                  allow={["admin"]}
+                  requireAuth
+                  redirectUnauthedTo="/auth"
+                  loadingLabel="Loading admin dashboard…"
+                >
                   <AdminDashboard />
                 </RoleGuard>
               }
@@ -141,7 +161,12 @@ const App = () => (
             <Route
               path="/profile"
               element={
-                <RoleGuard allow={["customer", "driver", "restaurant", "admin"]} requireAuth redirectUnauthedTo="/auth" loadingLabel="Loading profile…">
+                <RoleGuard
+                  allow={["customer", "driver", "restaurant", "admin"]}
+                  requireAuth
+                  redirectUnauthedTo="/auth"
+                  loadingLabel="Loading profile…"
+                >
                   <Profile />
                 </RoleGuard>
               }

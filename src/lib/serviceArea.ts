@@ -25,12 +25,7 @@ export interface DeliveryZone {
 export const DEFAULT_ZONE_RADIUS_KM = 5;
 
 /** Haversine distance in kilometres. */
-export const distanceKm = (
-  lat1: number,
-  lng1: number,
-  lat2: number,
-  lng2: number,
-): number => {
+export const distanceKm = (lat1: number, lng1: number, lat2: number, lng2: number): number => {
   const R = 6371;
   const toRad = (d: number) => (d * Math.PI) / 180;
   const dLat = toRad(lat2 - lat1);
@@ -130,5 +125,4 @@ export const driverPayoutForFee = (deliveryFee: number | null | undefined): numb
 };
 
 /** Out-of-zone error message shown to customers. */
-export const OUT_OF_ZONE_MESSAGE =
-  "Delivery is not available in your area yet.";
+export const OUT_OF_ZONE_MESSAGE = "Delivery is not available in your area yet.";

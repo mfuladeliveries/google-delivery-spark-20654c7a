@@ -30,18 +30,22 @@ interface MenuItemResult {
 }
 
 const restaurantImages: Record<string, string> = {
-  'Kitchen': 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=400&h=200&fit=crop',
-  'Mdala Tshisanyama': 'https://images.unsplash.com/photo-1544025162-d76694265947?w=400&h=200&fit=crop',
-  'KFC': 'https://images.unsplash.com/photo-1562967914-608f82629710?w=400&h=200&fit=crop',
-  'Debonnairs Pizza': 'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=400&h=200&fit=crop',
-  'McDonalds': 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=400&h=200&fit=crop',
-  'Pedros': 'https://images.unsplash.com/photo-1598515214211-89d3c73ae83b?w=400&h=200&fit=crop',
-  'BURGER KING': 'https://images.unsplash.com/photo-1571091718767-18b5b1457add?w=400&h=200&fit=crop',
-  'Hungry Lion': 'https://images.unsplash.com/photo-1562967914-608f82629710?w=400&h=200&fit=crop',
-  'Fellos Fishery': 'https://images.unsplash.com/photo-1559847844-5315695dadae?w=400&h=200&fit=crop',
-  'Shop': 'https://images.unsplash.com/photo-1578916171728-46686eac8d58?w=400&h=200&fit=crop',
-  'Liquor': 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400&h=200&fit=crop',
-  'Steers': 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=400&h=200&fit=crop',
+  Kitchen: "https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=400&h=200&fit=crop",
+  "Mdala Tshisanyama":
+    "https://images.unsplash.com/photo-1544025162-d76694265947?w=400&h=200&fit=crop",
+  KFC: "https://images.unsplash.com/photo-1562967914-608f82629710?w=400&h=200&fit=crop",
+  "Debonnairs Pizza":
+    "https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=400&h=200&fit=crop",
+  McDonalds: "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=400&h=200&fit=crop",
+  Pedros: "https://images.unsplash.com/photo-1598515214211-89d3c73ae83b?w=400&h=200&fit=crop",
+  "BURGER KING":
+    "https://images.unsplash.com/photo-1571091718767-18b5b1457add?w=400&h=200&fit=crop",
+  "Hungry Lion": "https://images.unsplash.com/photo-1562967914-608f82629710?w=400&h=200&fit=crop",
+  "Fellos Fishery":
+    "https://images.unsplash.com/photo-1559847844-5315695dadae?w=400&h=200&fit=crop",
+  Shop: "https://images.unsplash.com/photo-1578916171728-46686eac8d58?w=400&h=200&fit=crop",
+  Liquor: "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400&h=200&fit=crop",
+  Steers: "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=400&h=200&fit=crop",
 };
 
 const Search = () => {
@@ -69,12 +73,14 @@ const Search = () => {
   const doSearch = async (q: string) => {
     setLoading(true);
     const [{ data: rests }, { data: items }] = await Promise.all([
-      supabase.from("restaurants")
+      supabase
+        .from("restaurants")
         .select("id, name, cuisine, rating, delivery_time, min_order, description")
         .eq("is_active", true)
         .ilike("name", `%${q}%`)
         .order("rating", { ascending: false }),
-      supabase.from("menu_items")
+      supabase
+        .from("menu_items")
         .select("id, name, description, price, image, category, restaurant_id")
         .eq("is_available", true)
         .ilike("name", `%${q}%`)
@@ -84,10 +90,13 @@ const Search = () => {
 
     // Fetch restaurant names for menu items
     if (items && items.length > 0) {
-      const restIds = [...new Set(items.map(i => i.restaurant_id))];
-      const { data: restNames } = await supabase.from("restaurants").select("id, name").in("id", restIds);
-      const restMap = Object.fromEntries((restNames || []).map(r => [r.id, r.name]));
-      setMenuItems(items.map(i => ({ ...i, restaurant_name: restMap[i.restaurant_id] || "" })));
+      const restIds = [...new Set(items.map((i) => i.restaurant_id))];
+      const { data: restNames } = await supabase
+        .from("restaurants")
+        .select("id, name")
+        .in("id", restIds);
+      const restMap = Object.fromEntries((restNames || []).map((r) => [r.id, r.name]));
+      setMenuItems(items.map((i) => ({ ...i, restaurant_name: restMap[i.restaurant_id] || "" })));
     } else {
       setMenuItems([]);
     }
@@ -100,7 +109,10 @@ const Search = () => {
     <div className="min-h-screen bg-background">
       <header className="sticky top-0 z-50 border-b border-border bg-card/95 backdrop-blur-xl shadow-card">
         <div className="mx-auto flex max-w-2xl items-center gap-3 px-4 py-3">
-          <Link to={homeRoute} className="rounded-lg p-1.5 text-muted-foreground hover:bg-secondary">
+          <Link
+            to={homeRoute}
+            className="rounded-lg p-1.5 text-muted-foreground hover:bg-secondary"
+          >
             <ArrowLeft className="h-5 w-5" />
           </Link>
           <div className="relative flex-1">
@@ -108,7 +120,7 @@ const Search = () => {
             <input
               type="text"
               value={query}
-              onChange={e => setQuery(e.target.value)}
+              onChange={(e) => setQuery(e.target.value)}
               placeholder="Search restaurants or dishes..."
               autoFocus
               className="w-full rounded-xl border border-border bg-secondary py-2.5 pl-10 pr-4 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
@@ -141,7 +153,9 @@ const Search = () => {
               <button
                 onClick={() => setTab("restaurants")}
                 className={`flex-1 rounded-xl py-2 text-sm font-semibold transition-colors ${
-                  tab === "restaurants" ? "bg-primary text-primary-foreground" : "bg-secondary text-muted-foreground"
+                  tab === "restaurants"
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-secondary text-muted-foreground"
                 }`}
               >
                 Restaurants ({restaurants.length})
@@ -149,7 +163,9 @@ const Search = () => {
               <button
                 onClick={() => setTab("items")}
                 className={`flex-1 rounded-xl py-2 text-sm font-semibold transition-colors ${
-                  tab === "items" ? "bg-primary text-primary-foreground" : "bg-secondary text-muted-foreground"
+                  tab === "items"
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-secondary text-muted-foreground"
                 }`}
               >
                 Dishes ({menuItems.length})
@@ -158,10 +174,12 @@ const Search = () => {
 
             {tab === "restaurants" ? (
               restaurants.length === 0 ? (
-                <p className="text-center text-sm text-muted-foreground py-8">No restaurants found</p>
+                <p className="text-center text-sm text-muted-foreground py-8">
+                  No restaurants found
+                </p>
               ) : (
                 <div className="space-y-3">
-                  {restaurants.map(r => (
+                  {restaurants.map((r) => (
                     <div
                       key={r.id}
                       onClick={() => navigate(`/restaurant/${r.id}`)}
@@ -169,15 +187,23 @@ const Search = () => {
                     >
                       <div className="h-16 w-16 flex-shrink-0 overflow-hidden rounded-xl bg-muted">
                         <img
-                          src={restaurantImages[r.name] || 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=200&h=200&fit=crop'}
+                          src={
+                            restaurantImages[r.name] ||
+                            "https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=200&h=200&fit=crop"
+                          }
                           alt={r.name}
                           className="h-full w-full object-cover"
-                          onError={e => { (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=200&h=200&fit=crop'; }}
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).src =
+                              "https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=200&h=200&fit=crop";
+                          }}
                         />
                       </div>
                       <div className="flex-1 min-w-0">
                         <RestaurantName as="h3" size="md" name={r.name} className="truncate" />
-                        <p className="text-xs text-muted-foreground truncate mt-0.5">{r.description}</p>
+                        <p className="text-xs text-muted-foreground truncate mt-0.5">
+                          {r.description}
+                        </p>
                         <div className="flex items-center gap-3 mt-1.5 text-xs text-muted-foreground">
                           <span className="flex items-center gap-0.5 font-medium text-foreground">
                             <Star className="h-3 w-3 fill-primary text-primary" /> {r.rating}
@@ -185,52 +211,64 @@ const Search = () => {
                           <span className="flex items-center gap-0.5">
                             <Clock className="h-3 w-3" /> {r.delivery_time}
                           </span>
-                          <span className="rounded-full bg-secondary px-2 py-0.5 text-[10px]">{r.cuisine}</span>
+                          <span className="rounded-full bg-secondary px-2 py-0.5 text-[10px]">
+                            {r.cuisine}
+                          </span>
                         </div>
                       </div>
                     </div>
                   ))}
                 </div>
               )
+            ) : menuItems.length === 0 ? (
+              <p className="text-center text-sm text-muted-foreground py-8">No dishes found</p>
             ) : (
-              menuItems.length === 0 ? (
-                <p className="text-center text-sm text-muted-foreground py-8">No dishes found</p>
-              ) : (
-                <div className="space-y-3">
-                  {menuItems.map(item => (
-                    <div
-                      key={item.id}
-                      onClick={() => navigate(`/restaurant/${item.restaurant_id}`)}
-                      className="flex gap-3 rounded-2xl border border-border bg-card p-3 cursor-pointer hover:border-primary/30 transition-all shadow-card"
-                    >
-                      <div className="h-16 w-16 flex-shrink-0 overflow-hidden rounded-xl bg-muted">
-                        {item.image ? (
-                          <img
-                            src={item.image}
-                            alt={item.name}
-                            className="h-full w-full object-cover"
-                            onError={e => { (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1567620905732-2d1ec7ab7445?w=200&h=200&fit=crop'; }}
-                          />
-                        ) : (
-                          <div className="h-full w-full flex items-center justify-center text-2xl">🍽️</div>
+              <div className="space-y-3">
+                {menuItems.map((item) => (
+                  <div
+                    key={item.id}
+                    onClick={() => navigate(`/restaurant/${item.restaurant_id}`)}
+                    className="flex gap-3 rounded-2xl border border-border bg-card p-3 cursor-pointer hover:border-primary/30 transition-all shadow-card"
+                  >
+                    <div className="h-16 w-16 flex-shrink-0 overflow-hidden rounded-xl bg-muted">
+                      {item.image ? (
+                        <img
+                          src={item.image}
+                          alt={item.name}
+                          className="h-full w-full object-cover"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).src =
+                              "https://images.unsplash.com/photo-1567620905732-2d1ec7ab7445?w=200&h=200&fit=crop";
+                          }}
+                        />
+                      ) : (
+                        <div className="h-full w-full flex items-center justify-center text-2xl">
+                          🍽️
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-bold text-sm text-foreground">{item.name}</h3>
+                      {item.description && (
+                        <p className="text-xs text-muted-foreground truncate mt-0.5">
+                          {item.description}
+                        </p>
+                      )}
+                      <div className="flex items-center gap-2 mt-1.5">
+                        <span className="font-bold text-sm text-primary">
+                          {storeInfo.currency}
+                          {item.price}
+                        </span>
+                        {item.restaurant_name && (
+                          <span className="text-[10px] text-muted-foreground bg-secondary rounded-full px-2 py-0.5">
+                            @ {item.restaurant_name}
+                          </span>
                         )}
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <h3 className="font-bold text-sm text-foreground">{item.name}</h3>
-                        {item.description && <p className="text-xs text-muted-foreground truncate mt-0.5">{item.description}</p>}
-                        <div className="flex items-center gap-2 mt-1.5">
-                          <span className="font-bold text-sm text-primary">{storeInfo.currency}{item.price}</span>
-                          {item.restaurant_name && (
-                            <span className="text-[10px] text-muted-foreground bg-secondary rounded-full px-2 py-0.5">
-                              @ {item.restaurant_name}
-                            </span>
-                          )}
-                        </div>
-                      </div>
                     </div>
-                  ))}
-                </div>
-              )
+                  </div>
+                ))}
+              </div>
             )}
           </>
         )}

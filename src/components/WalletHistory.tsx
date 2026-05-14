@@ -50,7 +50,9 @@ const WalletHistory = () => {
           .select("id, order_number")
           .in("id", ids);
         const map: Record<string, number> = {};
-        (orders as OrderRef[] | null)?.forEach((o) => { map[o.id] = o.order_number; });
+        (orders as OrderRef[] | null)?.forEach((o) => {
+          map[o.id] = o.order_number;
+        });
         setOrderMap(map);
       }
       setLoading(false);
@@ -61,11 +63,18 @@ const WalletHistory = () => {
       .channel(`wallet-tx-${user.id}`)
       .on(
         "postgres_changes",
-        { event: "INSERT", schema: "public", table: "credit_transactions", filter: `user_id=eq.${user.id}` },
-        () => load()
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "credit_transactions",
+          filter: `user_id=eq.${user.id}`,
+        },
+        () => load(),
       )
       .subscribe();
-    return () => { supabase.removeChannel(channel); };
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [user]);
 
   const visible = expanded ? txs : txs.slice(0, 5);
@@ -81,7 +90,15 @@ const WalletHistory = () => {
             onClick={() => setExpanded((v) => !v)}
             className="flex items-center gap-0.5 text-xs font-semibold text-primary"
           >
-            {expanded ? <>Show less <ChevronUp className="h-3.5 w-3.5" /></> : <>Show all ({txs.length}) <ChevronDown className="h-3.5 w-3.5" /></>}
+            {expanded ? (
+              <>
+                Show less <ChevronUp className="h-3.5 w-3.5" />
+              </>
+            ) : (
+              <>
+                Show all ({txs.length}) <ChevronDown className="h-3.5 w-3.5" />
+              </>
+            )}
           </button>
         )}
       </div>
@@ -107,25 +124,44 @@ const WalletHistory = () => {
                 className="flex items-center justify-between rounded-xl border border-border bg-background px-3 py-2.5"
               >
                 <div className="flex items-center gap-2.5 min-w-0">
-                  <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${
-                    credit ? "bg-green-100 text-green-700" : "bg-orange-100 text-orange-700"
-                  }`}>
-                    {credit ? <ArrowDownLeft className="h-4 w-4" /> : <ArrowUpRight className="h-4 w-4" />}
+                  <div
+                    className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${
+                      credit ? "bg-green-100 text-green-700" : "bg-orange-100 text-orange-700"
+                    }`}
+                  >
+                    {credit ? (
+                      <ArrowDownLeft className="h-4 w-4" />
+                    ) : (
+                      <ArrowUpRight className="h-4 w-4" />
+                    )}
                   </div>
                   <div className="min-w-0">
                     <p className="text-xs font-semibold text-foreground truncate">
                       {kindLabel[tx.kind] || tx.kind}
-                      {orderNum && <span className="text-muted-foreground font-normal"> · #{orderNum}</span>}
+                      {orderNum && (
+                        <span className="text-muted-foreground font-normal"> · #{orderNum}</span>
+                      )}
                     </p>
                     <p className="text-[10px] text-muted-foreground">
-                      {new Date(tx.created_at).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" })}
+                      {new Date(tx.created_at).toLocaleDateString(undefined, {
+                        day: "numeric",
+                        month: "short",
+                        year: "numeric",
+                      })}
                       {" · "}
-                      {new Date(tx.created_at).toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" })}
+                      {new Date(tx.created_at).toLocaleTimeString(undefined, {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
                     </p>
                   </div>
                 </div>
-                <p className={`text-sm font-bold shrink-0 ${credit ? "text-green-600" : "text-foreground"}`}>
-                  {credit ? "+" : "−"}{storeInfo.currency}{Math.abs(tx.amount).toFixed(2)}
+                <p
+                  className={`text-sm font-bold shrink-0 ${credit ? "text-green-600" : "text-foreground"}`}
+                >
+                  {credit ? "+" : "−"}
+                  {storeInfo.currency}
+                  {Math.abs(tx.amount).toFixed(2)}
                 </p>
               </div>
             );

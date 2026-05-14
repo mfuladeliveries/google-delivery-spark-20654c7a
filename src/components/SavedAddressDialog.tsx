@@ -2,11 +2,7 @@ import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 import { AlertTriangle, Check, Loader2, MapPin, X } from "lucide-react";
 import { toast } from "sonner";
 import { AddressAutocomplete, type ValidatedAddress } from "@/components/AddressAutocomplete";
-import {
-  findNearestZone,
-  OUT_OF_ZONE_MESSAGE,
-  type DeliveryZone,
-} from "@/lib/serviceArea";
+import { findNearestZone, OUT_OF_ZONE_MESSAGE, type DeliveryZone } from "@/lib/serviceArea";
 import type { SavedAddress, SavedAddressInput } from "@/hooks/useCustomerAddresses";
 
 const AddressMapPicker = lazy(() => import("@/components/AddressMapPicker"));
@@ -190,7 +186,10 @@ export const SavedAddressDialog = ({
           )}
 
           {verified && outOfRange && (
-            <div role="alert" className="flex items-start gap-2 rounded-xl border-2 border-destructive/40 bg-destructive/10 p-3">
+            <div
+              role="alert"
+              className="flex items-start gap-2 rounded-xl border-2 border-destructive/40 bg-destructive/10 p-3"
+            >
               <AlertTriangle className="mt-0.5 h-4 w-4 text-destructive" />
               <p className="text-xs font-bold text-destructive">
                 Sorry, we do not deliver to this location yet.
@@ -231,7 +230,13 @@ export const SavedAddressDialog = ({
               disabled={!canSave || saving}
               className="flex-1 rounded-full bg-primary py-3 text-sm font-bold text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
             >
-              {saving ? <Loader2 className="mx-auto h-4 w-4 animate-spin" /> : initial ? "Save changes" : "Save address"}
+              {saving ? (
+                <Loader2 className="mx-auto h-4 w-4 animate-spin" />
+              ) : initial ? (
+                "Save changes"
+              ) : (
+                "Save address"
+              )}
             </button>
           </div>
         </div>
@@ -243,16 +248,22 @@ export const SavedAddressDialog = ({
           <div className="fixed inset-x-2 top-1/2 z-[80] mx-auto max-w-lg -translate-y-1/2 rounded-3xl border border-border bg-background shadow-xl max-h-[92vh] overflow-hidden">
             <div className="flex items-center justify-between border-b border-border px-4 py-3">
               <h3 className="font-bold text-foreground">Pick location on map</h3>
-              <button onClick={() => setShowMap(false)} className="rounded-full p-1.5 hover:bg-secondary" aria-label="Close map">
+              <button
+                onClick={() => setShowMap(false)}
+                className="rounded-full p-1.5 hover:bg-secondary"
+                aria-label="Close map"
+              >
                 <X className="h-4 w-4" />
               </button>
             </div>
             <div className="max-h-[80vh] overflow-y-auto py-3">
-              <Suspense fallback={
-                <div className="flex h-64 items-center justify-center">
-                  <Loader2 className="h-6 w-6 animate-spin text-primary" />
-                </div>
-              }>
+              <Suspense
+                fallback={
+                  <div className="flex h-64 items-center justify-center">
+                    <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                  </div>
+                }
+              >
                 <AddressMapPicker
                   initialAddress={address}
                   initialCoords={coords}

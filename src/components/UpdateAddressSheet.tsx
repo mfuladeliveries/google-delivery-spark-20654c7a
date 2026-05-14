@@ -29,7 +29,16 @@ interface UpdateAddressSheetProps {
 type View = "choice" | "manual" | "map";
 type LabelOption = "Home" | "Work" | "Other";
 
-const SUBURB_SUGGESTIONS = ["Mfuleni", "Bluedowns", "Bardale Village", "Bosasa", "Belladonna", "Eerste River", "Summerville", "Blackheath"];
+const SUBURB_SUGGESTIONS = [
+  "Mfuleni",
+  "Bluedowns",
+  "Bardale Village",
+  "Bosasa",
+  "Belladonna",
+  "Eerste River",
+  "Summerville",
+  "Blackheath",
+];
 const LANDMARK_MAX = 200;
 
 const LABEL_OPTIONS: { value: LabelOption; icon: typeof Home; emoji: string }[] = [
@@ -107,7 +116,9 @@ export const UpdateAddressSheet = ({ open, onOpenChange, onSaved }: UpdateAddres
           lat = parseFloat(data[0].lat);
           lng = parseFloat(data[0].lon);
         }
-      } catch { /* fall back to address-only save */ }
+      } catch {
+        /* fall back to address-only save */
+      }
 
       const { error } = await supabase
         .from("profiles")
@@ -116,7 +127,9 @@ export const UpdateAddressSheet = ({ open, onOpenChange, onSaved }: UpdateAddres
       if (error) throw error;
 
       if (lat === null || lng === null) {
-        toast.warning("Address saved, but we couldn't pinpoint it on the map. Use 'Pick on map' for an exact GPS pin.");
+        toast.warning(
+          "Address saved, but we couldn't pinpoint it on the map. Use 'Pick on map' for an exact GPS pin.",
+        );
       } else {
         toast.success("Address saved");
       }
@@ -130,7 +143,15 @@ export const UpdateAddressSheet = ({ open, onOpenChange, onSaved }: UpdateAddres
     }
   };
 
-  const handleMapConfirm = async ({ address, lat, lng }: { address: string; lat: number; lng: number }) => {
+  const handleMapConfirm = async ({
+    address,
+    lat,
+    lng,
+  }: {
+    address: string;
+    lat: number;
+    lng: number;
+  }) => {
     if (!user) {
       toast.error("Please sign in to save your address");
       return;
@@ -252,7 +273,9 @@ export const UpdateAddressSheet = ({ open, onOpenChange, onSaved }: UpdateAddres
                   value={street}
                   maxLength={100}
                   onChange={(e) => setStreet(e.target.value)}
-                  className={cn(errors.street && "border-destructive focus-visible:ring-destructive")}
+                  className={cn(
+                    errors.street && "border-destructive focus-visible:ring-destructive",
+                  )}
                 />
                 {errors.street && (
                   <p className="text-xs font-medium text-destructive">{errors.street}</p>
@@ -275,7 +298,9 @@ export const UpdateAddressSheet = ({ open, onOpenChange, onSaved }: UpdateAddres
                   }}
                   onFocus={() => setShowSuburbSuggestions(true)}
                   onBlur={() => setTimeout(() => setShowSuburbSuggestions(false), 150)}
-                  className={cn(errors.suburb && "border-destructive focus-visible:ring-destructive")}
+                  className={cn(
+                    errors.suburb && "border-destructive focus-visible:ring-destructive",
+                  )}
                 />
                 {showSuburbSuggestions && filteredSuburbs.length > 0 && (
                   <div className="absolute left-0 right-0 top-full z-10 mt-1 max-h-48 overflow-y-auto rounded-xl border border-border bg-popover p-1 shadow-lg">
@@ -314,7 +339,9 @@ export const UpdateAddressSheet = ({ open, onOpenChange, onSaved }: UpdateAddres
                   onChange={(e) => setCity(e.target.value)}
                   className={cn(errors.city && "border-destructive focus-visible:ring-destructive")}
                 />
-                {errors.city && <p className="text-xs font-medium text-destructive">{errors.city}</p>}
+                {errors.city && (
+                  <p className="text-xs font-medium text-destructive">{errors.city}</p>
+                )}
               </div>
 
               {/* Landmark */}
@@ -367,7 +394,9 @@ export const UpdateAddressSheet = ({ open, onOpenChange, onSaved }: UpdateAddres
               <label className="flex items-center justify-between rounded-2xl border border-border bg-card p-3">
                 <div>
                   <p className="text-sm font-bold text-foreground">Set as default address</p>
-                  <p className="text-[11px] text-muted-foreground">Used for new orders by default</p>
+                  <p className="text-[11px] text-muted-foreground">
+                    Used for new orders by default
+                  </p>
                 </div>
                 <Switch checked={setDefault} onCheckedChange={setSetDefault} />
               </label>
@@ -376,7 +405,10 @@ export const UpdateAddressSheet = ({ open, onOpenChange, onSaved }: UpdateAddres
               <div className="rounded-2xl border border-border bg-muted/40 p-3 text-[11px] leading-relaxed text-muted-foreground">
                 <p className="font-bold text-foreground">📍 Tip</p>
                 <p className="mt-1">
-                  For the most accurate delivery, use <span className="font-semibold text-foreground">Search on map</span> to drop a precise GPS pin. We'll automatically check if your location is within our delivery range.
+                  For the most accurate delivery, use{" "}
+                  <span className="font-semibold text-foreground">Search on map</span> to drop a
+                  precise GPS pin. We'll automatically check if your location is within our delivery
+                  range.
                 </p>
               </div>
 

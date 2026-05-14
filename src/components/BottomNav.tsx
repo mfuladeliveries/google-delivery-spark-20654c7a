@@ -32,9 +32,9 @@ const BottomNav = () => {
   ];
 
   let links = customerLinks;
-  if (role === 'restaurant') links = restaurantLinks;
-  else if (role === 'driver') links = driverLinks;
-  else if (role === 'admin') links = adminLinks;
+  if (role === "restaurant") links = restaurantLinks;
+  else if (role === "driver") links = driverLinks;
+  else if (role === "admin") links = adminLinks;
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-border/50 glass-dark shadow-lg md:hidden">

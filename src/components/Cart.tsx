@@ -1,10 +1,24 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { X, Plus, Minus, Package, Trash2, StickyNote, AlertTriangle, Truck, MapPinOff } from "lucide-react";
+import {
+  X,
+  Plus,
+  Minus,
+  Package,
+  Trash2,
+  StickyNote,
+  AlertTriangle,
+  Truck,
+  MapPinOff,
+} from "lucide-react";
 import { CartItem } from "@/hooks/useCart";
 import { storeInfo } from "@/data/menu";
 import { useCustomerLocation } from "@/hooks/useCustomerLocation";
-import { useGeoLocation, DELIVERY_RADIUS_KM, DELIVERY_RADIUS_LABEL_KM } from "@/hooks/useGeoLocation";
+import {
+  useGeoLocation,
+  DELIVERY_RADIUS_KM,
+  DELIVERY_RADIUS_LABEL_KM,
+} from "@/hooks/useGeoLocation";
 import { useAuth } from "@/hooks/useAuth";
 import { RestaurantName } from "@/components/RestaurantName";
 import { supabase } from "@/integrations/supabase/client";
@@ -47,10 +61,15 @@ const Cart = ({
   // Per-restaurant 8 km gate: look up the cart restaurant's coords and compare
   // to the customer's live GPS. This matches the rule used on home / menu /
   // checkout / server RPC, replacing the legacy global service-area check.
-  const [restaurantCoords, setRestaurantCoords] = useState<{ lat: number; lng: number } | null>(null);
+  const [restaurantCoords, setRestaurantCoords] = useState<{ lat: number; lng: number } | null>(
+    null,
+  );
   useEffect(() => {
     let cancelled = false;
-    if (!restaurantName) { setRestaurantCoords(null); return; }
+    if (!restaurantName) {
+      setRestaurantCoords(null);
+      return;
+    }
     (async () => {
       const { data } = await supabase
         .from("restaurants")
@@ -64,7 +83,9 @@ const Cart = ({
         setRestaurantCoords(null);
       }
     })();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [restaurantName]);
 
   const distanceToRestaurant = restaurantCoords
@@ -77,14 +98,10 @@ const Cart = ({
   const needsDetails = !!user && (needsAddress || needsCoords);
   if (!open) return null;
 
-
   return (
     <>
       {/* Overlay */}
-      <div
-        className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm"
-        onClick={onClose}
-      />
+      <div className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm" onClick={onClose} />
 
       {/* Panel */}
       <div className="fixed bottom-0 right-0 top-0 z-[60] flex w-full max-w-md flex-col border-l border-border bg-background">
@@ -134,7 +151,7 @@ const Cart = ({
                     : ci.selectedCut.name
                   : undefined;
                 const sizeLabel = ci.selectedSize?.name;
-                const addOnLabels = (ci.selectedAddOns || []).map(a => a.name);
+                const addOnLabels = (ci.selectedAddOns || []).map((a) => a.name);
                 const titleSuffix = [cutLabel, sizeLabel].filter(Boolean).join(" · ");
                 return (
                   <div
@@ -166,7 +183,8 @@ const Cart = ({
                         </div>
                       )}
                       <p className="mt-1 text-sm font-bold text-primary">
-                        {storeInfo.currency}{(ci.unitPrice * ci.quantity).toFixed(2)}
+                        {storeInfo.currency}
+                        {(ci.unitPrice * ci.quantity).toFixed(2)}
                       </p>
                     </div>
                     <div className="flex items-center gap-1.5">
@@ -177,9 +195,7 @@ const Cart = ({
                       >
                         <Minus className="h-3 w-3" />
                       </button>
-                      <span className="w-6 text-center text-sm font-bold">
-                        {ci.quantity}
-                      </span>
+                      <span className="w-6 text-center text-sm font-bold">{ci.quantity}</span>
                       <button
                         onClick={() => onAdd(ci.lineKey)}
                         aria-label="Increase quantity"
@@ -201,42 +217,59 @@ const Cart = ({
             <div className="space-y-1 text-sm">
               <div className="flex justify-between text-muted-foreground">
                 <span>Subtotal</span>
-                <span>{storeInfo.currency}{subtotal.toFixed(2)}</span>
+                <span>
+                  {storeInfo.currency}
+                  {subtotal.toFixed(2)}
+                </span>
               </div>
               <div className="flex justify-between text-muted-foreground">
                 <span>Service Fee (5%)</span>
-                <span>{storeInfo.currency}{tax.toFixed(2)}</span>
+                <span>
+                  {storeInfo.currency}
+                  {tax.toFixed(2)}
+                </span>
               </div>
               <div className="flex justify-between text-muted-foreground">
                 <span className="flex items-center gap-1">
                   <Truck className="h-3.5 w-3.5" />
                   Delivery
                 </span>
-                <span>{storeInfo.currency}{delivery}</span>
+                <span>
+                  {storeInfo.currency}
+                  {delivery}
+                </span>
               </div>
               <div className="flex justify-between border-t border-border pt-2 text-lg font-bold text-foreground">
                 <span>Total</span>
-                <span className="text-primary">{storeInfo.currency}{total.toFixed(2)}</span>
+                <span className="text-primary">
+                  {storeInfo.currency}
+                  {total.toFixed(2)}
+                </span>
               </div>
             </div>
 
             {subtotal < storeInfo.minimumOrder && (
               <p className="mt-2 text-xs text-destructive">
-                Minimum order is {storeInfo.currency}{storeInfo.minimumOrder}
+                Minimum order is {storeInfo.currency}
+                {storeInfo.minimumOrder}
               </p>
             )}
 
             {/* Location gating messages — distance-based, no zone names */}
             {!user && (
               <div className="mt-3 rounded-xl border border-primary/30 bg-primary/5 p-3 text-xs text-foreground">
-                <Link to="/auth" className="font-bold text-primary hover:underline">Sign in</Link> to confirm your delivery address & place this order.
+                <Link to="/auth" className="font-bold text-primary hover:underline">
+                  Sign in
+                </Link>{" "}
+                to confirm your delivery address & place this order.
               </div>
             )}
             {needsDetails && (
               <div className="mt-3 rounded-xl border border-primary/30 bg-primary/5 p-3 text-xs text-foreground">
                 <p className="font-bold">Add your details on the next step</p>
                 <p className="mt-0.5 text-muted-foreground">
-                  Enter your name, contact &amp; pick your location (tap the pin or type the address) before placing the order.
+                  Enter your name, contact &amp; pick your location (tap the pin or type the
+                  address) before placing the order.
                 </p>
               </div>
             )}
@@ -246,7 +279,8 @@ const Cart = ({
                 <div>
                   <p className="font-bold">Too far from this restaurant</p>
                   <p className="mt-0.5 text-muted-foreground">
-                    You're {distanceToRestaurant!.toFixed(1)} km from {restaurantName}. We only deliver within {DELIVERY_RADIUS_LABEL_KM} km of the restaurant.
+                    You're {distanceToRestaurant!.toFixed(1)} km from {restaurantName}. We only
+                    deliver within {DELIVERY_RADIUS_LABEL_KM} km of the restaurant.
                   </p>
                 </div>
               </div>
@@ -257,9 +291,15 @@ const Cart = ({
                 <div>
                   <p className="font-bold">Location is off</p>
                   <p className="mt-0.5 text-muted-foreground">
-                    Please enable location services to place an order. We use it to confirm you're within {DELIVERY_RADIUS_LABEL_KM} km of the restaurant.
+                    Please enable location services to place an order. We use it to confirm you're
+                    within {DELIVERY_RADIUS_LABEL_KM} km of the restaurant.
                   </p>
-                  <button onClick={() => geo.refresh()} className="mt-1 font-bold text-primary hover:underline">Enable location →</button>
+                  <button
+                    onClick={() => geo.refresh()}
+                    className="mt-1 font-bold text-primary hover:underline"
+                  >
+                    Enable location →
+                  </button>
                 </div>
               </div>
             )}

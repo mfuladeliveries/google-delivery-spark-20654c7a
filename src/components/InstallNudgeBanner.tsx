@@ -6,7 +6,10 @@ import { useInstallPrompt } from "@/hooks/useInstallPrompt";
 const DISMISS_KEY = "mfula_install_nudge_dismissed";
 
 const InstallNudgeBanner = () => {
-  const { canInstall, isInstalled, promptInstall } = useInstallPrompt({ variant: "customer", applyOnMount: false });
+  const { canInstall, isInstalled, promptInstall } = useInstallPrompt({
+    variant: "customer",
+    applyOnMount: false,
+  });
   const [dismissed, setDismissed] = useState(true);
 
   useEffect(() => {
@@ -34,7 +37,9 @@ const InstallNudgeBanner = () => {
         </div>
         <div className="min-w-0 flex-1">
           <p className="text-xs font-bold text-foreground">Install Mfula App</p>
-          <p className="text-[10px] text-muted-foreground truncate">Faster ordering & push notifications</p>
+          <p className="text-[10px] text-muted-foreground truncate">
+            Faster ordering & push notifications
+          </p>
         </div>
         <button
           onClick={handleInstall}
