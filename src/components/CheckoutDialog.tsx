@@ -1201,7 +1201,7 @@ const CheckoutDialog = ({
               <span>Delivery</span>
               <span>
                 {storeInfo.currency}
-                {delivery}
+                {effectiveDelivery.toFixed(2)}
               </span>
             </div>
             {actualTip > 0 && (
