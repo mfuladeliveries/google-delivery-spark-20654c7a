@@ -167,7 +167,7 @@ const NewOrderModal = ({
         }
       }
     };
-  }, [open, offer?.id]);
+  }, [open, offer?.id, accepting, rejecting]);
 
   useEffect(() => {
     if (!offer?.offer_expires_at) {
