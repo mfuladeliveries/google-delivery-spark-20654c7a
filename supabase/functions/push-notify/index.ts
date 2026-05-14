@@ -115,6 +115,55 @@ Deno.serve(async (req) => {
       target_user_id, // NEW: explicit recipient for dispatch events
     } = event;
 
+    // Authorization: when called by a real user (not service-role / not another edge function),
+    // require that the caller is a participant in the referenced order. This prevents arbitrary
+    // users from sending fake offers, broadcasts, or cancellations to other users.
+    if (!isServiceRole && callerUserId) {
+      if (!order_id) {
+        return new Response(JSON.stringify({ error: "order_id required" }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      const { data: ord } = await supabase
+        .from("orders")
+        .select("user_id, customer_id, driver_id, restaurant_id")
+        .eq("id", order_id)
+        .maybeSingle();
+      if (!ord) {
+        return new Response(JSON.stringify({ error: "Order not found" }), {
+          status: 404,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      const { data: roleRow } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", callerUserId)
+        .in("role", ["admin"])
+        .maybeSingle();
+      const isAdmin = !!roleRow;
+      let isParticipant =
+        ord.user_id === callerUserId ||
+        ord.customer_id === callerUserId ||
+        ord.driver_id === callerUserId;
+      if (!isParticipant && ord.restaurant_id) {
+        const { data: rest } = await supabase
+          .from("restaurants")
+          .select("owner_user_id")
+          .eq("id", ord.restaurant_id)
+          .maybeSingle();
+        if (rest?.owner_user_id === callerUserId) isParticipant = true;
+      }
+      if (!isAdmin && !isParticipant) {
+        return new Response(JSON.stringify({ error: "Forbidden" }), {
+          status: 403,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+    }
+
+
     const emoji = statusEmojis[status] || "📋";
     const label = statusLabels[status] || status;
     const isDriverCancelUnavailable = status === "cancelled" && reason === "item_unavailable";
