@@ -225,7 +225,8 @@ const PaymentResult = () => {
               </p>
             </div>
           )}
-
+          <button
+            onClick={refreshStatus}
             disabled={refreshing}
             className="btn-glow mt-5 inline-flex w-full items-center justify-center gap-2 rounded-2xl gradient-maroon px-5 py-3 text-sm font-bold text-primary-foreground disabled:opacity-60"
           >
