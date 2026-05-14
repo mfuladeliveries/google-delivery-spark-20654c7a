@@ -11,6 +11,7 @@ import {
   ChevronRight,
   MapPinOff,
   MapPin,
+  AlertTriangle,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useCart } from "@/hooks/useCart";
@@ -99,7 +100,34 @@ const RestaurantMenu = () => {
   const outOfRange =
     !locationBlocked &&
     (!restaurantHasCoords || (distance != null && distance > DELIVERY_RADIUS_KM));
-  const canOrder = !locationBlocked && !outOfRange;
+
+  // Driver-coverage check for the customer's current coords.
+  // null = unknown/loading; otherwise tells us whether any online driver covers this area.
+  const [coverage, setCoverage] = useState<{
+    covered: boolean;
+    online_in_area: number;
+    address_tag: string | null;
+  } | null>(null);
+  useEffect(() => {
+    if (locationBlocked || outOfRange || geo.lat == null || geo.lng == null) {
+      setCoverage(null);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase.rpc("check_area_coverage", {
+        p_lat: geo.lat as number,
+        p_lng: geo.lng as number,
+      });
+      if (!cancelled && data) setCoverage(data as any);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [geo.lat, geo.lng, locationBlocked, outOfRange]);
+
+  const noDrivers = !!coverage && !coverage.covered;
+  const canOrder = !locationBlocked && !outOfRange && !noDrivers;
 
   useEffect(() => {
     const fetchData = async () => {
@@ -256,6 +284,12 @@ const RestaurantMenu = () => {
       );
       return;
     }
+    if (noDrivers) {
+      toast.error("No drivers are online in your area right now.", {
+        description: "Please try again in a few minutes.",
+      });
+      return;
+    }
     if (itemHasOptions(item)) {
       setCustomizeItem(item);
       return;
@@ -378,6 +412,21 @@ const RestaurantMenu = () => {
         {geo.ready && canOrder && distance != null && (
           <div className="mb-3 inline-flex items-center gap-1.5 rounded-full bg-emerald-500/15 px-3 py-1 text-[11px] font-bold text-emerald-600 dark:text-emerald-400">
             <MapPin className="h-3 w-3" /> {distance.toFixed(1)} km away · within delivery range
+            {coverage?.address_tag ? ` · ${coverage.address_tag}` : ""}
+          </div>
+        )}
+        {geo.ready && !locationBlocked && !outOfRange && noDrivers && (
+          <div className="mb-4 flex items-start gap-3 rounded-2xl border-2 border-destructive/40 bg-destructive/5 p-4">
+            <AlertTriangle className="mt-0.5 h-5 w-5 flex-shrink-0 text-destructive" />
+            <div className="flex-1 text-sm text-foreground">
+              <p className="font-bold">No drivers online in your area</p>
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                {coverage?.address_tag
+                  ? `We can't accept orders for ${coverage.address_tag} right now because no driver is online nearby. `
+                  : "We can't accept orders for your location right now because no driver is online nearby. "}
+                Please try again in a few minutes.
+              </p>
+            </div>
           </div>
         )}
         {/* Gallery */}
