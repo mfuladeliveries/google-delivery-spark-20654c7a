@@ -175,6 +175,7 @@ const App = () => (
             <Route path="/search" element={<Search />} />
             <Route path="/install" element={<Install />} />
             <Route path="/install/:variant" element={<Install />} />
+            <Route path="/get-app" element={<GetApp />} />
             <Route path="/about" element={<About />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
