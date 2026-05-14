@@ -143,6 +143,10 @@ const CheckoutDialog = ({
     [items],
   );
   const primaryRestaurantName = restaurants[0] || "";
+  const primaryRestaurantId = useMemo(
+    () => items.map((ci) => ci.item.restaurantId).find(Boolean) || null,
+    [items],
+  );
 
   // Sync incoming food note from cart
   useEffect(() => {
@@ -177,13 +181,14 @@ const CheckoutDialog = ({
 
   // Fetch restaurant coordinates so we can enforce the 8km radius client-side.
   useEffect(() => {
-    if (!open || !primaryRestaurantName) return;
+    if (!open) return;
+    if (!primaryRestaurantId && !primaryRestaurantName) return;
     let alive = true;
-    supabase
-      .from("restaurants")
-      .select("lat,lng")
-      .eq("name", primaryRestaurantName)
-      .eq("is_active", true)
+    const query = supabase.from("restaurants").select("lat,lng").eq("is_active", true);
+    const filtered = primaryRestaurantId
+      ? query.eq("id", primaryRestaurantId)
+      : query.eq("name", primaryRestaurantName);
+    filtered
       .maybeSingle()
       .then(({ data }) => {
         if (!alive) return;
@@ -196,7 +201,7 @@ const CheckoutDialog = ({
     return () => {
       alive = false;
     };
-  }, [open, primaryRestaurantName]);
+  }, [open, primaryRestaurantName, primaryRestaurantId]);
 
   // Match the customer's verified coords against the active delivery zones.
   // A delivery is allowed only if the address falls within ANY zone's radius.
@@ -515,6 +520,7 @@ const CheckoutDialog = ({
       const { data: order, error: orderError } = await supabase.rpc("create_verified_order", {
         p_items: orderItems,
         p_restaurant_name: restaurants[0] || "",
+        p_restaurant_id: primaryRestaurantId ?? undefined,
         p_customer_name: name.trim(),
         p_customer_contact: contact.trim(),
         p_customer_address: fullAddress,

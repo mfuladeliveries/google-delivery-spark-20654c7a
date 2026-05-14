@@ -1227,22 +1227,40 @@ export type Database = {
         }
         Returns: Json
       }
-      create_verified_order: {
-        Args: {
-          p_customer_address: string
-          p_customer_contact: string
-          p_customer_lat: number
-          p_customer_lng: number
-          p_customer_name: string
-          p_delivery_code?: string
-          p_items: Json
-          p_payment_method?: string
-          p_restaurant_name: string
-          p_special_notes?: string
-          p_tip?: number
-        }
-        Returns: Json
-      }
+      create_verified_order:
+        | {
+            Args: {
+              p_customer_address: string
+              p_customer_contact: string
+              p_customer_lat: number
+              p_customer_lng: number
+              p_customer_name: string
+              p_delivery_code?: string
+              p_items: Json
+              p_payment_method?: string
+              p_restaurant_name: string
+              p_special_notes?: string
+              p_tip?: number
+            }
+            Returns: Json
+          }
+        | {
+            Args: {
+              p_customer_address: string
+              p_customer_contact: string
+              p_customer_lat: number
+              p_customer_lng: number
+              p_customer_name: string
+              p_delivery_code?: string
+              p_items: Json
+              p_payment_method?: string
+              p_restaurant_id?: string
+              p_restaurant_name: string
+              p_special_notes?: string
+              p_tip?: number
+            }
+            Returns: Json
+          }
       customer_choose_refund: {
         Args: { p_method: string; p_order_id: string }
         Returns: Json
