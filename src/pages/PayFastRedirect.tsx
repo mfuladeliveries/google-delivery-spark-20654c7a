@@ -2,7 +2,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Loader2, CreditCard, AlertTriangle, RefreshCw, Bike } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { loadPendingPaymentOrder } from "@/lib/pendingPaymentOrder";
+import { clearPendingPaymentOrder, loadPendingPaymentOrder } from "@/lib/pendingPaymentOrder";
+import { toast } from "sonner";
 
 interface PayState {
   orderId: string;
