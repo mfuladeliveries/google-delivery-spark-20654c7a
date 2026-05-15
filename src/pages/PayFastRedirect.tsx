@@ -1,12 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { Loader2, CreditCard, AlertTriangle, RefreshCw } from "lucide-react";
+import { Loader2, CreditCard, AlertTriangle, RefreshCw, Bike } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { loadPendingPaymentOrder } from "@/lib/pendingPaymentOrder";
 
-// Auto-submitting form that posts the user to PayFast's hosted checkout.
-// We arrive here from CheckoutDialog after the order has been created in
-// `pending_payment` status. Nav state must contain { orderId, orderNumber, total }.
 interface PayState {
   orderId: string;
   orderNumber: number | string;
@@ -18,8 +15,6 @@ const PayFastRedirect = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Stabilise state so it doesn't create a new object reference every render,
-  // which would re-trigger the useEffect infinitely.
   const state = useMemo<PayState | null>(() => {
     const nav = location.state as PayState | null;
     if (nav?.orderId) return nav;
@@ -32,7 +27,6 @@ const PayFastRedirect = () => {
         restaurant: stored.restaurant,
       };
     return null;
-    // Only recompute when the pathname actually changes (i.e. a real navigation).
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.key]);
 
@@ -40,6 +34,7 @@ const PayFastRedirect = () => {
   const [fields, setFields] = useState<Record<string, string> | null>(null);
   const [processUrl, setProcessUrl] = useState<string>("");
   const [retrying, setRetrying] = useState(false);
+  const [waitingForDriver, setWaitingForDriver] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
   const calledRef = useRef(false);
   const busyRef = useRef(false);
@@ -56,7 +51,6 @@ const PayFastRedirect = () => {
         },
       });
 
-      // Edge function returned a structured fallback error
       if (data && typeof data === "object" && (data as Record<string, unknown>).fallback) {
         setError("Payment service is temporarily unavailable. Please try again shortly.");
         return;
@@ -81,7 +75,8 @@ const PayFastRedirect = () => {
     }
   }, [state]);
 
-  // Initial call
+  // Before launching PayFast, ensure a driver is online for this order's area.
+  // If none, hold on a "Waiting for driver…" screen and re-poll every 15s.
   useEffect(() => {
     if (!state?.orderId) {
       navigate("/orders", { replace: true });
@@ -89,7 +84,55 @@ const PayFastRedirect = () => {
     }
     if (calledRef.current) return;
     calledRef.current = true;
-    invokePayment();
+
+    let cancelled = false;
+    let timer: ReturnType<typeof setTimeout> | null = null;
+
+    const run = async () => {
+      const { data: order } = await supabase
+        .from("orders")
+        .select("customer_lat, customer_lng, customer_address")
+        .eq("id", state.orderId)
+        .maybeSingle();
+
+      const lat = order?.customer_lat as number | null | undefined;
+      const lng = order?.customer_lng as number | null | undefined;
+      const addr = (order?.customer_address as string | null | undefined) ?? "";
+
+      const poll = async () => {
+        if (cancelled) return;
+        if (typeof lat !== "number" || typeof lng !== "number") {
+          setWaitingForDriver(false);
+          invokePayment();
+          return;
+        }
+        const { data: cov } = await supabase.rpc("check_area_coverage", {
+          p_lat: lat,
+          p_lng: lng,
+          p_address: addr,
+        });
+        if (cancelled) return;
+        const row = (Array.isArray(cov) ? cov[0] : cov) as
+          | { covered: boolean }
+          | null;
+        if (row && !row.covered) {
+          setWaitingForDriver(true);
+          timer = setTimeout(poll, 15000);
+          return;
+        }
+        setWaitingForDriver(false);
+        invokePayment();
+      };
+
+      poll();
+    };
+
+    run();
+
+    return () => {
+      cancelled = true;
+      if (timer) clearTimeout(timer);
+    };
   }, [state, navigate, invokePayment]);
 
   const handleRetry = async () => {
