@@ -423,6 +423,18 @@ const DriverDashboard = () => {
     setDriverProfile((prev) => (prev ? { ...prev, is_online: newStatus } : prev));
     toast.success(newStatus ? "You're now online! 🟢" : "You're now offline 🔴");
     setTogglingOnline(false);
+
+    // When a driver comes online, trigger dispatch so any pending orders that
+    // were waiting (because no driver was available earlier) can be offered to
+    // this driver immediately.
+    if (newStatus) {
+      try {
+        await supabase.rpc("driver_request_dispatch");
+      } catch {
+        /* non-fatal — the periodic tick will pick them up shortly */
+      }
+      await fetchOrders();
+    }
   };
 
   const handleAccept = async (orderId: string) => {
