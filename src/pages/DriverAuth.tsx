@@ -387,79 +387,66 @@ const DriverAuth = () => {
                     </button>
                   </div>
 
-                  <form
-                    onSubmit={view === "login" ? handleLogin : handleSignup}
-                    className="space-y-4"
-                  >
-                    <div className="rounded-2xl border border-border bg-card p-4 shadow-card space-y-3">
-                      <div>
-                        <label className="mb-1.5 block text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-                          Email Address
-                        </label>
-                        <div className="relative">
-                          <Mail className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                          <input
-                            type="email"
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                            required
-                            className="w-full rounded-xl border border-border bg-background pl-10 pr-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:border-[hsl(var(--driver-info))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--driver-info)/0.2)]"
-                            placeholder="driver@example.com"
-                          />
-                        </div>
-                      </div>
-
-                      <div>
-                        <label className="mb-1.5 block text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-                          Password
-                        </label>
-                        <div className="relative">
-                          <Lock className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                          <input
-                            type={showPassword ? "text" : "password"}
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            required
-                            minLength={6}
-                            className="w-full rounded-xl border border-border bg-background pl-10 pr-10 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:border-[hsl(var(--driver-info))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--driver-info)/0.2)]"
-                            placeholder="••••••••"
-                          />
-                          <button
-                            type="button"
-                            onClick={() => setShowPassword(!showPassword)}
-                            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                          >
-                            {showPassword ? (
-                              <EyeOff className="h-4 w-4" />
-                            ) : (
-                              <Eye className="h-4 w-4" />
-                            )}
-                          </button>
-                        </div>
-                      </div>
-
-                      {view === "signup" && (
+                  {view === "signup" ? (
+                    <DriverSignupForm
+                      onSubmitted={(submittedEmail) => {
+                        setEmail(submittedEmail);
+                        setView("otp");
+                        setMessage(
+                          "We sent a 6-digit verification code to your email. Verify it, then wait for admin approval before logging in.",
+                        );
+                      }}
+                    />
+                  ) : (
+                    <form onSubmit={handleLogin} className="space-y-4">
+                      <div className="rounded-2xl border border-border bg-card p-4 shadow-card space-y-3">
                         <div>
                           <label className="mb-1.5 block text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-                            Confirm Password
+                            Email Address
+                          </label>
+                          <div className="relative">
+                            <Mail className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                            <input
+                              type="email"
+                              value={email}
+                              onChange={(e) => setEmail(e.target.value)}
+                              required
+                              className="w-full rounded-xl border border-border bg-background pl-10 pr-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:border-[hsl(var(--driver-info))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--driver-info)/0.2)]"
+                              placeholder="driver@example.com"
+                            />
+                          </div>
+                        </div>
+
+                        <div>
+                          <label className="mb-1.5 block text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                            Password
                           </label>
                           <div className="relative">
                             <Lock className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                             <input
                               type={showPassword ? "text" : "password"}
-                              value={confirmPassword}
-                              onChange={(e) => setConfirmPassword(e.target.value)}
+                              value={password}
+                              onChange={(e) => setPassword(e.target.value)}
                               required
                               minLength={6}
-                              className="w-full rounded-xl border border-border bg-background pl-10 pr-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:border-[hsl(var(--driver-info))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--driver-info)/0.2)]"
+                              className="w-full rounded-xl border border-border bg-background pl-10 pr-10 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:border-[hsl(var(--driver-info))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--driver-info)/0.2)]"
                               placeholder="••••••••"
                             />
+                            <button
+                              type="button"
+                              onClick={() => setShowPassword(!showPassword)}
+                              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                            >
+                              {showPassword ? (
+                                <EyeOff className="h-4 w-4" />
+                              ) : (
+                                <Eye className="h-4 w-4" />
+                              )}
+                            </button>
                           </div>
                         </div>
-                      )}
-                    </div>
+                      </div>
 
-                    {view === "login" && (
                       <button
                         type="button"
                         onClick={() => {
@@ -470,38 +457,22 @@ const DriverAuth = () => {
                       >
                         Forgot password?
                       </button>
-                    )}
 
-                    {error && (
-                      <div className="rounded-xl bg-destructive/10 border border-destructive/20 px-4 py-3">
-                        <p className="text-sm text-destructive">{error}</p>
-                      </div>
-                    )}
-                    {message && (
-                      <div className="rounded-xl bg-[hsl(var(--driver-success)/0.1)] border border-[hsl(var(--driver-success)/0.2)] px-4 py-3">
-                        <p className="text-sm text-[hsl(var(--driver-success))]">{message}</p>
-                      </div>
-                    )}
+                      {error && (
+                        <div className="rounded-xl bg-destructive/10 border border-destructive/20 px-4 py-3">
+                          <p className="text-sm text-destructive">{error}</p>
+                        </div>
+                      )}
 
-                    <button
-                      type="submit"
-                      disabled={loading}
-                      className="w-full rounded-2xl bg-[hsl(var(--driver-info))] py-3.5 font-bold text-white transition-all hover:scale-[1.01] active:scale-[0.99] disabled:opacity-50 flex items-center justify-center gap-2"
-                    >
-                      <Truck className="h-5 w-5" />
-                      {loading
-                        ? "Please wait..."
-                        : view === "login"
-                          ? "Sign In as Driver"
-                          : "Create Driver Account"}
-                    </button>
-                  </form>
-
-                  {view === "signup" && (
-                    <p className="mt-4 text-center text-xs text-muted-foreground">
-                      By signing up, you'll be registered as a customer. Contact admin to get driver
-                      access.
-                    </p>
+                      <button
+                        type="submit"
+                        disabled={loading}
+                        className="w-full rounded-2xl bg-[hsl(var(--driver-info))] py-3.5 font-bold text-white transition-all hover:scale-[1.01] active:scale-[0.99] disabled:opacity-50 flex items-center justify-center gap-2"
+                      >
+                        <Truck className="h-5 w-5" />
+                        {loading ? "Please wait..." : "Sign In as Driver"}
+                      </button>
+                    </form>
                   )}
                 </>
               )}
