@@ -260,15 +260,20 @@ export type Database = {
           current_lng: number | null
           id: string
           id_document_url: string
+          id_number: string
           is_online: boolean
+          is_suspended: boolean
           license_plate: string
           license_url: string
           location_updated_at: string | null
+          profile_photo_url: string
           service_area_id: string | null
           service_area_label: string
           service_lat: number | null
           service_lng: number | null
           service_radius_km: number
+          suspended_at: string | null
+          suspended_reason: string | null
           total_deliveries: number
           total_earnings: number
           updated_at: string
@@ -286,15 +291,20 @@ export type Database = {
           current_lng?: number | null
           id?: string
           id_document_url?: string
+          id_number?: string
           is_online?: boolean
+          is_suspended?: boolean
           license_plate?: string
           license_url?: string
           location_updated_at?: string | null
+          profile_photo_url?: string
           service_area_id?: string | null
           service_area_label?: string
           service_lat?: number | null
           service_lng?: number | null
           service_radius_km?: number
+          suspended_at?: string | null
+          suspended_reason?: string | null
           total_deliveries?: number
           total_earnings?: number
           updated_at?: string
@@ -312,15 +322,20 @@ export type Database = {
           current_lng?: number | null
           id?: string
           id_document_url?: string
+          id_number?: string
           is_online?: boolean
+          is_suspended?: boolean
           license_plate?: string
           license_url?: string
           location_updated_at?: string | null
+          profile_photo_url?: string
           service_area_id?: string | null
           service_area_label?: string
           service_lat?: number | null
           service_lng?: number | null
           service_radius_km?: number
+          suspended_at?: string | null
+          suspended_reason?: string | null
           total_deliveries?: number
           total_earnings?: number
           updated_at?: string
@@ -1167,6 +1182,10 @@ export type Database = {
       }
       admin_reject_driver_request: {
         Args: { p_notes?: string; p_request_id: string }
+        Returns: undefined
+      }
+      admin_set_driver_suspended: {
+        Args: { p_reason?: string; p_suspended: boolean; p_user_id: string }
         Returns: undefined
       }
       admin_update_withdrawal: {

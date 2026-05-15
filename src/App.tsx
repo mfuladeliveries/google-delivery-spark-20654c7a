@@ -60,7 +60,7 @@ const App = () => (
             <Route
               path="/"
               element={
-                <RoleGuard allow={["customer"]}>
+                <RoleGuard allow={["customer", "admin"]}>
                   <Index />
                 </RoleGuard>
               }
@@ -68,8 +68,22 @@ const App = () => (
             <Route path="/auth" element={<Auth />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/reset-password" element={<ResetPassword />} />
-            <Route path="/orders" element={<Orders />} />
-            <Route path="/order-confirmation" element={<OrderConfirmation />} />
+            <Route
+              path="/orders"
+              element={
+                <RoleGuard allow={["customer", "admin"]}>
+                  <Orders />
+                </RoleGuard>
+              }
+            />
+            <Route
+              path="/order-confirmation"
+              element={
+                <RoleGuard allow={["customer", "admin"]}>
+                  <OrderConfirmation />
+                </RoleGuard>
+              }
+            />
             <Route path="/payment/result" element={<PaymentResult />} />
             <Route
               path="/pay/payfast"
@@ -92,7 +106,14 @@ const App = () => (
                 </RoleGuard>
               }
             />
-            <Route path="/restaurant/:id" element={<RestaurantMenu />} />
+            <Route
+              path="/restaurant/:id"
+              element={
+                <RoleGuard allow={["customer", "admin"]}>
+                  <RestaurantMenu />
+                </RoleGuard>
+              }
+            />
             <Route
               path="/restaurant/orders"
               element={
@@ -120,6 +141,8 @@ const App = () => (
               }
             />
             <Route path="/driver/auth" element={<DriverAuth />} />
+            <Route path="/driver/login" element={<DriverAuth />} />
+            <Route path="/driver/signup" element={<DriverAuth />} />
             <Route
               path="/driver"
               element={
@@ -172,7 +195,14 @@ const App = () => (
                 </RoleGuard>
               }
             />
-            <Route path="/search" element={<Search />} />
+            <Route
+              path="/search"
+              element={
+                <RoleGuard allow={["customer", "admin"]}>
+                  <Search />
+                </RoleGuard>
+              }
+            />
             <Route path="/install" element={<Install />} />
             <Route path="/install/:variant" element={<Install />} />
             <Route path="/get-app" element={<GetApp />} />
