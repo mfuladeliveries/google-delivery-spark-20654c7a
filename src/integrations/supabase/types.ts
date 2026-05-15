@@ -1280,6 +1280,10 @@ export type Database = {
             }
             Returns: Json
           }
+      customer_cancel_pending_order: {
+        Args: { p_order_id: string }
+        Returns: Json
+      }
       customer_choose_refund: {
         Args: { p_method: string; p_order_id: string }
         Returns: Json
