@@ -37,6 +37,10 @@ const AppSwitcher = () => {
   // Only render when the user has access to more than one app
   if (!roles || roles.length < 2) return null;
 
+  // Drivers must remain inside the driver app — hide the cross-app switcher
+  // for non-admin drivers so they don't accidentally jump to the customer app.
+  if (roles.includes("driver") && !roles.includes("admin")) return null;
+
   const visible = ORDER.filter((r) => roles.includes(r));
 
   return (
