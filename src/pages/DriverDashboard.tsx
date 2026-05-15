@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
@@ -38,14 +38,54 @@ interface DriverProfile {
   total_earnings: number;
   total_deliveries: number;
   service_area_id?: string | null;
+  is_suspended?: boolean;
+  suspended_reason?: string | null;
 }
 
 type DriverTab = "orders" | "earnings" | "withdraw" | "area" | "profile";
 
+// URL <-> tab mapping so /driver/orders, /driver/earnings, /driver/profile etc. all work as deep links
+const PATH_TO_TAB: Record<string, DriverTab> = {
+  "/driver": "orders",
+  "/driver/": "orders",
+  "/driver/dashboard": "orders",
+  "/driver/orders": "orders",
+  "/driver/history": "orders",
+  "/driver/earnings": "earnings",
+  "/driver/withdraw": "withdraw",
+  "/driver/area": "area",
+  "/driver/profile": "profile",
+};
+
+const TAB_TO_PATH: Record<DriverTab, string> = {
+  orders: "/driver/orders",
+  earnings: "/driver/earnings",
+  withdraw: "/driver/withdraw",
+  area: "/driver/area",
+  profile: "/driver/profile",
+};
+
 const DriverDashboard = () => {
   const { user, roles, loading: authLoading } = useAuth();
   const navigate = useNavigate();
-  const [tab, setTab] = useState<DriverTab>("orders");
+  const location = useLocation();
+  const initialTab: DriverTab = PATH_TO_TAB[location.pathname] ?? "orders";
+  const [tab, setTabState] = useState<DriverTab>(initialTab);
+  const setTab = useCallback(
+    (next: DriverTab) => {
+      setTabState(next);
+      const target = TAB_TO_PATH[next];
+      if (location.pathname !== target) navigate(target, { replace: true });
+    },
+    [location.pathname, navigate],
+  );
+
+  // Keep tab in sync if user navigates via browser back/forward or a deep link
+  useEffect(() => {
+    const fromUrl = PATH_TO_TAB[location.pathname];
+    if (fromUrl && fromUrl !== tab) setTabState(fromUrl);
+  }, [location.pathname, tab]);
+
   const [pendingOrders, setPendingOrders] = useState<Order[]>([]);
   const [myOrders, setMyOrders] = useState<Order[]>([]);
   const [completedOrders, setCompletedOrders] = useState<Order[]>([]);
