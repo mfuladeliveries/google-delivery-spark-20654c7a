@@ -29,6 +29,7 @@ import AdminEarnings from "@/components/admin/AdminEarnings";
 import AdminWithdrawals from "@/components/admin/AdminWithdrawals";
 import AdminRefunds from "@/components/admin/AdminRefunds";
 import AdminDriverRequests from "@/components/admin/AdminDriverRequests";
+import AdminDrivers from "@/components/admin/AdminDrivers";
 import AdminAboutEditor from "@/components/admin/AdminAboutEditor";
 import AdminDeliveryAreas from "@/components/admin/AdminDeliveryAreas";
 import AdminMenuManager from "@/components/admin/AdminMenuManager";
@@ -181,6 +182,7 @@ const AdminDashboard = () => {
     | "withdrawals"
     | "refunds"
     | "requests"
+    | "manage-drivers"
     | "users"
     | "admins"
     | "restaurants"
@@ -495,6 +497,7 @@ const AdminDashboard = () => {
     "withdrawals",
     "refunds",
     "requests",
+    "manage-drivers",
     "users",
     "admins",
     "restaurants",
@@ -533,7 +536,7 @@ const AdminDashboard = () => {
                   : "text-muted-foreground hover:bg-secondary"
               }`}
             >
-              {t}
+              {t === "manage-drivers" ? "Manage Drivers" : t}
             </button>
           ))}
         </div>
@@ -622,6 +625,9 @@ const AdminDashboard = () => {
 
         {/* Driver access requests */}
         {tab === "requests" && <AdminDriverRequests />}
+
+        {/* Manage drivers — suspensions + signed document URLs */}
+        {tab === "manage-drivers" && <AdminDrivers />}
 
         {/* Users Tab */}
         {tab === "users" && (
