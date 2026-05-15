@@ -205,8 +205,27 @@ const PayFastRedirect = () => {
             <Loader2 className="h-4 w-4 animate-spin" /> Checking again every 15 seconds…
           </div>
           <button
+            onClick={async () => {
+              if (!state?.orderId) return;
+              if (!confirm("Cancel this order? Your payment won't be charged.")) return;
+              const { error } = await supabase.rpc("customer_cancel_pending_order", {
+                p_order_id: state.orderId,
+              });
+              if (error) {
+                toast.error(error.message || "Could not cancel the order.");
+                return;
+              }
+              clearPendingPaymentOrder(state.orderNumber);
+              toast.success("Order cancelled.");
+              navigate("/orders", { replace: true });
+            }}
+            className="mt-5 w-full rounded-xl border-2 border-destructive/40 bg-destructive/5 py-3 text-sm font-bold text-destructive"
+          >
+            Cancel order
+          </button>
+          <button
             onClick={() => navigate("/orders", { replace: true })}
-            className="mt-5 w-full rounded-xl border border-border bg-background py-3 text-sm font-bold text-foreground"
+            className="mt-2 w-full rounded-xl border border-border bg-background py-3 text-sm font-bold text-foreground"
           >
             Back to orders
           </button>
