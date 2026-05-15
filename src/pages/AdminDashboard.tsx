@@ -182,6 +182,7 @@ const AdminDashboard = () => {
     | "withdrawals"
     | "refunds"
     | "requests"
+    | "manage-drivers"
     | "users"
     | "admins"
     | "restaurants"
