@@ -536,7 +536,7 @@ const AdminDashboard = () => {
                   : "text-muted-foreground hover:bg-secondary"
               }`}
             >
-              {t}
+              {t === "manage-drivers" ? "Manage Drivers" : t}
             </button>
           ))}
         </div>
