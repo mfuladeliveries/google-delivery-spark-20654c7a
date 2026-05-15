@@ -1,11 +1,12 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { Truck, Mail, Lock, ArrowLeft, Eye, EyeOff } from "lucide-react";
 import { shouldNudgeInstall, markInstallNudged } from "@/lib/installRedirect";
 import RequestDriverAccess from "@/components/RequestDriverAccess";
 import DriverInstallBanner from "@/components/DriverInstallBanner";
+import DriverSignupForm from "@/components/driver/DriverSignupForm";
 
 const FIRST_VISIT_REDIRECT_KEY = "mfula_driver_install_first_visit";
 
@@ -34,7 +35,9 @@ const isMobileUA = () =>
 type View = "login" | "signup" | "otp" | "forgot";
 
 const DriverAuth = () => {
-  const [view, setView] = useState<View>("login");
+  const location = useLocation();
+  const initialView: View = location.pathname.endsWith("/signup") ? "signup" : "login";
+  const [view, setView] = useState<View>(initialView);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -96,8 +99,28 @@ const DriverAuth = () => {
     e.preventDefault();
     resetState();
     setLoading(true);
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) setError(error.message);
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) {
+      setError(error.message);
+      setLoading(false);
+      return;
+    }
+    // Block suspended drivers from getting in.
+    if (data.user) {
+      const { data: dp } = await supabase
+        .from("driver_profiles")
+        .select("is_suspended, suspended_reason")
+        .eq("user_id", data.user.id)
+        .maybeSingle();
+      if (dp?.is_suspended) {
+        await supabase.auth.signOut();
+        setError(
+          dp.suspended_reason
+            ? `Your driver account is suspended: ${dp.suspended_reason}`
+            : "Your driver account is suspended. Please contact support.",
+        );
+      }
+    }
     setLoading(false);
   };
 
