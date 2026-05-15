@@ -178,6 +178,42 @@ const PayFastRedirect = () => {
     );
   }
 
+  if (waitingForDriver) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center px-4">
+        <div className="max-w-sm w-full rounded-3xl border border-amber-500/40 bg-card p-6 text-center shadow-card">
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-amber-500/15">
+            <Bike className="h-7 w-7 text-amber-600" />
+          </div>
+          <h1 className="mt-3 font-display text-lg font-bold text-foreground">
+            Waiting for driver…
+          </h1>
+          <p className="mt-2 text-sm text-muted-foreground">
+            No drivers are online in your area right now. We'll start your payment as soon as one
+            comes online — please keep this screen open.
+          </p>
+          {typeof state?.total === "number" && (
+            <p className="mt-3 font-display text-2xl font-bold text-primary">
+              R{state.total.toFixed(2)}
+            </p>
+          )}
+          <p className="mt-1 text-[11px] text-muted-foreground">
+            Order #{state?.orderNumber}
+          </p>
+          <div className="mt-5 flex items-center justify-center gap-2 text-xs text-muted-foreground">
+            <Loader2 className="h-4 w-4 animate-spin" /> Checking again every 15 seconds…
+          </div>
+          <button
+            onClick={() => navigate("/orders", { replace: true })}
+            className="mt-5 w-full rounded-xl border border-border bg-background py-3 text-sm font-bold text-foreground"
+          >
+            Back to orders
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-background flex items-center justify-center px-4">
       <div className="max-w-sm w-full rounded-3xl border border-border bg-card p-6 text-center shadow-card">
