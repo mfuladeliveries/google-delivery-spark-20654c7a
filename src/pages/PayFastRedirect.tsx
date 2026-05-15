@@ -1,12 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { Loader2, CreditCard, AlertTriangle, RefreshCw } from "lucide-react";
+import { Loader2, CreditCard, AlertTriangle, RefreshCw, Bike } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { loadPendingPaymentOrder } from "@/lib/pendingPaymentOrder";
 
-// Auto-submitting form that posts the user to PayFast's hosted checkout.
-// We arrive here from CheckoutDialog after the order has been created in
-// `pending_payment` status. Nav state must contain { orderId, orderNumber, total }.
 interface PayState {
   orderId: string;
   orderNumber: number | string;
@@ -18,8 +15,6 @@ const PayFastRedirect = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Stabilise state so it doesn't create a new object reference every render,
-  // which would re-trigger the useEffect infinitely.
   const state = useMemo<PayState | null>(() => {
     const nav = location.state as PayState | null;
     if (nav?.orderId) return nav;
@@ -32,7 +27,6 @@ const PayFastRedirect = () => {
         restaurant: stored.restaurant,
       };
     return null;
-    // Only recompute when the pathname actually changes (i.e. a real navigation).
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.key]);
 
@@ -40,6 +34,7 @@ const PayFastRedirect = () => {
   const [fields, setFields] = useState<Record<string, string> | null>(null);
   const [processUrl, setProcessUrl] = useState<string>("");
   const [retrying, setRetrying] = useState(false);
+  const [waitingForDriver, setWaitingForDriver] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
   const calledRef = useRef(false);
   const busyRef = useRef(false);
@@ -56,7 +51,6 @@ const PayFastRedirect = () => {
         },
       });
 
-      // Edge function returned a structured fallback error
       if (data && typeof data === "object" && (data as Record<string, unknown>).fallback) {
         setError("Payment service is temporarily unavailable. Please try again shortly.");
         return;
@@ -81,7 +75,8 @@ const PayFastRedirect = () => {
     }
   }, [state]);
 
-  // Initial call
+  // Before launching PayFast, ensure a driver is online for this order's area.
+  // If none, hold on a "Waiting for driver…" screen and re-poll every 15s.
   useEffect(() => {
     if (!state?.orderId) {
       navigate("/orders", { replace: true });
@@ -89,7 +84,55 @@ const PayFastRedirect = () => {
     }
     if (calledRef.current) return;
     calledRef.current = true;
-    invokePayment();
+
+    let cancelled = false;
+    let timer: ReturnType<typeof setTimeout> | null = null;
+
+    const run = async () => {
+      const { data: order } = await supabase
+        .from("orders")
+        .select("customer_lat, customer_lng, customer_address")
+        .eq("id", state.orderId)
+        .maybeSingle();
+
+      const lat = order?.customer_lat as number | null | undefined;
+      const lng = order?.customer_lng as number | null | undefined;
+      const addr = (order?.customer_address as string | null | undefined) ?? "";
+
+      const poll = async () => {
+        if (cancelled) return;
+        if (typeof lat !== "number" || typeof lng !== "number") {
+          setWaitingForDriver(false);
+          invokePayment();
+          return;
+        }
+        const { data: cov } = await supabase.rpc("check_area_coverage", {
+          p_lat: lat,
+          p_lng: lng,
+          p_address: addr,
+        });
+        if (cancelled) return;
+        const row = (Array.isArray(cov) ? cov[0] : cov) as
+          | { covered: boolean }
+          | null;
+        if (row && !row.covered) {
+          setWaitingForDriver(true);
+          timer = setTimeout(poll, 15000);
+          return;
+        }
+        setWaitingForDriver(false);
+        invokePayment();
+      };
+
+      poll();
+    };
+
+    run();
+
+    return () => {
+      cancelled = true;
+      if (timer) clearTimeout(timer);
+    };
   }, [state, navigate, invokePayment]);
 
   const handleRetry = async () => {
@@ -127,6 +170,42 @@ const PayFastRedirect = () => {
           <button
             onClick={() => navigate("/orders", { replace: true })}
             className="mt-3 w-full rounded-xl border border-border bg-background py-3 text-sm font-bold text-foreground"
+          >
+            Back to orders
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (waitingForDriver) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center px-4">
+        <div className="max-w-sm w-full rounded-3xl border border-amber-500/40 bg-card p-6 text-center shadow-card">
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-amber-500/15">
+            <Bike className="h-7 w-7 text-amber-600" />
+          </div>
+          <h1 className="mt-3 font-display text-lg font-bold text-foreground">
+            Waiting for driver…
+          </h1>
+          <p className="mt-2 text-sm text-muted-foreground">
+            No drivers are online in your area right now. We'll start your payment as soon as one
+            comes online — please keep this screen open.
+          </p>
+          {typeof state?.total === "number" && (
+            <p className="mt-3 font-display text-2xl font-bold text-primary">
+              R{state.total.toFixed(2)}
+            </p>
+          )}
+          <p className="mt-1 text-[11px] text-muted-foreground">
+            Order #{state?.orderNumber}
+          </p>
+          <div className="mt-5 flex items-center justify-center gap-2 text-xs text-muted-foreground">
+            <Loader2 className="h-4 w-4 animate-spin" /> Checking again every 15 seconds…
+          </div>
+          <button
+            onClick={() => navigate("/orders", { replace: true })}
+            className="mt-5 w-full rounded-xl border border-border bg-background py-3 text-sm font-bold text-foreground"
           >
             Back to orders
           </button>
