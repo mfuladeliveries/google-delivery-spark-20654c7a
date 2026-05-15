@@ -429,7 +429,7 @@ const DriverDashboard = () => {
     // this driver immediately.
     if (newStatus) {
       try {
-        await supabase.functions.invoke("dispatch-tick");
+        await supabase.rpc("driver_request_dispatch");
       } catch {
         /* non-fatal — the periodic tick will pick them up shortly */
       }
