@@ -626,6 +626,9 @@ const AdminDashboard = () => {
         {/* Driver access requests */}
         {tab === "requests" && <AdminDriverRequests />}
 
+        {/* Manage drivers — suspensions + signed document URLs */}
+        {tab === "manage-drivers" && <AdminDrivers />}
+
         {/* Users Tab */}
         {tab === "users" && (
           <>
