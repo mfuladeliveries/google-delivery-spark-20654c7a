@@ -378,11 +378,26 @@ const DriverDashboard = () => {
   const fetchDriverProfile = async () => {
     const { data } = await supabase
       .from("driver_profiles")
-      .select("is_online, total_earnings, total_deliveries, service_area_id")
+      .select(
+        "is_online, total_earnings, total_deliveries, service_area_id, is_suspended, suspended_reason",
+      )
       .eq("user_id", user!.id)
       .maybeSingle();
-    if (data) setDriverProfile(data);
-    else {
+    if (data) {
+      // Suspended drivers cannot use the app — sign them out and bounce them
+      // back to the driver login with a clear message.
+      if (data.is_suspended) {
+        toast.error(
+          data.suspended_reason
+            ? `Your driver account is suspended: ${data.suspended_reason}`
+            : "Your driver account is suspended. Please contact support.",
+        );
+        await supabase.auth.signOut();
+        navigate("/driver/login", { replace: true });
+        return;
+      }
+      setDriverProfile(data);
+    } else {
       await supabase.from("driver_profiles").insert({ user_id: user!.id });
       setDriverProfile({ is_online: false, total_earnings: 0, total_deliveries: 0 });
     }
