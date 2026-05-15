@@ -241,16 +241,43 @@ const CheckoutDialog = ({
       return;
     }
     let cancelled = false;
-    (async () => {
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    let wasUncovered = false;
+
+    const check = async () => {
       const { data } = await supabase.rpc("check_area_coverage", {
         p_lat: coords.lat,
         p_lng: coords.lng,
         p_address: address,
       });
-      if (!cancelled && data) setCoverage(data as any);
-    })();
+      if (cancelled) return;
+      const row = (Array.isArray(data) ? data[0] : data) as
+        | { covered: boolean; online_in_area: number; total_online: number; address_tag: string | null }
+        | null;
+      if (row) {
+        setCoverage(row);
+        // If we previously had no driver and now one is online, notify the customer.
+        if (wasUncovered && row.covered) {
+          toast.success("A driver is now available in your area", {
+            description: "You can complete your order now.",
+            duration: 6000,
+          });
+          wasUncovered = false;
+        }
+        // While no driver is online, keep checking every 15s so we can notify
+        // the customer the moment one comes online.
+        if (!row.covered) {
+          wasUncovered = true;
+          timer = setTimeout(check, 15000);
+        }
+      }
+    };
+
+    check();
+
     return () => {
       cancelled = true;
+      if (timer) clearTimeout(timer);
     };
   }, [coords, address]);
 
