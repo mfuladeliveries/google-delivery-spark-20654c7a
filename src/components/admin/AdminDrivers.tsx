@@ -36,8 +36,10 @@ const AdminDrivers = () => {
           .from("profiles")
           .select("user_id, full_name, contact_number")
           .in("user_id", ids)
-      : { data: [] as any[] };
-    const map = new Map(profiles?.map((p) => [p.user_id, p]) || []);
+      : { data: [] as { user_id: string; full_name: string; contact_number: string }[] };
+    const map = new Map(
+      (profiles || []).map((p) => [p.user_id, p] as const),
+    );
     setRows(
       (drivers || []).map((d) => ({
         ...d,
