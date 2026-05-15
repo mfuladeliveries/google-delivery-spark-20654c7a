@@ -626,7 +626,7 @@ const CheckoutDialog = ({
           description: `Order #${orderNum} · You won't be charged until they accept.`,
           duration: 5000,
         });
-        navigate(`/order-confirmation/${orderNum}`, {
+        navigate(`/order-confirmation?order=${orderNum}`, {
           state: {
             orderId,
             orderNumber: orderNum,
