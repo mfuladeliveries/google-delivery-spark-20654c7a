@@ -1301,6 +1301,7 @@ export type Database = {
         Returns: undefined
       }
       driver_decline_offer: { Args: { p_order_id: string }; Returns: undefined }
+      driver_request_dispatch: { Args: never; Returns: Json }
       driver_update_order: {
         Args: {
           p_lat?: number
