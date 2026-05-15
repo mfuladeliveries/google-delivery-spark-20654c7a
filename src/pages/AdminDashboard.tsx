@@ -29,6 +29,7 @@ import AdminEarnings from "@/components/admin/AdminEarnings";
 import AdminWithdrawals from "@/components/admin/AdminWithdrawals";
 import AdminRefunds from "@/components/admin/AdminRefunds";
 import AdminDriverRequests from "@/components/admin/AdminDriverRequests";
+import AdminDrivers from "@/components/admin/AdminDrivers";
 import AdminAboutEditor from "@/components/admin/AdminAboutEditor";
 import AdminDeliveryAreas from "@/components/admin/AdminDeliveryAreas";
 import AdminMenuManager from "@/components/admin/AdminMenuManager";
