@@ -1252,8 +1252,13 @@ const CheckoutDialog = ({
             className="btn-glow flex w-full items-center justify-center gap-2 rounded-2xl gradient-maroon py-3.5 font-display font-bold text-primary-foreground transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:hover:scale-100 shadow-maroon"
           >
             <Package className="h-5 w-5" />
-            {loading ? "Placing Order..." : "Place Order"}
+            {loading
+              ? "Placing Order..."
+              : `Confirm & Pay ${storeInfo.currency}${total.toFixed(2)}`}
           </button>
+          <p className="text-center text-[11px] text-muted-foreground">
+            Final amount you'll be charged: <span className="font-bold text-foreground">{storeInfo.currency}{total.toFixed(2)}</span>
+          </p>
 
           <p className="text-center text-[10px] text-muted-foreground">{storeInfo.paymentNote}</p>
         </div>

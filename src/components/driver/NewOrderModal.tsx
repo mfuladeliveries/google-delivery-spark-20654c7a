@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { MapPin, Store, Clock, Package, Check, X } from "lucide-react";
+import { MapPin, Store, Clock, Package, Check, X, Loader2 } from "lucide-react";
 import { driverPayoutForFee } from "@/lib/serviceArea";
 import { getNotificationPrefs } from "@/hooks/useNotificationPrefs";
 
@@ -320,23 +320,31 @@ const NewOrderModal = ({
         </div>
 
         {/* Actions */}
-        <div className="grid grid-cols-2 gap-2 p-4 bg-secondary/30 border-t border-border shrink-0">
-          <button
-            onClick={handleRejectClick}
-            disabled={accepting || rejecting || dismissed}
-            className="rounded-xl border-2 border-destructive/30 bg-card py-3.5 text-sm font-bold text-destructive disabled:opacity-50 transition-all hover:bg-destructive/5 active:scale-[0.98] flex items-center justify-center gap-2"
-          >
-            <X className="h-4 w-4" />
-            {rejecting ? "Declining..." : "Decline"}
-          </button>
-          <button
-            onClick={handleAcceptClick}
-            disabled={accepting || rejecting || dismissed}
-            className="rounded-xl bg-primary py-3.5 text-sm font-bold text-primary-foreground disabled:opacity-50 transition-all hover:opacity-95 active:scale-[0.98] shadow-orange flex items-center justify-center gap-2"
-          >
-            <Check className="h-4 w-4" />
-            {accepting ? "Accepting..." : "Accept"}
-          </button>
+        <div className="p-4 bg-secondary/30 border-t border-border shrink-0 space-y-2">
+          {(accepting || rejecting) && (
+            <div className="flex items-center justify-center gap-2 rounded-xl bg-primary/10 py-2 text-xs font-semibold text-primary">
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              Processing… please wait
+            </div>
+          )}
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              onClick={handleRejectClick}
+              disabled={accepting || rejecting || dismissed}
+              className="rounded-xl border-2 border-destructive/30 bg-card py-3.5 text-sm font-bold text-destructive disabled:opacity-50 transition-all hover:bg-destructive/5 active:scale-[0.98] flex items-center justify-center gap-2"
+            >
+              {rejecting ? <Loader2 className="h-4 w-4 animate-spin" /> : <X className="h-4 w-4" />}
+              {rejecting ? "Declining…" : "Decline"}
+            </button>
+            <button
+              onClick={handleAcceptClick}
+              disabled={accepting || rejecting || dismissed}
+              className="rounded-xl bg-primary py-3.5 text-sm font-bold text-primary-foreground disabled:opacity-50 transition-all hover:opacity-95 active:scale-[0.98] shadow-orange flex items-center justify-center gap-2"
+            >
+              {accepting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
+              {accepting ? "Accepting…" : "Accept"}
+            </button>
+          </div>
         </div>
       </DialogContent>
     </Dialog>
