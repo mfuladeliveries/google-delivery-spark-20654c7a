@@ -245,9 +245,29 @@ const Index = () => {
     // Strict area gating: once we know where the customer is, only show
     // restaurants assigned to their current delivery area. Without coords
     // (denied/unsupported) we show everything so the list isn't empty.
-    const matchesArea = !hasEffectiveCoords
-      ? true
-      : currentZone != null && r.area_id === currentZone.zone.id;
+    // Strict area gating with a coord-based fallback: restaurants assigned
+    // to the current zone always pass. Untagged restaurants (area_id null)
+    // still pass if they physically sit inside the zone's radius, so admins
+    // forgetting to tag a restaurant doesn't hide it from nearby customers.
+    let matchesArea = true;
+    if (hasEffectiveCoords) {
+      if (currentZone == null) {
+        matchesArea = false;
+      } else if (r.area_id === currentZone.zone.id) {
+        matchesArea = true;
+      } else if (
+        r.area_id == null &&
+        r.lat != null &&
+        r.lng != null &&
+        currentZone.zone.lat != null &&
+        currentZone.zone.lng != null
+      ) {
+        const dz = distanceKm(currentZone.zone.lat, currentZone.zone.lng, r.lat, r.lng);
+        matchesArea = dz <= Number(currentZone.zone.radius_km);
+      } else {
+        matchesArea = false;
+      }
+    }
     return matchesCuisine && matchesSearch && matchesArea;
   });
 
