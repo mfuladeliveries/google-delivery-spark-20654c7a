@@ -413,10 +413,10 @@ const CheckoutDialog = ({
       return;
     }
 
-    if (coverage && !coverage.covered) {
-      toast.error("No drivers are online in your area right now. Please try again shortly.");
-      return;
-    }
+    // Note: we no longer block here when no driver is online. The order is
+    // created in `pending_payment`/`awaiting_restaurant` state and the
+    // PayFast redirect screen shows a "Waiting for driver…" hold until a
+    // driver in the area comes online.
 
     const result = checkoutSchema.safeParse({
       name,
@@ -535,32 +535,9 @@ const CheckoutDialog = ({
         .filter(Boolean)
         .join(" | ");
 
-      // Re-validate driver coverage at submit time (state may be stale)
-      try {
-        const { data: freshCoverage, error: coverageError } = await supabase.rpc(
-          "check_area_coverage",
-          { p_lat: coords.lat, p_lng: coords.lng, p_address: address },
-        );
-        if (coverageError) throw coverageError;
-        const row = (Array.isArray(freshCoverage) ? freshCoverage[0] : freshCoverage) as
-          | { covered: boolean; online_in_area: number; total_online: number; address_tag: string | null }
-          | null;
-        if (row) {
-          setCoverage(row);
-          if (!row.covered) {
-            toast.error(
-              "No drivers are online in your area right now. Please try again shortly.",
-            );
-            setLoading(false);
-            return;
-          }
-        }
-      } catch (err) {
-        console.error("[checkout] coverage re-check failed", err);
-        toast.error("Could not verify driver availability. Please try again.");
-        setLoading(false);
-        return;
-      }
+      // Driver coverage is intentionally NOT re-checked here as a gate — the
+      // PayFast redirect screen polls coverage and shows "Waiting for driver…"
+      // if none are online yet, so the order can still be placed.
 
       const { data: order, error: orderError } = await supabase.rpc("create_verified_order", {
         p_items: orderItems,
