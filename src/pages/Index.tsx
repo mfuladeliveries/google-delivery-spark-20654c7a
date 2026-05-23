@@ -107,7 +107,9 @@ const Index = () => {
   // these coords instead of the live GPS / saved-address fallback.
   const [manualAddress, setManualAddress] = useState<ValidatedAddress | null>(() => {
     try {
-      const raw = localStorage.getItem("mfula-manual-area-v1");
+      // Session-only so a fresh app open / login always falls back to live GPS
+      // and auto-shows restaurants in the customer's current area.
+      const raw = sessionStorage.getItem("mfula-manual-area-v1");
       if (!raw) return null;
       const v = JSON.parse(raw);
       if (
