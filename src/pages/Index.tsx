@@ -181,8 +181,10 @@ const Index = () => {
 
   const persistManual = (val: ValidatedAddress | null) => {
     try {
-      if (val) localStorage.setItem("mfula-manual-area-v1", JSON.stringify(val));
-      else localStorage.removeItem("mfula-manual-area-v1");
+      if (val) sessionStorage.setItem("mfula-manual-area-v1", JSON.stringify(val));
+      else sessionStorage.removeItem("mfula-manual-area-v1");
+      // Clean up any legacy localStorage value from older builds.
+      localStorage.removeItem("mfula-manual-area-v1");
       window.dispatchEvent(new Event("mfula-manual-area-changed"));
     } catch {
       /* ignore */
