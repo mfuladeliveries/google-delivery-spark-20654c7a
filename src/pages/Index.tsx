@@ -107,7 +107,9 @@ const Index = () => {
   // these coords instead of the live GPS / saved-address fallback.
   const [manualAddress, setManualAddress] = useState<ValidatedAddress | null>(() => {
     try {
-      const raw = localStorage.getItem("mfula-manual-area-v1");
+      // Session-only so a fresh app open / login always falls back to live GPS
+      // and auto-shows restaurants in the customer's current area.
+      const raw = sessionStorage.getItem("mfula-manual-area-v1");
       if (!raw) return null;
       const v = JSON.parse(raw);
       if (
@@ -179,8 +181,10 @@ const Index = () => {
 
   const persistManual = (val: ValidatedAddress | null) => {
     try {
-      if (val) localStorage.setItem("mfula-manual-area-v1", JSON.stringify(val));
-      else localStorage.removeItem("mfula-manual-area-v1");
+      if (val) sessionStorage.setItem("mfula-manual-area-v1", JSON.stringify(val));
+      else sessionStorage.removeItem("mfula-manual-area-v1");
+      // Clean up any legacy localStorage value from older builds.
+      localStorage.removeItem("mfula-manual-area-v1");
       window.dispatchEvent(new Event("mfula-manual-area-changed"));
     } catch {
       /* ignore */
