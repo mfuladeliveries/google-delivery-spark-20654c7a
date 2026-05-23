@@ -115,7 +115,10 @@ export function useGeoLocation(): GeoState & {
   // home page writes to and stay in sync via the "storage" event.
   const readManual = (): { lat: number; lng: number } | null => {
     try {
-      const raw = localStorage.getItem("mfula-manual-area-v1");
+      // Manual area override is session-only — on app open/login we want the
+      // live GPS location to take over so customers automatically see
+      // restaurants in their current area.
+      const raw = sessionStorage.getItem("mfula-manual-area-v1");
       if (!raw) return null;
       const v = JSON.parse(raw);
       if (typeof v?.lat === "number" && typeof v?.lng === "number") {
