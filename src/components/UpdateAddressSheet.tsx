@@ -107,14 +107,11 @@ export const UpdateAddressSheet = ({ open, onOpenChange, onSaved }: UpdateAddres
       let lat: number | null = null;
       let lng: number | null = null;
       try {
-        const res = await fetch(
-          `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(composedAddress)}&format=json&limit=1&countrycodes=za`,
-          { headers: { Accept: "application/json" } },
-        );
-        const data = await res.json();
-        if (Array.isArray(data) && data[0]) {
-          lat = parseFloat(data[0].lat);
-          lng = parseFloat(data[0].lon);
+        const { geocodeAddress } = await import("@/lib/geocode");
+        const c = await geocodeAddress(composedAddress);
+        if (c) {
+          lat = c.lat;
+          lng = c.lng;
         }
       } catch {
         /* fall back to address-only save */
