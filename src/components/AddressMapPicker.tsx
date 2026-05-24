@@ -130,14 +130,8 @@ export const AddressMapPicker = ({
     if (!q) return;
     setSearching(true);
     try {
-      const res = await fetch(
-        `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)}&format=json&limit=1&countrycodes=za`,
-        { headers: { Accept: "application/json" } },
-      );
-      const data = await res.json();
-      if (Array.isArray(data) && data[0]) {
-        setPosition([parseFloat(data[0].lat), parseFloat(data[0].lon)]);
-      }
+      const c = await geocodeAddress(q);
+      if (c) setPosition([c.lat, c.lng]);
     } finally {
       setSearching(false);
     }
