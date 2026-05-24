@@ -105,17 +105,9 @@ export const AddressMapPicker = ({
     if (initialCoords) return;
     const q = initialAddress?.trim();
     if (!q) return;
-    fetch(
-      `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)}&format=json&limit=1`,
-      { headers: { Accept: "application/json" } },
-    )
-      .then((r) => r.json())
-      .then((data) => {
-        if (Array.isArray(data) && data[0]) {
-          setPosition([parseFloat(data[0].lat), parseFloat(data[0].lon)]);
-        }
-      })
-      .catch(() => {});
+    geocodeAddress(q).then((c) => {
+      if (c) setPosition([c.lat, c.lng]);
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
