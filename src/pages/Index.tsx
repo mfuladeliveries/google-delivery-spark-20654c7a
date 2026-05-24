@@ -85,14 +85,10 @@ const Index = () => {
     let cancelled = false;
     (async () => {
       try {
-        const res = await fetch(
-          `https://nominatim.openstreetmap.org/reverse?lat=${geo.lat}&lon=${geo.lng}&format=json`,
-          { headers: { Accept: "application/json" } },
-        );
-        if (!res.ok || cancelled) return;
-        const data = await res.json();
-        if (!cancelled && data?.display_name) {
-          setGpsAddress(data.display_name);
+        const { reverseGeocode } = await import("@/lib/geocode");
+        const result = await reverseGeocode(geo.lat!, geo.lng!);
+        if (!cancelled && result?.address) {
+          setGpsAddress(result.address);
         }
       } catch {
         /* ignore */

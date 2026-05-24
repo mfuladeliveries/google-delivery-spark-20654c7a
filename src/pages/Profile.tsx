@@ -234,12 +234,13 @@ const Profile = () => {
                   navigator.geolocation.getCurrentPosition(
                     async (pos) => {
                       try {
-                        const res = await fetch(
-                          `https://nominatim.openstreetmap.org/reverse?lat=${pos.coords.latitude}&lon=${pos.coords.longitude}&format=json`,
+                        const { reverseGeocode } = await import("@/lib/geocode");
+                        const r = await reverseGeocode(
+                          pos.coords.latitude,
+                          pos.coords.longitude,
                         );
-                        const data = await res.json();
-                        if (data.display_name)
-                          setProfile((p) => ({ ...p, address: data.display_name }));
+                        if (r?.address)
+                          setProfile((p) => ({ ...p, address: r.address }));
                       } catch {
                         /* ignore */
                       }

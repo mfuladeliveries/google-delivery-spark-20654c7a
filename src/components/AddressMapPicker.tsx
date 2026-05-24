@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Circle, MapContainer, Marker, TileLayer, useMap, useMapEvents } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
@@ -14,6 +14,7 @@ import {
   OUT_OF_ZONE_MESSAGE,
   type DeliveryZone,
 } from "@/lib/serviceArea";
+import { geocodeAddress, reverseGeocode } from "@/lib/geocode";
 
 // Default centre when we have nothing to anchor on (Cape Town).
 const FALLBACK_CENTRE: [number, number] = [-33.9249, 18.4241];
@@ -68,7 +69,7 @@ export const AddressMapPicker = ({
   const [locating, setLocating] = useState(false);
   const [searching, setSearching] = useState(false);
   const [confirming, setConfirming] = useState(false);
-  const reverseAbort = useRef<AbortController | null>(null);
+  
 
   // Load zones for the visualisation circles.
   useEffect(() => {
@@ -83,27 +84,19 @@ export const AddressMapPicker = ({
 
   // Reverse-geocode the pin (debounced).
   useEffect(() => {
-    reverseAbort.current?.abort();
     setLoadingAddress(true);
     setAddress("");
     setConfirming(false);
-    const timer = window.setTimeout(() => {
-      const ctrl = new AbortController();
-      reverseAbort.current = ctrl;
-      fetch(
-        `https://nominatim.openstreetmap.org/reverse?lat=${position[0]}&lon=${position[1]}&format=jsonv2&zoom=18&addressdetails=1`,
-        { signal: ctrl.signal, headers: { Accept: "application/json" } },
-      )
-        .then((r) => r.json())
-        .then((data) => {
-          if (data?.display_name) setAddress(data.display_name);
-        })
-        .catch(() => {})
-        .finally(() => setLoadingAddress(false));
-    }, 600);
+    let cancelled = false;
+    const timer = window.setTimeout(async () => {
+      const result = await reverseGeocode(position[0], position[1]);
+      if (cancelled) return;
+      if (result?.address) setAddress(result.address);
+      setLoadingAddress(false);
+    }, 500);
     return () => {
+      cancelled = true;
       window.clearTimeout(timer);
-      reverseAbort.current?.abort();
     };
   }, [position]);
 
@@ -112,17 +105,9 @@ export const AddressMapPicker = ({
     if (initialCoords) return;
     const q = initialAddress?.trim();
     if (!q) return;
-    fetch(
-      `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)}&format=json&limit=1`,
-      { headers: { Accept: "application/json" } },
-    )
-      .then((r) => r.json())
-      .then((data) => {
-        if (Array.isArray(data) && data[0]) {
-          setPosition([parseFloat(data[0].lat), parseFloat(data[0].lon)]);
-        }
-      })
-      .catch(() => {});
+    geocodeAddress(q).then((c) => {
+      if (c) setPosition([c.lat, c.lng]);
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -145,14 +130,8 @@ export const AddressMapPicker = ({
     if (!q) return;
     setSearching(true);
     try {
-      const res = await fetch(
-        `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)}&format=json&limit=1&countrycodes=za`,
-        { headers: { Accept: "application/json" } },
-      );
-      const data = await res.json();
-      if (Array.isArray(data) && data[0]) {
-        setPosition([parseFloat(data[0].lat), parseFloat(data[0].lon)]);
-      }
+      const c = await geocodeAddress(q);
+      if (c) setPosition([c.lat, c.lng]);
     } finally {
       setSearching(false);
     }
