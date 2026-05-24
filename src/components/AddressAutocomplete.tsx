@@ -1,18 +1,12 @@
-import { useEffect, useRef, useState } from "react";
-import { Loader2, MapPin, Search, Trash2, X } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Loader2, MapPin, Search, X } from "lucide-react";
+import { placeAutocomplete, placeDetails, type PlaceSuggestion } from "@/lib/geocode";
 
 export interface ValidatedAddress {
   /** Full formatted address as returned by the geocoder. */
   address: string;
   lat: number;
   lng: number;
-}
-
-interface NominatimSuggestion {
-  display_name: string;
-  lat: string;
-  lon: string;
-  place_id: number;
 }
 
 interface AddressAutocompleteProps {
@@ -29,102 +23,13 @@ interface AddressAutocompleteProps {
   countryCode?: string;
 }
 
-const CACHE_KEY = "mfula-addr-cache-v1";
-const CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
-
-type CacheEntry = { ts: number; results: NominatimSuggestion[] };
-
-function readCache(query: string): NominatimSuggestion[] | null {
-  try {
-    const raw = localStorage.getItem(CACHE_KEY);
-    if (!raw) return null;
-    const data = JSON.parse(raw) as Record<string, CacheEntry>;
-    const entry = data[query.toLowerCase()];
-    if (!entry) return null;
-    if (Date.now() - entry.ts > CACHE_TTL_MS) return null;
-    return entry.results;
-  } catch {
-    return null;
-  }
-}
-
-function writeCache(query: string, results: NominatimSuggestion[]) {
-  try {
-    const raw = localStorage.getItem(CACHE_KEY);
-    const data = raw ? (JSON.parse(raw) as Record<string, CacheEntry>) : {};
-    data[query.toLowerCase()] = { ts: Date.now(), results };
-    // Keep cache small — drop oldest if over 60 entries.
-    const keys = Object.keys(data);
-    if (keys.length > 60) {
-      const sorted = keys.sort((a, b) => data[a].ts - data[b].ts);
-      sorted.slice(0, keys.length - 60).forEach((k) => delete data[k]);
-    }
-    localStorage.setItem(CACHE_KEY, JSON.stringify(data));
-  } catch {
-    /* ignore quota errors */
-  }
-}
-
 /**
- * Search the cache for any previously verified suggestions matching the query.
- * Used as a fallback when Nominatim is unavailable: matches by cache key
- * substring OR by result display_name substring, deduped by place_id.
- */
-function searchCacheFallback(query: string): NominatimSuggestion[] {
-  try {
-    const raw = localStorage.getItem(CACHE_KEY);
-    if (!raw) return [];
-    const data = JSON.parse(raw) as Record<string, CacheEntry>;
-    const needle = query.toLowerCase();
-    const seen = new Set<number>();
-    const out: NominatimSuggestion[] = [];
-    const entries = Object.entries(data).sort((a, b) => b[1].ts - a[1].ts);
-    for (const [key, entry] of entries) {
-      if (Date.now() - entry.ts > CACHE_TTL_MS) continue;
-      const keyMatch = key.includes(needle);
-      for (const s of entry.results) {
-        if (seen.has(s.place_id)) continue;
-        if (keyMatch || s.display_name.toLowerCase().includes(needle)) {
-          seen.add(s.place_id);
-          out.push(s);
-          if (out.length >= 5) return out;
-        }
-      }
-    }
-    return out;
-  } catch {
-    return [];
-  }
-}
-
-/** Count non-expired cache entries. */
-function countCache(): number {
-  try {
-    const raw = localStorage.getItem(CACHE_KEY);
-    if (!raw) return 0;
-    const data = JSON.parse(raw) as Record<string, CacheEntry>;
-    const now = Date.now();
-    return Object.values(data).filter((e) => now - e.ts <= CACHE_TTL_MS).length;
-  } catch {
-    return 0;
-  }
-}
-
-/** Remove all cached suggestions. */
-function clearAllCache() {
-  try {
-    localStorage.removeItem(CACHE_KEY);
-  } catch {
-    /* ignore */
-  }
-}
-
-/**
- * Autocomplete delivery-address input backed by OpenStreetMap Nominatim.
+ * Autocomplete delivery-address input backed by Google Places API (New),
+ * routed through our `maps-geocode` edge function.
  *
  * Critical contract: pure-text typing never produces coords — the parent must
- * clear coords whenever onTextChange fires, and only treat the address as valid
- * after onSelect provides {address, lat, lng}.
+ * clear coords whenever onTextChange fires, and only treat the address as
+ * valid after onSelect provides {address, lat, lng}.
  */
 export const AddressAutocomplete = ({
   value,
@@ -135,19 +40,28 @@ export const AddressAutocomplete = ({
   disabled,
   countryCode = "za",
 }: AddressAutocompleteProps) => {
-  const [suggestions, setSuggestions] = useState<NominatimSuggestion[]>([]);
+  const [suggestions, setSuggestions] = useState<PlaceSuggestion[]>([]);
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [resolving, setResolving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [searched, setSearched] = useState(false);
-  const [fallback, setFallback] = useState(false);
-  const [retryToken, setRetryToken] = useState(0);
-  const [cacheCount, setCacheCount] = useState<number>(() => countCache());
-  const [confirmingClear, setConfirmingClear] = useState(false);
-  const abortRef = useRef<AbortController | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
+  const reqIdRef = useRef(0);
 
-  // Debounced search.
+  // One Places session token per typing session — Google bills autocomplete +
+  // details together when both share a token.
+  const sessionToken = useMemo(
+    () =>
+      (typeof crypto !== "undefined" && "randomUUID" in crypto
+        ? crypto.randomUUID()
+        : `${Date.now()}-${Math.random()}`),
+    // Reset whenever a fresh selection happens or the input is cleared.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [hasValidSelection ? "selected" : "typing"],
+  );
+
+  // Debounced autocomplete
   useEffect(() => {
     const q = value.trim();
     if (hasValidSelection || q.length < 3) {
@@ -156,79 +70,33 @@ export const AddressAutocomplete = ({
       setLoading(false);
       setError(null);
       setSearched(false);
-      setFallback(false);
-      return;
-    }
-
-    // Use cache first (exact-key hit).
-    const cached = readCache(q);
-    if (cached) {
-      setSuggestions(cached);
-      setOpen(true);
-      setError(null);
-      setSearched(true);
-      setFallback(false);
-      setLoading(false);
       return;
     }
 
     setLoading(true);
     setError(null);
-    setFallback(false);
     setOpen(true);
-    abortRef.current?.abort();
-    const ctrl = new AbortController();
-    abortRef.current = ctrl;
+    const myId = ++reqIdRef.current;
 
-    const timer = window.setTimeout(() => {
-      const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(
-        q,
-      )}&format=json&limit=5&addressdetails=0&countrycodes=${encodeURIComponent(countryCode)}`;
-      fetch(url, { signal: ctrl.signal, headers: { Accept: "application/json" } })
-        .then((r) => {
-          if (!r.ok) throw new Error("Geocoder error");
-          return r.json();
-        })
-        .then((data: NominatimSuggestion[]) => {
-          const cleaned = Array.isArray(data) ? data.slice(0, 5) : [];
-          setSuggestions(cleaned);
-          setOpen(true);
-          setSearched(true);
-          setFallback(false);
-          writeCache(q, cleaned);
-          setCacheCount(countCache());
-        })
-        .catch((err: unknown) => {
-          if ((err as Error).name === "AbortError") return;
-          // Fallback: search across cached suggestions for any partial match.
-          const cachedFallback = searchCacheFallback(q);
-          setSearched(true);
-          if (cachedFallback.length > 0) {
-            setSuggestions(cachedFallback);
-            setOpen(true);
-            setFallback(true);
-            setError(null);
-          } else {
-            setSuggestions([]);
-            setOpen(false);
-            setFallback(false);
-            setError(
-              err instanceof TypeError
-                ? "Address lookup is offline and no saved matches were found. Check your connection and retry."
-                : "Address lookup is temporarily unavailable. Please try again.",
-            );
-          }
-        })
-        .finally(() => setLoading(false));
-    }, 350);
+    const timer = window.setTimeout(async () => {
+      try {
+        const results = await placeAutocomplete(q, sessionToken);
+        if (myId !== reqIdRef.current) return;
+        setSuggestions(results);
+        setSearched(true);
+        setOpen(true);
+      } catch {
+        if (myId !== reqIdRef.current) return;
+        setError("Address lookup is temporarily unavailable. Please try again.");
+      } finally {
+        if (myId === reqIdRef.current) setLoading(false);
+      }
+    }, 300);
 
-    return () => {
-      window.clearTimeout(timer);
-      ctrl.abort();
-    };
-  }, [value, hasValidSelection, countryCode, retryToken]);
+    return () => window.clearTimeout(timer);
+  }, [value, hasValidSelection, countryCode, sessionToken]);
 
-  // Close suggestions on outside click.
+  // Close on outside click
   useEffect(() => {
     const handler = (e: MouseEvent) => {
       if (!containerRef.current?.contains(e.target as Node)) setOpen(false);
@@ -237,13 +105,20 @@ export const AddressAutocomplete = ({
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
-  const handlePick = (s: NominatimSuggestion) => {
-    const lat = parseFloat(s.lat);
-    const lng = parseFloat(s.lon);
-    if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
+  const handlePick = async (s: PlaceSuggestion) => {
+    setResolving(true);
     setOpen(false);
-    setSuggestions([]);
-    onSelect({ address: s.display_name, lat, lng });
+    try {
+      const details = await placeDetails(s.place_id, sessionToken);
+      if (!details) {
+        setError("Couldn't resolve that address. Please try another.");
+        setOpen(true);
+        return;
+      }
+      onSelect({ address: details.address, lat: details.lat, lng: details.lng });
+    } finally {
+      setResolving(false);
+    }
   };
 
   const handleClear = () => {
@@ -251,24 +126,6 @@ export const AddressAutocomplete = ({
     setSuggestions([]);
     setOpen(false);
   };
-
-  const handleClearCache = () => {
-    clearAllCache();
-    setCacheCount(0);
-    setFallback(false);
-    setConfirmingClear(false);
-    // If we were showing fallback results, drop them and re-run live search.
-    if (fallback) {
-      setSuggestions([]);
-      setSearched(false);
-      setRetryToken((n) => n + 1);
-    }
-  };
-
-  // Reset confirmation when the dropdown closes.
-  useEffect(() => {
-    if (!open) setConfirmingClear(false);
-  }, [open]);
 
   return (
     <div ref={containerRef} className="relative">
@@ -279,16 +136,16 @@ export const AddressAutocomplete = ({
           onChange={(e) => onTextChange(e.target.value)}
           onFocus={() => suggestions.length > 0 && setOpen(true)}
           placeholder={placeholder}
-          disabled={disabled}
+          disabled={disabled || resolving}
           autoComplete="off"
           aria-autocomplete="list"
           aria-expanded={open}
           className="w-full rounded-xl border border-border bg-card pl-9 pr-9 py-3 text-sm text-card-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all disabled:opacity-50"
         />
-        {loading && (
+        {(loading || resolving) && (
           <Loader2 className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-muted-foreground" />
         )}
-        {!loading && value && (
+        {!loading && !resolving && value && (
           <button
             type="button"
             onClick={handleClear}
@@ -306,17 +163,12 @@ export const AddressAutocomplete = ({
           <div
             role="listbox"
             aria-busy={loading}
-            className="absolute left-0 right-0 top-full z-50 mt-1 max-h-64 overflow-y-auto rounded-xl border border-border bg-popover p-1 shadow-lg"
+            className="absolute left-0 right-0 top-full z-50 mt-1 max-h-72 overflow-y-auto rounded-xl border border-border bg-popover p-1 shadow-lg"
           >
             {loading && (
               <div className="flex items-center gap-2 px-3 py-2 text-sm text-muted-foreground">
                 <Loader2 className="h-3.5 w-3.5 animate-spin" />
                 <span>Searching addresses…</span>
-              </div>
-            )}
-            {!loading && fallback && suggestions.length > 0 && (
-              <div className="mx-1 mt-1 mb-0.5 rounded-md border border-amber-500/30 bg-amber-500/10 px-2.5 py-1.5 text-[11px] text-amber-200">
-                Live address lookup is unavailable. Showing saved matches from your recent searches.
               </div>
             )}
             {!loading && suggestions.length === 0 && searched && (
@@ -333,48 +185,14 @@ export const AddressAutocomplete = ({
                   className="flex w-full items-start gap-2 rounded-lg px-3 py-2 text-left text-sm text-popover-foreground hover:bg-accent"
                 >
                   <MapPin className="mt-0.5 h-3.5 w-3.5 flex-shrink-0 text-primary" />
-                  <span className="break-words">{s.display_name}</span>
+                  <span className="flex-1 break-words">
+                    <span className="block font-medium">{s.main}</span>
+                    {s.secondary && (
+                      <span className="block text-xs text-muted-foreground">{s.secondary}</span>
+                    )}
+                  </span>
                 </button>
               ))}
-            {!loading && cacheCount > 0 && !confirmingClear && (
-              <div className="mt-1 flex items-center justify-between border-t border-border/60 px-3 py-1.5">
-                <span className="text-[11px] text-muted-foreground">
-                  {cacheCount} saved {cacheCount === 1 ? "search" : "searches"}
-                </span>
-                <button
-                  type="button"
-                  onClick={() => setConfirmingClear(true)}
-                  className="flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[11px] text-muted-foreground hover:bg-secondary hover:text-foreground"
-                >
-                  <Trash2 className="h-3 w-3" />
-                  Clear saved searches
-                </button>
-              </div>
-            )}
-            {!loading && cacheCount > 0 && confirmingClear && (
-              <div className="mt-1 flex items-center justify-between gap-2 border-t border-border/60 bg-destructive/5 px-3 py-1.5">
-                <span className="text-[11px] text-destructive">
-                  Clear all {cacheCount} saved {cacheCount === 1 ? "search" : "searches"}?
-                </span>
-                <div className="flex items-center gap-1">
-                  <button
-                    type="button"
-                    onClick={() => setConfirmingClear(false)}
-                    className="rounded-md px-1.5 py-0.5 text-[11px] text-muted-foreground hover:bg-secondary hover:text-foreground"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleClearCache}
-                    className="flex items-center gap-1 rounded-md bg-destructive px-1.5 py-0.5 text-[11px] font-medium text-destructive-foreground hover:bg-destructive/90"
-                  >
-                    <Trash2 className="h-3 w-3" />
-                    Clear
-                  </button>
-                </div>
-              </div>
-            )}
           </div>
         )}
 
@@ -391,13 +209,6 @@ export const AddressAutocomplete = ({
           className="mt-1 flex items-start justify-between gap-2 rounded-lg border border-destructive/30 bg-destructive/5 px-2.5 py-1.5 text-xs text-destructive"
         >
           <span className="break-words">{error}</span>
-          <button
-            type="button"
-            onClick={() => setRetryToken((n) => n + 1)}
-            className="flex-shrink-0 font-medium underline underline-offset-2 hover:no-underline"
-          >
-            Retry
-          </button>
         </div>
       )}
     </div>
