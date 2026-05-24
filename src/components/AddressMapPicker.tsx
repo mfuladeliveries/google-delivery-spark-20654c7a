@@ -14,6 +14,7 @@ import {
   OUT_OF_ZONE_MESSAGE,
   type DeliveryZone,
 } from "@/lib/serviceArea";
+import { geocodeAddress, reverseGeocode } from "@/lib/geocode";
 
 // Default centre when we have nothing to anchor on (Cape Town).
 const FALLBACK_CENTRE: [number, number] = [-33.9249, 18.4241];
@@ -83,27 +84,19 @@ export const AddressMapPicker = ({
 
   // Reverse-geocode the pin (debounced).
   useEffect(() => {
-    reverseAbort.current?.abort();
     setLoadingAddress(true);
     setAddress("");
     setConfirming(false);
-    const timer = window.setTimeout(() => {
-      const ctrl = new AbortController();
-      reverseAbort.current = ctrl;
-      fetch(
-        `https://nominatim.openstreetmap.org/reverse?lat=${position[0]}&lon=${position[1]}&format=jsonv2&zoom=18&addressdetails=1`,
-        { signal: ctrl.signal, headers: { Accept: "application/json" } },
-      )
-        .then((r) => r.json())
-        .then((data) => {
-          if (data?.display_name) setAddress(data.display_name);
-        })
-        .catch(() => {})
-        .finally(() => setLoadingAddress(false));
-    }, 600);
+    let cancelled = false;
+    const timer = window.setTimeout(async () => {
+      const result = await reverseGeocode(position[0], position[1]);
+      if (cancelled) return;
+      if (result?.address) setAddress(result.address);
+      setLoadingAddress(false);
+    }, 500);
     return () => {
+      cancelled = true;
       window.clearTimeout(timer);
-      reverseAbort.current?.abort();
     };
   }, [position]);
 
