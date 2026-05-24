@@ -69,7 +69,7 @@ export const AddressMapPicker = ({
   const [locating, setLocating] = useState(false);
   const [searching, setSearching] = useState(false);
   const [confirming, setConfirming] = useState(false);
-  const reverseAbort = useRef<AbortController | null>(null);
+  
 
   // Load zones for the visualisation circles.
   useEffect(() => {
