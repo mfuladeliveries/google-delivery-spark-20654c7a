@@ -55,6 +55,16 @@ Deno.serve(async (req) => {
     return bad("Invalid JSON body");
   }
 
+  async function safeJson(r: Response): Promise<any> {
+    const text = await r.text();
+    try {
+      return JSON.parse(text);
+    } catch {
+      console.warn("maps-geocode upstream non-JSON", r.status, text.slice(0, 200));
+      return null;
+    }
+  }
+
   const baseHeaders = {
     Authorization: `Bearer ${LOVABLE_API_KEY}`,
     "X-Connection-Api-Key": GOOGLE_MAPS_API_KEY,
@@ -67,8 +77,8 @@ Deno.serve(async (req) => {
       const region = (body.region ?? "za").toLowerCase();
       const url = `${GATEWAY}/maps/api/geocode/json?address=${encodeURIComponent(q)}&region=${region}`;
       const r = await fetch(url, { headers: baseHeaders });
-      const data = await r.json();
-      if (data.status !== "OK" || !data.results?.length) {
+      const data = await safeJson(r);
+      if (!data || data.status !== "OK" || !data.results?.length) {
         return ok({ results: [] });
       }
       return ok({
@@ -86,8 +96,8 @@ Deno.serve(async (req) => {
       if (!Number.isFinite(lat) || !Number.isFinite(lng)) return bad("lat/lng required");
       const url = `${GATEWAY}/maps/api/geocode/json?latlng=${lat},${lng}`;
       const r = await fetch(url, { headers: baseHeaders });
-      const data = await r.json();
-      if (data.status !== "OK" || !data.results?.length) return ok({ address: null });
+      const data = await safeJson(r);
+      if (!data || data.status !== "OK" || !data.results?.length) return ok({ address: null });
       const top = data.results[0];
       // Pull suburb/city/postal from components
       const comp = top.address_components ?? [];
@@ -116,8 +126,8 @@ Deno.serve(async (req) => {
           ...(body.sessionToken ? { sessionToken: body.sessionToken } : {}),
         }),
       });
-      const data = await r.json();
-      const suggestions = (data.suggestions ?? [])
+      const data = await safeJson(r);
+      const suggestions = (data?.suggestions ?? [])
         .map((s: any) => s.placePrediction)
         .filter(Boolean)
         .map((p: any) => ({
@@ -139,7 +149,8 @@ Deno.serve(async (req) => {
           "X-Goog-FieldMask": "id,formattedAddress,location",
         },
       });
-      const data = await r.json();
+      const data = await safeJson(r);
+      if (!data) return ok({ address: null });
       const lat = data?.location?.latitude;
       const lng = data?.location?.longitude;
       if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
