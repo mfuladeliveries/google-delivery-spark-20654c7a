@@ -78,7 +78,7 @@ Deno.serve(async (req) => {
       const url = `${GATEWAY}/maps/api/geocode/json?address=${encodeURIComponent(q)}&region=${region}`;
       const r = await fetch(url, { headers: baseHeaders });
       const data = await safeJson(r);
-      if (data.status !== "OK" || !data.results?.length) {
+      if (!data || data.status !== "OK" || !data.results?.length) {
         return ok({ results: [] });
       }
       return ok({
@@ -97,7 +97,7 @@ Deno.serve(async (req) => {
       const url = `${GATEWAY}/maps/api/geocode/json?latlng=${lat},${lng}`;
       const r = await fetch(url, { headers: baseHeaders });
       const data = await safeJson(r);
-      if (data.status !== "OK" || !data.results?.length) return ok({ address: null });
+      if (!data || data.status !== "OK" || !data.results?.length) return ok({ address: null });
       const top = data.results[0];
       // Pull suburb/city/postal from components
       const comp = top.address_components ?? [];
@@ -127,7 +127,7 @@ Deno.serve(async (req) => {
         }),
       });
       const data = await safeJson(r);
-      const suggestions = (data.suggestions ?? [])
+      const suggestions = (data?.suggestions ?? [])
         .map((s: any) => s.placePrediction)
         .filter(Boolean)
         .map((p: any) => ({
@@ -150,6 +150,7 @@ Deno.serve(async (req) => {
         },
       });
       const data = await safeJson(r);
+      if (!data) return ok({ address: null });
       const lat = data?.location?.latitude;
       const lng = data?.location?.longitude;
       if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
