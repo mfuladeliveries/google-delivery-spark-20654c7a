@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { Mail, Loader2, ArrowLeft } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { storeInfo } from "@/data/menu";
+import { getPasswordResetRedirect } from "@/lib/passwordReset";
 
 const MAX_RESENDS = 3;
 const RESEND_COOLDOWN = 60;
@@ -36,7 +37,7 @@ const ForgotPassword = () => {
     }
     setLoading(true);
     const { error: sbError } = await supabase.auth.resetPasswordForEmail(email.trim(), {
-      redirectTo: `${window.location.origin}/reset-password`,
+      redirectTo: getPasswordResetRedirect(),
     });
     setLoading(false);
     if (sbError) {

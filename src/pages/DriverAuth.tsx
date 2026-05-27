@@ -7,6 +7,7 @@ import { shouldNudgeInstall, markInstallNudged } from "@/lib/installRedirect";
 import RequestDriverAccess from "@/components/RequestDriverAccess";
 import DriverInstallBanner from "@/components/DriverInstallBanner";
 import DriverSignupForm from "@/components/driver/DriverSignupForm";
+import { getPasswordResetRedirect } from "@/lib/passwordReset";
 
 const FIRST_VISIT_REDIRECT_KEY = "mfula_driver_install_first_visit";
 
@@ -164,7 +165,7 @@ const DriverAuth = () => {
     }
     setLoading(true);
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/reset-password`,
+      redirectTo: getPasswordResetRedirect(),
     });
     if (error) setError(error.message);
     else setMessage("Check your email for a password reset link!");
