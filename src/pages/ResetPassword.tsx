@@ -3,6 +3,7 @@ import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Eye, EyeOff, CheckCircle2, AlertTriangle, Loader2, Mail, RefreshCw } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { storeInfo } from "@/data/menu";
+import { getPasswordResetRedirect } from "@/lib/passwordReset";
 
 type Strength = { score: number; label: string; barClass: string };
 
@@ -99,7 +100,7 @@ const ResetPassword = () => {
     }
     setResendLoading(true);
     const { error: sbError } = await supabase.auth.resetPasswordForEmail(resendEmail.trim(), {
-      redirectTo: `${window.location.origin}/reset-password`,
+      redirectTo: getPasswordResetRedirect(),
     });
     setResendLoading(false);
     if (sbError) {
@@ -134,11 +135,13 @@ const ResetPassword = () => {
     length: password.length >= 8,
     number: /\d/.test(password),
     capital: /[A-Z]/.test(password),
+    lower: /[a-z]/.test(password),
     special: /[^A-Za-z0-9]/.test(password),
   };
   const strength = evaluateStrength(password);
   const matches = password.length > 0 && password === confirm;
-  const canSubmit = checks.length && checks.number && checks.capital && matches && !loading;
+  const canSubmit =
+    checks.length && checks.number && checks.capital && checks.lower && matches && !loading;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -372,9 +375,10 @@ const ResetPassword = () => {
                 {/* Checklist */}
                 <ul className="space-y-1 text-sm">
                   <ChecklistItem ok={checks.length} label="At least 8 characters" />
+                  <ChecklistItem ok={checks.capital} label="One uppercase letter" />
+                  <ChecklistItem ok={checks.lower} label="One lowercase letter" />
                   <ChecklistItem ok={checks.number} label="One number" />
-                  <ChecklistItem ok={checks.capital} label="One capital letter" />
-                  <ChecklistItem ok={checks.special} label="One special character" />
+                  <ChecklistItem ok={checks.special} label="One special character (optional)" />
                 </ul>
 
                 {error && <p className="text-sm text-destructive">{error}</p>}
