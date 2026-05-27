@@ -55,6 +55,16 @@ Deno.serve(async (req) => {
     return bad("Invalid JSON body");
   }
 
+  async function safeJson(r: Response): Promise<any> {
+    const text = await r.text();
+    try {
+      return JSON.parse(text);
+    } catch {
+      console.warn("maps-geocode upstream non-JSON", r.status, text.slice(0, 200));
+      return null;
+    }
+  }
+
   const baseHeaders = {
     Authorization: `Bearer ${LOVABLE_API_KEY}`,
     "X-Connection-Api-Key": GOOGLE_MAPS_API_KEY,
