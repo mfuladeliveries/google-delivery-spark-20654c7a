@@ -1,9 +1,15 @@
 import { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
-import { Mail, Loader2, ArrowLeft } from "lucide-react";
+import { Mail, Loader2, ArrowLeft, MessageCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { storeInfo } from "@/data/menu";
 import { getPasswordResetRedirect } from "@/lib/passwordReset";
+
+const SUPPORT_WHATSAPP = "27686768409";
+const buildSupportLink = (email: string) =>
+  `https://wa.me/${SUPPORT_WHATSAPP}?text=${encodeURIComponent(
+    `Hi Mfula Deliveries, I can't receive the password reset email for "${email}". Please help me recover my account.`
+  )}`;
 
 const MAX_RESENDS = 3;
 const RESEND_COOLDOWN = 60;
@@ -129,6 +135,18 @@ const ForgotPassword = () => {
                 </button>
               </form>
 
+              <p className="mt-4 text-center text-xs text-muted-foreground">
+                Used a different email?{" "}
+                <a
+                  href={buildSupportLink(email || "my account")}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 font-semibold text-primary hover:underline"
+                >
+                  <MessageCircle className="h-3.5 w-3.5" /> WhatsApp support
+                </a>
+              </p>
+
               <Link
                 to="/auth"
                 className="mt-6 flex items-center justify-center gap-1 text-sm text-muted-foreground hover:text-foreground"
@@ -145,18 +163,39 @@ const ForgotPassword = () => {
                 Check your email!
               </h2>
               <p className="mt-3 text-sm text-muted-foreground">
-                We sent a password reset link to:
+                If an account exists for:
               </p>
               <p className="mt-1 break-all text-sm font-semibold text-foreground">{email}</p>
               <p className="mt-4 text-sm text-muted-foreground">
-                Tap the link in the email to reset your password. The link expires in 1 hour.
+                we've sent a reset link from{" "}
+                <span className="font-semibold text-foreground">notify.mfuladeliveries.online</span>.
+                It can take 1–2 minutes to arrive and the link expires in 1 hour.
               </p>
+
+              <div className="mt-4 rounded-xl border border-border bg-secondary/40 p-3 text-left text-xs text-muted-foreground">
+                <p className="font-semibold text-foreground">Not in your inbox?</p>
+                <ul className="mt-1 list-disc space-y-1 pl-4">
+                  <li>Check <span className="font-medium text-foreground">Spam</span>, <span className="font-medium text-foreground">Promotions</span> and <span className="font-medium text-foreground">Updates</span> folders.</li>
+                  <li>Make sure you typed the same email you signed up with.</li>
+                  <li>Add <span className="font-medium text-foreground">notify.mfuladeliveries.online</span> to your contacts.</li>
+                </ul>
+              </div>
 
               <a
                 href="mailto:"
-                className="btn-glow mt-6 inline-flex w-full items-center justify-center rounded-xl gradient-maroon py-2.5 font-display font-bold text-primary-foreground transition-transform hover:scale-[1.02] active:scale-[0.98]"
+                className="btn-glow mt-5 inline-flex w-full items-center justify-center rounded-xl gradient-maroon py-2.5 font-display font-bold text-primary-foreground transition-transform hover:scale-[1.02] active:scale-[0.98]"
               >
                 Open Email App
+              </a>
+
+              <a
+                href={buildSupportLink(email)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-xl border border-border bg-card py-2.5 text-sm font-semibold text-foreground hover:bg-secondary"
+              >
+                <MessageCircle className="h-4 w-4 text-[#25D366]" />
+                Still stuck? Chat with support
               </a>
 
               <div className="mt-5 text-sm">
