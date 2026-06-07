@@ -129,6 +129,9 @@ const CheckoutDialog = ({
   // PayFast-only — kept as a constant to minimise churn through the rest of the file.
   const paymentMethod: "online" = "online";
   const setPaymentMethod = (_: "online") => {}; // no-op kept for legacy refs
+  // Which PayFast payment method to pre-select on the hosted checkout.
+  // 'cc' = card, 'ef' = Instant EFT. PayFast accepts either via the payment_method field.
+  const [payfastMethod, setPayfastMethod] = useState<"cc" | "ef">("cc");
   const [loading, setLoading] = useState(false);
   const [profileLoaded, setProfileLoaded] = useState(false);
   const [restaurantCoords, setRestaurantCoords] = useState<{ lat: number; lng: number } | null>(
@@ -654,6 +657,7 @@ const CheckoutDialog = ({
           orderNumber: orderNum,
           total: orderTotalNum,
           restaurant: restaurants[0] || undefined,
+          payfastMethod,
         },
         replace: true,
       });
@@ -1130,28 +1134,51 @@ const CheckoutDialog = ({
             </div>
           )}
 
-          {/* Payment Method — PayFast only */}
+          {/* Payment Method — both options route to PayFast, but pre-select card or EFT */}
           <div>
             <label className="mb-2 block text-sm font-semibold text-foreground">
               💳 Payment Method
             </label>
-            <div className="flex items-center gap-3 rounded-xl border-2 border-primary bg-primary/5 p-3.5 text-sm">
-              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10">
-                <CreditCard className="h-4.5 w-4.5 text-primary" />
-              </div>
-              <div className="text-left flex-1">
-                <p className="font-bold text-xs text-foreground">Pay online with PayFast</p>
-                <p className="text-[10px] text-muted-foreground">
-                  Card · Instant EFT · QR · SnapScan
-                </p>
-              </div>
-              <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-bold text-primary">
-                Secure
-              </span>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => setPayfastMethod("cc")}
+                className={`flex items-center gap-2.5 rounded-xl border-2 p-3 text-left transition-all ${
+                  payfastMethod === "cc"
+                    ? "border-primary bg-primary/5"
+                    : "border-border bg-card hover:bg-secondary"
+                }`}
+              >
+                <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-primary/10">
+                  <CreditCard className="h-4.5 w-4.5 text-primary" />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-xs font-bold text-foreground">Pay by Card</p>
+                  <p className="text-[10px] text-muted-foreground">Visa · Mastercard</p>
+                </div>
+              </button>
+              <button
+                type="button"
+                onClick={() => setPayfastMethod("ef")}
+                className={`flex items-center gap-2.5 rounded-xl border-2 p-3 text-left transition-all ${
+                  payfastMethod === "ef"
+                    ? "border-primary bg-primary/5"
+                    : "border-border bg-card hover:bg-secondary"
+                }`}
+              >
+                <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-primary/10">
+                  <Wallet className="h-4.5 w-4.5 text-primary" />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-xs font-bold text-foreground">Pay by EFT</p>
+                  <p className="text-[10px] text-muted-foreground">Instant bank transfer</p>
+                </div>
+              </button>
             </div>
+            <p className="mt-1.5 text-[10px] text-muted-foreground">
+              Both options are processed securely by PayFast.
+            </p>
           </div>
-
-          {/* Tip */}
           <div>
             <label className="mb-2 block text-sm font-semibold text-foreground">🙏 Add a Tip</label>
             <div className="flex flex-wrap gap-2">

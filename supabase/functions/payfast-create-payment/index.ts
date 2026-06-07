@@ -58,6 +58,11 @@ Deno.serve(async (req) => {
     const body = await req.json().catch(() => ({}));
     const orderId = String(body.order_id ?? "").trim();
     const returnOrigin = String(body.return_origin ?? "").trim();
+    // Optional PayFast payment_method hint. Whitelist to known codes so we don't
+    // forward arbitrary client input. 'cc' = card, 'ef' = Instant EFT.
+    const ALLOWED_METHODS = new Set(["cc", "ef", "dc", "mp", "mc", "sc", "ss", "zp"]);
+    const rawMethod = String(body.payment_method ?? "").trim().toLowerCase();
+    const paymentMethodHint = ALLOWED_METHODS.has(rawMethod) ? rawMethod : "";
     if (!orderId) {
       return new Response(JSON.stringify({ error: "order_id required" }), {
         status: 400,
@@ -134,6 +139,8 @@ Deno.serve(async (req) => {
       item_name: `Mfula Order #${order.order_number}`.slice(0, 100),
       item_description: `Order from ${order.restaurant}`.slice(0, 255),
       custom_str1: String(order.order_number),
+      // Pre-select card or EFT on PayFast's hosted checkout when the customer chose one.
+      payment_method: paymentMethodHint,
     };
 
     // Drop empty optional fields before signing.
