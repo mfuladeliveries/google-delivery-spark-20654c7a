@@ -53,9 +53,9 @@ export const AddressAutocomplete = ({
   // details together when both share a token.
   const sessionToken = useMemo(
     () =>
-      (typeof crypto !== "undefined" && "randomUUID" in crypto
+      typeof crypto !== "undefined" && "randomUUID" in crypto
         ? crypto.randomUUID()
-        : `${Date.now()}-${Math.random()}`),
+        : `${Date.now()}-${Math.random()}`,
     // Reset whenever a fresh selection happens or the input is cleared.
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [hasValidSelection ? "selected" : "typing"],

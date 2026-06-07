@@ -1,6 +1,18 @@
 import { useState, ChangeEvent } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Mail, Lock, User, Phone, IdCard, Bike, Hash, FileText, Camera, Eye, EyeOff } from "lucide-react";
+import {
+  Mail,
+  Lock,
+  User,
+  Phone,
+  IdCard,
+  Bike,
+  Hash,
+  FileText,
+  Camera,
+  Eye,
+  EyeOff,
+} from "lucide-react";
 
 interface Props {
   onSubmitted: (email: string) => void; // called after signup so parent can show OTP screen
@@ -104,16 +116,14 @@ const DriverSignupForm = ({ onSubmitted }: Props) => {
       const photoPath = await uploadDoc(userId, form.photoFile!, "photo");
 
       // 3. Save profile (full name + contact)
-      await supabase
-        .from("profiles")
-        .upsert(
-          {
-            user_id: userId,
-            full_name: form.fullName.trim(),
-            contact_number: form.phone.trim(),
-          },
-          { onConflict: "user_id" },
-        );
+      await supabase.from("profiles").upsert(
+        {
+          user_id: userId,
+          full_name: form.fullName.trim(),
+          contact_number: form.phone.trim(),
+        },
+        { onConflict: "user_id" },
+      );
 
       // 4. Save driver profile (will exist after the trigger runs on driver role
       //    being granted, but we upsert proactively so docs are saved now).
@@ -231,7 +241,9 @@ const DriverSignupForm = ({ onSubmitted }: Props) => {
             className="block w-full text-sm text-foreground file:mr-3 file:rounded-lg file:border-0 file:bg-[hsl(var(--driver-info))] file:px-3 file:py-2 file:text-xs file:font-bold file:text-white"
           />
           {form.licenseFile && (
-            <p className="mt-1 text-[11px] text-muted-foreground truncate">{form.licenseFile.name}</p>
+            <p className="mt-1 text-[11px] text-muted-foreground truncate">
+              {form.licenseFile.name}
+            </p>
           )}
         </label>
 

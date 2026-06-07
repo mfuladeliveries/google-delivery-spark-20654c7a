@@ -262,7 +262,14 @@ const DriverDashboard = () => {
         /* ignore */
       }
     };
-  }, [activeOffer?.id, activeOffer, startNotificationSound, stopNotificationSound, acceptingId, rejectingId]);
+  }, [
+    activeOffer?.id,
+    activeOffer,
+    startNotificationSound,
+    stopNotificationSound,
+    acceptingId,
+    rejectingId,
+  ]);
 
   // GPS tracking when online
   useEffect(() => {

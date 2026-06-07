@@ -116,9 +116,7 @@ const PayFastRedirect = () => {
           p_address: addr,
         });
         if (cancelled) return;
-        const row = (Array.isArray(cov) ? cov[0] : cov) as
-          | { covered: boolean }
-          | null;
+        const row = (Array.isArray(cov) ? cov[0] : cov) as { covered: boolean } | null;
         if (row && !row.covered) {
           setWaitingForDriver(true);
           timer = setTimeout(poll, 15000);
@@ -201,9 +199,7 @@ const PayFastRedirect = () => {
               R{state.total.toFixed(2)}
             </p>
           )}
-          <p className="mt-1 text-[11px] text-muted-foreground">
-            Order #{state?.orderNumber}
-          </p>
+          <p className="mt-1 text-[11px] text-muted-foreground">Order #{state?.orderNumber}</p>
           <div className="mt-5 flex items-center justify-center gap-2 text-xs text-muted-foreground">
             <Loader2 className="h-4 w-4 animate-spin" /> Checking again every 15 seconds…
           </div>

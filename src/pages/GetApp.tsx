@@ -12,12 +12,8 @@ const GetApp = () => {
           alt={storeInfo.name}
           className="mx-auto h-20 w-20 rounded-full object-cover ring-2 ring-[hsl(var(--gold))] shadow-gold"
         />
-        <h1 className="mt-4 font-display text-2xl font-bold text-primary">
-          {storeInfo.name}
-        </h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Get the app on your phone
-        </p>
+        <h1 className="mt-4 font-display text-2xl font-bold text-primary">{storeInfo.name}</h1>
+        <p className="mt-1 text-sm text-muted-foreground">Get the app on your phone</p>
       </div>
 
       {/* Role cards */}
