@@ -37,9 +37,7 @@ const AdminDrivers = () => {
           .select("user_id, full_name, contact_number")
           .in("user_id", ids)
       : { data: [] as { user_id: string; full_name: string; contact_number: string }[] };
-    const map = new Map(
-      (profiles || []).map((p) => [p.user_id, p] as const),
-    );
+    const map = new Map((profiles || []).map((p) => [p.user_id, p] as const));
     setRows(
       (drivers || []).map((d) => ({
         ...d,
@@ -96,7 +94,10 @@ const AdminDrivers = () => {
       ) : (
         <div className="space-y-3">
           {rows.map((d) => (
-            <div key={d.user_id} className="rounded-2xl border border-border bg-card p-4 shadow-card">
+            <div
+              key={d.user_id}
+              className="rounded-2xl border border-border bg-card p-4 shadow-card"
+            >
               <div className="flex items-start justify-between gap-3 mb-2">
                 <div className="min-w-0 flex-1">
                   <h3 className="font-bold text-foreground truncate">
@@ -148,7 +149,9 @@ const AdminDrivers = () => {
                   onClick={() => toggleSuspend(d)}
                   disabled={busyId === d.user_id}
                   className={`ml-auto flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-bold text-white disabled:opacity-50 ${
-                    d.is_suspended ? "bg-green-600 hover:bg-green-700" : "bg-destructive hover:opacity-90"
+                    d.is_suspended
+                      ? "bg-green-600 hover:bg-green-700"
+                      : "bg-destructive hover:opacity-90"
                   }`}
                 >
                   {d.is_suspended ? (

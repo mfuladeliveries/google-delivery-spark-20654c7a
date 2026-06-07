@@ -341,7 +341,11 @@ const NewOrderModal = ({
               disabled={accepting || rejecting || dismissed}
               className="rounded-xl bg-primary py-3.5 text-sm font-bold text-primary-foreground disabled:opacity-50 transition-all hover:opacity-95 active:scale-[0.98] shadow-orange flex items-center justify-center gap-2"
             >
-              {accepting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
+              {accepting ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Check className="h-4 w-4" />
+              )}
               {accepting ? "Accepting…" : "Accept"}
             </button>
           </div>

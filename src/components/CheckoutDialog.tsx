@@ -197,24 +197,22 @@ const CheckoutDialog = ({
     const filtered = primaryRestaurantId
       ? query.eq("id", primaryRestaurantId)
       : query.eq("name", primaryRestaurantName);
-    filtered
-      .maybeSingle()
-      .then(({ data }) => {
-        if (!alive) return;
-        if (data && typeof data.lat === "number" && typeof data.lng === "number") {
-          setRestaurantCoords({ lat: data.lat, lng: data.lng });
-        } else {
-          setRestaurantCoords(null);
-        }
-        if (data) {
-          setRestaurantInfo({
-            name: (data.name as string) || primaryRestaurantName,
-            location: ((data.location as string) || "").trim(),
-          });
-        } else {
-          setRestaurantInfo(null);
-        }
-      });
+    filtered.maybeSingle().then(({ data }) => {
+      if (!alive) return;
+      if (data && typeof data.lat === "number" && typeof data.lng === "number") {
+        setRestaurantCoords({ lat: data.lat, lng: data.lng });
+      } else {
+        setRestaurantCoords(null);
+      }
+      if (data) {
+        setRestaurantInfo({
+          name: (data.name as string) || primaryRestaurantName,
+          location: ((data.location as string) || "").trim(),
+        });
+      } else {
+        setRestaurantInfo(null);
+      }
+    });
     return () => {
       alive = false;
     };
@@ -254,9 +252,12 @@ const CheckoutDialog = ({
         p_address: address,
       });
       if (cancelled) return;
-      const row = (Array.isArray(data) ? data[0] : data) as
-        | { covered: boolean; online_in_area: number; total_online: number; address_tag: string | null }
-        | null;
+      const row = (Array.isArray(data) ? data[0] : data) as {
+        covered: boolean;
+        online_in_area: number;
+        total_online: number;
+        address_tag: string | null;
+      } | null;
       if (row) {
         setCoverage(row);
         // If we previously had no driver and now one is online, notify the customer.
@@ -1288,7 +1289,11 @@ const CheckoutDialog = ({
               : `Confirm & Pay ${storeInfo.currency}${total.toFixed(2)}`}
           </button>
           <p className="text-center text-[11px] text-muted-foreground">
-            Final amount you'll be charged: <span className="font-bold text-foreground">{storeInfo.currency}{total.toFixed(2)}</span>
+            Final amount you'll be charged:{" "}
+            <span className="font-bold text-foreground">
+              {storeInfo.currency}
+              {total.toFixed(2)}
+            </span>
           </p>
 
           <p className="text-center text-[10px] text-muted-foreground">{storeInfo.paymentNote}</p>

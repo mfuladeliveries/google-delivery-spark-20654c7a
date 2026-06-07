@@ -408,7 +408,6 @@ const DriverActiveDelivery = ({
                   </span>
                 </div>
               </div>
-
             </div>
           </div>
         );

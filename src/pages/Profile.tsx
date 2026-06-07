@@ -235,12 +235,8 @@ const Profile = () => {
                     async (pos) => {
                       try {
                         const { reverseGeocode } = await import("@/lib/geocode");
-                        const r = await reverseGeocode(
-                          pos.coords.latitude,
-                          pos.coords.longitude,
-                        );
-                        if (r?.address)
-                          setProfile((p) => ({ ...p, address: r.address }));
+                        const r = await reverseGeocode(pos.coords.latitude, pos.coords.longitude);
+                        if (r?.address) setProfile((p) => ({ ...p, address: r.address }));
                       } catch {
                         /* ignore */
                       }

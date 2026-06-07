@@ -218,7 +218,11 @@ const OrderCard = ({
               disabled={disableActions || rejecting || accepting}
               className="rounded-xl border-2 border-destructive/30 bg-card py-2.5 text-xs font-bold text-destructive disabled:opacity-50 transition-all hover:bg-destructive/5 active:scale-[0.98] flex items-center justify-center gap-1.5"
             >
-              {rejecting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <X className="h-3.5 w-3.5" />}
+              {rejecting ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <X className="h-3.5 w-3.5" />
+              )}
               {rejecting ? "Rejecting…" : "Reject"}
             </button>
             <button
@@ -229,7 +233,11 @@ const OrderCard = ({
               disabled={disableActions || accepting || rejecting}
               className="rounded-xl bg-primary py-2.5 text-xs font-bold text-primary-foreground disabled:opacity-50 transition-all hover:opacity-95 active:scale-[0.98] shadow-orange flex items-center justify-center gap-1.5"
             >
-              {accepting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
+              {accepting ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <Check className="h-3.5 w-3.5" />
+              )}
               {accepting ? "Accepting…" : "Accept"}
             </button>
           </div>

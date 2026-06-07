@@ -8,7 +8,7 @@ import { getPasswordResetRedirect } from "@/lib/passwordReset";
 const SUPPORT_WHATSAPP = "27686768409";
 const buildSupportLink = (email: string) =>
   `https://wa.me/${SUPPORT_WHATSAPP}?text=${encodeURIComponent(
-    `Hi Mfula Deliveries, I can't receive the password reset email for "${email}". Please help me recover my account.`
+    `Hi Mfula Deliveries, I can't receive the password reset email for "${email}". Please help me recover my account.`,
   )}`;
 
 const MAX_RESENDS = 3;
@@ -49,10 +49,9 @@ const ForgotPassword = () => {
     setLoading(true);
 
     // Pre-check: does the account exist and is the email confirmed?
-    const { data: checkData, error: checkErr } = await supabase.rpc(
-      "check_email_verified",
-      { p_email: email.trim() }
-    );
+    const { data: checkData, error: checkErr } = await supabase.rpc("check_email_verified", {
+      p_email: email.trim(),
+    });
 
     if (checkErr) {
       setLoading(false);
@@ -150,12 +149,10 @@ const ForgotPassword = () => {
                   <div className="flex items-start gap-3">
                     <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-destructive" />
                     <div>
-                      <p className="text-sm font-semibold text-foreground">
-                        Email not verified
-                      </p>
+                      <p className="text-sm font-semibold text-foreground">Email not verified</p>
                       <p className="mt-1 text-xs text-muted-foreground">
-                        This account exists but the email hasn't been confirmed yet.
-                        You need to verify your email before you can reset your password.
+                        This account exists but the email hasn't been confirmed yet. You need to
+                        verify your email before you can reset your password.
                       </p>
                       <button
                         type="button"
@@ -164,15 +161,15 @@ const ForgotPassword = () => {
                         className="btn-glow mt-3 flex w-full items-center justify-center gap-2 rounded-xl gradient-maroon py-2.5 font-display font-bold text-primary-foreground transition-transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50"
                       >
                         {verifyLoading && <Loader2 className="h-4 w-4 animate-spin" />}
-                        {verifyLoading ? "Sending..." : (
+                        {verifyLoading ? (
+                          "Sending..."
+                        ) : (
                           <>
                             <Send className="h-4 w-4" /> Resend Verification Email
                           </>
                         )}
                       </button>
-                      {verifyMsg && (
-                        <p className="mt-2 text-xs text-primary">{verifyMsg}</p>
-                      )}
+                      {verifyMsg && <p className="mt-2 text-xs text-primary">{verifyMsg}</p>}
                     </div>
                   </div>
                 </div>
@@ -237,23 +234,20 @@ const ForgotPassword = () => {
               <h2 className="mt-5 font-display text-xl font-bold text-foreground">
                 Check your email
               </h2>
-              <p className="mt-3 text-sm text-muted-foreground">
-                If an account exists for:
-              </p>
+              <p className="mt-3 text-sm text-muted-foreground">If an account exists for:</p>
               <p className="mt-1 break-all text-sm font-semibold text-foreground">{email}</p>
               <p className="mt-2 text-sm text-muted-foreground">
                 we've sent a reset link from{" "}
-                <span className="font-semibold text-foreground">notify.mfuladeliveries.online</span>.
-                The link expires in 1 hour.
+                <span className="font-semibold text-foreground">notify.mfuladeliveries.online</span>
+                . The link expires in 1 hour.
               </p>
 
               <div className="mt-5 rounded-xl border border-border bg-secondary/40 p-4 text-left">
-                <p className="text-sm font-semibold text-foreground">
-                  Haven't received it yet?
-                </p>
+                <p className="text-sm font-semibold text-foreground">Haven't received it yet?</p>
                 <p className="mt-1.5 text-xs text-muted-foreground">
-                  Emails can take up to <span className="font-medium text-foreground">2 minutes</span> to arrive.
-                  Please wait, then check your <span className="font-medium text-foreground">Spam</span>,{" "}
+                  Emails can take up to{" "}
+                  <span className="font-medium text-foreground">2 minutes</span> to arrive. Please
+                  wait, then check your <span className="font-medium text-foreground">Spam</span>,{" "}
                   <span className="font-medium text-foreground">Promotions</span> and{" "}
                   <span className="font-medium text-foreground">Updates</span> folders.
                 </p>
