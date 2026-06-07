@@ -17,6 +17,7 @@ const Auth = () => {
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showPwd, setShowPwd] = useState(false);
   const navigate = useNavigate();
   const { user, roles, loading: authLoading } = useAuth();
 
