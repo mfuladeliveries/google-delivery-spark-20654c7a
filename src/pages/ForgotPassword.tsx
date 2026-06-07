@@ -145,6 +145,39 @@ const ForgotPassword = () => {
                 </p>
               </div>
 
+              {unverified && (
+                <div className="mb-4 rounded-xl border border-destructive/30 bg-destructive/5 p-4">
+                  <div className="flex items-start gap-3">
+                    <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-destructive" />
+                    <div>
+                      <p className="text-sm font-semibold text-foreground">
+                        Email not verified
+                      </p>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        This account exists but the email hasn't been confirmed yet.
+                        You need to verify your email before you can reset your password.
+                      </p>
+                      <button
+                        type="button"
+                        onClick={resendVerification}
+                        disabled={verifyLoading}
+                        className="btn-glow mt-3 flex w-full items-center justify-center gap-2 rounded-xl gradient-maroon py-2.5 font-display font-bold text-primary-foreground transition-transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50"
+                      >
+                        {verifyLoading && <Loader2 className="h-4 w-4 animate-spin" />}
+                        {verifyLoading ? "Sending..." : (
+                          <>
+                            <Send className="h-4 w-4" /> Resend Verification Email
+                          </>
+                        )}
+                      </button>
+                      {verifyMsg && (
+                        <p className="mt-2 text-xs text-primary">{verifyMsg}</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
                   <label className="mb-1 block text-sm font-medium text-foreground">
@@ -156,6 +189,8 @@ const ForgotPassword = () => {
                     onChange={(e) => {
                       setEmail(e.target.value);
                       setError("");
+                      setUnverified(false);
+                      setVerifyMsg("");
                     }}
                     required
                     autoComplete="email"
