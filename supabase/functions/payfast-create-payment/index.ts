@@ -139,6 +139,8 @@ Deno.serve(async (req) => {
       item_name: `Mfula Order #${order.order_number}`.slice(0, 100),
       item_description: `Order from ${order.restaurant}`.slice(0, 255),
       custom_str1: String(order.order_number),
+      // Pre-select card or EFT on PayFast's hosted checkout when the customer chose one.
+      payment_method: paymentMethodHint,
     };
 
     // Drop empty optional fields before signing.
