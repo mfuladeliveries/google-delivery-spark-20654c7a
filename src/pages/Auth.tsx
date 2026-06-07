@@ -6,6 +6,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { storeInfo } from "@/data/menu";
 import { getHomeRouteForRoles } from "@/lib/homeRoute";
 import { shouldNudgeInstall, markInstallNudged } from "@/lib/installRedirect";
+import { Eye, EyeOff } from "lucide-react";
 
 const Auth = () => {
   const [isLogin, setIsLogin] = useState(true);
