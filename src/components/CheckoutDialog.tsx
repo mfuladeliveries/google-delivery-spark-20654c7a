@@ -657,6 +657,7 @@ const CheckoutDialog = ({
           orderNumber: orderNum,
           total: orderTotalNum,
           restaurant: restaurants[0] || undefined,
+          payfastMethod,
         },
         replace: true,
       });
