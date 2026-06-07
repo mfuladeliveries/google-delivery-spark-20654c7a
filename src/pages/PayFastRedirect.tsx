@@ -51,6 +51,7 @@ const PayFastRedirect = () => {
         body: {
           order_id: state.orderId,
           return_origin: window.location.origin,
+          payment_method: state.payfastMethod,
         },
       });
 
