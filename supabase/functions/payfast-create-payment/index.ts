@@ -58,6 +58,11 @@ Deno.serve(async (req) => {
     const body = await req.json().catch(() => ({}));
     const orderId = String(body.order_id ?? "").trim();
     const returnOrigin = String(body.return_origin ?? "").trim();
+    // Optional PayFast payment_method hint. Whitelist to known codes so we don't
+    // forward arbitrary client input. 'cc' = card, 'ef' = Instant EFT.
+    const ALLOWED_METHODS = new Set(["cc", "ef", "dc", "mp", "mc", "sc", "ss", "zp"]);
+    const rawMethod = String(body.payment_method ?? "").trim().toLowerCase();
+    const paymentMethodHint = ALLOWED_METHODS.has(rawMethod) ? rawMethod : "";
     if (!orderId) {
       return new Response(JSON.stringify({ error: "order_id required" }), {
         status: 400,
