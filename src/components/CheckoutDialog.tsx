@@ -129,6 +129,9 @@ const CheckoutDialog = ({
   // PayFast-only — kept as a constant to minimise churn through the rest of the file.
   const paymentMethod: "online" = "online";
   const setPaymentMethod = (_: "online") => {}; // no-op kept for legacy refs
+  // Which PayFast payment method to pre-select on the hosted checkout.
+  // 'cc' = card, 'ef' = Instant EFT. PayFast accepts either via the payment_method field.
+  const [payfastMethod, setPayfastMethod] = useState<"cc" | "ef">("cc");
   const [loading, setLoading] = useState(false);
   const [profileLoaded, setProfileLoaded] = useState(false);
   const [restaurantCoords, setRestaurantCoords] = useState<{ lat: number; lng: number } | null>(
