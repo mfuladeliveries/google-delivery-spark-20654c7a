@@ -60,6 +60,11 @@ const ForgotPassword = () => {
     }
 
     const result = checkData as { exists?: boolean; confirmed?: boolean } | null;
+    if (result?.exists === false) {
+      setLoading(false);
+      setError("No account was found with this email address.");
+      return;
+    }
     if (result?.exists === true && result?.confirmed === false) {
       setLoading(false);
       setUnverified(true);
@@ -72,12 +77,12 @@ const ForgotPassword = () => {
     setLoading(false);
     if (sbError) {
       const msg = sbError.message?.toLowerCase() ?? "";
-      if (msg.includes("not found") || msg.includes("user")) {
-        setError("No account found with this email address.");
-      } else if (msg.includes("network") || msg.includes("fetch")) {
+      if (msg.includes("network") || msg.includes("fetch")) {
         setError("Connection failed. Please check your internet and try again.");
+      } else if (msg.includes("rate") || msg.includes("too many")) {
+        setError("Too many attempts. Please wait a moment and try again.");
       } else {
-        setError(sbError.message || "Something went wrong. Please try again.");
+        setError("We couldn't send the reset email. Please try again.");
       }
       return;
     }
