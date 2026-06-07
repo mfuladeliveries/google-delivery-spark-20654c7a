@@ -1,9 +1,15 @@
 import { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
-import { Mail, Loader2, ArrowLeft } from "lucide-react";
+import { Mail, Loader2, ArrowLeft, MessageCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { storeInfo } from "@/data/menu";
 import { getPasswordResetRedirect } from "@/lib/passwordReset";
+
+const SUPPORT_WHATSAPP = "27686768409";
+const buildSupportLink = (email: string) =>
+  `https://wa.me/${SUPPORT_WHATSAPP}?text=${encodeURIComponent(
+    `Hi Mfula Deliveries, I can't receive the password reset email for "${email}". Please help me recover my account.`
+  )}`;
 
 const MAX_RESENDS = 3;
 const RESEND_COOLDOWN = 60;
