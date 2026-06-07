@@ -37,9 +37,9 @@ const EMAIL_TEMPLATES: Record<string, React.ComponentType<any>> = {
 
 // Configuration
 const SITE_NAME = "Mfula Deliveries"
-const SENDER_DOMAIN = "notify.gmail.com"
-const ROOT_DOMAIN = "gmail.com"
-const FROM_DOMAIN = "notify.gmail.com" // Domain shown in From address (may be root or sender subdomain)
+const SENDER_DOMAIN = "notify.mfuladeliveries.online"
+const ROOT_DOMAIN = "mfuladeliveries.online"
+const FROM_DOMAIN = "notify.mfuladeliveries.online" // Domain shown in From address (may be root or sender subdomain)
 
 // Sample data for preview mode ONLY (not used in actual email sending).
 // URLs are baked in at scaffold time from the project's real data.
