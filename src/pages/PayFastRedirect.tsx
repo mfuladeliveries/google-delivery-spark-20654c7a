@@ -10,6 +10,8 @@ interface PayState {
   orderNumber: number | string;
   total: number;
   restaurant?: string;
+  /** PayFast payment_method hint: 'cc' = card, 'ef' = Instant EFT. Optional. */
+  payfastMethod?: "cc" | "ef";
 }
 
 const PayFastRedirect = () => {
