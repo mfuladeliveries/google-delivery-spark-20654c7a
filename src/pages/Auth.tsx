@@ -34,19 +34,93 @@ const Auth = () => {
     navigate(getHomeRouteForRoles(roles), { replace: true });
   }, [user, roles, authLoading, navigate]);
 
+  const mapLoginError = (raw: string): string => {
+    const m = raw.toLowerCase();
+    if (m.includes("invalid login") || m.includes("invalid credentials")) {
+      return "Incorrect email or password. Please try again.";
+    }
+    if (m.includes("email not confirmed") || m.includes("not confirmed")) {
+      return "Please verify your email before signing in. Check your inbox for the verification code.";
+    }
+    if (m.includes("network") || m.includes("fetch")) {
+      return "Connection failed. Please check your internet and try again.";
+    }
+    if (m.includes("rate") || m.includes("too many")) {
+      return "Too many attempts. Please wait a moment and try again.";
+    }
+    return "We couldn't sign you in. Please try again.";
+  };
+
+  const mapSignupError = (raw: string): string => {
+    const m = raw.toLowerCase();
+    if (
+      m.includes("already registered") ||
+      m.includes("already exists") ||
+      m.includes("user already")
+    ) {
+      return "This email address is already registered. Please log in or use Forgot Password if you have forgotten your password.";
+    }
+    if (m.includes("password") && (m.includes("short") || m.includes("characters"))) {
+      return "Password must be at least 6 characters.";
+    }
+    if (m.includes("valid email") || m.includes("invalid email")) {
+      return "Please enter a valid email address.";
+    }
+    if (m.includes("network") || m.includes("fetch")) {
+      return "Connection failed. Please check your internet and try again.";
+    }
+    return "We couldn't create your account. Please try again.";
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (loading) return;
     setError("");
     setMessage("");
     setLoading(true);
 
     if (isLogin) {
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
-      if (error) setError(error.message);
-      // Redirect happens via the useEffect above once roles load
+      const { data: checkData } = await supabase.rpc("check_email_verified", {
+        p_email: email.trim(),
+      });
+      const result = checkData as { exists?: boolean; confirmed?: boolean } | null;
+      if (result && result.exists === false) {
+        setError("No account was found with this email address. Please register first.");
+        setLoading(false);
+        return;
+      }
+
+      const { error } = await supabase.auth.signInWithPassword({
+        email: email.trim(),
+        password,
+      });
+      if (error) {
+        if (result?.exists === true) {
+          const m = error.message.toLowerCase();
+          if (m.includes("invalid login") || m.includes("invalid credentials")) {
+            setError("Incorrect password. Please try again or reset your password.");
+          } else {
+            setError(mapLoginError(error.message));
+          }
+        } else {
+          setError(mapLoginError(error.message));
+        }
+      }
     } else {
-      const { error } = await supabase.auth.signUp({ email, password });
-      if (error) setError(error.message);
+      const { data: checkData } = await supabase.rpc("check_email_verified", {
+        p_email: email.trim(),
+      });
+      const result = checkData as { exists?: boolean; confirmed?: boolean } | null;
+      if (result?.exists === true) {
+        setError(
+          "This email address is already registered. Please log in or use Forgot Password if you have forgotten your password.",
+        );
+        setLoading(false);
+        return;
+      }
+
+      const { error } = await supabase.auth.signUp({ email: email.trim(), password });
+      if (error) setError(mapSignupError(error.message));
       else {
         setShowOtp(true);
         setMessage("We sent a 6-digit code to your email. Enter it below to verify.");
@@ -57,11 +131,22 @@ const Auth = () => {
 
   const handleVerifyOtp = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (loading) return;
     setError("");
     setLoading(true);
-    const { error } = await supabase.auth.verifyOtp({ email, token: otp, type: "signup" });
-    if (error) setError(error.message);
-    // Redirect happens via the useEffect above once roles load
+    const { error } = await supabase.auth.verifyOtp({
+      email: email.trim(),
+      token: otp,
+      type: "signup",
+    });
+    if (error) {
+      const m = error.message.toLowerCase();
+      if (m.includes("expired") || m.includes("invalid")) {
+        setError("That code is invalid or has expired. Please request a new one.");
+      } else {
+        setError("Verification failed. Please try again.");
+      }
+    }
     setLoading(false);
   };
 
