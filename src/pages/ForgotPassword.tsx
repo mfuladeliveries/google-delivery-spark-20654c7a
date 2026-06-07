@@ -245,7 +245,7 @@ const ForgotPassword = () => {
                 ) : (
                   <button
                     type="button"
-                    onClick={() => sendLink(true)}
+                    onClick={() => checkAndSend(true)}
                     disabled={loading}
                     className="btn-glow flex w-full items-center justify-center gap-2 rounded-xl gradient-maroon py-2.5 font-display font-bold text-primary-foreground transition-transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50"
                   >
