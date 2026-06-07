@@ -1330,6 +1330,7 @@ export type Database = {
             Args: { p_address?: string; p_lat: number; p_lng: number }
             Returns: Json
           }
+      check_email_verified: { Args: { p_email: string }; Returns: Json }
       check_rate_limit: {
         Args: {
           p_action: string

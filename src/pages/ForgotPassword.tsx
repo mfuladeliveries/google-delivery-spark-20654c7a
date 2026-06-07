@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
-import { Mail, Loader2, ArrowLeft, MessageCircle } from "lucide-react";
+import { Mail, Loader2, ArrowLeft, MessageCircle, AlertCircle, Send } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { storeInfo } from "@/data/menu";
 import { getPasswordResetRedirect } from "@/lib/passwordReset";
@@ -22,6 +22,9 @@ const ForgotPassword = () => {
   const [resendCount, setResendCount] = useState(0);
   const [secondsLeft, setSecondsLeft] = useState(0);
   const timerRef = useRef<number | null>(null);
+  const [unverified, setUnverified] = useState(false);
+  const [verifyLoading, setVerifyLoading] = useState(false);
+  const [verifyMsg, setVerifyMsg] = useState("");
 
   useEffect(() => {
     if (secondsLeft <= 0) return;
@@ -35,13 +38,35 @@ const ForgotPassword = () => {
 
   const isValidEmail = (v: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim());
 
-  const sendLink = async (isResend = false) => {
+  const checkAndSend = async (isResend = false) => {
     setError("");
+    setUnverified(false);
+    setVerifyMsg("");
     if (!isValidEmail(email)) {
       setError("Please enter a valid email address.");
       return;
     }
     setLoading(true);
+
+    // Pre-check: does the account exist and is the email confirmed?
+    const { data: checkData, error: checkErr } = await supabase.rpc(
+      "check_email_verified",
+      { p_email: email.trim() }
+    );
+
+    if (checkErr) {
+      setLoading(false);
+      setError("Unable to check account status. Please try again.");
+      return;
+    }
+
+    const result = checkData as { exists?: boolean; confirmed?: boolean } | null;
+    if (result?.exists === true && result?.confirmed === false) {
+      setLoading(false);
+      setUnverified(true);
+      return;
+    }
+
     const { error: sbError } = await supabase.auth.resetPasswordForEmail(email.trim(), {
       redirectTo: getPasswordResetRedirect(),
     });
@@ -65,9 +90,24 @@ const ForgotPassword = () => {
     if (isResend) setResendCount((c) => c + 1);
   };
 
+  const resendVerification = async () => {
+    setVerifyLoading(true);
+    setVerifyMsg("");
+    const { error: sbError } = await supabase.auth.resend({
+      type: "signup",
+      email: email.trim(),
+    });
+    setVerifyLoading(false);
+    if (sbError) {
+      setVerifyMsg(sbError.message || "Could not resend verification email.");
+      return;
+    }
+    setVerifyMsg("Verification email resent! Check your inbox (and Spam folder).");
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    sendLink(false);
+    checkAndSend(false);
   };
 
   const formatTime = (s: number) => {
@@ -105,6 +145,39 @@ const ForgotPassword = () => {
                 </p>
               </div>
 
+              {unverified && (
+                <div className="mb-4 rounded-xl border border-destructive/30 bg-destructive/5 p-4">
+                  <div className="flex items-start gap-3">
+                    <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-destructive" />
+                    <div>
+                      <p className="text-sm font-semibold text-foreground">
+                        Email not verified
+                      </p>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        This account exists but the email hasn't been confirmed yet.
+                        You need to verify your email before you can reset your password.
+                      </p>
+                      <button
+                        type="button"
+                        onClick={resendVerification}
+                        disabled={verifyLoading}
+                        className="btn-glow mt-3 flex w-full items-center justify-center gap-2 rounded-xl gradient-maroon py-2.5 font-display font-bold text-primary-foreground transition-transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50"
+                      >
+                        {verifyLoading && <Loader2 className="h-4 w-4 animate-spin" />}
+                        {verifyLoading ? "Sending..." : (
+                          <>
+                            <Send className="h-4 w-4" /> Resend Verification Email
+                          </>
+                        )}
+                      </button>
+                      {verifyMsg && (
+                        <p className="mt-2 text-xs text-primary">{verifyMsg}</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
                   <label className="mb-1 block text-sm font-medium text-foreground">
@@ -116,6 +189,8 @@ const ForgotPassword = () => {
                     onChange={(e) => {
                       setEmail(e.target.value);
                       setError("");
+                      setUnverified(false);
+                      setVerifyMsg("");
                     }}
                     required
                     autoComplete="email"
@@ -205,7 +280,7 @@ const ForgotPassword = () => {
                 ) : (
                   <button
                     type="button"
-                    onClick={() => sendLink(true)}
+                    onClick={() => checkAndSend(true)}
                     disabled={loading}
                     className="btn-glow flex w-full items-center justify-center gap-2 rounded-xl gradient-maroon py-2.5 font-display font-bold text-primary-foreground transition-transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50"
                   >
