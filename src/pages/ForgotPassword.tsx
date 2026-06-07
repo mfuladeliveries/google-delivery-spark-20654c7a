@@ -160,33 +160,61 @@ const ForgotPassword = () => {
                 <Mail className="h-8 w-8 text-primary" />
               </div>
               <h2 className="mt-5 font-display text-xl font-bold text-foreground">
-                Check your email!
+                Check your email
               </h2>
               <p className="mt-3 text-sm text-muted-foreground">
                 If an account exists for:
               </p>
               <p className="mt-1 break-all text-sm font-semibold text-foreground">{email}</p>
-              <p className="mt-4 text-sm text-muted-foreground">
+              <p className="mt-2 text-sm text-muted-foreground">
                 we've sent a reset link from{" "}
                 <span className="font-semibold text-foreground">notify.mfuladeliveries.online</span>.
-                It can take 1–2 minutes to arrive and the link expires in 1 hour.
+                The link expires in 1 hour.
               </p>
 
-              <div className="mt-4 rounded-xl border border-border bg-secondary/40 p-3 text-left text-xs text-muted-foreground">
-                <p className="font-semibold text-foreground">Not in your inbox?</p>
-                <ul className="mt-1 list-disc space-y-1 pl-4">
-                  <li>Check <span className="font-medium text-foreground">Spam</span>, <span className="font-medium text-foreground">Promotions</span> and <span className="font-medium text-foreground">Updates</span> folders.</li>
-                  <li>Make sure you typed the same email you signed up with.</li>
-                  <li>Add <span className="font-medium text-foreground">notify.mfuladeliveries.online</span> to your contacts.</li>
-                </ul>
+              <div className="mt-5 rounded-xl border border-border bg-secondary/40 p-4 text-left">
+                <p className="text-sm font-semibold text-foreground">
+                  Haven't received it yet?
+                </p>
+                <p className="mt-1.5 text-xs text-muted-foreground">
+                  Emails can take up to <span className="font-medium text-foreground">2 minutes</span> to arrive.
+                  Please wait, then check your <span className="font-medium text-foreground">Spam</span>,{" "}
+                  <span className="font-medium text-foreground">Promotions</span> and{" "}
+                  <span className="font-medium text-foreground">Updates</span> folders.
+                </p>
+                <p className="mt-1.5 text-xs text-muted-foreground">
+                  Make sure you typed the same email you signed up with, and add{" "}
+                  <span className="font-medium text-foreground">notify.mfuladeliveries.online</span>{" "}
+                  to your contacts.
+                </p>
               </div>
 
-              <a
-                href="mailto:"
-                className="btn-glow mt-5 inline-flex w-full items-center justify-center rounded-xl gradient-maroon py-2.5 font-display font-bold text-primary-foreground transition-transform hover:scale-[1.02] active:scale-[0.98]"
-              >
-                Open Email App
-              </a>
+              <div className="mt-5">
+                {resendsExhausted ? (
+                  <p className="text-sm text-destructive">
+                    Too many attempts. Please try again later.
+                  </p>
+                ) : secondsLeft > 0 ? (
+                  <button
+                    type="button"
+                    disabled
+                    className="btn-glow flex w-full items-center justify-center gap-2 rounded-xl border border-border bg-card py-2.5 text-sm font-semibold text-muted-foreground"
+                  >
+                    Resend email in {formatTime(secondsLeft)}
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => sendLink(true)}
+                    disabled={loading}
+                    className="btn-glow flex w-full items-center justify-center gap-2 rounded-xl gradient-maroon py-2.5 font-display font-bold text-primary-foreground transition-transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50"
+                  >
+                    {loading && <Loader2 className="h-4 w-4 animate-spin" />}
+                    {loading ? "Sending..." : "Resend email"}
+                  </button>
+                )}
+                {error && <p className="mt-2 text-sm text-destructive">{error}</p>}
+              </div>
 
               <a
                 href={buildSupportLink(email)}
@@ -197,27 +225,6 @@ const ForgotPassword = () => {
                 <MessageCircle className="h-4 w-4 text-[#25D366]" />
                 Still stuck? Chat with support
               </a>
-
-              <div className="mt-5 text-sm">
-                <p className="text-muted-foreground">Didn't receive it?</p>
-                {resendsExhausted ? (
-                  <p className="mt-1 text-destructive">
-                    Too many attempts. Please try again later.
-                  </p>
-                ) : secondsLeft > 0 ? (
-                  <p className="mt-1 text-muted-foreground">Resend in {formatTime(secondsLeft)}</p>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => sendLink(true)}
-                    disabled={loading}
-                    className="mt-1 font-semibold text-primary hover:underline disabled:opacity-50"
-                  >
-                    {loading ? "Sending..." : "Resend email"}
-                  </button>
-                )}
-                {error && <p className="mt-2 text-destructive">{error}</p>}
-              </div>
 
               <Link
                 to="/auth"
