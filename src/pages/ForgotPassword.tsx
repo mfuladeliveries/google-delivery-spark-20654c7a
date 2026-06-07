@@ -135,6 +135,18 @@ const ForgotPassword = () => {
                 </button>
               </form>
 
+              <p className="mt-4 text-center text-xs text-muted-foreground">
+                Used a different email?{" "}
+                <a
+                  href={buildSupportLink(email || "my account")}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 font-semibold text-primary hover:underline"
+                >
+                  <MessageCircle className="h-3.5 w-3.5" /> WhatsApp support
+                </a>
+              </p>
+
               <Link
                 to="/auth"
                 className="mt-6 flex items-center justify-center gap-1 text-sm text-muted-foreground hover:text-foreground"
