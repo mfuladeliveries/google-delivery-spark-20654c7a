@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
-import { Mail, Loader2, ArrowLeft, MessageCircle } from "lucide-react";
+import { Mail, Loader2, ArrowLeft, MessageCircle, AlertCircle, Send } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { storeInfo } from "@/data/menu";
 import { getPasswordResetRedirect } from "@/lib/passwordReset";
