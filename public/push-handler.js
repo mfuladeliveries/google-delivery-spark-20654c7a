@@ -43,7 +43,6 @@ self.addEventListener("push", (event) => {
         icon: "/notification-logo.png",
         vibrate: DEFAULT_VIBRATION,
         requireInteraction: true,
-        silent: true,
       })
     );
   }
