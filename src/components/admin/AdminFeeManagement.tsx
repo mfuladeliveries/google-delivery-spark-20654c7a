@@ -269,12 +269,76 @@ const AdminFeeManagement = () => {
             </p>
           </div>
           {!creating && (
+          </div>
+        </div>
+      </div>
+
+      {/* Driver split */}
+      <section className="rounded-2xl border border-border bg-card p-4 space-y-3">
+        <div className="flex items-start gap-3">
+          <Users className="h-5 w-5 text-primary mt-0.5" />
+          <div className="flex-1">
+            <h3 className="font-bold text-foreground">Driver share of delivery fee</h3>
+            <p className="text-xs text-muted-foreground">
+              Percentage of each customer delivery fee paid to the driver on delivery. The remainder
+              becomes platform commission. Applies to newly delivered orders only.
+            </p>
+          </div>
+        </div>
+        <div className="flex items-end gap-2">
+          <div className="flex-1">
+            <label className="text-xs font-semibold text-muted-foreground mb-1 block">
+              Driver share (%)
+            </label>
+            <input
+              type="number"
+              min={0}
+              max={100}
+              step={1}
+              value={splitInput}
+              onChange={(e) => setSplitInput(e.target.value)}
+              className="w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm text-foreground focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none"
+            />
+          </div>
+          <button
+            onClick={saveSplit}
+            disabled={savingSplit || splitInput === String(splitPct)}
+            className="rounded-xl bg-primary px-4 py-2.5 text-sm font-bold text-primary-foreground disabled:opacity-50 hover:opacity-90"
+          >
+            {savingSplit ? "Saving…" : "Save"}
+          </button>
+        </div>
+        <div className="rounded-xl bg-secondary/40 px-3 py-2 text-xs text-muted-foreground">
+          Example on R55 delivery fee:{" "}
+          <span className="font-bold text-emerald-600">
+            Driver R{((55 * splitPct) / 100).toFixed(2)}
+          </span>{" "}
+          ·{" "}
+          <span className="font-bold text-foreground">
+            Platform R{(55 - (55 * splitPct) / 100).toFixed(2)}
+          </span>
+        </div>
+      </section>
+
+      {/* Peak windows */}
+      <section className="space-y-3">
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="font-bold text-foreground">Peak-time surcharges</h3>
+            <p className="text-xs text-muted-foreground">
+              Flat rand amount added to every delivery during the window. Multiple active windows
+              stack.
+            </p>
+          </div>
+          {!creating && (
             <button
               onClick={startCreate}
               className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-3 py-2 text-xs font-bold text-primary-foreground hover:opacity-90"
             >
               <Plus className="h-3.5 w-3.5" /> New window
             </button>
+          )}
+        </div>
           )}
         </div>
 
