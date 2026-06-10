@@ -1,7 +1,18 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Clock, Plus, Pencil, Trash2, X, Check, Power, PowerOff, History } from "lucide-react";
+import {
+  Clock,
+  Plus,
+  Pencil,
+  Trash2,
+  X,
+  Check,
+  Power,
+  PowerOff,
+  History,
+  Users,
+} from "lucide-react";
 
 interface PeakWindow {
   id: string;
