@@ -33,7 +33,7 @@ const teardownAudio = () => {
       audio.currentTime = 0;
       audio.loop = false;
       audio.onended = null;
-      audio = null;
+      audio = null; // null the ref so a stale handle can never replay
     }
   } catch {
     /* ignore */
