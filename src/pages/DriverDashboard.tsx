@@ -409,13 +409,8 @@ const DriverDashboard = () => {
     respondedOfferIdsRef.current.add(orderId);
 
     // Stop ringtone + vibration + OS notification immediately on user action
-    stopNotificationSound();
+    markOfferResponded(orderId);
     clearOfferNotifications(orderId);
-    try {
-      if ("vibrate" in navigator) navigator.vibrate(0);
-    } catch {
-      /* ignore */
-    }
     setAcceptingId(orderId);
 
     // Decide which RPC: targeted offer to me → driver_accept_offer, broadcast → claim_order
