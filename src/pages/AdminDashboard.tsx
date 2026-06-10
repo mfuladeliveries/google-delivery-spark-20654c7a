@@ -71,6 +71,7 @@ interface RecentOrder {
   order_number: number;
   customer_name: string;
   total: number;
+  delivery_fee: number | null;
   status: string;
   restaurant: string;
   created_at: string;
