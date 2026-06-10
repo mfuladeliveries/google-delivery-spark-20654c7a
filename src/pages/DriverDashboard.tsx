@@ -423,8 +423,8 @@ const DriverDashboard = () => {
       return;
     }
     respondedOfferIdsRef.current.add(orderId);
-
     markOfferResponded(orderId);
+    stopNotificationSound();
     clearOfferNotifications(orderId);
 
     const wasActiveOffer = activeOffer?.id === orderId ? activeOffer : null;
