@@ -312,13 +312,9 @@ const Index = () => {
       !search.trim() ||
       r.name.toLowerCase().includes(search.toLowerCase()) ||
       r.cuisine.toLowerCase().includes(search.toLowerCase());
-    // Strict area gating: once we know where the customer is, only show
-    // restaurants assigned to their current delivery area. Without coords
-    // (denied/unsupported) we show everything so the list isn't empty.
-    // Strict area gating with a coord-based fallback: restaurants assigned
-    // to the current zone always pass. Untagged restaurants (area_id null)
-    // still pass if they physically sit inside the zone's radius, so admins
-    // forgetting to tag a restaurant doesn't hide it from nearby customers.
+    const matchesOpen = !openNowOnly || isRestaurantOpen(r.opens_at, r.closes_at);
+    const matchesRating = minRating === 0 || (r.rating ?? 0) >= minRating;
+    const matchesFavourite = !favouritesOnly || favouriteIds.has(r.id);
     let matchesArea = true;
     if (hasEffectiveCoords) {
       if (currentZone == null) {
@@ -338,7 +334,7 @@ const Index = () => {
         matchesArea = false;
       }
     }
-    return matchesCuisine && matchesSearch && matchesArea;
+    return matchesCuisine && matchesSearch && matchesArea && matchesOpen && matchesRating && matchesFavourite;
   });
 
   // Sort: nearby first, then by distance asc, then by rating desc as tiebreaker.
