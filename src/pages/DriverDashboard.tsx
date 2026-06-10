@@ -112,6 +112,7 @@ const DriverDashboard = () => {
   // Tracks offer IDs the driver has already responded to (accept/reject) so the
   // modal can never reopen for that offer, even if realtime updates arrive late.
   const respondedOfferIdsRef = useRef<Set<string>>(new Set());
+  // Synchronous tap guard — prevents double-tap race before React state flushes.
   const processingRef = useRef(false);
 
   // Auth + role gating is handled by <RoleGuard> in App.tsx, so this
@@ -162,12 +163,10 @@ const DriverDashboard = () => {
     return () => clearTimeout(timer);
   }, [activeOffer?.offer_expires_at, activeOffer?.id]);
 
-  // Play the new-order ringtone EXACTLY ONCE per offer (Uber Eats / Bolt / Mr D style).
-  // The notification manager guarantees a single audio instance and refuses to replay
-  // for offers that have already rung, been responded to, or been cancelled.
+  // Play the new-order ringtone EXACTLY ONCE per offer — keyed only on offer ID
+  // so that acceptingId/rejectingId state changes never re-trigger playback.
   useEffect(() => {
     if (!activeOffer) return;
-    if (acceptingId || rejectingId) return;
     if (respondedOfferIdsRef.current.has(activeOffer.id)) return;
     if (hasOfferRung(activeOffer.id)) return;
 
@@ -185,7 +184,7 @@ const DriverDashboard = () => {
         /* ignore */
       }
     }
-  }, [activeOffer?.id, activeOffer, acceptingId, rejectingId]);
+  }, [activeOffer?.id]); // ONLY re-run when a new offer arrives — not on state changes
 
   // Stop the ringtone if the modal closes, the tab is hidden, the driver goes offline,
   // or the component unmounts.
@@ -408,25 +407,28 @@ const DriverDashboard = () => {
   };
 
   const handleAccept = async (orderId: string) => {
+    // processingRef is a synchronous guard — catches double-taps before React
+    // state has had a chance to flush, which is what causes the "tap twice" bug.
     if (processingRef.current) return;
     processingRef.current = true;
 
     const order =
       (activeOffer && activeOffer.id === orderId ? activeOffer : null) ||
       pendingOrders.find((o) => o.id === orderId);
-    if (!order) {
+    if (!order || respondedOfferIdsRef.current.has(orderId)) {
       processingRef.current = false;
       return;
     }
-    if (respondedOfferIdsRef.current.has(orderId)) {
-      processingRef.current = false;
-      return;
-    }
+
+    // Mark as responded FIRST — stops sound and blocks any re-trigger from
+    // realtime updates or the sound useEffect re-running.
     respondedOfferIdsRef.current.add(orderId);
     markOfferResponded(orderId);
     stopNotificationSound();
     clearOfferNotifications(orderId);
 
+    // Close modal immediately BEFORE setting acceptingId so the button is
+    // never briefly re-enabled between renders — this was the double-tap cause.
     const wasActiveOffer = activeOffer?.id === orderId ? activeOffer : null;
     setActiveOffer(null);
     setAcceptingId(orderId);
@@ -482,19 +484,16 @@ const DriverDashboard = () => {
     respondedOfferIdsRef.current.add(orderId);
 
     setRejectingId(orderId);
-    // Stop ringtone + vibration + OS notification immediately on user action
     markOfferResponded(orderId);
+    stopNotificationSound();
     clearOfferNotifications(orderId);
     const order =
       activeOffer?.id === orderId ? activeOffer : pendingOrders.find((o) => o.id === orderId);
     const isTargetedToMe = order?.offered_to_driver_id === user!.id;
 
-    // Always remember locally so the order can't reappear in this driver's queue
-    // (dispatch also uses missed_by_driver_ids on the server to skip this driver).
     setRejectedIds((prev) => new Set(prev).add(orderId));
 
     if (isTargetedToMe) {
-      // Targeted decline: server forces offer expiry + advances chain to next driver
       const { error } = await supabase.rpc("driver_decline_offer", { p_order_id: orderId });
       if (error) {
         toast.error(error.message || "Failed to decline");
@@ -503,14 +502,12 @@ const DriverDashboard = () => {
         processingRef.current = false;
         return;
       }
-      // Also persist a local rejection record so it never re-shows on this device
       supabase
         .from("driver_rejected_orders")
         .insert({ driver_id: user!.id, order_id: orderId })
         .then(() => {});
       toast.info("Order rejected — passed to next driver");
     } else {
-      // Broadcast decline: hide locally only (don't affect other drivers)
       const { error } = await supabase
         .from("driver_rejected_orders")
         .insert({ driver_id: user!.id, order_id: orderId });
@@ -526,8 +523,6 @@ const DriverDashboard = () => {
     setRejectingId(null);
     processingRef.current = false;
   };
-
-
 
   const handleAcceptOffer = () => activeOffer && handleAccept(activeOffer.id);
   const handleRejectOffer = () => activeOffer && handleReject(activeOffer.id);
