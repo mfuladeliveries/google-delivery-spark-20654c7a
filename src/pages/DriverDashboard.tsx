@@ -171,13 +171,37 @@ const DriverDashboard = () => {
   useEffect(() => {
     if (!activeOffer?.offer_expires_at) return;
     const remaining = new Date(activeOffer.offer_expires_at).getTime() - Date.now();
-    if (remaining <= 0) {
+    const expire = () => {
+      const expired = activeOffer;
       setActiveOffer(null);
+      // Log a timeout rejection (once per offer) and bump the consecutive counter,
+      // but only if the driver hadn't already responded to it.
+      if (
+        expired &&
+        user &&
+        !respondedOfferIdsRef.current.has(expired.id) &&
+        !timeoutLoggedRef.current.has(expired.id)
+      ) {
+        timeoutLoggedRef.current.add(expired.id);
+        supabase
+          .from("order_rejections")
+          .insert({
+            order_id: expired.id,
+            driver_id: user.id,
+            reason: "timeout",
+            dispatch_phase: expired.dispatch_phase ?? null,
+          })
+          .then(() => {});
+        bumpConsecutiveRejections();
+      }
+    };
+    if (remaining <= 0) {
+      expire();
       return;
     }
-    const timer = setTimeout(() => setActiveOffer(null), remaining);
+    const timer = setTimeout(expire, remaining);
     return () => clearTimeout(timer);
-  }, [activeOffer?.offer_expires_at, activeOffer?.id]);
+  }, [activeOffer?.offer_expires_at, activeOffer?.id, user, bumpConsecutiveRejections]);
 
   // Play the new-order ringtone EXACTLY ONCE per offer — keyed only on offer ID
   // so that acceptingId/rejectingId state changes never re-trigger playback.
