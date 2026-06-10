@@ -15,7 +15,10 @@ import {
   RefreshCw,
   Pencil,
   X,
+  Heart,
+  Clock as ClockIcon,
 } from "lucide-react";
+import { isRestaurantOpen } from "@/lib/restaurantHours";
 import { supabase } from "@/integrations/supabase/client";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -51,6 +54,10 @@ const cuisineCategories = [
 const Index = () => {
   const [search, setSearch] = useState("");
   const [selectedCuisine, setSelectedCuisine] = useState("All");
+  const [openNowOnly, setOpenNowOnly] = useState(false);
+  const [minRating, setMinRating] = useState(0); // 0 | 3 | 4
+  const [favouritesOnly, setFavouritesOnly] = useState(false);
+  const [favouriteIds, setFavouriteIds] = useState<Set<string>>(new Set());
   const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
   const [loading, setLoading] = useState(true);
   const [cartOpen, setCartOpen] = useState(false);
