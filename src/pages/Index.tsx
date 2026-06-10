@@ -740,6 +740,60 @@ const Index = () => {
           )}
         </div>
 
+        {/* Quick filter chips */}
+        <section className="mb-4">
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => setOpenNowOnly((v) => !v)}
+              aria-pressed={openNowOnly}
+              className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold transition-all ${
+                openNowOnly
+                  ? "border-primary bg-primary text-primary-foreground shadow-maroon"
+                  : "border-border bg-card text-foreground hover:bg-secondary"
+              }`}
+            >
+              <ClockIcon className="h-3.5 w-3.5" /> Open now
+            </button>
+            {[
+              { val: 0, label: "All ratings" },
+              { val: 3, label: "⭐ 3+" },
+              { val: 4, label: "⭐ 4+" },
+            ].map((opt) => (
+              <button
+                key={opt.val}
+                type="button"
+                onClick={() => setMinRating(opt.val)}
+                aria-pressed={minRating === opt.val}
+                className={`inline-flex items-center gap-1 rounded-full border px-3 py-1.5 text-xs font-semibold transition-all ${
+                  minRating === opt.val
+                    ? "border-primary bg-primary text-primary-foreground shadow-maroon"
+                    : "border-border bg-card text-foreground hover:bg-secondary"
+                }`}
+              >
+                {opt.label}
+              </button>
+            ))}
+            {user && (
+              <button
+                type="button"
+                onClick={() => setFavouritesOnly((v) => !v)}
+                aria-pressed={favouritesOnly}
+                className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold transition-all ${
+                  favouritesOnly
+                    ? "border-primary bg-primary text-primary-foreground shadow-maroon"
+                    : "border-border bg-card text-foreground hover:bg-secondary"
+                }`}
+              >
+                <Heart
+                  className={`h-3.5 w-3.5 ${favouritesOnly ? "fill-primary-foreground" : ""}`}
+                />
+                Favourites{favouriteIds.size > 0 ? ` (${favouriteIds.size})` : ""}
+              </button>
+            )}
+          </div>
+        </section>
+
         {/* Cuisine Categories */}
         <section className="mb-6">
           <h3 className="mb-3 text-base font-bold text-foreground">Cuisines</h3>
