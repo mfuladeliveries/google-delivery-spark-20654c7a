@@ -303,7 +303,7 @@ const NewOrderModal = ({
           <div className="grid grid-cols-2 gap-2">
             <button
               onClick={handleRejectClick}
-              disabled={accepting || rejecting || dismissed}
+              disabled={accepting || rejecting}
               className="rounded-xl border-2 border-destructive/30 bg-card py-3.5 text-sm font-bold text-destructive disabled:opacity-50 transition-all hover:bg-destructive/5 active:scale-[0.98] flex items-center justify-center gap-2"
             >
               {rejecting ? <Loader2 className="h-4 w-4 animate-spin" /> : <X className="h-4 w-4" />}
