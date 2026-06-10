@@ -1,4 +1,4 @@
-import { Star, Clock, MapPin, ArrowRight, Navigation, Ban } from "lucide-react";
+import { Star, Clock, MapPin, ArrowRight, Navigation, Ban, Heart } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { isRestaurantOpen, formatOpensAt } from "@/lib/restaurantHours";
@@ -54,9 +54,19 @@ interface Props {
   distanceKm?: number | null;
   /** True when within delivery radius — shows a "Within delivery range" badge. */
   nearby?: boolean;
+  /** When provided, renders a heart toggle in the top-right of the image. */
+  isFavourite?: boolean;
+  onToggleFavourite?: (restaurantId: string, next: boolean) => void;
 }
 
-const RestaurantCard = ({ restaurant: r, variant = "standard", distanceKm, nearby }: Props) => {
+const RestaurantCard = ({
+  restaurant: r,
+  variant = "standard",
+  distanceKm,
+  nearby,
+  isFavourite,
+  onToggleFavourite,
+}: Props) => {
   const navigate = useNavigate();
   const open = isRestaurantOpen(r.opens_at, r.closes_at);
   const imgUrl = getImage(r);
