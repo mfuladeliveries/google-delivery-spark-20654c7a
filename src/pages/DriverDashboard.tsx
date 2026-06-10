@@ -112,6 +112,7 @@ const DriverDashboard = () => {
   // Tracks offer IDs the driver has already responded to (accept/reject) so the
   // modal can never reopen for that offer, even if realtime updates arrive late.
   const respondedOfferIdsRef = useRef<Set<string>>(new Set());
+  const processingRef = useRef(false);
 
   // Auth + role gating is handled by <RoleGuard> in App.tsx, so this
   // component only renders once the viewer is confirmed to be a driver/admin.
@@ -407,38 +408,42 @@ const DriverDashboard = () => {
   };
 
   const handleAccept = async (orderId: string) => {
+    if (processingRef.current) return;
+    processingRef.current = true;
+
     const order =
       (activeOffer && activeOffer.id === orderId ? activeOffer : null) ||
       pendingOrders.find((o) => o.id === orderId);
-    if (!order) return;
-    // Guard: a single offer can only be responded to once
-    if (respondedOfferIdsRef.current.has(orderId) || acceptingId || rejectingId) return;
+    if (!order) {
+      processingRef.current = false;
+      return;
+    }
+    if (respondedOfferIdsRef.current.has(orderId)) {
+      processingRef.current = false;
+      return;
+    }
     respondedOfferIdsRef.current.add(orderId);
 
-    // Stop ringtone + vibration + OS notification IMMEDIATELY (synchronous, inside the
-    // user gesture handler — required by mobile browsers).
     markOfferResponded(orderId);
     clearOfferNotifications(orderId);
 
-    // Optimistic UI: lock the button and close the modal right away so the driver
-    // never has to tap twice. We restore both on failure.
-    setAcceptingId(orderId);
     const wasActiveOffer = activeOffer?.id === orderId ? activeOffer : null;
-    if (wasActiveOffer) setActiveOffer(null);
+    setActiveOffer(null);
+    setAcceptingId(orderId);
 
-    // Decide which RPC: targeted offer to me → driver_accept_offer, broadcast → claim_order
     const isTargetedToMe = order.offered_to_driver_id === user!.id;
     const rpcName = isTargetedToMe ? "driver_accept_offer" : "claim_order";
     const { data, error } = await supabase.rpc(rpcName, { p_order_id: orderId });
+
     if (error) {
       toast.error(error.message || "Failed to accept");
       respondedOfferIdsRef.current.delete(orderId);
       setAcceptingId(null);
-      // Restore the offer modal + ringtone so the driver can retry
       if (wasActiveOffer) {
         setActiveOffer(wasActiveOffer);
         startNotificationSound(orderId);
       }
+      processingRef.current = false;
       return;
     }
     if (data === false) {
@@ -447,6 +452,7 @@ const DriverDashboard = () => {
       );
       await fetchOrders();
       setAcceptingId(null);
+      processingRef.current = false;
       return;
     }
     sendPushNotification({
@@ -463,11 +469,16 @@ const DriverDashboard = () => {
     toast.success("Order accepted successfully.");
     await fetchOrders();
     setAcceptingId(null);
+    processingRef.current = false;
   };
 
   const handleReject = async (orderId: string) => {
-    // Guard against double-tap / duplicate requests
-    if (respondedOfferIdsRef.current.has(orderId) || rejectingId || acceptingId) return;
+    if (processingRef.current) return;
+    processingRef.current = true;
+    if (respondedOfferIdsRef.current.has(orderId) || rejectingId || acceptingId) {
+      processingRef.current = false;
+      return;
+    }
     respondedOfferIdsRef.current.add(orderId);
 
     setRejectingId(orderId);
@@ -489,6 +500,7 @@ const DriverDashboard = () => {
         toast.error(error.message || "Failed to decline");
         respondedOfferIdsRef.current.delete(orderId);
         setRejectingId(null);
+        processingRef.current = false;
         return;
       }
       // Also persist a local rejection record so it never re-shows on this device
@@ -506,12 +518,16 @@ const DriverDashboard = () => {
         toast.error("Failed to decline");
         respondedOfferIdsRef.current.delete(orderId);
         setRejectingId(null);
+        processingRef.current = false;
         return;
       }
     }
     if (activeOffer?.id === orderId) setActiveOffer(null);
     setRejectingId(null);
+    processingRef.current = false;
   };
+
+
 
   const handleAcceptOffer = () => activeOffer && handleAccept(activeOffer.id);
   const handleRejectOffer = () => activeOffer && handleReject(activeOffer.id);
