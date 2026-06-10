@@ -177,7 +177,7 @@ const NewOrderModal = ({
 
   return (
     <Dialog
-      open={open && !dismissed}
+      open={open}
       onOpenChange={() => {
         /* must Accept or Reject */
       }}
