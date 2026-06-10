@@ -182,7 +182,7 @@ const DriverEarnings = ({ driverProfile, completedOrders }: DriverEarningsProps)
       const orderById = new Map((orderRows || []).map((o: any) => [o.id, o]));
 
       const deliveries = (periodEarnings || []).map((e: any) => {
-        const o = orderById.get(e.order_id);
+        const o = orderById.get(e.order_id) as any;
         return {
           order_id: e.order_id,
           order_number: o?.order_number ?? null,
