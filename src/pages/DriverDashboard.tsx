@@ -565,6 +565,17 @@ const DriverDashboard = () => {
       }
     }
     if (activeOffer?.id === orderId) setActiveOffer(null);
+    // Log the explicit decline + bump the consecutive-rejection counter.
+    supabase
+      .from("order_rejections")
+      .insert({
+        order_id: orderId,
+        driver_id: user!.id,
+        reason: "declined",
+        dispatch_phase: order?.dispatch_phase ?? null,
+      })
+      .then(() => {});
+    bumpConsecutiveRejections();
     setRejectingId(null);
     processingRef.current = false;
   };
