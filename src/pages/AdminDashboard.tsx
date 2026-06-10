@@ -266,7 +266,7 @@ const AdminDashboard = () => {
       supabase
         .from("orders")
         .select(
-          "total, status, created_at, order_number, customer_name, restaurant, payment_method, id, driver_id, delivered_at, dispatch_phase, offered_to_driver_id, missed_by_driver_ids, admin_delivery_code",
+          "total, delivery_fee, status, created_at, order_number, customer_name, restaurant, payment_method, id, driver_id, delivered_at, dispatch_phase, offered_to_driver_id, missed_by_driver_ids, admin_delivery_code",
         )
         .order("created_at", { ascending: false }),
       supabase.from("restaurants").select("id", { count: "exact" }),
