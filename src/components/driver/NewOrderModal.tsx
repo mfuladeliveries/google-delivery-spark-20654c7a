@@ -56,6 +56,8 @@ const NewOrderModal = ({
     setDismissed(false);
   }, [offer?.id]);
 
+  const [confirmReject, setConfirmReject] = useState(false);
+
   const stopAlert = () => {
     audioRef.current?.pause();
     if (audioRef.current) audioRef.current.currentTime = 0;
