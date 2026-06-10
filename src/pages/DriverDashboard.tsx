@@ -456,13 +456,8 @@ const DriverDashboard = () => {
 
     setRejectingId(orderId);
     // Stop ringtone + vibration + OS notification immediately on user action
-    stopNotificationSound();
+    markOfferResponded(orderId);
     clearOfferNotifications(orderId);
-    try {
-      if ("vibrate" in navigator) navigator.vibrate(0);
-    } catch {
-      /* ignore */
-    }
     const order =
       activeOffer?.id === orderId ? activeOffer : pendingOrders.find((o) => o.id === orderId);
     const isTargetedToMe = order?.offered_to_driver_id === user!.id;
