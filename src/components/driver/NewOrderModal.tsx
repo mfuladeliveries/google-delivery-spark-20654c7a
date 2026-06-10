@@ -1,5 +1,15 @@
 import { useEffect, useRef, useState } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { MapPin, Store, Clock, Package, Check, X, Loader2 } from "lucide-react";
 import { driverPayoutForFee } from "@/lib/serviceArea";
 import { getNotificationPrefs } from "@/hooks/useNotificationPrefs";
@@ -45,6 +55,8 @@ const NewOrderModal = ({
   useEffect(() => {
     setDismissed(false);
   }, [offer?.id]);
+
+  const [confirmReject, setConfirmReject] = useState(false);
 
   const stopAlert = () => {
     audioRef.current?.pause();
@@ -111,63 +123,21 @@ const NewOrderModal = ({
 
   const handleRejectClick = () => {
     if (dismissed || accepting || rejecting) return;
+    setConfirmReject(true);
+  };
+
+  const confirmRejectYes = () => {
+    if (dismissed || accepting || rejecting) return;
+    setConfirmReject(false);
     setDismissed(true);
     stopAlert();
     playFeedback("decline");
     onReject();
   };
 
-  // Play custom alert sound + vibrate on open, loop for ~10 seconds, then stop
-  useEffect(() => {
-    if (!open || !offer || accepting || rejecting) return;
-
-    const audio = new Audio("/sounds/new-order.mp3");
-    audio.loop = true;
-    audio.volume = 1;
-    audioRef.current = audio;
-
-    audio.play().catch(() => {
-      /* autoplay blocked — silent fallback */
-    });
-
-    // Vibration pattern: buzz 600ms, pause 300ms — repeated for ~10s
-    // navigator.vibrate accepts an array of on/off durations in ms
-    if (typeof navigator !== "undefined" && "vibrate" in navigator) {
-      const pattern: number[] = [];
-      for (let i = 0; i < 11; i++) pattern.push(600, 300);
-      try {
-        navigator.vibrate(pattern);
-      } catch {
-        /* not supported */
-      }
-    }
-
-    const stopTimer = setTimeout(() => {
-      audio.pause();
-      audio.currentTime = 0;
-      if (typeof navigator !== "undefined" && "vibrate" in navigator) {
-        try {
-          navigator.vibrate(0);
-        } catch {
-          /* noop */
-        }
-      }
-    }, 10000);
-
-    return () => {
-      clearTimeout(stopTimer);
-      audio.pause();
-      audio.currentTime = 0;
-      audioRef.current = null;
-      if (typeof navigator !== "undefined" && "vibrate" in navigator) {
-        try {
-          navigator.vibrate(0);
-        } catch {
-          /* noop */
-        }
-      }
-    };
-  }, [open, offer?.id, accepting, rejecting]);
+  // NOTE: the parent DriverDashboard owns the continuous ringtone + vibration
+  // (so it never restarts after a response). This modal only plays the short
+  // accept/decline feedback chime.
 
   useEffect(() => {
     if (!offer?.offer_expires_at) {
@@ -351,6 +321,28 @@ const NewOrderModal = ({
           </div>
         </div>
       </DialogContent>
+
+      <AlertDialog open={confirmReject} onOpenChange={setConfirmReject}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirm Rejection</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to reject this order? It will be reassigned to another driver
+              and won't be offered to you again.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={rejecting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmRejectYes}
+              disabled={rejecting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Yes, Reject
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Dialog>
   );
 };

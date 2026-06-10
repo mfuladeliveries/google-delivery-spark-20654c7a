@@ -107,6 +107,24 @@ const DriverDashboard = () => {
     lfo: OscillatorNode;
   } | null>(null);
 
+  // Tracks offer IDs the driver has already responded to (accept/reject) so the
+  // ringtone can never restart for that offer, even if realtime updates arrive late.
+  const respondedOfferIdsRef = useRef<Set<string>>(new Set());
+
+  const clearOfferNotifications = useCallback((offerId: string) => {
+    try {
+      if ("serviceWorker" in navigator) {
+        navigator.serviceWorker.getRegistration().then((reg) => {
+          reg?.getNotifications({ tag: `offer-${offerId}` }).then((ns) => {
+            ns.forEach((n) => n.close());
+          });
+        });
+      }
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
   const stopNotificationSound = useCallback(() => {
     try {
       if (audioRef.current) {
@@ -200,7 +218,8 @@ const DriverDashboard = () => {
       (o) =>
         o.offered_to_driver_id === user.id &&
         o.offer_expires_at &&
-        new Date(o.offer_expires_at).getTime() > Date.now(),
+        new Date(o.offer_expires_at).getTime() > Date.now() &&
+        !respondedOfferIdsRef.current.has(o.id),
     );
     if (targeted) {
       setActiveOffer(targeted);
@@ -222,7 +241,12 @@ const DriverDashboard = () => {
   // Continuous loud ringtone + repeating vibration while an offer is on-screen.
   // Stops automatically when the offer is accepted, rejected, or expires (modal closes).
   useEffect(() => {
-    if (!activeOffer || acceptingId || rejectingId) {
+    if (
+      !activeOffer ||
+      acceptingId ||
+      rejectingId ||
+      respondedOfferIdsRef.current.has(activeOffer.id)
+    ) {
       stopNotificationSound();
       return;
     }
@@ -449,8 +473,13 @@ const DriverDashboard = () => {
       (activeOffer && activeOffer.id === orderId ? activeOffer : null) ||
       pendingOrders.find((o) => o.id === orderId);
     if (!order) return;
-    // Stop ringtone + vibration immediately on user action — don't wait for RPC
+    // Guard: a single offer can only be responded to once
+    if (respondedOfferIdsRef.current.has(orderId) || acceptingId || rejectingId) return;
+    respondedOfferIdsRef.current.add(orderId);
+
+    // Stop ringtone + vibration + OS notification immediately on user action
     stopNotificationSound();
+    clearOfferNotifications(orderId);
     try {
       if ("vibrate" in navigator) navigator.vibrate(0);
     } catch {
@@ -464,6 +493,7 @@ const DriverDashboard = () => {
     const { data, error } = await supabase.rpc(rpcName, { p_order_id: orderId });
     if (error) {
       toast.error(error.message || "Failed to accept");
+      respondedOfferIdsRef.current.delete(orderId);
       setAcceptingId(null);
       return;
     }
@@ -487,16 +517,21 @@ const DriverDashboard = () => {
       restaurant_id: null,
       old_status: "ready",
     });
-    toast.success("Delivery accepted! Head to the restaurant. 🚗");
+    toast.success("Order accepted successfully.");
     if (activeOffer?.id === orderId) setActiveOffer(null);
     await fetchOrders();
     setAcceptingId(null);
   };
 
   const handleReject = async (orderId: string) => {
+    // Guard against double-tap / duplicate requests
+    if (respondedOfferIdsRef.current.has(orderId) || rejectingId || acceptingId) return;
+    respondedOfferIdsRef.current.add(orderId);
+
     setRejectingId(orderId);
-    // Stop ringtone + vibration immediately on user action — don't wait for RPC
+    // Stop ringtone + vibration + OS notification immediately on user action
     stopNotificationSound();
+    clearOfferNotifications(orderId);
     try {
       if ("vibrate" in navigator) navigator.vibrate(0);
     } catch {
@@ -506,15 +541,25 @@ const DriverDashboard = () => {
       activeOffer?.id === orderId ? activeOffer : pendingOrders.find((o) => o.id === orderId);
     const isTargetedToMe = order?.offered_to_driver_id === user!.id;
 
+    // Always remember locally so the order can't reappear in this driver's queue
+    // (dispatch also uses missed_by_driver_ids on the server to skip this driver).
+    setRejectedIds((prev) => new Set(prev).add(orderId));
+
     if (isTargetedToMe) {
-      // Targeted decline: advances chain immediately to next driver
+      // Targeted decline: server forces offer expiry + advances chain to next driver
       const { error } = await supabase.rpc("driver_decline_offer", { p_order_id: orderId });
       if (error) {
         toast.error(error.message || "Failed to decline");
+        respondedOfferIdsRef.current.delete(orderId);
         setRejectingId(null);
         return;
       }
-      toast.info("Offer declined — passed to next driver");
+      // Also persist a local rejection record so it never re-shows on this device
+      supabase
+        .from("driver_rejected_orders")
+        .insert({ driver_id: user!.id, order_id: orderId })
+        .then(() => {});
+      toast.info("Order rejected — passed to next driver");
     } else {
       // Broadcast decline: hide locally only (don't affect other drivers)
       const { error } = await supabase
@@ -522,10 +567,10 @@ const DriverDashboard = () => {
         .insert({ driver_id: user!.id, order_id: orderId });
       if (error && !error.message.includes("duplicate")) {
         toast.error("Failed to decline");
+        respondedOfferIdsRef.current.delete(orderId);
         setRejectingId(null);
         return;
       }
-      setRejectedIds((prev) => new Set(prev).add(orderId));
     }
     if (activeOffer?.id === orderId) setActiveOffer(null);
     setRejectingId(null);
