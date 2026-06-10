@@ -325,8 +325,7 @@ const AdminFeeManagement = () => {
             </button>
           )}
         </div>
-          )}
-        </div>
+
 
         {creating && (
           <div className="rounded-2xl border-2 border-primary/40 bg-primary/5 p-4 space-y-3">
