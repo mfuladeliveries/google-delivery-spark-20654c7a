@@ -107,7 +107,23 @@ const DriverDashboard = () => {
   const [rejectedIds, setRejectedIds] = useState<Set<string>>(new Set());
   const [activeOffer, setActiveOffer] = useState<Order | null>(null);
   const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
+  const [consecutiveRejections, setConsecutiveRejections] = useState(0);
+  const [showAvailabilityPrompt, setShowAvailabilityPrompt] = useState(false);
   const locationWatchRef = useRef<number | null>(null);
+  // Track offers we've already logged a timeout for, to avoid double-logging.
+  const timeoutLoggedRef = useRef<Set<string>>(new Set());
+
+  // Bumps the consecutive-rejection counter and surfaces the soft prompt at 3.
+  const bumpConsecutiveRejections = useCallback(() => {
+    setConsecutiveRejections((prev) => {
+      const next = prev + 1;
+      if (next >= 3) {
+        setShowAvailabilityPrompt(true);
+        return 0;
+      }
+      return next;
+    });
+  }, []);
 
   // Tracks offer IDs the driver has already responded to (accept/reject) so the
   // modal can never reopen for that offer, even if realtime updates arrive late.
@@ -155,13 +171,37 @@ const DriverDashboard = () => {
   useEffect(() => {
     if (!activeOffer?.offer_expires_at) return;
     const remaining = new Date(activeOffer.offer_expires_at).getTime() - Date.now();
-    if (remaining <= 0) {
+    const expire = () => {
+      const expired = activeOffer;
       setActiveOffer(null);
+      // Log a timeout rejection (once per offer) and bump the consecutive counter,
+      // but only if the driver hadn't already responded to it.
+      if (
+        expired &&
+        user &&
+        !respondedOfferIdsRef.current.has(expired.id) &&
+        !timeoutLoggedRef.current.has(expired.id)
+      ) {
+        timeoutLoggedRef.current.add(expired.id);
+        supabase
+          .from("order_rejections")
+          .insert({
+            order_id: expired.id,
+            driver_id: user.id,
+            reason: "timeout",
+            dispatch_phase: expired.dispatch_phase ?? null,
+          })
+          .then(() => {});
+        bumpConsecutiveRejections();
+      }
+    };
+    if (remaining <= 0) {
+      expire();
       return;
     }
-    const timer = setTimeout(() => setActiveOffer(null), remaining);
+    const timer = setTimeout(expire, remaining);
     return () => clearTimeout(timer);
-  }, [activeOffer?.offer_expires_at, activeOffer?.id]);
+  }, [activeOffer?.offer_expires_at, activeOffer?.id, user, bumpConsecutiveRejections]);
 
   // Play the new-order ringtone EXACTLY ONCE per offer — keyed only on offer ID
   // so that acceptingId/rejectingId state changes never re-trigger playback.
@@ -471,6 +511,9 @@ const DriverDashboard = () => {
       old_status: "ready",
     });
     toast.success("Order accepted successfully.");
+    // Accepting an order resets the consecutive-rejection counter.
+    setConsecutiveRejections(0);
+    setShowAvailabilityPrompt(false);
     await fetchOrders();
     setAcceptingId(null);
     processingRef.current = false;
@@ -522,6 +565,17 @@ const DriverDashboard = () => {
       }
     }
     if (activeOffer?.id === orderId) setActiveOffer(null);
+    // Log the explicit decline + bump the consecutive-rejection counter.
+    supabase
+      .from("order_rejections")
+      .insert({
+        order_id: orderId,
+        driver_id: user!.id,
+        reason: "declined",
+        dispatch_phase: order?.dispatch_phase ?? null,
+      })
+      .then(() => {});
+    bumpConsecutiveRejections();
     setRejectingId(null);
     processingRef.current = false;
   };
@@ -667,6 +721,36 @@ const DriverDashboard = () => {
         onAccept={handleAcceptOffer}
         onReject={handleRejectOffer}
       />
+
+      {showAvailabilityPrompt && (
+        <div
+          role="dialog"
+          aria-live="polite"
+          className="fixed bottom-24 left-4 right-4 z-50 rounded-2xl border border-border bg-card p-4 shadow-lg sm:left-auto sm:right-6 sm:max-w-sm"
+        >
+          <p className="mb-1 text-sm font-semibold text-foreground">Still available?</p>
+          <p className="mb-3 text-xs text-muted-foreground">
+            You've declined a few orders in a row. Let us know if you're still on the road.
+          </p>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setShowAvailabilityPrompt(false)}
+              className="flex-1 rounded-xl bg-primary py-2 text-sm font-bold text-primary-foreground hover:opacity-95 active:scale-[0.98] transition"
+            >
+              I'm available
+            </button>
+            <button
+              onClick={() => {
+                setShowAvailabilityPrompt(false);
+                if (driverProfile?.is_online) toggleOnline();
+              }}
+              className="flex-1 rounded-xl border border-border py-2 text-sm font-bold text-foreground hover:bg-secondary transition"
+            >
+              Go offline
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
