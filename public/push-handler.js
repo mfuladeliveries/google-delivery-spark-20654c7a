@@ -28,11 +28,10 @@ self.addEventListener("push", (event) => {
         icon: icon || "/notification-logo.png",
         badge: badge || "/favicon.ico",
         vibrate: isDriverAlert ? DRIVER_ALERT_VIBRATION : DEFAULT_VIBRATION,
-        sound: "/sounds/new-order.mp3",
         tag: `order-${notifData?.order_number || "general"}`,
-        renotify: true,
+        renotify: false,
         requireInteraction: true,
-        silent: false,
+        silent: true,
         data: notifData,
       })
     );
@@ -44,6 +43,7 @@ self.addEventListener("push", (event) => {
         icon: "/notification-logo.png",
         vibrate: DEFAULT_VIBRATION,
         requireInteraction: true,
+        silent: true,
       })
     );
   }
