@@ -185,6 +185,28 @@ const RestaurantCard = ({
           {r.cuisine}
         </span>
 
+        {/* Favourite heart — top left under cuisine pill */}
+        {onToggleFavourite && (
+          <button
+            type="button"
+            aria-label={isFavourite ? "Remove from favourites" : "Add to favourites"}
+            aria-pressed={isFavourite ? true : false}
+            onClick={(e) => {
+              e.stopPropagation();
+              onToggleFavourite(r.id, !isFavourite);
+            }}
+            className="absolute right-3 top-10 flex h-9 w-9 items-center justify-center rounded-full bg-card/90 backdrop-blur shadow-card transition-transform hover:scale-110 active:scale-95"
+          >
+            <Heart
+              className={`h-4 w-4 transition-colors ${
+                isFavourite
+                  ? "fill-primary text-primary"
+                  : "text-muted-foreground"
+              }`}
+            />
+          </button>
+        )}
+
         {/* Open / Closed — bottom left */}
         <span className="absolute bottom-3 left-3 inline-flex items-center gap-1.5 rounded-lg bg-black/65 px-2 py-1 text-[11px] font-medium text-white">
           <span className={`h-2 w-2 rounded-full ${open ? "bg-emerald-400" : "bg-red-400"}`} />
