@@ -226,7 +226,28 @@ const CheckoutDialog = ({
   }, [coords, zones, restaurantCoords]);
 
   const outOfRange = !!coords && zoneMatch === null;
-  const zoneFee = zoneMatch ? zoneMatch.delivery_fee : null;
+  const baseZoneFee = zoneMatch ? zoneMatch.delivery_fee : null;
+
+  // Peak-time surcharge fetched live from the backend; refreshes every minute
+  // and whenever the dialog opens so the customer preview matches what the
+  // server will charge in create_verified_order.
+  const [peakSurcharge, setPeakSurcharge] = useState<number>(0);
+  useEffect(() => {
+    if (!open) return;
+    let alive = true;
+    const fetchSurcharge = async () => {
+      const { data } = await supabase.rpc("current_peak_surcharge");
+      if (alive) setPeakSurcharge(Number(data) || 0);
+    };
+    fetchSurcharge();
+    const t = setInterval(fetchSurcharge, 60000);
+    return () => {
+      alive = false;
+      clearInterval(t);
+    };
+  }, [open]);
+
+  const zoneFee = baseZoneFee != null ? baseZoneFee + peakSurcharge : null;
 
   // Driver-coverage check: when the customer's coords change, ask the server whether any
   // online driver covers this delivery location. Non-blocking — we only warn the customer.
@@ -1233,9 +1254,18 @@ const CheckoutDialog = ({
               <span>Delivery</span>
               <span>
                 {storeInfo.currency}
-                {effectiveDelivery.toFixed(2)}
+                {(effectiveDelivery - peakSurcharge).toFixed(2)}
               </span>
             </div>
+            {peakSurcharge > 0 && (
+              <div className="flex justify-between text-muted-foreground">
+                <span>Peak-time surcharge</span>
+                <span>
+                  +{storeInfo.currency}
+                  {peakSurcharge.toFixed(2)}
+                </span>
+              </div>
+            )}
             {actualTip > 0 && (
               <div className="flex justify-between text-muted-foreground">
                 <span>Tip</span>

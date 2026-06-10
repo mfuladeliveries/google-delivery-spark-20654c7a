@@ -489,6 +489,42 @@ export type Database = {
         }
         Relationships: []
       }
+      fee_audit_log: {
+        Row: {
+          action: string
+          changed_by: string | null
+          changed_by_email: string | null
+          created_at: string
+          entity_id: string | null
+          entity_type: string
+          id: string
+          new_values: Json | null
+          old_values: Json | null
+        }
+        Insert: {
+          action: string
+          changed_by?: string | null
+          changed_by_email?: string | null
+          created_at?: string
+          entity_id?: string | null
+          entity_type: string
+          id?: string
+          new_values?: Json | null
+          old_values?: Json | null
+        }
+        Update: {
+          action?: string
+          changed_by?: string | null
+          changed_by_email?: string | null
+          created_at?: string
+          entity_id?: string | null
+          entity_type?: string
+          id?: string
+          new_values?: Json | null
+          old_values?: Json | null
+        }
+        Relationships: []
+      }
       invalid_order_attempts: {
         Row: {
           created_at: string
@@ -930,6 +966,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      peak_surcharge_windows: {
+        Row: {
+          created_at: string
+          day_of_week: number | null
+          end_time: string
+          flat_amount: number
+          id: string
+          is_active: boolean
+          label: string
+          start_time: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          day_of_week?: number | null
+          end_time: string
+          flat_amount: number
+          id?: string
+          is_active?: boolean
+          label: string
+          start_time: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          day_of_week?: number | null
+          end_time?: string
+          flat_amount?: number
+          id?: string
+          is_active?: boolean
+          label?: string
+          start_time?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       profiles: {
         Row: {
@@ -1392,6 +1464,7 @@ export type Database = {
             }
             Returns: Json
           }
+      current_peak_surcharge: { Args: never; Returns: number }
       customer_cancel_pending_order: {
         Args: { p_order_id: string }
         Returns: Json

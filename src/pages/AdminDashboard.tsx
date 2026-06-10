@@ -32,6 +32,7 @@ import AdminDriverRequests from "@/components/admin/AdminDriverRequests";
 import AdminDrivers from "@/components/admin/AdminDrivers";
 import AdminAboutEditor from "@/components/admin/AdminAboutEditor";
 import AdminDeliveryAreas from "@/components/admin/AdminDeliveryAreas";
+import AdminFeeManagement from "@/components/admin/AdminFeeManagement";
 import AdminMenuManager from "@/components/admin/AdminMenuManager";
 import { toast } from "sonner";
 import { geocodeAddress } from "@/lib/geocode";
@@ -189,6 +190,7 @@ const AdminDashboard = () => {
     | "menus"
     | "drivers"
     | "areas"
+    | "fees"
     | "about"
   >("overview");
   const [stats, setStats] = useState<Stats>({
@@ -504,6 +506,7 @@ const AdminDashboard = () => {
     "menus",
     "drivers",
     "areas",
+    "fees",
     "about",
   ] as const;
 
@@ -738,8 +741,11 @@ const AdminDashboard = () => {
           />
         )}
 
-        {/* Delivery Zones (centre + 5km radius + per-zone fee) */}
+        {/* Delivery Zones (centre + radius + per-zone fee) */}
         {tab === "areas" && <AdminDeliveryAreas />}
+
+        {/* Delivery Fee Management (peak surcharges + audit log) */}
+        {tab === "fees" && <AdminFeeManagement />}
 
         {/* About Page Editor */}
         {tab === "about" && (
