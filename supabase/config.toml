@@ -8,6 +8,3 @@ verify_jwt = true
 
 [functions.process-email-queue]
 verify_jwt = true
-
-[functions.maps-geocode]
-verify_jwt = true
