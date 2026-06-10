@@ -109,95 +109,9 @@ const DriverDashboard = () => {
   const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
   const locationWatchRef = useRef<number | null>(null);
 
-  const audioRef = useRef<HTMLAudioElement | null>(null);
-  const fallbackBeepRef = useRef<{
-    ctx: AudioContext;
-    osc: OscillatorNode;
-    lfo: OscillatorNode;
-  } | null>(null);
-
   // Tracks offer IDs the driver has already responded to (accept/reject) so the
-  // ringtone can never restart for that offer, even if realtime updates arrive late.
+  // modal can never reopen for that offer, even if realtime updates arrive late.
   const respondedOfferIdsRef = useRef<Set<string>>(new Set());
-
-  const clearOfferNotifications = useCallback((offerId: string) => {
-    try {
-      if ("serviceWorker" in navigator) {
-        navigator.serviceWorker.getRegistration().then((reg) => {
-          reg?.getNotifications({ tag: `offer-${offerId}` }).then((ns) => {
-            ns.forEach((n) => n.close());
-          });
-        });
-      }
-    } catch {
-      /* ignore */
-    }
-  }, []);
-
-  const stopNotificationSound = useCallback(() => {
-    try {
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current.currentTime = 0;
-        audioRef.current.loop = false;
-      }
-    } catch {
-      /* ignore */
-    }
-    try {
-      if (fallbackBeepRef.current) {
-        fallbackBeepRef.current.osc.stop();
-        fallbackBeepRef.current.lfo.stop();
-        fallbackBeepRef.current.ctx.close();
-        fallbackBeepRef.current = null;
-      }
-    } catch {
-      /* ignore */
-    }
-  }, []);
-
-  const startNotificationSound = useCallback(() => {
-    try {
-      if (!audioRef.current) {
-        audioRef.current = new Audio("/sounds/new-order.mp3");
-        audioRef.current.preload = "auto";
-      }
-      audioRef.current.loop = true;
-      audioRef.current.volume = 1.0;
-      audioRef.current.currentTime = 0;
-      const playPromise = audioRef.current.play();
-      if (playPromise && typeof playPromise.catch === "function") {
-        playPromise.catch(() => {
-          // Autoplay blocked (no user gesture yet) — fall back to a continuous synthesized ringtone
-          try {
-            if (fallbackBeepRef.current) return;
-            const ctx = new AudioContext();
-            const osc = ctx.createOscillator();
-            const gain = ctx.createGain();
-            osc.connect(gain);
-            gain.connect(ctx.destination);
-            osc.type = "triangle";
-            osc.frequency.value = 880;
-            gain.gain.value = 0.5;
-            // Pulse so it feels like a ringtone, not a flat hum
-            const lfo = ctx.createOscillator();
-            const lfoGain = ctx.createGain();
-            lfo.frequency.value = 3; // 3 Hz pulse
-            lfoGain.gain.value = 0.5;
-            lfo.connect(lfoGain);
-            lfoGain.connect(gain.gain);
-            osc.start();
-            lfo.start();
-            fallbackBeepRef.current = { ctx, osc, lfo };
-          } catch {
-            /* ignore */
-          }
-        });
-      }
-    } catch {
-      /* ignore */
-    }
-  }, []);
 
   // Auth + role gating is handled by <RoleGuard> in App.tsx, so this
   // component only renders once the viewer is confirmed to be a driver/admin.
