@@ -128,6 +128,35 @@ export type Database = {
         }
         Relationships: []
       }
+      customer_favourites: {
+        Row: {
+          created_at: string
+          id: string
+          restaurant_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          restaurant_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          restaurant_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customer_favourites_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "restaurants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       delivery_areas: {
         Row: {
           base_fee: number
@@ -1514,6 +1543,10 @@ export type Database = {
           }
       current_peak_surcharge: { Args: never; Returns: number }
       customer_cancel_pending_order: {
+        Args: { p_order_id: string }
+        Returns: Json
+      }
+      customer_cancel_recent_order: {
         Args: { p_order_id: string }
         Returns: Json
       }
