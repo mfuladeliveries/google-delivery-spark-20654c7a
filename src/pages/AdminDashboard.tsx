@@ -2669,6 +2669,30 @@ const OrdersTable = ({
                         )}
                       </td>
                       <td className="px-3 py-2.5 font-semibold text-primary">R{order.total}</td>
+                      <td className="px-3 py-2.5 text-[10px] whitespace-nowrap">
+                        {order.delivery_fee != null && Number(order.delivery_fee) > 0 ? (
+                          (() => {
+                            const fee = Number(order.delivery_fee);
+                            const driver = Math.round(fee * splitPct) / 100;
+                            const platform = Math.max(0, Math.round((fee - driver) * 100) / 100);
+                            return (
+                              <div className="flex flex-col leading-tight">
+                                <span className="font-semibold text-foreground">
+                                  Fee R{fee.toFixed(2)}
+                                </span>
+                                <span className="text-emerald-600">
+                                  Driver R{driver.toFixed(2)} ({splitPct}%)
+                                </span>
+                                <span className="text-muted-foreground">
+                                  Platform R{platform.toFixed(2)}
+                                </span>
+                              </div>
+                            );
+                          })()
+                        ) : (
+                          <span className="text-muted-foreground">—</span>
+                        )}
+                      </td>
                       <td className="px-3 py-2.5">
                         <span
                           className={`rounded-full px-1.5 py-0.5 text-[9px] font-bold ${
