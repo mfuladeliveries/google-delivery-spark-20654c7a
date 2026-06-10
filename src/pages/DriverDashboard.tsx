@@ -298,17 +298,17 @@ const DriverDashboard = () => {
     const cutoff = new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString();
     const [{ data: pending }, { data: mine }] = await Promise.all([
       // Pull orders visible to me (RLS: targeted offer to me OR broadcast phase)
-      supabase
-        .from("orders")
+      (supabase as any)
+        .from("driver_orders")
         .select(
-          "id, order_number, restaurant, customer_address, total, delivery_fee, created_at, items, offer_expires_at, offered_to_driver_id, dispatch_phase",
+          "id, order_number, restaurant, customer_address, delivery_fee, created_at, items, offer_expires_at, offered_to_driver_id, dispatch_phase",
         )
         .eq("status", "ready")
         .is("driver_id", null)
         .gte("created_at", cutoff)
         .order("created_at"),
-      supabase
-        .from("orders")
+      (supabase as any)
+        .from("driver_orders")
         .select("*")
         .eq("driver_id", user!.id)
         .in("status", [
@@ -320,6 +320,7 @@ const DriverDashboard = () => {
         .gte("created_at", cutoff)
         .order("created_at"),
     ]);
+
     if (pending)
       setPendingOrders(
         (pending as any[]).map((o: any) => ({
