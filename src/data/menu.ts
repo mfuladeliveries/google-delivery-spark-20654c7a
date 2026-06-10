@@ -524,7 +524,441 @@ export const menuItems: MenuItem[] = [
     price: 250,
     available: true,
   },
+// src/data/menu.ts — McDonald's South Africa full menu
 
+export const mcdonaldsMenu = [
+
+  // ─── BURGERS ───────────────────────────────────────────
+  {
+    name: "Big Mac",
+    description: "Two beef patties, special sauce, lettuce, cheese, pickles, onions on a sesame seed bun",
+    price: 69.90,
+    category: "Burgers",
+    image: "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=400&h=300&fit=crop"
+  },
+  {
+    name: "Big Mac Meal",
+    description: "Big Mac burger with medium fries and medium cold drink",
+    price: 109.90,
+    category: "Burgers",
+    image: "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=300&fit=crop"
+  },
+  {
+    name: "Quarter Pounder with Cheese",
+    description: "100% beef patty, two slices of cheese, onions, pickles, mustard and ketchup",
+    price: 74.90,
+    category: "Burgers",
+    image: "https://images.unsplash.com/photo-1550547660-d9450f859349?w=400&h=300&fit=crop"
+  },
+  {
+    name: "Quarter Pounder with Cheese Meal",
+    description: "Quarter Pounder with medium fries and medium cold drink",
+    price: 114.90,
+    category: "Burgers",
+    image: "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=300&fit=crop"
+  },
+  {
+    name: "McFeast",
+    description: "Beef patty, lettuce, tomato, onion, pickles, cheese, Big Mac sauce",
+    price: 69.90,
+    category: "Burgers",
+    image: "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=400&h=300&fit=crop"
+  },
+  {
+    name: "McFeast Meal",
+    description: "McFeast burger with medium fries and medium cold drink",
+    price: 109.90,
+    category: "Burgers",
+    image: "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=300&fit=crop"
+  },
+  {
+    name: "Double Cheese Burger",
+    description: "Two beef patties, two slices of cheese, onions, pickles, mustard and ketchup",
+    price: 52.90,
+    category: "Burgers",
+    image: "https://images.unsplash.com/photo-1553979459-d2229ba7433b?w=400&h=300&fit=crop"
+  },
+  {
+    name: "Double Cheese Burger Meal",
+    description: "Double Cheese Burger with medium fries and medium cold drink",
+    price: 94.90,
+    category: "Burgers",
+    image: "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=300&fit=crop"
+  },
+  {
+    name: "Cheese Burger",
+    description: "Beef patty, cheese, onions, pickles, mustard and ketchup",
+    price: 38.90,
+    category: "Burgers",
+    image: "https://images.unsplash.com/photo-1571091718767-18b5b1457add?w=400&h=300&fit=crop"
+  },
+  {
+    name: "Hamburger",
+    description: "Beef patty, onions, pickles, mustard and ketchup on a soft bun",
+    price: 35.90,
+    category: "Burgers",
+    image: "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=400&h=300&fit=crop"
+  },
+
+  // ─── CHICKEN ───────────────────────────────────────────
+  {
+    name: "McChicken",
+    description: "Crispy chicken patty, lettuce and mayo on a sesame seed bun",
+    price: 52.90,
+    category: "Chicken",
+    image: "https://images.unsplash.com/photo-1562967914-608f82629710?w=400&h=300&fit=crop"
+  },
+  {
+    name: "McChicken Meal",
+    description: "McChicken burger with medium fries and medium cold drink",
+    price: 94.90,
+    category: "Chicken",
+    image: "https://images.unsplash.com/photo-1562967914-608f82629710?w=400&h=300&fit=crop"
+  },
+  {
+    name: "Chicken Legends",
+    description: "Crispy chicken fillet, lettuce, tomato and mayo on a sesame seed bun",
+    price: 64.90,
+    category: "Chicken",
+    image: "https://images.unsplash.com/photo-1562967914-608f82629710?w=400&h=300&fit=crop"
+  },
+  {
+    name: "Chicken Legends Meal",
+    description: "Chicken Legends burger with medium fries and medium cold drink",
+    price: 104.90,
+    category: "Chicken",
+    image: "https://images.unsplash.com/photo-1562967914-608f82629710?w=400&h=300&fit=crop"
+  },
+  {
+    name: "Spicy Chicken Legends",
+    description: "Spicy crispy chicken fillet, lettuce, tomato and spicy mayo",
+    price: 67.90,
+    category: "Chicken",
+    image: "https://images.unsplash.com/photo-1562967914-608f82629710?w=400&h=300&fit=crop"
+  },
+  {
+    name: "Spicy Chicken Legends Meal",
+    description: "Spicy Chicken Legends with medium fries and medium cold drink",
+    price: 107.90,
+    category: "Chicken",
+    image: "https://images.unsplash.com/photo-1562967914-608f82629710?w=400&h=300&fit=crop"
+  },
+  {
+    name: "6 Piece McNuggets",
+    description: "6 tender crispy chicken McNuggets served with your choice of dipping sauce",
+    price: 49.90,
+    category: "Chicken",
+    image: "https://images.unsplash.com/photo-1606755962773-d324e0a13086?w=400&h=300&fit=crop"
+  },
+  {
+    name: "9 Piece McNuggets",
+    description: "9 tender crispy chicken McNuggets served with your choice of dipping sauce",
+    price: 69.90,
+    category: "Chicken",
+    image: "https://images.unsplash.com/photo-1606755962773-d324e0a13086?w=400&h=300&fit=crop"
+  },
+  {
+    name: "20 Piece McNuggets",
+    description: "20 tender crispy chicken McNuggets served with two dipping sauces",
+    price: 129.90,
+    category: "Chicken",
+    image: "https://images.unsplash.com/photo-1606755962773-d324e0a13086?w=400&h=300&fit=crop"
+  },
+  {
+    name: "6 Piece McNuggets Meal",
+    description: "6 McNuggets with medium fries and medium cold drink",
+    price: 89.90,
+    category: "Chicken",
+    image: "https://images.unsplash.com/photo-1606755962773-d324e0a13086?w=400&h=300&fit=crop"
+  },
+
+  // ─── WRAPS ─────────────────────────────────────────────
+  {
+    name: "Crispy Chicken Wrap",
+    description: "Crispy chicken strips, lettuce, tomato, cheese and mayo in a flour tortilla",
+    price: 59.90,
+    category: "Wraps",
+    image: "https://images.unsplash.com/photo-1626700051175-6818013e1d4f?w=400&h=300&fit=crop"
+  },
+  {
+    name: "Grilled Chicken Wrap",
+    description: "Grilled chicken strips, lettuce, tomato, cheese and mayo in a flour tortilla",
+    price: 59.90,
+    category: "Wraps",
+    image: "https://images.unsplash.com/photo-1626700051175-6818013e1d4f?w=400&h=300&fit=crop"
+  },
+  {
+    name: "Spicy Chicken Wrap",
+    description: "Spicy crispy chicken strips, lettuce, tomato, cheese and spicy mayo in a flour tortilla",
+    price: 62.90,
+    category: "Wraps",
+    image: "https://images.unsplash.com/photo-1626700051175-6818013e1d4f?w=400&h=300&fit=crop"
+  },
+
+  // ─── SIDES ─────────────────────────────────────────────
+  {
+    name: "Small Fries",
+    description: "Golden crispy McDonald's fries lightly salted",
+    price: 29.90,
+    category: "Sides",
+    image: "https://images.unsplash.com/photo-1576107232684-1279f390859f?w=400&h=300&fit=crop"
+  },
+  {
+    name: "Medium Fries",
+    description: "Golden crispy McDonald's fries lightly salted",
+    price: 34.90,
+    category: "Sides",
+    image: "https://images.unsplash.com/photo-1576107232684-1279f390859f?w=400&h=300&fit=crop"
+  },
+  {
+    name: "Large Fries",
+    description: "Golden crispy McDonald's fries lightly salted",
+    price: 39.90,
+    category: "Sides",
+    image: "https://images.unsplash.com/photo-1576107232684-1279f390859f?w=400&h=300&fit=crop"
+  },
+  {
+    name: "Mozzarella Sticks (4 piece)",
+    description: "Crispy golden mozzarella sticks served with marinara dipping sauce",
+    price: 44.90,
+    category: "Sides",
+    image: "https://images.unsplash.com/photo-1548340748-6780b5d28aeb?w=400&h=300&fit=crop"
+  },
+  {
+    name: "Apple Slices",
+    description: "Fresh apple slices, a lighter side option",
+    price: 19.90,
+    category: "Sides",
+    image: "https://images.unsplash.com/photo-1619546813926-a78fa6372cd2?w=400&h=300&fit=crop"
+  },
+
+  // ─── BREAKFAST ─────────────────────────────────────────
+  {
+    name: "Egg McMuffin",
+    description: "Freshly cracked egg, Canadian bacon and cheese on a toasted English muffin",
+    price: 44.90,
+    category: "Breakfast",
+    image: "https://images.unsplash.com/photo-1603046891726-36bfd957e0bf?w=400&h=300&fit=crop"
+  },
+  {
+    name: "Egg McMuffin Meal",
+    description: "Egg McMuffin with hash brown and medium coffee or juice",
+    price: 74.90,
+    category: "Breakfast",
+    image: "https://images.unsplash.com/photo-1603046891726-36bfd957e0bf?w=400&h=300&fit=crop"
+  },
+  {
+    name: "Sausage McMuffin with Egg",
+    description: "Pork sausage patty, freshly cracked egg and cheese on a toasted English muffin",
+    price: 49.90,
+    category: "Breakfast",
+    image: "https://images.unsplash.com/photo-1603046891726-36bfd957e0bf?w=400&h=300&fit=crop"
+  },
+  {
+    name: "Sausage McMuffin with Egg Meal",
+    description: "Sausage McMuffin with Egg, hash brown and medium coffee or juice",
+    price: 79.90,
+    category: "Breakfast",
+    image: "https://images.unsplash.com/photo-1603046891726-36bfd957e0bf?w=400&h=300&fit=crop"
+  },
+  {
+    name: "Big Breakfast",
+    description: "Scrambled egg, pork sausage patty, hash brown and toasted English muffin",
+    price: 69.90,
+    category: "Breakfast",
+    image: "https://images.unsplash.com/photo-1533089860892-a7c6f0a88666?w=400&h=300&fit=crop"
+  },
+  {
+    name: "Hotcakes",
+    description: "Three fluffy pancakes served with syrup and whipped butter",
+    price: 44.90,
+    category: "Breakfast",
+    image: "https://images.unsplash.com/photo-1528207776546-365bb710ee93?w=400&h=300&fit=crop"
+  },
+  {
+    name: "Hotcakes and Sausage",
+    description: "Three fluffy pancakes with a pork sausage patty, syrup and whipped butter",
+    price: 59.90,
+    category: "Breakfast",
+    image: "https://images.unsplash.com/photo-1528207776546-365bb710ee93?w=400&h=300&fit=crop"
+  },
+  {
+    name: "Hash Brown",
+    description: "Crispy golden hash brown",
+    price: 19.90,
+    category: "Breakfast",
+    image: "https://images.unsplash.com/photo-1586190848861-99aa4a171e90?w=400&h=300&fit=crop"
+  },
+
+  // ─── DESSERTS ──────────────────────────────────────────
+  {
+    name: "McFlurry Oreo",
+    description: "Creamy soft serve ice cream blended with Oreo cookie pieces",
+    price: 39.90,
+    category: "Desserts",
+    image: "https://images.unsplash.com/photo-1570197788417-0e82375c9371?w=400&h=300&fit=crop"
+  },
+  {
+    name: "McFlurry Smarties",
+    description: "Creamy soft serve ice cream blended with Smarties",
+    price: 39.90,
+    category: "Desserts",
+    image: "https://images.unsplash.com/photo-1570197788417-0e82375c9371?w=400&h=300&fit=crop"
+  },
+  {
+    name: "Soft Serve Cone",
+    description: "Creamy McDonald's soft serve ice cream in a crispy cone",
+    price: 14.90,
+    category: "Desserts",
+    image: "https://images.unsplash.com/photo-1488900128323-21503983a07e?w=400&h=300&fit=crop"
+  },
+  {
+    name: "Sundae Caramel",
+    description: "Creamy soft serve ice cream topped with rich caramel sauce",
+    price: 29.90,
+    category: "Desserts",
+    image: "https://images.unsplash.com/photo-1563805042-7684c019e1cb?w=400&h=300&fit=crop"
+  },
+  {
+    name: "Sundae Chocolate",
+    description: "Creamy soft serve ice cream topped with rich chocolate sauce",
+    price: 29.90,
+    category: "Desserts",
+    image: "https://images.unsplash.com/photo-1563805042-7684c019e1cb?w=400&h=300&fit=crop"
+  },
+  {
+    name: "Apple Pie",
+    description: "Warm flaky pastry filled with sweet spiced apple filling",
+    price: 24.90,
+    category: "Desserts",
+    image: "https://images.unsplash.com/photo-1562007908-17c67e878c88?w=400&h=300&fit=crop"
+  },
+  {
+    name: "Chocolate Muffin",
+    description: "Rich moist chocolate muffin",
+    price: 24.90,
+    category: "Desserts",
+    image: "https://images.unsplash.com/photo-1607958996333-41aef7caefaa?w=400&h=300&fit=crop"
+  },
+
+  // ─── DRINKS ────────────────────────────────────────────
+  {
+    name: "Cold Drink Small",
+    description: "Your choice of Coca-Cola, Sprite, Fanta Orange or Fanta Grape",
+    price: 22.90,
+    category: "Drinks",
+    image: "https://images.unsplash.com/photo-1622483767028-3f66f32aef97?w=400&h=300&fit=crop"
+  },
+  {
+    name: "Cold Drink Medium",
+    description: "Your choice of Coca-Cola, Sprite, Fanta Orange or Fanta Grape",
+    price: 27.90,
+    category: "Drinks",
+    image: "https://images.unsplash.com/photo-1622483767028-3f66f32aef97?w=400&h=300&fit=crop"
+  },
+  {
+    name: "Cold Drink Large",
+    description: "Your choice of Coca-Cola, Sprite, Fanta Orange or Fanta Grape",
+    price: 32.90,
+    category: "Drinks",
+    image: "https://images.unsplash.com/photo-1622483767028-3f66f32aef97?w=400&h=300&fit=crop"
+  },
+  {
+    name: "McCafé Americano",
+    description: "Rich espresso with hot water, smooth and bold",
+    price: 29.90,
+    category: "Drinks",
+    image: "https://images.unsplash.com/photo-1509042239860-f550ce710b93?w=400&h=300&fit=crop"
+  },
+  {
+    name: "McCafé Cappuccino",
+    description: "Espresso with steamed milk and a thick layer of foam",
+    price: 34.90,
+    category: "Drinks",
+    image: "https://images.unsplash.com/photo-1572442388796-11668a67e53d?w=400&h=300&fit=crop"
+  },
+  {
+    name: "McCafé Latte",
+    description: "Espresso with steamed milk, smooth and creamy",
+    price: 34.90,
+    category: "Drinks",
+    image: "https://images.unsplash.com/photo-1570968915860-54d520919b45?w=400&h=300&fit=crop"
+  },
+  {
+    name: "McCafé Hot Chocolate",
+    description: "Rich creamy hot chocolate made with steamed milk",
+    price: 32.90,
+    category: "Drinks",
+    image: "https://images.unsplash.com/photo-1542990253-0d0f5be5f0ed?w=400&h=300&fit=crop"
+  },
+  {
+    name: "Orange Juice",
+    description: "100% pure squeezed orange juice",
+    price: 27.90,
+    category: "Drinks",
+    image: "https://images.unsplash.com/photo-1621506289937-a8e4df240d0b?w=400&h=300&fit=crop"
+  },
+  {
+    name: "Milkshake Chocolate",
+    description: "Thick creamy chocolate milkshake",
+    price: 44.90,
+    category: "Drinks",
+    image: "https://images.unsplash.com/photo-1572490122747-3968b75cc699?w=400&h=300&fit=crop"
+  },
+  {
+    name: "Milkshake Strawberry",
+    description: "Thick creamy strawberry milkshake",
+    price: 44.90,
+    category: "Drinks",
+    image: "https://images.unsplash.com/photo-1572490122747-3968b75cc699?w=400&h=300&fit=crop"
+  },
+  {
+    name: "Milkshake Vanilla",
+    description: "Thick creamy vanilla milkshake",
+    price: 44.90,
+    category: "Drinks",
+    image: "https://images.unsplash.com/photo-1572490122747-3968b75cc699?w=400&h=300&fit=crop"
+  },
+
+  // ─── HAPPY MEAL ────────────────────────────────────────
+  {
+    name: "Happy Meal Hamburger",
+    description: "Hamburger, small fries, small cold drink or juice box and a toy",
+    price: 59.90,
+    category: "Happy Meal",
+    image: "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=400&h=300&fit=crop"
+  },
+  {
+    name: "Happy Meal Cheese Burger",
+    description: "Cheeseburger, small fries, small cold drink or juice box and a toy",
+    price: 62.90,
+    category: "Happy Meal",
+    image: "https://images.unsplash.com/photo-1571091718767-18b5b1457add?w=400&h=300&fit=crop"
+  },
+  {
+    name: "Happy Meal 4 McNuggets",
+    description: "4 McNuggets, small fries, small cold drink or juice box and a toy",
+    price: 62.90,
+    category: "Happy Meal",
+    image: "https://images.unsplash.com/photo-1606755962773-d324e0a13086?w=400&h=300&fit=crop"
+  },
+
+  // ─── SHAREBOXES ────────────────────────────────────────
+  {
+    name: "Family Box",
+    description: "20 McNuggets, 2 large fries, 4 medium cold drinks",
+    price: 249.90,
+    category: "Shareboxes",
+    image: "https://images.unsplash.com/photo-1606755962773-d324e0a13086?w=400&h=300&fit=crop"
+  },
+  {
+    name: "Burger Bundle",
+    description: "4 McFeasts or Big Macs, 4 medium fries, 4 medium cold drinks",
+    price: 349.90,
+    category: "Shareboxes",
+    image: "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=300&fit=crop"
+  },
+];
   // McDonalds
   {
     id: id(),
