@@ -202,6 +202,83 @@ const Index = () => {
       .catch(() => setZones([]));
   }, []);
 
+  // Load + live-sync the signed-in customer's favourites.
+  useEffect(() => {
+    if (!user) {
+      setFavouriteIds(new Set());
+      return;
+    }
+    let cancelled = false;
+    const load = async () => {
+      const { data } = await (supabase as any)
+        .from("customer_favourites")
+        .select("restaurant_id")
+        .eq("user_id", user.id);
+      if (!cancelled && Array.isArray(data)) {
+        setFavouriteIds(new Set(data.map((r: any) => r.restaurant_id)));
+      }
+    };
+    load();
+    const channel = supabase
+      .channel(`favs-${user.id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "customer_favourites",
+          filter: `user_id=eq.${user.id}`,
+        },
+        () => load(),
+      )
+      .subscribe();
+    return () => {
+      cancelled = true;
+      supabase.removeChannel(channel);
+    };
+  }, [user]);
+
+  const handleToggleFavourite = async (restaurantId: string, next: boolean) => {
+    if (!user) {
+      toast("Sign in to save favourites", {
+        action: { label: "Sign in", onClick: () => navigate("/auth") },
+      });
+      return;
+    }
+    // Optimistic update
+    setFavouriteIds((prev) => {
+      const n = new Set(prev);
+      if (next) n.add(restaurantId);
+      else n.delete(restaurantId);
+      return n;
+    });
+    if (next) {
+      const { error } = await (supabase as any)
+        .from("customer_favourites")
+        .insert({ user_id: user.id, restaurant_id: restaurantId });
+      if (error && !String(error.message).includes("duplicate")) {
+        toast.error("Couldn't save favourite");
+        setFavouriteIds((prev) => {
+          const n = new Set(prev);
+          n.delete(restaurantId);
+          return n;
+        });
+      } else {
+        toast.success("Added to favourites");
+      }
+    } else {
+      const { error } = await (supabase as any)
+        .from("customer_favourites")
+        .delete()
+        .eq("user_id", user.id)
+        .eq("restaurant_id", restaurantId);
+      if (error) {
+        toast.error("Couldn't remove favourite");
+        setFavouriteIds((prev) => new Set(prev).add(restaurantId));
+      }
+    }
+  };
+
   // Effective coords: manual address override wins, else GPS/profile fallback.
   const effectiveCoords = manualAddress
     ? { lat: manualAddress.lat, lng: manualAddress.lng }
