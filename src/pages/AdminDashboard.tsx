@@ -741,8 +741,11 @@ const AdminDashboard = () => {
           />
         )}
 
-        {/* Delivery Zones (centre + 5km radius + per-zone fee) */}
+        {/* Delivery Zones (centre + radius + per-zone fee) */}
         {tab === "areas" && <AdminDeliveryAreas />}
+
+        {/* Delivery Fee Management (peak surcharges + audit log) */}
+        {tab === "fees" && <AdminFeeManagement />}
 
         {/* About Page Editor */}
         {tab === "about" && (
