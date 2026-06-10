@@ -2615,7 +2615,9 @@ const OrdersTable = ({
               </tr>
             ) : (
               orders.map((order, i) => {
-                const showDispatch = !order.driver_id && order.dispatch_phase != null;
+                const showDispatch =
+                  (!order.driver_id && order.dispatch_phase != null) ||
+                  ["ready", "driver_assigned", "picking_up", "arrived_at_restaurant", "out_for_delivery", "delivered"].includes(order.status);
                 const phaseStyles: Record<string, string> = {
                   offer_a: "bg-blue-100 text-blue-700",
                   offer_b: "bg-indigo-100 text-indigo-700",
@@ -2623,9 +2625,9 @@ const OrdersTable = ({
                   broadcast: "bg-fuchsia-100 text-fuchsia-700",
                 };
                 const phaseLabels: Record<string, string> = {
-                  offer_a: "Offer 1/2",
-                  offer_b: "Offer 2/2",
-                  waiting: "Waiting (5min)",
+                  offer_a: "Offering driver",
+                  offer_b: "Offering driver",
+                  waiting: "Searching for driver",
                   broadcast: "Broadcast",
                 };
                 return (
