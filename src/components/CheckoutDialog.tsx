@@ -1254,9 +1254,18 @@ const CheckoutDialog = ({
               <span>Delivery</span>
               <span>
                 {storeInfo.currency}
-                {effectiveDelivery.toFixed(2)}
+                {(effectiveDelivery - peakSurcharge).toFixed(2)}
               </span>
             </div>
+            {peakSurcharge > 0 && (
+              <div className="flex justify-between text-muted-foreground">
+                <span>Peak-time surcharge</span>
+                <span>
+                  +{storeInfo.currency}
+                  {peakSurcharge.toFixed(2)}
+                </span>
+              </div>
+            )}
             {actualTip > 0 && (
               <div className="flex justify-between text-muted-foreground">
                 <span>Tip</span>
