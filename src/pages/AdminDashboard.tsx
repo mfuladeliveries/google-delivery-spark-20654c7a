@@ -33,6 +33,7 @@ import AdminDrivers from "@/components/admin/AdminDrivers";
 import AdminAboutEditor from "@/components/admin/AdminAboutEditor";
 import AdminDeliveryAreas from "@/components/admin/AdminDeliveryAreas";
 import AdminFeeManagement from "@/components/admin/AdminFeeManagement";
+import OrderDispatchLog from "@/components/admin/OrderDispatchLog";
 import AdminMenuManager from "@/components/admin/AdminMenuManager";
 import { toast } from "sonner";
 import { geocodeAddress } from "@/lib/geocode";
