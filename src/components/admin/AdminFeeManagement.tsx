@@ -215,6 +215,21 @@ const AdminFeeManagement = () => {
       }
       return `Edited delivery zone “${name}”`;
     }
+    if (e.entity_type === "driver_split") {
+      const oldP = Number(
+        (e.old_values?.value as { percent?: number } | null)?.percent ?? NaN,
+      );
+      const newP = Number(
+        (e.new_values?.value as { percent?: number } | null)?.percent ?? NaN,
+      );
+      if (Number.isFinite(oldP) && Number.isFinite(newP) && oldP !== newP) {
+        return `Driver split ${oldP}% → ${newP}%`;
+      }
+      if (e.action === "insert" && Number.isFinite(newP)) {
+        return `Driver split set to ${newP}%`;
+      }
+      return "Driver split updated";
+    }
     return `${e.action} on ${e.entity_type}`;
   };
 
