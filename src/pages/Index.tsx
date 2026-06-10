@@ -22,23 +22,14 @@ import Footer from "@/components/Footer";
 import BottomNav from "@/components/BottomNav";
 import Cart from "@/components/Cart";
 import CheckoutDialog from "@/components/CheckoutDialog";
-import RestaurantCard, {
-  RestaurantCardSkeleton,
-  type RestaurantCardData,
-} from "@/components/RestaurantCard";
+import RestaurantCard, { RestaurantCardSkeleton, type RestaurantCardData } from "@/components/RestaurantCard";
 import { useGeoLocation, DELIVERY_RADIUS_KM } from "@/hooks/useGeoLocation";
 import { useCart } from "@/hooks/useCart";
 import { useAuth } from "@/hooks/useAuth";
 import { menuItems } from "@/data/menu";
 import mfulaLogo from "@/assets/mfula-logo.png";
 import AddressAutocomplete, { type ValidatedAddress } from "@/components/AddressAutocomplete";
-import {
-  distanceKm,
-  getActiveZones,
-  findNearestZone,
-  type DeliveryZone,
-  type ZoneMatch,
-} from "@/lib/serviceArea";
+import { distanceKm, getActiveZones, findNearestZone, type DeliveryZone, type ZoneMatch } from "@/lib/serviceArea";
 import { toast } from "sonner";
 
 interface Restaurant extends RestaurantCardData {
@@ -108,12 +99,7 @@ const Index = () => {
       const raw = sessionStorage.getItem("mfula-manual-area-v1");
       if (!raw) return null;
       const v = JSON.parse(raw);
-      if (
-        typeof v?.lat === "number" &&
-        typeof v?.lng === "number" &&
-        typeof v?.address === "string"
-      )
-        return v;
+      if (typeof v?.lat === "number" && typeof v?.lng === "number" && typeof v?.address === "string") return v;
     } catch {
       /* ignore */
     }
@@ -326,9 +312,7 @@ const Index = () => {
                 MFULA DELIVERIES
               </h2>
             </div>
-            <h2 className="text-2xl font-bold text-primary-foreground mb-5">
-              What you would like to order?
-            </h2>
+            <h2 className="text-2xl font-bold text-primary-foreground mb-5">What you would like to order?</h2>
 
             {/* Search */}
             <div className="relative">
@@ -337,7 +321,7 @@ const Index = () => {
                 type="text"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search restaurants or cuisines..."
+                placeholder="Search your favorate restaurants..."
                 className="w-full rounded-xl border-0 bg-card py-3 pl-10 pr-4 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary shadow-card"
               />
             </div>
@@ -352,8 +336,8 @@ const Index = () => {
             <div className="flex-1">
               <p className="text-sm font-bold text-foreground">Location is off</p>
               <p className="mt-0.5 text-xs text-muted-foreground">
-                Please enable location services to see restaurants available near you. Ordering is
-                disabled until location is enabled.
+                Please enable location services to see restaurants available near you. Ordering is disabled until
+                location is enabled.
               </p>
               <button
                 onClick={() => geo.refresh()}
@@ -369,10 +353,7 @@ const Index = () => {
             <MapPin className="mt-0.5 h-4 w-4 flex-shrink-0 text-primary" />
             <div className="flex-1 text-xs text-foreground">
               <span className="font-bold">Using your saved address.</span>{" "}
-              <button
-                onClick={() => geo.refresh()}
-                className="font-bold text-primary hover:underline"
-              >
+              <button onClick={() => geo.refresh()} className="font-bold text-primary hover:underline">
                 Use live location
               </button>{" "}
               for more accurate nearby restaurants.
@@ -398,9 +379,7 @@ const Index = () => {
               >
                 <MapPin className="h-3 w-3" /> Saved address
                 {geo.gpsDiscrepancyKm != null && (
-                  <span className="opacity-80">
-                    · GPS off by {geo.gpsDiscrepancyKm.toFixed(1)} km
-                  </span>
+                  <span className="opacity-80">· GPS off by {geo.gpsDiscrepancyKm.toFixed(1)} km</span>
                 )}
               </span>
             )}
@@ -522,12 +501,7 @@ const Index = () => {
                 if (next && e.currentTarget.contains(next)) return;
                 if (blurConfirmedRef.current) return;
                 const trimmed = manualText.trim();
-                if (
-                  manualAddress &&
-                  trimmed === baseline.trim() &&
-                  trimmed.length > 0 &&
-                  !confirmingCancel
-                ) {
+                if (manualAddress && trimmed === baseline.trim() && trimmed.length > 0 && !confirmingCancel) {
                   blurConfirmedRef.current = true;
                   setManualOpen(false);
                   setManualUpdatedAt(Date.now());
@@ -545,10 +519,7 @@ const Index = () => {
                 }
               };
               return (
-                <div
-                  className="mt-2 rounded-2xl border border-border bg-card p-3 shadow-card"
-                  onBlur={handlePanelBlur}
-                >
+                <div className="mt-2 rounded-2xl border border-border bg-card p-3 shadow-card" onBlur={handlePanelBlur}>
                   <div className="mb-2 flex items-center justify-between">
                     <p className="text-xs font-bold text-foreground">
                       {manualAddress ? "Update your saved address" : "Type your delivery area"}
@@ -563,12 +534,8 @@ const Index = () => {
                     </button>
                   </div>
                   {manualAddress && (
-                    <p
-                      className="mb-2 truncate text-[11px] text-muted-foreground"
-                      title={manualAddress.address}
-                    >
-                      Current:{" "}
-                      <span className="font-medium text-foreground">{manualAddress.address}</span>
+                    <p className="mb-2 truncate text-[11px] text-muted-foreground" title={manualAddress.address}>
+                      Current: <span className="font-medium text-foreground">{manualAddress.address}</span>
                     </p>
                   )}
                   <input
@@ -598,11 +565,7 @@ const Index = () => {
                       setManualUpdatedAt(Date.now());
                       setConfirmingCancel(false);
                     }}
-                    placeholder={
-                      manualAddress
-                        ? "Search a new street or suburb…"
-                        : "Start typing a suburb or street…"
-                    }
+                    placeholder={manualAddress ? "Search a new street or suburb…" : "Start typing a suburb or street…"}
                   />
                   {(() => {
                     const unit = houseNumber.trim();
@@ -613,11 +576,7 @@ const Index = () => {
                     const postcodeMatch = street.match(/\b\d{4}\b/);
                     const postcode = postcodeMatch ? postcodeMatch[0] : null;
                     const streetSansPostcode = postcode
-                      ? street
-                          .replace(postcode, "")
-                          .replace(/,\s*,/g, ",")
-                          .replace(/,\s*$/, "")
-                          .trim()
+                      ? street.replace(postcode, "").replace(/,\s*,/g, ",").replace(/,\s*$/, "").trim()
                       : street;
                     const parts = [unit, streetSansPostcode, postcode].filter(Boolean);
                     const preview =
@@ -626,9 +585,7 @@ const Index = () => {
                         : parts.join(", ");
                     return (
                       <div className="mt-2 rounded-xl border border-primary/30 bg-primary/5 px-3 py-2">
-                        <p className="text-[10px] font-semibold uppercase tracking-wide text-primary">
-                          Preview
-                        </p>
+                        <p className="text-[10px] font-semibold uppercase tracking-wide text-primary">Preview</p>
                         <p className="mt-0.5 break-words text-xs text-foreground" title={preview}>
                           {preview}
                         </p>
@@ -649,8 +606,7 @@ const Index = () => {
                             </span>
                           )}
                           <span className="rounded-full bg-card px-1.5 py-0.5 text-[10px] text-muted-foreground">
-                            Postcode:{" "}
-                            <span className="font-semibold text-foreground">{postcode ?? "—"}</span>
+                            Postcode: <span className="font-semibold text-foreground">{postcode ?? "—"}</span>
                           </span>
                         </div>
                       </div>
@@ -658,14 +614,12 @@ const Index = () => {
                   })()}
                   <p className="mt-2 text-[11px] text-muted-foreground">
                     Add your house number above, then pick a street suggestion to{" "}
-                    {manualAddress ? "replace your saved address" : "see restaurants"} within{" "}
-                    {DELIVERY_RADIUS_KM} km.
+                    {manualAddress ? "replace your saved address" : "see restaurants"} within {DELIVERY_RADIUS_KM} km.
                   </p>
                   {confirmingCancel ? (
                     <div className="mt-3 rounded-xl border border-amber-500/30 bg-amber-500/10 p-2.5">
                       <p className="text-[11px] font-semibold text-amber-700 dark:text-amber-300">
-                        Discard your changes? You haven't picked a suggestion yet, so nothing will
-                        be saved.
+                        Discard your changes? You haven't picked a suggestion yet, so nothing will be saved.
                       </p>
                       <div className="mt-2 flex justify-end gap-1.5">
                         <button
@@ -783,8 +737,8 @@ const Index = () => {
                     <MapPinOff className="mx-auto mb-3 h-12 w-12 text-primary/60" />
                     <p className="font-semibold text-foreground">Not available in your area yet</p>
                     <p className="mx-auto mt-1 max-w-xs text-sm text-muted-foreground">
-                      We don't currently deliver to your location. We're expanding fast — check back
-                      soon, or update your address if it looks wrong.
+                      We don't currently deliver to your location. We're expanding fast — check back soon, or update
+                      your address if it looks wrong.
                     </p>
                     <div className="mt-5 flex flex-wrap items-center justify-center gap-2">
                       <button
@@ -792,9 +746,7 @@ const Index = () => {
                         disabled={geo.status === "prompt"}
                         className="btn-glow inline-flex items-center gap-1.5 rounded-full gradient-maroon px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-maroon transition-transform hover:scale-105 disabled:cursor-not-allowed disabled:opacity-60"
                       >
-                        <RefreshCw
-                          className={`h-4 w-4 ${geo.status === "prompt" ? "animate-spin" : ""}`}
-                        />
+                        <RefreshCw className={`h-4 w-4 ${geo.status === "prompt" ? "animate-spin" : ""}`} />
                         {geo.status === "prompt" ? "Checking…" : "Retry GPS"}
                       </button>
                       <button
@@ -808,18 +760,11 @@ const Index = () => {
                 );
               }
 
-              if (
-                currentZone &&
-                matchesFilters.length === 0 &&
-                !search.trim() &&
-                selectedCuisine === "All"
-              ) {
+              if (currentZone && matchesFilters.length === 0 && !search.trim() && selectedCuisine === "All") {
                 return (
                   <div className="rounded-2xl border border-border bg-card py-16 text-center shadow-card">
                     <UtensilsCrossed className="mx-auto mb-3 h-12 w-12 text-muted-foreground/50" />
-                    <p className="font-semibold text-foreground">
-                      No restaurants in {currentZone.zone.name} yet
-                    </p>
+                    <p className="font-semibold text-foreground">No restaurants in {currentZone.zone.name} yet</p>
                     <p className="mx-auto mt-1 max-w-xs text-sm text-muted-foreground">
                       We're onboarding restaurants in your area. Check back soon!
                     </p>
@@ -831,9 +776,7 @@ const Index = () => {
                 <div className="rounded-2xl border border-border bg-card py-16 text-center shadow-card">
                   <UtensilsCrossed className="mx-auto mb-3 h-12 w-12 text-muted-foreground/50" />
                   <p className="font-semibold text-foreground">No restaurants found</p>
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    Try a different search or check back later
-                  </p>
+                  <p className="mt-1 text-sm text-muted-foreground">Try a different search or check back later</p>
                   <button
                     onClick={() => {
                       setSearch("");
