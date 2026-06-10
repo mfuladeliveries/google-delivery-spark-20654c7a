@@ -511,6 +511,9 @@ const DriverDashboard = () => {
       old_status: "ready",
     });
     toast.success("Order accepted successfully.");
+    // Accepting an order resets the consecutive-rejection counter.
+    setConsecutiveRejections(0);
+    setShowAvailabilityPrompt(false);
     await fetchOrders();
     setAcceptingId(null);
     processingRef.current = false;
