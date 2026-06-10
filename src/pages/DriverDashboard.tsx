@@ -112,6 +112,7 @@ const DriverDashboard = () => {
   // Tracks offer IDs the driver has already responded to (accept/reject) so the
   // modal can never reopen for that offer, even if realtime updates arrive late.
   const respondedOfferIdsRef = useRef<Set<string>>(new Set());
+  const processingRef = useRef(false);
 
   // Auth + role gating is handled by <RoleGuard> in App.tsx, so this
   // component only renders once the viewer is confirmed to be a driver/admin.
