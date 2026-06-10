@@ -33,6 +33,7 @@ import AdminDrivers from "@/components/admin/AdminDrivers";
 import AdminAboutEditor from "@/components/admin/AdminAboutEditor";
 import AdminDeliveryAreas from "@/components/admin/AdminDeliveryAreas";
 import AdminFeeManagement from "@/components/admin/AdminFeeManagement";
+import OrderDispatchLog from "@/components/admin/OrderDispatchLog";
 import AdminMenuManager from "@/components/admin/AdminMenuManager";
 import { toast } from "sonner";
 import { geocodeAddress } from "@/lib/geocode";
@@ -2614,7 +2615,9 @@ const OrdersTable = ({
               </tr>
             ) : (
               orders.map((order, i) => {
-                const showDispatch = !order.driver_id && order.dispatch_phase != null;
+                const showDispatch =
+                  (!order.driver_id && order.dispatch_phase != null) ||
+                  ["ready", "driver_assigned", "picking_up", "arrived_at_restaurant", "out_for_delivery", "delivered"].includes(order.status);
                 const phaseStyles: Record<string, string> = {
                   offer_a: "bg-blue-100 text-blue-700",
                   offer_b: "bg-indigo-100 text-indigo-700",
@@ -2622,9 +2625,9 @@ const OrdersTable = ({
                   broadcast: "bg-fuchsia-100 text-fuchsia-700",
                 };
                 const phaseLabels: Record<string, string> = {
-                  offer_a: "Offer 1/2",
-                  offer_b: "Offer 2/2",
-                  waiting: "Waiting (5min)",
+                  offer_a: "Offering driver",
+                  offer_b: "Offering driver",
+                  waiting: "Searching for driver",
                   broadcast: "Broadcast",
                 };
                 return (
@@ -2765,29 +2768,32 @@ const OrdersTable = ({
                         className={`border-b border-border ${i % 2 === 0 ? "" : "bg-secondary/30"}`}
                       >
                         <td colSpan={COL_COUNT} className="px-3 pb-2 pt-0">
-                          <div className="flex flex-wrap items-center gap-2 text-[10px]">
-                            <span className="font-semibold text-muted-foreground uppercase tracking-wide">
-                              Dispatch:
-                            </span>
-                            <span
-                              className={`rounded-full px-2 py-0.5 font-bold ${phaseStyles[order.dispatch_phase!] || "bg-muted text-muted-foreground"}`}
-                            >
-                              {phaseLabels[order.dispatch_phase!] || order.dispatch_phase}
-                            </span>
-                            {order.offered_to_driver_id && (
-                              <span className="text-muted-foreground">
-                                →{" "}
-                                <span className="font-semibold text-foreground">
-                                  {order.offered_to_name || "Driver"}
+                          {order.dispatch_phase && (
+                            <div className="flex flex-wrap items-center gap-2 text-[10px]">
+                              <span className="font-semibold text-muted-foreground uppercase tracking-wide">
+                                Dispatch:
+                              </span>
+                              <span
+                                className={`rounded-full px-2 py-0.5 font-bold ${phaseStyles[order.dispatch_phase] || "bg-muted text-muted-foreground"}`}
+                              >
+                                {phaseLabels[order.dispatch_phase] || order.dispatch_phase}
+                              </span>
+                              {order.offered_to_driver_id && (
+                                <span className="text-muted-foreground">
+                                  →{" "}
+                                  <span className="font-semibold text-foreground">
+                                    {order.offered_to_name || "Driver"}
+                                  </span>
                                 </span>
-                              </span>
-                            )}
-                            {order.missed_count > 0 && (
-                              <span className="rounded-full bg-red-100 px-2 py-0.5 font-bold text-red-700">
-                                {order.missed_count} missed
-                              </span>
-                            )}
-                          </div>
+                              )}
+                              {order.missed_count > 0 && (
+                                <span className="rounded-full bg-red-100 px-2 py-0.5 font-bold text-red-700">
+                                  {order.missed_count} missed
+                                </span>
+                              )}
+                            </div>
+                          )}
+                          <OrderDispatchLog orderId={order.id} />
                         </td>
                       </tr>
                     )}
