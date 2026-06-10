@@ -1,7 +1,18 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Clock, Plus, Pencil, Trash2, X, Check, Power, PowerOff, History } from "lucide-react";
+import {
+  Clock,
+  Plus,
+  Pencil,
+  Trash2,
+  X,
+  Check,
+  Power,
+  PowerOff,
+  History,
+  Users,
+} from "lucide-react";
 
 interface PeakWindow {
   id: string;
@@ -46,10 +57,13 @@ const AdminFeeManagement = () => {
   const [editing, setEditing] = useState<PeakWindow | null>(null);
   const [form, setForm] = useState(blankForm);
   const [saving, setSaving] = useState(false);
+  const [splitPct, setSplitPct] = useState<number>(70);
+  const [splitInput, setSplitInput] = useState<string>("70");
+  const [savingSplit, setSavingSplit] = useState(false);
 
   const load = async () => {
     setLoading(true);
-    const [w, a, s] = await Promise.all([
+    const [w, a, s, sp] = await Promise.all([
       supabase
         .from("peak_surcharge_windows")
         .select("id, label, day_of_week, start_time, end_time, flat_amount, is_active")
@@ -60,12 +74,41 @@ const AdminFeeManagement = () => {
         .order("created_at", { ascending: false })
         .limit(50),
       supabase.rpc("current_peak_surcharge"),
+      supabase
+        .from("app_settings")
+        .select("value")
+        .eq("key", "driver_split_percent")
+        .maybeSingle(),
     ]);
     if (w.error) toast.error(w.error.message);
     else setWindows((w.data || []) as PeakWindow[]);
     if (!a.error) setAudit((a.data || []) as AuditEntry[]);
     if (!s.error) setCurrentSurcharge(Number(s.data) || 0);
+    const pct = Number((sp.data?.value as { percent?: number } | null)?.percent);
+    if (Number.isFinite(pct)) {
+      setSplitPct(pct);
+      setSplitInput(String(pct));
+    }
     setLoading(false);
+  };
+
+  const saveSplit = async () => {
+    const pct = Number(splitInput);
+    if (!Number.isFinite(pct) || pct < 0 || pct > 100) {
+      return toast.error("Driver split must be between 0 and 100");
+    }
+    setSavingSplit(true);
+    const { error } = await supabase
+      .from("app_settings")
+      .upsert(
+        { key: "driver_split_percent", value: { percent: pct } },
+        { onConflict: "key" },
+      );
+    setSavingSplit(false);
+    if (error) return toast.error(error.message);
+    setSplitPct(pct);
+    toast.success(`Driver share set to ${pct}%`);
+    load();
   };
 
   useEffect(() => {
@@ -172,6 +215,21 @@ const AdminFeeManagement = () => {
       }
       return `Edited delivery zone “${name}”`;
     }
+    if (e.entity_type === "driver_split") {
+      const oldP = Number(
+        (e.old_values?.value as { percent?: number } | null)?.percent ?? NaN,
+      );
+      const newP = Number(
+        (e.new_values?.value as { percent?: number } | null)?.percent ?? NaN,
+      );
+      if (Number.isFinite(oldP) && Number.isFinite(newP) && oldP !== newP) {
+        return `Driver split ${oldP}% → ${newP}%`;
+      }
+      if (e.action === "insert" && Number.isFinite(newP)) {
+        return `Driver split set to ${newP}%`;
+      }
+      return "Driver split updated";
+    }
     return `${e.action} on ${e.entity_type}`;
   };
 
@@ -200,6 +258,54 @@ const AdminFeeManagement = () => {
         </div>
       </div>
 
+
+      {/* Driver split */}
+      <section className="rounded-2xl border border-border bg-card p-4 space-y-3">
+        <div className="flex items-start gap-3">
+          <Users className="h-5 w-5 text-primary mt-0.5" />
+          <div className="flex-1">
+            <h3 className="font-bold text-foreground">Driver share of delivery fee</h3>
+            <p className="text-xs text-muted-foreground">
+              Percentage of each customer delivery fee paid to the driver on delivery. The remainder
+              becomes platform commission. Applies to newly delivered orders only.
+            </p>
+          </div>
+        </div>
+        <div className="flex items-end gap-2">
+          <div className="flex-1">
+            <label className="text-xs font-semibold text-muted-foreground mb-1 block">
+              Driver share (%)
+            </label>
+            <input
+              type="number"
+              min={0}
+              max={100}
+              step={1}
+              value={splitInput}
+              onChange={(e) => setSplitInput(e.target.value)}
+              className="w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm text-foreground focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none"
+            />
+          </div>
+          <button
+            onClick={saveSplit}
+            disabled={savingSplit || splitInput === String(splitPct)}
+            className="rounded-xl bg-primary px-4 py-2.5 text-sm font-bold text-primary-foreground disabled:opacity-50 hover:opacity-90"
+          >
+            {savingSplit ? "Saving…" : "Save"}
+          </button>
+        </div>
+        <div className="rounded-xl bg-secondary/40 px-3 py-2 text-xs text-muted-foreground">
+          Example on R55 delivery fee:{" "}
+          <span className="font-bold text-emerald-600">
+            Driver R{((55 * splitPct) / 100).toFixed(2)}
+          </span>{" "}
+          ·{" "}
+          <span className="font-bold text-foreground">
+            Platform R{(55 - (55 * splitPct) / 100).toFixed(2)}
+          </span>
+        </div>
+      </section>
+
       {/* Peak windows */}
       <section className="space-y-3">
         <div className="flex items-center justify-between">
@@ -219,6 +325,7 @@ const AdminFeeManagement = () => {
             </button>
           )}
         </div>
+
 
         {creating && (
           <div className="rounded-2xl border-2 border-primary/40 bg-primary/5 p-4 space-y-3">

@@ -71,6 +71,7 @@ interface RecentOrder {
   order_number: number;
   customer_name: string;
   total: number;
+  delivery_fee: number | null;
   status: string;
   restaurant: string;
   created_at: string;
@@ -266,7 +267,7 @@ const AdminDashboard = () => {
       supabase
         .from("orders")
         .select(
-          "total, status, created_at, order_number, customer_name, restaurant, payment_method, id, driver_id, delivered_at, dispatch_phase, offered_to_driver_id, missed_by_driver_ids, admin_delivery_code",
+          "total, delivery_fee, status, created_at, order_number, customer_name, restaurant, payment_method, id, driver_id, delivered_at, dispatch_phase, offered_to_driver_id, missed_by_driver_ids, admin_delivery_code",
         )
         .order("created_at", { ascending: false }),
       supabase.from("restaurants").select("id", { count: "exact" }),
@@ -2528,8 +2529,35 @@ const OrdersTable = ({
   orders: RecentOrder[];
   onCancel?: (orderId: string, orderNumber: number) => void;
 }) => {
-  const COL_COUNT = 11;
+  const COL_COUNT = 12;
   const cancellable = (status: string) => !["delivered", "cancelled", "rejected"].includes(status);
+  // Live driver-split percentage so each delivery fee shows the actual payout split.
+  const [splitPct, setSplitPct] = useState<number>(70);
+  useEffect(() => {
+    let alive = true;
+    const fetchPct = async () => {
+      const { data } = await supabase
+        .from("app_settings")
+        .select("value")
+        .eq("key", "driver_split_percent")
+        .maybeSingle();
+      const pct = Number((data?.value as { percent?: number } | null)?.percent);
+      if (alive && Number.isFinite(pct)) setSplitPct(pct);
+    };
+    fetchPct();
+    const ch = supabase
+      .channel("app_settings_split")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "app_settings" },
+        fetchPct,
+      )
+      .subscribe();
+    return () => {
+      alive = false;
+      supabase.removeChannel(ch);
+    };
+  }, []);
   return (
     <div className="rounded-2xl border border-border bg-card overflow-hidden shadow-card">
       <div className="overflow-x-auto">
@@ -2553,6 +2581,9 @@ const OrdersTable = ({
               </th>
               <th className="px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground">
                 Total
+              </th>
+              <th className="px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground">
+                Delivery split
               </th>
               <th className="px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground">
                 Payment
@@ -2638,6 +2669,30 @@ const OrdersTable = ({
                         )}
                       </td>
                       <td className="px-3 py-2.5 font-semibold text-primary">R{order.total}</td>
+                      <td className="px-3 py-2.5 text-[10px] whitespace-nowrap">
+                        {order.delivery_fee != null && Number(order.delivery_fee) > 0 ? (
+                          (() => {
+                            const fee = Number(order.delivery_fee);
+                            const driver = Math.round(fee * splitPct) / 100;
+                            const platform = Math.max(0, Math.round((fee - driver) * 100) / 100);
+                            return (
+                              <div className="flex flex-col leading-tight">
+                                <span className="font-semibold text-foreground">
+                                  Fee R{fee.toFixed(2)}
+                                </span>
+                                <span className="text-emerald-600">
+                                  Driver R{driver.toFixed(2)} ({splitPct}%)
+                                </span>
+                                <span className="text-muted-foreground">
+                                  Platform R{platform.toFixed(2)}
+                                </span>
+                              </div>
+                            );
+                          })()
+                        ) : (
+                          <span className="text-muted-foreground">—</span>
+                        )}
+                      </td>
                       <td className="px-3 py-2.5">
                         <span
                           className={`rounded-full px-1.5 py-0.5 text-[9px] font-bold ${
