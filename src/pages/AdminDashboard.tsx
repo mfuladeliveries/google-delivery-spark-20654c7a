@@ -2789,6 +2789,7 @@ const OrdersTable = ({
                               </span>
                             )}
                           </div>
+                          <OrderDispatchLog orderId={order.id} />
                         </td>
                       </tr>
                     )}
