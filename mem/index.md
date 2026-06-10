@@ -10,6 +10,7 @@ Closed onboarding for providers (admin-led). Customer self-service.
 ## Memories
 - [Visual Identity](mem://style/visual-identity) — Luxury maroon/gold palette, glassmorphism, premium shadows, Playfair Display
 - [Cart Logic](mem://features/cart-logic) — Delivery fees R40 internal/R55 display, 5% tax, min order R40
+- [Delivery Fee Management](mem://features/delivery-fee-management) — Peak surcharges (flat ZAR), audit log, find_nearest_zone includes surcharge
 - [Order Tracking](mem://features/order-tracking) — 7-stage tracker, driver GPS every 10s
 - [Role Assignment](mem://auth/role-assignment) — Default customer role, multi-role priority handling
 - [Password Recovery](mem://auth/password-recovery) — 6-char min password, confirm field
