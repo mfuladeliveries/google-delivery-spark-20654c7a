@@ -826,6 +826,8 @@ const Index = () => {
               variant="featured"
               distanceKm={featuredOne._distance ?? null}
               nearby={featuredOne._nearby}
+              isFavourite={favouriteIds.has(featuredOne.id)}
+              onToggleFavourite={handleToggleFavourite}
             />
           </section>
         )}
@@ -932,6 +934,8 @@ const Index = () => {
                   variant="standard"
                   distanceKm={r._distance ?? null}
                   nearby={r._nearby}
+                  isFavourite={favouriteIds.has(r.id)}
+                  onToggleFavourite={handleToggleFavourite}
                 />
               ))}
             </div>
@@ -962,6 +966,8 @@ const Index = () => {
                     variant="standard"
                     distanceKm={r._distance ?? null}
                     nearby={r._nearby}
+                    isFavourite={favouriteIds.has(r.id)}
+                    onToggleFavourite={handleToggleFavourite}
                   />
                 </div>
               ))}
