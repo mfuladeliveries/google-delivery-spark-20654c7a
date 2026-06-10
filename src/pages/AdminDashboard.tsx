@@ -190,6 +190,7 @@ const AdminDashboard = () => {
     | "menus"
     | "drivers"
     | "areas"
+    | "fees"
     | "about"
   >("overview");
   const [stats, setStats] = useState<Stats>({
