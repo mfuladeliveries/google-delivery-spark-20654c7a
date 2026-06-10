@@ -22,6 +22,7 @@ import {
   RotateCcw,
   Search,
   X,
+  Loader2,
 } from "lucide-react";
 import { storeInfo } from "@/data/menu";
 import BottomNav from "@/components/BottomNav";
@@ -234,6 +235,32 @@ const Orders = () => {
   const RATINGS_PAGE_SIZE = 5;
   const [ratingTarget, setRatingTarget] = useState<RatingTarget | null>(null);
   const { prefs, update: updatePrefs } = useNotificationPrefs();
+  const [cancellingId, setCancellingId] = useState<string | null>(null);
+  const [now, setNow] = useState(Date.now());
+
+  // Keep the "X min ago" cancel-window calculation fresh once a minute.
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 30_000);
+    return () => clearInterval(id);
+  }, []);
+
+  const handleCustomerCancel = async (orderId: string, orderNumber: number) => {
+    if (cancellingId) return;
+    const confirmed = window.confirm(
+      `Cancel order #${orderNumber}? If you paid online, your refund will be processed automatically.`,
+    );
+    if (!confirmed) return;
+    setCancellingId(orderId);
+    const { error } = await supabase.rpc("customer_cancel_recent_order" as never, {
+      p_order_id: orderId,
+    } as never);
+    setCancellingId(null);
+    if (error) {
+      toast.error(error.message || "Could not cancel order");
+      return;
+    }
+    toast.success("Order cancelled");
+  };
 
   useEffect(() => {
     if (!authLoading && !user) navigate("/auth");
@@ -1059,6 +1086,47 @@ const Orders = () => {
                         </span>
                       </div>
                     )}
+
+                    {/* Self-serve cancel — eligible within 5 minutes, pre-driver only */}
+                    {(() => {
+                      const eligibleStatuses = [
+                        "pending_payment",
+                        "awaiting_restaurant",
+                        "pending",
+                        "confirmed",
+                        "preparing",
+                        "ready",
+                      ];
+                      const ageMs = now - new Date(order.created_at).getTime();
+                      const withinWindow = ageMs < 5 * 60 * 1000;
+                      const eligible =
+                        !isCancelled &&
+                        !order.driver_id &&
+                        eligibleStatuses.includes(order.status) &&
+                        withinWindow;
+                      if (!eligible) return null;
+                      const minsLeft = Math.max(0, Math.ceil((5 * 60 * 1000 - ageMs) / 60_000));
+                      const isCancelling = cancellingId === order.id;
+                      return (
+                        <button
+                          onClick={() => handleCustomerCancel(order.id, order.order_number)}
+                          disabled={isCancelling}
+                          className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-xl border-2 border-destructive/30 bg-destructive/5 px-3 py-2.5 text-xs font-bold text-destructive transition-colors hover:bg-destructive/10 disabled:opacity-60"
+                        >
+                          {isCancelling ? (
+                            <>
+                              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                              Cancelling…
+                            </>
+                          ) : (
+                            <>
+                              <X className="h-3.5 w-3.5" />
+                              Cancel order · {minsLeft} min left
+                            </>
+                          )}
+                        </button>
+                      );
+                    })()}
 
                     <div className="mt-3 flex justify-between border-t border-border pt-2 text-sm font-bold text-foreground">
                       <span>Total {order.tip > 0 && `(incl. R${order.tip} tip)`}</span>

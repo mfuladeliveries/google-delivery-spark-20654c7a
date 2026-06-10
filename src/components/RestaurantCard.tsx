@@ -1,4 +1,4 @@
-import { Star, Clock, MapPin, ArrowRight, Navigation, Ban } from "lucide-react";
+import { Star, Clock, MapPin, ArrowRight, Navigation, Ban, Heart } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { isRestaurantOpen, formatOpensAt } from "@/lib/restaurantHours";
@@ -54,9 +54,19 @@ interface Props {
   distanceKm?: number | null;
   /** True when within delivery radius — shows a "Within delivery range" badge. */
   nearby?: boolean;
+  /** When provided, renders a heart toggle in the top-right of the image. */
+  isFavourite?: boolean;
+  onToggleFavourite?: (restaurantId: string, next: boolean) => void;
 }
 
-const RestaurantCard = ({ restaurant: r, variant = "standard", distanceKm, nearby }: Props) => {
+const RestaurantCard = ({
+  restaurant: r,
+  variant = "standard",
+  distanceKm,
+  nearby,
+  isFavourite,
+  onToggleFavourite,
+}: Props) => {
   const navigate = useNavigate();
   const open = isRestaurantOpen(r.opens_at, r.closes_at);
   const imgUrl = getImage(r);
@@ -174,6 +184,28 @@ const RestaurantCard = ({ restaurant: r, variant = "standard", distanceKm, nearb
         <span className="absolute left-3 top-3 rounded-full gradient-maroon px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-primary-foreground shadow-maroon">
           {r.cuisine}
         </span>
+
+        {/* Favourite heart — top left under cuisine pill */}
+        {onToggleFavourite && (
+          <button
+            type="button"
+            aria-label={isFavourite ? "Remove from favourites" : "Add to favourites"}
+            aria-pressed={isFavourite ? true : false}
+            onClick={(e) => {
+              e.stopPropagation();
+              onToggleFavourite(r.id, !isFavourite);
+            }}
+            className="absolute right-3 top-10 flex h-9 w-9 items-center justify-center rounded-full bg-card/90 backdrop-blur shadow-card transition-transform hover:scale-110 active:scale-95"
+          >
+            <Heart
+              className={`h-4 w-4 transition-colors ${
+                isFavourite
+                  ? "fill-primary text-primary"
+                  : "text-muted-foreground"
+              }`}
+            />
+          </button>
+        )}
 
         {/* Open / Closed — bottom left */}
         <span className="absolute bottom-3 left-3 inline-flex items-center gap-1.5 rounded-lg bg-black/65 px-2 py-1 text-[11px] font-medium text-white">

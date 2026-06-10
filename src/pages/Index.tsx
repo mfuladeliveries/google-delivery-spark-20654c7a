@@ -15,7 +15,10 @@ import {
   RefreshCw,
   Pencil,
   X,
+  Heart,
+  Clock as ClockIcon,
 } from "lucide-react";
+import { isRestaurantOpen } from "@/lib/restaurantHours";
 import { supabase } from "@/integrations/supabase/client";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -51,6 +54,10 @@ const cuisineCategories = [
 const Index = () => {
   const [search, setSearch] = useState("");
   const [selectedCuisine, setSelectedCuisine] = useState("All");
+  const [openNowOnly, setOpenNowOnly] = useState(false);
+  const [minRating, setMinRating] = useState(0); // 0 | 3 | 4
+  const [favouritesOnly, setFavouritesOnly] = useState(false);
+  const [favouriteIds, setFavouriteIds] = useState<Set<string>>(new Set());
   const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
   const [loading, setLoading] = useState(true);
   const [cartOpen, setCartOpen] = useState(false);
@@ -195,6 +202,83 @@ const Index = () => {
       .catch(() => setZones([]));
   }, []);
 
+  // Load + live-sync the signed-in customer's favourites.
+  useEffect(() => {
+    if (!user) {
+      setFavouriteIds(new Set());
+      return;
+    }
+    let cancelled = false;
+    const load = async () => {
+      const { data } = await (supabase as any)
+        .from("customer_favourites")
+        .select("restaurant_id")
+        .eq("user_id", user.id);
+      if (!cancelled && Array.isArray(data)) {
+        setFavouriteIds(new Set(data.map((r: any) => r.restaurant_id)));
+      }
+    };
+    load();
+    const channel = supabase
+      .channel(`favs-${user.id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "customer_favourites",
+          filter: `user_id=eq.${user.id}`,
+        },
+        () => load(),
+      )
+      .subscribe();
+    return () => {
+      cancelled = true;
+      supabase.removeChannel(channel);
+    };
+  }, [user]);
+
+  const handleToggleFavourite = async (restaurantId: string, next: boolean) => {
+    if (!user) {
+      toast("Sign in to save favourites", {
+        action: { label: "Sign in", onClick: () => navigate("/auth") },
+      });
+      return;
+    }
+    // Optimistic update
+    setFavouriteIds((prev) => {
+      const n = new Set(prev);
+      if (next) n.add(restaurantId);
+      else n.delete(restaurantId);
+      return n;
+    });
+    if (next) {
+      const { error } = await (supabase as any)
+        .from("customer_favourites")
+        .insert({ user_id: user.id, restaurant_id: restaurantId });
+      if (error && !String(error.message).includes("duplicate")) {
+        toast.error("Couldn't save favourite");
+        setFavouriteIds((prev) => {
+          const n = new Set(prev);
+          n.delete(restaurantId);
+          return n;
+        });
+      } else {
+        toast.success("Added to favourites");
+      }
+    } else {
+      const { error } = await (supabase as any)
+        .from("customer_favourites")
+        .delete()
+        .eq("user_id", user.id)
+        .eq("restaurant_id", restaurantId);
+      if (error) {
+        toast.error("Couldn't remove favourite");
+        setFavouriteIds((prev) => new Set(prev).add(restaurantId));
+      }
+    }
+  };
+
   // Effective coords: manual address override wins, else GPS/profile fallback.
   const effectiveCoords = manualAddress
     ? { lat: manualAddress.lat, lng: manualAddress.lng }
@@ -228,13 +312,9 @@ const Index = () => {
       !search.trim() ||
       r.name.toLowerCase().includes(search.toLowerCase()) ||
       r.cuisine.toLowerCase().includes(search.toLowerCase());
-    // Strict area gating: once we know where the customer is, only show
-    // restaurants assigned to their current delivery area. Without coords
-    // (denied/unsupported) we show everything so the list isn't empty.
-    // Strict area gating with a coord-based fallback: restaurants assigned
-    // to the current zone always pass. Untagged restaurants (area_id null)
-    // still pass if they physically sit inside the zone's radius, so admins
-    // forgetting to tag a restaurant doesn't hide it from nearby customers.
+    const matchesOpen = !openNowOnly || isRestaurantOpen(r.opens_at, r.closes_at);
+    const matchesRating = minRating === 0 || (r.rating ?? 0) >= minRating;
+    const matchesFavourite = !favouritesOnly || favouriteIds.has(r.id);
     let matchesArea = true;
     if (hasEffectiveCoords) {
       if (currentZone == null) {
@@ -254,7 +334,7 @@ const Index = () => {
         matchesArea = false;
       }
     }
-    return matchesCuisine && matchesSearch && matchesArea;
+    return matchesCuisine && matchesSearch && matchesArea && matchesOpen && matchesRating && matchesFavourite;
   });
 
   // Sort: nearby first, then by distance asc, then by rating desc as tiebreaker.
@@ -660,6 +740,60 @@ const Index = () => {
           )}
         </div>
 
+        {/* Quick filter chips */}
+        <section className="mb-4">
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => setOpenNowOnly((v) => !v)}
+              aria-pressed={openNowOnly}
+              className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold transition-all ${
+                openNowOnly
+                  ? "border-primary bg-primary text-primary-foreground shadow-maroon"
+                  : "border-border bg-card text-foreground hover:bg-secondary"
+              }`}
+            >
+              <ClockIcon className="h-3.5 w-3.5" /> Open now
+            </button>
+            {[
+              { val: 0, label: "All ratings" },
+              { val: 3, label: "⭐ 3+" },
+              { val: 4, label: "⭐ 4+" },
+            ].map((opt) => (
+              <button
+                key={opt.val}
+                type="button"
+                onClick={() => setMinRating(opt.val)}
+                aria-pressed={minRating === opt.val}
+                className={`inline-flex items-center gap-1 rounded-full border px-3 py-1.5 text-xs font-semibold transition-all ${
+                  minRating === opt.val
+                    ? "border-primary bg-primary text-primary-foreground shadow-maroon"
+                    : "border-border bg-card text-foreground hover:bg-secondary"
+                }`}
+              >
+                {opt.label}
+              </button>
+            ))}
+            {user && (
+              <button
+                type="button"
+                onClick={() => setFavouritesOnly((v) => !v)}
+                aria-pressed={favouritesOnly}
+                className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold transition-all ${
+                  favouritesOnly
+                    ? "border-primary bg-primary text-primary-foreground shadow-maroon"
+                    : "border-border bg-card text-foreground hover:bg-secondary"
+                }`}
+              >
+                <Heart
+                  className={`h-3.5 w-3.5 ${favouritesOnly ? "fill-primary-foreground" : ""}`}
+                />
+                Favourites{favouriteIds.size > 0 ? ` (${favouriteIds.size})` : ""}
+              </button>
+            )}
+          </div>
+        </section>
+
         {/* Cuisine Categories */}
         <section className="mb-6">
           <h3 className="mb-3 text-base font-bold text-foreground">Cuisines</h3>
@@ -692,6 +826,8 @@ const Index = () => {
               variant="featured"
               distanceKm={featuredOne._distance ?? null}
               nearby={featuredOne._nearby}
+              isFavourite={favouriteIds.has(featuredOne.id)}
+              onToggleFavourite={handleToggleFavourite}
             />
           </section>
         )}
@@ -798,6 +934,8 @@ const Index = () => {
                   variant="standard"
                   distanceKm={r._distance ?? null}
                   nearby={r._nearby}
+                  isFavourite={favouriteIds.has(r.id)}
+                  onToggleFavourite={handleToggleFavourite}
                 />
               ))}
             </div>
@@ -828,6 +966,8 @@ const Index = () => {
                     variant="standard"
                     distanceKm={r._distance ?? null}
                     nearby={r._nearby}
+                    isFavourite={favouriteIds.has(r.id)}
+                    onToggleFavourite={handleToggleFavourite}
                   />
                 </div>
               ))}
