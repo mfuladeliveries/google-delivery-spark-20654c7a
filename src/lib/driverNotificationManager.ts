@@ -33,6 +33,7 @@ const teardownAudio = () => {
       audio.currentTime = 0;
       audio.loop = false;
       audio.onended = null;
+      audio = null;
     }
   } catch {
     /* ignore */
