@@ -123,63 +123,21 @@ const NewOrderModal = ({
 
   const handleRejectClick = () => {
     if (dismissed || accepting || rejecting) return;
+    setConfirmReject(true);
+  };
+
+  const confirmRejectYes = () => {
+    if (dismissed || accepting || rejecting) return;
+    setConfirmReject(false);
     setDismissed(true);
     stopAlert();
     playFeedback("decline");
     onReject();
   };
 
-  // Play custom alert sound + vibrate on open, loop for ~10 seconds, then stop
-  useEffect(() => {
-    if (!open || !offer || accepting || rejecting) return;
-
-    const audio = new Audio("/sounds/new-order.mp3");
-    audio.loop = true;
-    audio.volume = 1;
-    audioRef.current = audio;
-
-    audio.play().catch(() => {
-      /* autoplay blocked — silent fallback */
-    });
-
-    // Vibration pattern: buzz 600ms, pause 300ms — repeated for ~10s
-    // navigator.vibrate accepts an array of on/off durations in ms
-    if (typeof navigator !== "undefined" && "vibrate" in navigator) {
-      const pattern: number[] = [];
-      for (let i = 0; i < 11; i++) pattern.push(600, 300);
-      try {
-        navigator.vibrate(pattern);
-      } catch {
-        /* not supported */
-      }
-    }
-
-    const stopTimer = setTimeout(() => {
-      audio.pause();
-      audio.currentTime = 0;
-      if (typeof navigator !== "undefined" && "vibrate" in navigator) {
-        try {
-          navigator.vibrate(0);
-        } catch {
-          /* noop */
-        }
-      }
-    }, 10000);
-
-    return () => {
-      clearTimeout(stopTimer);
-      audio.pause();
-      audio.currentTime = 0;
-      audioRef.current = null;
-      if (typeof navigator !== "undefined" && "vibrate" in navigator) {
-        try {
-          navigator.vibrate(0);
-        } catch {
-          /* noop */
-        }
-      }
-    };
-  }, [open, offer?.id, accepting, rejecting]);
+  // NOTE: the parent DriverDashboard owns the continuous ringtone + vibration
+  // (so it never restarts after a response). This modal only plays the short
+  // accept/decline feedback chime.
 
   useEffect(() => {
     if (!offer?.offer_expires_at) {
