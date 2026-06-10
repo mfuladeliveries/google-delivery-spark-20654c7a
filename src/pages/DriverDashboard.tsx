@@ -107,7 +107,23 @@ const DriverDashboard = () => {
   const [rejectedIds, setRejectedIds] = useState<Set<string>>(new Set());
   const [activeOffer, setActiveOffer] = useState<Order | null>(null);
   const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
+  const [consecutiveRejections, setConsecutiveRejections] = useState(0);
+  const [showAvailabilityPrompt, setShowAvailabilityPrompt] = useState(false);
   const locationWatchRef = useRef<number | null>(null);
+  // Track offers we've already logged a timeout for, to avoid double-logging.
+  const timeoutLoggedRef = useRef<Set<string>>(new Set());
+
+  // Bumps the consecutive-rejection counter and surfaces the soft prompt at 3.
+  const bumpConsecutiveRejections = useCallback(() => {
+    setConsecutiveRejections((prev) => {
+      const next = prev + 1;
+      if (next >= 3) {
+        setShowAvailabilityPrompt(true);
+        return 0;
+      }
+      return next;
+    });
+  }, []);
 
   // Tracks offer IDs the driver has already responded to (accept/reject) so the
   // modal can never reopen for that offer, even if realtime updates arrive late.
