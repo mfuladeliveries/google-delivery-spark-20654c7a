@@ -2529,8 +2529,35 @@ const OrdersTable = ({
   orders: RecentOrder[];
   onCancel?: (orderId: string, orderNumber: number) => void;
 }) => {
-  const COL_COUNT = 11;
+  const COL_COUNT = 12;
   const cancellable = (status: string) => !["delivered", "cancelled", "rejected"].includes(status);
+  // Live driver-split percentage so each delivery fee shows the actual payout split.
+  const [splitPct, setSplitPct] = useState<number>(70);
+  useEffect(() => {
+    let alive = true;
+    const fetchPct = async () => {
+      const { data } = await supabase
+        .from("app_settings")
+        .select("value")
+        .eq("key", "driver_split_percent")
+        .maybeSingle();
+      const pct = Number((data?.value as { percent?: number } | null)?.percent);
+      if (alive && Number.isFinite(pct)) setSplitPct(pct);
+    };
+    fetchPct();
+    const ch = supabase
+      .channel("app_settings_split")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "app_settings" },
+        fetchPct,
+      )
+      .subscribe();
+    return () => {
+      alive = false;
+      supabase.removeChannel(ch);
+    };
+  }, []);
   return (
     <div className="rounded-2xl border border-border bg-card overflow-hidden shadow-card">
       <div className="overflow-x-auto">
