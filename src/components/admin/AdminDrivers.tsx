@@ -32,18 +32,33 @@ const AdminDrivers = () => {
       )
       .order("updated_at", { ascending: false });
     const ids = (drivers || []).map((d) => d.user_id);
-    const { data: profiles } = ids.length
-      ? await supabase
-          .from("profiles")
-          .select("user_id, full_name, contact_number")
-          .in("user_id", ids)
-      : { data: [] as { user_id: string; full_name: string; contact_number: string }[] };
-    const map = new Map((profiles || []).map((p) => [p.user_id, p] as const));
+    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+    const [{ data: profiles }, { data: rejections }] = await Promise.all([
+      ids.length
+        ? supabase
+            .from("profiles")
+            .select("user_id, full_name, contact_number")
+            .in("user_id", ids)
+        : Promise.resolve({ data: [] as { user_id: string; full_name: string; contact_number: string }[] }),
+      ids.length
+        ? supabase
+            .from("order_rejections")
+            .select("driver_id")
+            .in("driver_id", ids)
+            .gte("rejected_at", sevenDaysAgo)
+        : Promise.resolve({ data: [] as { driver_id: string }[] }),
+    ]);
+    const profileMap = new Map((profiles || []).map((p) => [p.user_id, p] as const));
+    const rejectionCounts = new Map<string, number>();
+    (rejections || []).forEach((r) => {
+      rejectionCounts.set(r.driver_id, (rejectionCounts.get(r.driver_id) ?? 0) + 1);
+    });
     setRows(
       (drivers || []).map((d) => ({
         ...d,
-        full_name: map.get(d.user_id)?.full_name,
-        contact_number: map.get(d.user_id)?.contact_number,
+        full_name: profileMap.get(d.user_id)?.full_name,
+        contact_number: profileMap.get(d.user_id)?.contact_number,
+        rejection_count_7d: rejectionCounts.get(d.user_id) ?? 0,
       })) as DriverRow[],
     );
     setLoading(false);
