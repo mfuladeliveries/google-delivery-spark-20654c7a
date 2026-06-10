@@ -15,6 +15,7 @@ interface DriverRow {
   profile_photo_url: string | null;
   full_name?: string;
   contact_number?: string;
+  rejection_count_7d?: number;
 }
 
 const AdminDrivers = () => {
