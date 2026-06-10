@@ -1,5 +1,15 @@
 import { useEffect, useRef, useState } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { MapPin, Store, Clock, Package, Check, X, Loader2 } from "lucide-react";
 import { driverPayoutForFee } from "@/lib/serviceArea";
 import { getNotificationPrefs } from "@/hooks/useNotificationPrefs";
