@@ -4,6 +4,15 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { sendPushNotification } from "@/lib/pushNotify";
+import {
+  startNotificationSound,
+  stopNotificationSound,
+  markOfferResponded,
+  markOfferCancelled,
+  cleanupNotificationListeners,
+  clearOfferNotifications,
+  hasOfferRung,
+} from "@/lib/driverNotificationManager";
 import DriverHeader from "@/components/driver/DriverHeader";
 import DriverBottomNav from "@/components/driver/DriverBottomNav";
 import DriverOrdersList from "@/components/driver/DriverOrdersList";
