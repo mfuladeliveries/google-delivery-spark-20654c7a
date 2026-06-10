@@ -141,6 +141,20 @@ const AdminDrivers = () => {
                   >
                     {d.is_suspended ? "suspended" : d.is_online ? "online" : "offline"}
                   </span>
+                  {(d.rejection_count_7d ?? 0) > 0 && (
+                    <span
+                      title="Order rejections in the last 7 days"
+                      className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${
+                        (d.rejection_count_7d ?? 0) > 20
+                          ? "bg-red-100 text-red-700"
+                          : (d.rejection_count_7d ?? 0) > 10
+                            ? "bg-amber-100 text-amber-700"
+                            : "bg-secondary text-muted-foreground"
+                      }`}
+                    >
+                      {d.rejection_count_7d} rejections (7d)
+                    </span>
+                  )}
                 </div>
               </div>
 
