@@ -258,20 +258,6 @@ const AdminFeeManagement = () => {
         </div>
       </div>
 
-      {/* Peak windows */}
-      <section className="space-y-3">
-        <div className="flex items-center justify-between">
-          <div>
-            <h3 className="font-bold text-foreground">Peak-time surcharges</h3>
-            <p className="text-xs text-muted-foreground">
-              Flat rand amount added to every delivery during the window. Multiple active windows
-              stack.
-            </p>
-          </div>
-          {!creating && (
-          </div>
-        </div>
-      </div>
 
       {/* Driver split */}
       <section className="rounded-2xl border border-border bg-card p-4 space-y-3">
