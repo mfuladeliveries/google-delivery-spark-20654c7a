@@ -22,6 +22,7 @@ import {
   RotateCcw,
   Search,
   X,
+  Loader2,
 } from "lucide-react";
 import { storeInfo } from "@/data/menu";
 import BottomNav from "@/components/BottomNav";
@@ -234,6 +235,32 @@ const Orders = () => {
   const RATINGS_PAGE_SIZE = 5;
   const [ratingTarget, setRatingTarget] = useState<RatingTarget | null>(null);
   const { prefs, update: updatePrefs } = useNotificationPrefs();
+  const [cancellingId, setCancellingId] = useState<string | null>(null);
+  const [now, setNow] = useState(Date.now());
+
+  // Keep the "X min ago" cancel-window calculation fresh once a minute.
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 30_000);
+    return () => clearInterval(id);
+  }, []);
+
+  const handleCustomerCancel = async (orderId: string, orderNumber: number) => {
+    if (cancellingId) return;
+    const confirmed = window.confirm(
+      `Cancel order #${orderNumber}? If you paid online, your refund will be processed automatically.`,
+    );
+    if (!confirmed) return;
+    setCancellingId(orderId);
+    const { error } = await supabase.rpc("customer_cancel_recent_order" as never, {
+      p_order_id: orderId,
+    } as never);
+    setCancellingId(null);
+    if (error) {
+      toast.error(error.message || "Could not cancel order");
+      return;
+    }
+    toast.success("Order cancelled");
+  };
 
   useEffect(() => {
     if (!authLoading && !user) navigate("/auth");
