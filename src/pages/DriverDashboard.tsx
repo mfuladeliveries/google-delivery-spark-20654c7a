@@ -240,7 +240,12 @@ const DriverDashboard = () => {
   // Continuous loud ringtone + repeating vibration while an offer is on-screen.
   // Stops automatically when the offer is accepted, rejected, or expires (modal closes).
   useEffect(() => {
-    if (!activeOffer || acceptingId || rejectingId) {
+    if (
+      !activeOffer ||
+      acceptingId ||
+      rejectingId ||
+      respondedOfferIdsRef.current.has(activeOffer.id)
+    ) {
       stopNotificationSound();
       return;
     }
