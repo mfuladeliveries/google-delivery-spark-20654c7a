@@ -626,6 +626,48 @@ export type Database = {
           },
         ]
       }
+      order_dispatch_log: {
+        Row: {
+          created_at: string
+          driver_id: string | null
+          event: string
+          id: string
+          order_id: string
+          round: number
+        }
+        Insert: {
+          created_at?: string
+          driver_id?: string | null
+          event: string
+          id?: string
+          order_id: string
+          round?: number
+        }
+        Update: {
+          created_at?: string
+          driver_id?: string | null
+          event?: string
+          id?: string
+          order_id?: string
+          round?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_dispatch_log_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "driver_job_board"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_dispatch_log_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       order_messages: {
         Row: {
           attachment_type: string | null
@@ -746,6 +788,7 @@ export type Database = {
           delivery_code_hash: string | null
           delivery_fee: number
           dispatch_phase: string | null
+          dispatch_round: number
           dispatch_started_at: string | null
           driver_id: string | null
           driver_lat: number | null
@@ -774,6 +817,7 @@ export type Database = {
           refunded_at: string | null
           restaurant: string
           restaurant_id: string | null
+          round_offered_driver_ids: string[]
           special_notes: string | null
           status: string
           subtotal: number
@@ -802,6 +846,7 @@ export type Database = {
           delivery_code_hash?: string | null
           delivery_fee?: number
           dispatch_phase?: string | null
+          dispatch_round?: number
           dispatch_started_at?: string | null
           driver_id?: string | null
           driver_lat?: number | null
@@ -830,6 +875,7 @@ export type Database = {
           refunded_at?: string | null
           restaurant?: string
           restaurant_id?: string | null
+          round_offered_driver_ids?: string[]
           special_notes?: string | null
           status?: string
           subtotal?: number
@@ -858,6 +904,7 @@ export type Database = {
           delivery_code_hash?: string | null
           delivery_fee?: number
           dispatch_phase?: string | null
+          dispatch_round?: number
           dispatch_started_at?: string | null
           driver_id?: string | null
           driver_lat?: number | null
@@ -886,6 +933,7 @@ export type Database = {
           refunded_at?: string | null
           restaurant?: string
           restaurant_id?: string | null
+          round_offered_driver_ids?: string[]
           special_notes?: string | null
           status?: string
           subtotal?: number
