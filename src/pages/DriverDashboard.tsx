@@ -161,33 +161,18 @@ const DriverDashboard = () => {
     return () => clearTimeout(timer);
   }, [activeOffer?.offer_expires_at, activeOffer?.id]);
 
-  // Continuous loud ringtone + repeating vibration while an offer is on-screen.
-  // Stops automatically when the offer is accepted, rejected, or expires (modal closes).
+  // Play the new-order ringtone EXACTLY ONCE per offer (Uber Eats / Bolt / Mr D style).
+  // The notification manager guarantees a single audio instance and refuses to replay
+  // for offers that have already rung, been responded to, or been cancelled.
   useEffect(() => {
-    if (
-      !activeOffer ||
-      acceptingId ||
-      rejectingId ||
-      respondedOfferIdsRef.current.has(activeOffer.id)
-    ) {
-      stopNotificationSound();
-      return;
-    }
+    if (!activeOffer) return;
+    if (acceptingId || rejectingId) return;
+    if (respondedOfferIdsRef.current.has(activeOffer.id)) return;
+    if (hasOfferRung(activeOffer.id)) return;
 
-    startNotificationSound();
+    startNotificationSound(activeOffer.id);
 
-    // Vibrate immediately, then keep pulsing every 2s for the whole window
-    const doVibrate = () => {
-      try {
-        if ("vibrate" in navigator) navigator.vibrate([500, 200, 500, 200, 500]);
-      } catch {
-        /* ignore */
-      }
-    };
-    doVibrate();
-    const vibrateInterval = setInterval(doVibrate, 2000);
-
-    // Background browser notification (one-shot, lets OS surface it if tab is hidden)
+    // One-shot OS notification when the tab is hidden
     if (document.hidden && "Notification" in window && Notification.permission === "granted") {
       try {
         new Notification("🚗 New delivery waiting!", {
@@ -199,24 +184,47 @@ const DriverDashboard = () => {
         /* ignore */
       }
     }
+  }, [activeOffer?.id, activeOffer, acceptingId, rejectingId]);
 
-    return () => {
-      clearInterval(vibrateInterval);
-      stopNotificationSound();
-      try {
-        if ("vibrate" in navigator) navigator.vibrate(0);
-      } catch {
-        /* ignore */
-      }
+  // Stop the ringtone if the modal closes, the tab is hidden, the driver goes offline,
+  // or the component unmounts.
+  useEffect(() => {
+    if (!activeOffer) stopNotificationSound();
+  }, [activeOffer]);
+
+  useEffect(() => {
+    if (!driverProfile?.is_online) {
+      cleanupNotificationListeners();
+    }
+  }, [driverProfile?.is_online]);
+
+  useEffect(() => {
+    const onVisibility = () => {
+      if (document.hidden) stopNotificationSound();
     };
-  }, [
-    activeOffer?.id,
-    activeOffer,
-    startNotificationSound,
-    stopNotificationSound,
-    acceptingId,
-    rejectingId,
-  ]);
+    document.addEventListener("visibilitychange", onVisibility);
+    window.addEventListener("pagehide", stopNotificationSound);
+    window.addEventListener("beforeunload", stopNotificationSound);
+    return () => {
+      document.removeEventListener("visibilitychange", onVisibility);
+      window.removeEventListener("pagehide", stopNotificationSound);
+      window.removeEventListener("beforeunload", stopNotificationSound);
+      cleanupNotificationListeners();
+    };
+  }, []);
+
+  // If a targeted offer is taken by someone else / cancelled / expires server-side,
+  // mark it cancelled so the manager forbids future sound for that offer id.
+  useEffect(() => {
+    if (!user) return;
+    pendingOrders.forEach((o) => {
+      const expired = o.offer_expires_at && new Date(o.offer_expires_at).getTime() <= Date.now();
+      if (expired && !respondedOfferIdsRef.current.has(o.id)) {
+        markOfferCancelled(o.id);
+      }
+    });
+  }, [pendingOrders, user]);
+
 
   // GPS tracking when online
   useEffect(() => {
