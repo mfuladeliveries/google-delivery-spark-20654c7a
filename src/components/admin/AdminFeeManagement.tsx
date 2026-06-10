@@ -57,10 +57,13 @@ const AdminFeeManagement = () => {
   const [editing, setEditing] = useState<PeakWindow | null>(null);
   const [form, setForm] = useState(blankForm);
   const [saving, setSaving] = useState(false);
+  const [splitPct, setSplitPct] = useState<number>(70);
+  const [splitInput, setSplitInput] = useState<string>("70");
+  const [savingSplit, setSavingSplit] = useState(false);
 
   const load = async () => {
     setLoading(true);
-    const [w, a, s] = await Promise.all([
+    const [w, a, s, sp] = await Promise.all([
       supabase
         .from("peak_surcharge_windows")
         .select("id, label, day_of_week, start_time, end_time, flat_amount, is_active")
@@ -71,12 +74,41 @@ const AdminFeeManagement = () => {
         .order("created_at", { ascending: false })
         .limit(50),
       supabase.rpc("current_peak_surcharge"),
+      supabase
+        .from("app_settings")
+        .select("value")
+        .eq("key", "driver_split_percent")
+        .maybeSingle(),
     ]);
     if (w.error) toast.error(w.error.message);
     else setWindows((w.data || []) as PeakWindow[]);
     if (!a.error) setAudit((a.data || []) as AuditEntry[]);
     if (!s.error) setCurrentSurcharge(Number(s.data) || 0);
+    const pct = Number((sp.data?.value as { percent?: number } | null)?.percent);
+    if (Number.isFinite(pct)) {
+      setSplitPct(pct);
+      setSplitInput(String(pct));
+    }
     setLoading(false);
+  };
+
+  const saveSplit = async () => {
+    const pct = Number(splitInput);
+    if (!Number.isFinite(pct) || pct < 0 || pct > 100) {
+      return toast.error("Driver split must be between 0 and 100");
+    }
+    setSavingSplit(true);
+    const { error } = await supabase
+      .from("app_settings")
+      .upsert(
+        { key: "driver_split_percent", value: { percent: pct } },
+        { onConflict: "key" },
+      );
+    setSavingSplit(false);
+    if (error) return toast.error(error.message);
+    setSplitPct(pct);
+    toast.success(`Driver share set to ${pct}%`);
+    load();
   };
 
   useEffect(() => {
