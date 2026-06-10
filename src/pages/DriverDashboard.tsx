@@ -218,7 +218,8 @@ const DriverDashboard = () => {
       (o) =>
         o.offered_to_driver_id === user.id &&
         o.offer_expires_at &&
-        new Date(o.offer_expires_at).getTime() > Date.now(),
+        new Date(o.offer_expires_at).getTime() > Date.now() &&
+        !respondedOfferIdsRef.current.has(o.id),
     );
     if (targeted) {
       setActiveOffer(targeted);
