@@ -506,6 +506,7 @@ const AdminDashboard = () => {
     "menus",
     "drivers",
     "areas",
+    "fees",
     "about",
   ] as const;
 
