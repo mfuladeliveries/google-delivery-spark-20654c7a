@@ -2768,29 +2768,31 @@ const OrdersTable = ({
                         className={`border-b border-border ${i % 2 === 0 ? "" : "bg-secondary/30"}`}
                       >
                         <td colSpan={COL_COUNT} className="px-3 pb-2 pt-0">
-                          <div className="flex flex-wrap items-center gap-2 text-[10px]">
-                            <span className="font-semibold text-muted-foreground uppercase tracking-wide">
-                              Dispatch:
-                            </span>
-                            <span
-                              className={`rounded-full px-2 py-0.5 font-bold ${phaseStyles[order.dispatch_phase!] || "bg-muted text-muted-foreground"}`}
-                            >
-                              {phaseLabels[order.dispatch_phase!] || order.dispatch_phase}
-                            </span>
-                            {order.offered_to_driver_id && (
-                              <span className="text-muted-foreground">
-                                →{" "}
-                                <span className="font-semibold text-foreground">
-                                  {order.offered_to_name || "Driver"}
+                          {order.dispatch_phase && (
+                            <div className="flex flex-wrap items-center gap-2 text-[10px]">
+                              <span className="font-semibold text-muted-foreground uppercase tracking-wide">
+                                Dispatch:
+                              </span>
+                              <span
+                                className={`rounded-full px-2 py-0.5 font-bold ${phaseStyles[order.dispatch_phase] || "bg-muted text-muted-foreground"}`}
+                              >
+                                {phaseLabels[order.dispatch_phase] || order.dispatch_phase}
+                              </span>
+                              {order.offered_to_driver_id && (
+                                <span className="text-muted-foreground">
+                                  →{" "}
+                                  <span className="font-semibold text-foreground">
+                                    {order.offered_to_name || "Driver"}
+                                  </span>
                                 </span>
-                              </span>
-                            )}
-                            {order.missed_count > 0 && (
-                              <span className="rounded-full bg-red-100 px-2 py-0.5 font-bold text-red-700">
-                                {order.missed_count} missed
-                              </span>
-                            )}
-                          </div>
+                              )}
+                              {order.missed_count > 0 && (
+                                <span className="rounded-full bg-red-100 px-2 py-0.5 font-bold text-red-700">
+                                  {order.missed_count} missed
+                                </span>
+                              )}
+                            </div>
+                          )}
                           <OrderDispatchLog orderId={order.id} />
                         </td>
                       </tr>
