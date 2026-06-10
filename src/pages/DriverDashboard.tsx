@@ -4,6 +4,15 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { sendPushNotification } from "@/lib/pushNotify";
+import {
+  startNotificationSound,
+  stopNotificationSound,
+  markOfferResponded,
+  markOfferCancelled,
+  cleanupNotificationListeners,
+  clearOfferNotifications,
+  hasOfferRung,
+} from "@/lib/driverNotificationManager";
 import DriverHeader from "@/components/driver/DriverHeader";
 import DriverBottomNav from "@/components/driver/DriverBottomNav";
 import DriverOrdersList from "@/components/driver/DriverOrdersList";
@@ -100,95 +109,9 @@ const DriverDashboard = () => {
   const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
   const locationWatchRef = useRef<number | null>(null);
 
-  const audioRef = useRef<HTMLAudioElement | null>(null);
-  const fallbackBeepRef = useRef<{
-    ctx: AudioContext;
-    osc: OscillatorNode;
-    lfo: OscillatorNode;
-  } | null>(null);
-
   // Tracks offer IDs the driver has already responded to (accept/reject) so the
-  // ringtone can never restart for that offer, even if realtime updates arrive late.
+  // modal can never reopen for that offer, even if realtime updates arrive late.
   const respondedOfferIdsRef = useRef<Set<string>>(new Set());
-
-  const clearOfferNotifications = useCallback((offerId: string) => {
-    try {
-      if ("serviceWorker" in navigator) {
-        navigator.serviceWorker.getRegistration().then((reg) => {
-          reg?.getNotifications({ tag: `offer-${offerId}` }).then((ns) => {
-            ns.forEach((n) => n.close());
-          });
-        });
-      }
-    } catch {
-      /* ignore */
-    }
-  }, []);
-
-  const stopNotificationSound = useCallback(() => {
-    try {
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current.currentTime = 0;
-        audioRef.current.loop = false;
-      }
-    } catch {
-      /* ignore */
-    }
-    try {
-      if (fallbackBeepRef.current) {
-        fallbackBeepRef.current.osc.stop();
-        fallbackBeepRef.current.lfo.stop();
-        fallbackBeepRef.current.ctx.close();
-        fallbackBeepRef.current = null;
-      }
-    } catch {
-      /* ignore */
-    }
-  }, []);
-
-  const startNotificationSound = useCallback(() => {
-    try {
-      if (!audioRef.current) {
-        audioRef.current = new Audio("/sounds/new-order.mp3");
-        audioRef.current.preload = "auto";
-      }
-      audioRef.current.loop = true;
-      audioRef.current.volume = 1.0;
-      audioRef.current.currentTime = 0;
-      const playPromise = audioRef.current.play();
-      if (playPromise && typeof playPromise.catch === "function") {
-        playPromise.catch(() => {
-          // Autoplay blocked (no user gesture yet) — fall back to a continuous synthesized ringtone
-          try {
-            if (fallbackBeepRef.current) return;
-            const ctx = new AudioContext();
-            const osc = ctx.createOscillator();
-            const gain = ctx.createGain();
-            osc.connect(gain);
-            gain.connect(ctx.destination);
-            osc.type = "triangle";
-            osc.frequency.value = 880;
-            gain.gain.value = 0.5;
-            // Pulse so it feels like a ringtone, not a flat hum
-            const lfo = ctx.createOscillator();
-            const lfoGain = ctx.createGain();
-            lfo.frequency.value = 3; // 3 Hz pulse
-            lfoGain.gain.value = 0.5;
-            lfo.connect(lfoGain);
-            lfoGain.connect(gain.gain);
-            osc.start();
-            lfo.start();
-            fallbackBeepRef.current = { ctx, osc, lfo };
-          } catch {
-            /* ignore */
-          }
-        });
-      }
-    } catch {
-      /* ignore */
-    }
-  }, []);
 
   // Auth + role gating is handled by <RoleGuard> in App.tsx, so this
   // component only renders once the viewer is confirmed to be a driver/admin.
@@ -238,33 +161,18 @@ const DriverDashboard = () => {
     return () => clearTimeout(timer);
   }, [activeOffer?.offer_expires_at, activeOffer?.id]);
 
-  // Continuous loud ringtone + repeating vibration while an offer is on-screen.
-  // Stops automatically when the offer is accepted, rejected, or expires (modal closes).
+  // Play the new-order ringtone EXACTLY ONCE per offer (Uber Eats / Bolt / Mr D style).
+  // The notification manager guarantees a single audio instance and refuses to replay
+  // for offers that have already rung, been responded to, or been cancelled.
   useEffect(() => {
-    if (
-      !activeOffer ||
-      acceptingId ||
-      rejectingId ||
-      respondedOfferIdsRef.current.has(activeOffer.id)
-    ) {
-      stopNotificationSound();
-      return;
-    }
+    if (!activeOffer) return;
+    if (acceptingId || rejectingId) return;
+    if (respondedOfferIdsRef.current.has(activeOffer.id)) return;
+    if (hasOfferRung(activeOffer.id)) return;
 
-    startNotificationSound();
+    startNotificationSound(activeOffer.id);
 
-    // Vibrate immediately, then keep pulsing every 2s for the whole window
-    const doVibrate = () => {
-      try {
-        if ("vibrate" in navigator) navigator.vibrate([500, 200, 500, 200, 500]);
-      } catch {
-        /* ignore */
-      }
-    };
-    doVibrate();
-    const vibrateInterval = setInterval(doVibrate, 2000);
-
-    // Background browser notification (one-shot, lets OS surface it if tab is hidden)
+    // One-shot OS notification when the tab is hidden
     if (document.hidden && "Notification" in window && Notification.permission === "granted") {
       try {
         new Notification("🚗 New delivery waiting!", {
@@ -276,24 +184,47 @@ const DriverDashboard = () => {
         /* ignore */
       }
     }
+  }, [activeOffer?.id, activeOffer, acceptingId, rejectingId]);
 
-    return () => {
-      clearInterval(vibrateInterval);
-      stopNotificationSound();
-      try {
-        if ("vibrate" in navigator) navigator.vibrate(0);
-      } catch {
-        /* ignore */
-      }
+  // Stop the ringtone if the modal closes, the tab is hidden, the driver goes offline,
+  // or the component unmounts.
+  useEffect(() => {
+    if (!activeOffer) stopNotificationSound();
+  }, [activeOffer]);
+
+  useEffect(() => {
+    if (!driverProfile?.is_online) {
+      cleanupNotificationListeners();
+    }
+  }, [driverProfile?.is_online]);
+
+  useEffect(() => {
+    const onVisibility = () => {
+      if (document.hidden) stopNotificationSound();
     };
-  }, [
-    activeOffer?.id,
-    activeOffer,
-    startNotificationSound,
-    stopNotificationSound,
-    acceptingId,
-    rejectingId,
-  ]);
+    document.addEventListener("visibilitychange", onVisibility);
+    window.addEventListener("pagehide", stopNotificationSound);
+    window.addEventListener("beforeunload", stopNotificationSound);
+    return () => {
+      document.removeEventListener("visibilitychange", onVisibility);
+      window.removeEventListener("pagehide", stopNotificationSound);
+      window.removeEventListener("beforeunload", stopNotificationSound);
+      cleanupNotificationListeners();
+    };
+  }, []);
+
+  // If a targeted offer is taken by someone else / cancelled / expires server-side,
+  // mark it cancelled so the manager forbids future sound for that offer id.
+  useEffect(() => {
+    if (!user) return;
+    pendingOrders.forEach((o) => {
+      const expired = o.offer_expires_at && new Date(o.offer_expires_at).getTime() <= Date.now();
+      if (expired && !respondedOfferIdsRef.current.has(o.id)) {
+        markOfferCancelled(o.id);
+      }
+    });
+  }, [pendingOrders, user]);
+
 
   // GPS tracking when online
   useEffect(() => {
@@ -478,13 +409,8 @@ const DriverDashboard = () => {
     respondedOfferIdsRef.current.add(orderId);
 
     // Stop ringtone + vibration + OS notification immediately on user action
-    stopNotificationSound();
+    markOfferResponded(orderId);
     clearOfferNotifications(orderId);
-    try {
-      if ("vibrate" in navigator) navigator.vibrate(0);
-    } catch {
-      /* ignore */
-    }
     setAcceptingId(orderId);
 
     // Decide which RPC: targeted offer to me → driver_accept_offer, broadcast → claim_order
@@ -530,13 +456,8 @@ const DriverDashboard = () => {
 
     setRejectingId(orderId);
     // Stop ringtone + vibration + OS notification immediately on user action
-    stopNotificationSound();
+    markOfferResponded(orderId);
     clearOfferNotifications(orderId);
-    try {
-      if ("vibrate" in navigator) navigator.vibrate(0);
-    } catch {
-      /* ignore */
-    }
     const order =
       activeOffer?.id === orderId ? activeOffer : pendingOrders.find((o) => o.id === orderId);
     const isTargetedToMe = order?.offered_to_driver_id === user!.id;
