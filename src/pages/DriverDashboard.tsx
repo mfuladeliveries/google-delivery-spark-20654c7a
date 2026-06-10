@@ -107,6 +107,24 @@ const DriverDashboard = () => {
     lfo: OscillatorNode;
   } | null>(null);
 
+  // Tracks offer IDs the driver has already responded to (accept/reject) so the
+  // ringtone can never restart for that offer, even if realtime updates arrive late.
+  const respondedOfferIdsRef = useRef<Set<string>>(new Set());
+
+  const clearOfferNotifications = useCallback((offerId: string) => {
+    try {
+      if ("serviceWorker" in navigator) {
+        navigator.serviceWorker.getRegistration().then((reg) => {
+          reg?.getNotifications({ tag: `offer-${offerId}` }).then((ns) => {
+            ns.forEach((n) => n.close());
+          });
+        });
+      }
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
   const stopNotificationSound = useCallback(() => {
     try {
       if (audioRef.current) {
