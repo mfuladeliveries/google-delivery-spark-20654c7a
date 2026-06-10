@@ -803,6 +803,55 @@ export type Database = {
         }
         Relationships: []
       }
+      order_rejections: {
+        Row: {
+          dispatch_phase: string | null
+          driver_id: string
+          id: string
+          order_id: string
+          reason: string
+          rejected_at: string
+        }
+        Insert: {
+          dispatch_phase?: string | null
+          driver_id: string
+          id?: string
+          order_id: string
+          reason: string
+          rejected_at?: string
+        }
+        Update: {
+          dispatch_phase?: string | null
+          driver_id?: string
+          id?: string
+          order_id?: string
+          reason?: string
+          rejected_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_rejections_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "driver_job_board"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_rejections_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "driver_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_rejections_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       orders: {
         Row: {
           accepted_at: string | null
