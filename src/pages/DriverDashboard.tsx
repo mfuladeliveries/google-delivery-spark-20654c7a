@@ -721,6 +721,36 @@ const DriverDashboard = () => {
         onAccept={handleAcceptOffer}
         onReject={handleRejectOffer}
       />
+
+      {showAvailabilityPrompt && (
+        <div
+          role="dialog"
+          aria-live="polite"
+          className="fixed bottom-24 left-4 right-4 z-50 rounded-2xl border border-border bg-card p-4 shadow-lg sm:left-auto sm:right-6 sm:max-w-sm"
+        >
+          <p className="mb-1 text-sm font-semibold text-foreground">Still available?</p>
+          <p className="mb-3 text-xs text-muted-foreground">
+            You've declined a few orders in a row. Let us know if you're still on the road.
+          </p>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setShowAvailabilityPrompt(false)}
+              className="flex-1 rounded-xl bg-primary py-2 text-sm font-bold text-primary-foreground hover:opacity-95 active:scale-[0.98] transition"
+            >
+              I'm available
+            </button>
+            <button
+              onClick={() => {
+                setShowAvailabilityPrompt(false);
+                if (driverProfile?.is_online) toggleOnline();
+              }}
+              className="flex-1 rounded-xl border border-border py-2 text-sm font-bold text-foreground hover:bg-secondary transition"
+            >
+              Go offline
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
