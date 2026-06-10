@@ -173,15 +173,16 @@ const DriverEarnings = ({ driverProfile, completedOrders }: DriverEarningsProps)
 
       const orderIds = (periodEarnings || []).map((e: any) => e.order_id);
       const { data: orderRows } = orderIds.length
-        ? await supabase
-            .from("orders")
+        ? await (supabase as any)
+            .from("driver_orders")
             .select("id, order_number, restaurant, customer_address, delivered_at")
             .in("id", orderIds)
         : { data: [] as any[] };
+
       const orderById = new Map((orderRows || []).map((o: any) => [o.id, o]));
 
       const deliveries = (periodEarnings || []).map((e: any) => {
-        const o = orderById.get(e.order_id);
+        const o = orderById.get(e.order_id) as any;
         return {
           order_id: e.order_id,
           order_number: o?.order_number ?? null,

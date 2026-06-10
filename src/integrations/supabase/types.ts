@@ -692,6 +692,13 @@ export type Database = {
             foreignKeyName: "order_dispatch_log_order_id_fkey"
             columns: ["order_id"]
             isOneToOne: false
+            referencedRelation: "driver_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_dispatch_log_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
             referencedRelation: "orders"
             referencedColumns: ["id"]
           },
@@ -1033,6 +1040,13 @@ export type Database = {
             columns: ["order_id"]
             isOneToOne: false
             referencedRelation: "driver_job_board"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_transactions_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "driver_orders"
             referencedColumns: ["id"]
           },
           {
@@ -1425,6 +1439,122 @@ export type Database = {
           total?: number | null
         }
         Relationships: []
+      }
+      driver_orders: {
+        Row: {
+          accepted_at: string | null
+          address_tag: string | null
+          arrived_at: string | null
+          cancel_reason: string | null
+          cancelled_at: string | null
+          created_at: string | null
+          customer_address: string | null
+          customer_contact: string | null
+          customer_lat: number | null
+          customer_lng: number | null
+          customer_name: string | null
+          delivered_at: string | null
+          delivery_fee: number | null
+          dispatch_phase: string | null
+          dispatch_round: number | null
+          dispatch_started_at: string | null
+          driver_id: string | null
+          driver_lat: number | null
+          driver_lng: number | null
+          driver_location_updated_at: string | null
+          id: string | null
+          items: Json | null
+          offer_expires_at: string | null
+          offered_to_driver_id: string | null
+          order_number: number | null
+          picked_up_at: string | null
+          picking_up_at: string | null
+          pin_attempts: number | null
+          restaurant: string | null
+          restaurant_id: string | null
+          special_notes: string | null
+          status: string | null
+          tip: number | null
+        }
+        Insert: {
+          accepted_at?: string | null
+          address_tag?: string | null
+          arrived_at?: string | null
+          cancel_reason?: string | null
+          cancelled_at?: string | null
+          created_at?: string | null
+          customer_address?: string | null
+          customer_contact?: string | null
+          customer_lat?: number | null
+          customer_lng?: number | null
+          customer_name?: string | null
+          delivered_at?: string | null
+          delivery_fee?: number | null
+          dispatch_phase?: string | null
+          dispatch_round?: number | null
+          dispatch_started_at?: string | null
+          driver_id?: string | null
+          driver_lat?: number | null
+          driver_lng?: number | null
+          driver_location_updated_at?: string | null
+          id?: string | null
+          items?: Json | null
+          offer_expires_at?: string | null
+          offered_to_driver_id?: string | null
+          order_number?: number | null
+          picked_up_at?: string | null
+          picking_up_at?: string | null
+          pin_attempts?: number | null
+          restaurant?: string | null
+          restaurant_id?: string | null
+          special_notes?: string | null
+          status?: string | null
+          tip?: number | null
+        }
+        Update: {
+          accepted_at?: string | null
+          address_tag?: string | null
+          arrived_at?: string | null
+          cancel_reason?: string | null
+          cancelled_at?: string | null
+          created_at?: string | null
+          customer_address?: string | null
+          customer_contact?: string | null
+          customer_lat?: number | null
+          customer_lng?: number | null
+          customer_name?: string | null
+          delivered_at?: string | null
+          delivery_fee?: number | null
+          dispatch_phase?: string | null
+          dispatch_round?: number | null
+          dispatch_started_at?: string | null
+          driver_id?: string | null
+          driver_lat?: number | null
+          driver_lng?: number | null
+          driver_location_updated_at?: string | null
+          id?: string | null
+          items?: Json | null
+          offer_expires_at?: string | null
+          offered_to_driver_id?: string | null
+          order_number?: number | null
+          picked_up_at?: string | null
+          picking_up_at?: string | null
+          pin_attempts?: number | null
+          restaurant?: string | null
+          restaurant_id?: string | null
+          special_notes?: string | null
+          status?: string | null
+          tip?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "orders_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "restaurants"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Functions: {
