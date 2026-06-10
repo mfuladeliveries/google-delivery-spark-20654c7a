@@ -198,6 +198,13 @@ const DriverDashboard = () => {
     }
   }, [driverProfile?.is_online]);
 
+  // Final cleanup: always silence audio when this screen unmounts to avoid leaks.
+  useEffect(() => {
+    return () => {
+      cleanupNotificationListeners();
+    };
+  }, []);
+
   useEffect(() => {
     const onVisibility = () => {
       if (document.hidden) stopNotificationSound();
@@ -408,10 +415,16 @@ const DriverDashboard = () => {
     if (respondedOfferIdsRef.current.has(orderId) || acceptingId || rejectingId) return;
     respondedOfferIdsRef.current.add(orderId);
 
-    // Stop ringtone + vibration + OS notification immediately on user action
+    // Stop ringtone + vibration + OS notification IMMEDIATELY (synchronous, inside the
+    // user gesture handler — required by mobile browsers).
     markOfferResponded(orderId);
     clearOfferNotifications(orderId);
+
+    // Optimistic UI: lock the button and close the modal right away so the driver
+    // never has to tap twice. We restore both on failure.
     setAcceptingId(orderId);
+    const wasActiveOffer = activeOffer?.id === orderId ? activeOffer : null;
+    if (wasActiveOffer) setActiveOffer(null);
 
     // Decide which RPC: targeted offer to me → driver_accept_offer, broadcast → claim_order
     const isTargetedToMe = order.offered_to_driver_id === user!.id;
@@ -421,13 +434,17 @@ const DriverDashboard = () => {
       toast.error(error.message || "Failed to accept");
       respondedOfferIdsRef.current.delete(orderId);
       setAcceptingId(null);
+      // Restore the offer modal + ringtone so the driver can retry
+      if (wasActiveOffer) {
+        setActiveOffer(wasActiveOffer);
+        startNotificationSound(orderId);
+      }
       return;
     }
     if (data === false) {
       toast.error(
         isTargetedToMe ? "Offer expired — too late!" : "Order already taken by another driver",
       );
-      if (activeOffer?.id === orderId) setActiveOffer(null);
       await fetchOrders();
       setAcceptingId(null);
       return;
@@ -444,7 +461,6 @@ const DriverDashboard = () => {
       old_status: "ready",
     });
     toast.success("Order accepted successfully.");
-    if (activeOffer?.id === orderId) setActiveOffer(null);
     await fetchOrders();
     setAcceptingId(null);
   };

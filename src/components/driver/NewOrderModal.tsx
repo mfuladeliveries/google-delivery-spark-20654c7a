@@ -13,6 +13,7 @@ import {
 import { MapPin, Store, Clock, Package, Check, X, Loader2 } from "lucide-react";
 import { driverPayoutForFee } from "@/lib/serviceArea";
 import { getNotificationPrefs } from "@/hooks/useNotificationPrefs";
+import { stopNotificationSound } from "@/lib/driverNotificationManager";
 
 interface NewOrderOffer {
   id: string;
@@ -47,18 +48,14 @@ const NewOrderModal = ({
   onReject,
 }: NewOrderModalProps) => {
   const [secondsLeft, setSecondsLeft] = useState<number | null>(null);
-  const [dismissed, setDismissed] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const feedbackCtxRef = useRef<AudioContext | null>(null);
-
-  // Reset dismissed flag whenever a new offer arrives
-  useEffect(() => {
-    setDismissed(false);
-  }, [offer?.id]);
-
   const [confirmReject, setConfirmReject] = useState(false);
 
+  // Synchronously silence the new-order ringtone within the user gesture.
+  // (Some mobile browsers ignore media calls scheduled after an await.)
   const stopAlert = () => {
+    stopNotificationSound();
     audioRef.current?.pause();
     if (audioRef.current) audioRef.current.currentTime = 0;
     if (typeof navigator !== "undefined" && "vibrate" in navigator) {
@@ -71,8 +68,6 @@ const NewOrderModal = ({
   };
 
   // Play a short two-note feedback chime via Web Audio.
-  // variant "accept" = bright rising major third (E5 -> A5)
-  // variant "decline" = muted descending minor (A4 -> D4)
   const playFeedback = (variant: "accept" | "decline") => {
     if (!getNotificationPrefs().driver_action_sounds) return;
     try {
@@ -88,11 +83,11 @@ const NewOrderModal = ({
           ? [
               { f: 659.25, t: 0 },
               { f: 880.0, t: 0.11 },
-            ] // E5 -> A5
+            ]
           : [
               { f: 440.0, t: 0 },
               { f: 293.66, t: 0.13 },
-            ]; // A4 -> D4
+            ];
 
       notes.forEach(({ f, t }) => {
         const osc = ctx.createOscillator();
@@ -114,30 +109,38 @@ const NewOrderModal = ({
   };
 
   const handleAcceptClick = () => {
-    if (dismissed || accepting || rejecting) return;
-    setDismissed(true);
+    if (accepting || rejecting) return;
+    // Stop sound SYNCHRONOUSLY before any async work; fire the parent handler
+    // in the same gesture so the accept is locked-in on the first tap.
     stopAlert();
     playFeedback("accept");
     onAccept();
   };
 
   const handleRejectClick = () => {
-    if (dismissed || accepting || rejecting) return;
+    if (accepting || rejecting) return;
     setConfirmReject(true);
   };
 
   const confirmRejectYes = () => {
-    if (dismissed || accepting || rejecting) return;
+    if (accepting || rejecting) return;
     setConfirmReject(false);
-    setDismissed(true);
     stopAlert();
     playFeedback("decline");
     onReject();
   };
 
-  // NOTE: the parent DriverDashboard owns the continuous ringtone + vibration
-  // (so it never restarts after a response). This modal only plays the short
-  // accept/decline feedback chime.
+  // Cleanup any feedback audio context on unmount.
+  useEffect(() => {
+    return () => {
+      try {
+        feedbackCtxRef.current?.close();
+      } catch {
+        /* ignore */
+      }
+      feedbackCtxRef.current = null;
+    };
+  }, []);
 
   useEffect(() => {
     if (!offer?.offer_expires_at) {
@@ -174,7 +177,7 @@ const NewOrderModal = ({
 
   return (
     <Dialog
-      open={open && !dismissed}
+      open={open}
       onOpenChange={() => {
         /* must Accept or Reject */
       }}
@@ -300,7 +303,7 @@ const NewOrderModal = ({
           <div className="grid grid-cols-2 gap-2">
             <button
               onClick={handleRejectClick}
-              disabled={accepting || rejecting || dismissed}
+              disabled={accepting || rejecting}
               className="rounded-xl border-2 border-destructive/30 bg-card py-3.5 text-sm font-bold text-destructive disabled:opacity-50 transition-all hover:bg-destructive/5 active:scale-[0.98] flex items-center justify-center gap-2"
             >
               {rejecting ? <Loader2 className="h-4 w-4 animate-spin" /> : <X className="h-4 w-4" />}
@@ -308,7 +311,7 @@ const NewOrderModal = ({
             </button>
             <button
               onClick={handleAcceptClick}
-              disabled={accepting || rejecting || dismissed}
+              disabled={accepting || rejecting}
               className="rounded-xl bg-primary py-3.5 text-sm font-bold text-primary-foreground disabled:opacity-50 transition-all hover:opacity-95 active:scale-[0.98] shadow-orange flex items-center justify-center gap-2"
             >
               {accepting ? (
