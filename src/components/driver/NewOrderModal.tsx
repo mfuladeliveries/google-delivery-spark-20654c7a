@@ -13,6 +13,7 @@ import {
 import { MapPin, Store, Clock, Package, Check, X, Loader2 } from "lucide-react";
 import { driverPayoutForFee } from "@/lib/serviceArea";
 import { getNotificationPrefs } from "@/hooks/useNotificationPrefs";
+import { stopNotificationSound } from "@/lib/driverNotificationManager";
 
 interface NewOrderOffer {
   id: string;
