@@ -335,15 +335,16 @@ const DriverDashboard = () => {
   };
 
   const fetchCompletedOrders = async () => {
-    const { data } = await supabase
-      .from("orders")
+    const { data } = await (supabase as any)
+      .from("driver_orders")
       .select("*")
       .eq("driver_id", user!.id)
       .eq("status", "delivered")
       .order("created_at", { ascending: false })
       .limit(50);
-    if (data) setCompletedOrders(data.map((o) => ({ ...o, items: (o.items as any[]) || [] })));
+    if (data) setCompletedOrders(data.map((o: any) => ({ ...o, items: (o.items as any[]) || [] })));
   };
+
 
   const fetchDriverProfile = async () => {
     const { data } = await supabase
