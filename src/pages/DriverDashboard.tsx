@@ -198,6 +198,13 @@ const DriverDashboard = () => {
     }
   }, [driverProfile?.is_online]);
 
+  // Final cleanup: always silence audio when this screen unmounts to avoid leaks.
+  useEffect(() => {
+    return () => {
+      cleanupNotificationListeners();
+    };
+  }, []);
+
   useEffect(() => {
     const onVisibility = () => {
       if (document.hidden) stopNotificationSound();
