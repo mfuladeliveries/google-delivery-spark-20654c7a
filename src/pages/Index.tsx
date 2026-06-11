@@ -191,8 +191,7 @@ const Index = () => {
       const { data } = await supabase
         .from("restaurants")
         .select("*")
-        .eq("is_active", true)
-        .order("rating", { ascending: false });
+        .order("name");
       if (data) setRestaurants(data as Restaurant[]);
       setLoading(false);
     };
