@@ -76,9 +76,8 @@ const Search = () => {
       supabase
         .from("restaurants")
         .select("id, name, cuisine, rating, delivery_time, min_order, description")
-        .eq("is_active", true)
         .ilike("name", `%${q}%`)
-        .order("rating", { ascending: false }),
+        .order("name"),
       supabase
         .from("menu_items")
         .select("id, name, description, price, image, category, restaurant_id")
