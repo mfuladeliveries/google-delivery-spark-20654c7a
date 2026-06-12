@@ -175,6 +175,8 @@ Deno.serve(async (req) => {
     const isOfferMissed = status === "offer_missed";
     const isDispatchBroadcast = status === "dispatch_broadcast";
     const isNoDriverAvailable = status === "no_driver_available";
+    const isNoDriverFound = status === "no_driver_found";
+
 
     // Detect refund-choice cancellations
     let refundChoiceAmount: number | null = null;
@@ -274,6 +276,35 @@ Deno.serve(async (req) => {
       }
     }
 
+
+    // No-driver-FOUND (15min timeout escalation): notify ALL admins + the customer
+    const noDriverFoundAdmins = new Set<string>();
+    let noDriverFoundCustomerId: string | null = null;
+    if (isNoDriverFound) {
+      const { data: admins } = await supabase
+        .from("user_roles")
+        .select("user_id")
+        .eq("role", "admin");
+      (admins || []).forEach((a) => {
+        noDriverFoundAdmins.add(a.user_id);
+        if (!targetUserIds.includes(a.user_id)) targetUserIds.push(a.user_id);
+      });
+
+      noDriverFoundCustomerId = user_id || null;
+      if (!noDriverFoundCustomerId && order_id) {
+        const { data: ord } = await supabase
+          .from("orders")
+          .select("user_id")
+          .eq("id", order_id)
+          .maybeSingle();
+        noDriverFoundCustomerId = ord?.user_id || null;
+      }
+      if (noDriverFoundCustomerId && !targetUserIds.includes(noDriverFoundCustomerId)) {
+        targetUserIds.push(noDriverFoundCustomerId);
+      }
+
+    }
+
     if (targetUserIds.length === 0) {
       return new Response(JSON.stringify({ sent: 0 }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -368,6 +399,25 @@ Deno.serve(async (req) => {
       data: { url: "/orders", order_number, kind: "no_driver_available" },
     });
 
+    const noDriverFoundAdminPayload = JSON.stringify({
+      title: `🚨 No Driver for #${order_number}`,
+      body: `Order #${order_number} from ${restaurant || "restaurant"} has no driver after 15 minutes — please assign manually.`,
+      icon: "/notification-logo.png",
+      badge: "/favicon.ico",
+      tag: `no-driver-found-${order_number}`,
+      data: { url: "/admin", order_number, kind: "no_driver_found" },
+    });
+
+    const noDriverFoundCustomerPayload = JSON.stringify({
+      title: `🛵 Trouble finding a driver for #${order_number}`,
+      body: `We're having trouble finding a driver for your order. Our team has been alerted and will resolve this shortly.`,
+      icon: "/notification-logo.png",
+      badge: "/favicon.ico",
+      tag: `no-driver-found-${order_number}`,
+      data: { url: "/orders", order_number, kind: "no_driver_found" },
+    });
+
+
     let sent = 0;
     const expired: string[] = [];
 
@@ -401,7 +451,10 @@ Deno.serve(async (req) => {
           ? "customer_out_for_delivery"
           : isNoDriverAvailable
             ? "customer_no_driver_available"
-            : null;
+            : isNoDriverFound
+              ? "customer_no_driver_found"
+              : null;
+
 
     // Driver-facing notification kinds — logged against the order's customer so the
     // customer's Orders page can render a "driver was notified" status log.
@@ -438,12 +491,23 @@ Deno.serve(async (req) => {
         } else if (isNoDriverAvailable && sub.user_id === noDriverCustomerId) {
           payload = noDriverPayload;
           isCustomerOneShot = true;
+        } else if (isNoDriverFound) {
+          if (noDriverFoundAdmins.has(sub.user_id)) {
+            payload = noDriverFoundAdminPayload;
+          } else if (sub.user_id === noDriverFoundCustomerId) {
+            payload = noDriverFoundCustomerPayload;
+            isCustomerOneShot = true;
+          } else {
+            continue;
+          }
         } else if (sub.user_id === restaurantOwnerId) {
           payload = restaurantPayload;
         } else if (dedupeKind && order_id && sub.user_id === user_id) {
           // Only dedupe the customer-facing one-shot events
           isCustomerOneShot = true;
         }
+
+
 
         // Skip duplicate one-shot customer notifications
         if (isCustomerOneShot) {
