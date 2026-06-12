@@ -143,7 +143,13 @@ const statusColors: Record<string, string> = {
   delivered: "bg-green-100 text-green-700",
   cancelled: "bg-red-100 text-red-700",
   rejected: "bg-red-100 text-red-700",
+  no_driver_found: "bg-red-600 text-white",
 };
+
+const statusLabelOverrides: Record<string, string> = {
+  no_driver_found: "No Driver",
+};
+
 
 const STATUS_FILTERS = ["all", "pending", "in_progress", "delivered", "cancelled"] as const;
 type StatusFilter = (typeof STATUS_FILTERS)[number];
