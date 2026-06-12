@@ -273,7 +273,34 @@ Deno.serve(async (req) => {
       }
       if (noDriverCustomerId && !targetUserIds.includes(noDriverCustomerId)) {
         targetUserIds.push(noDriverCustomerId);
+    }
+
+    // No-driver-FOUND (15min timeout escalation): notify ALL admins + the customer
+    const noDriverFoundAdmins = new Set<string>();
+    let noDriverFoundCustomerId: string | null = null;
+    if (isNoDriverFound) {
+      const { data: admins } = await supabase
+        .from("user_roles")
+        .select("user_id")
+        .eq("role", "admin");
+      (admins || []).forEach((a) => {
+        noDriverFoundAdmins.add(a.user_id);
+        if (!targetUserIds.includes(a.user_id)) targetUserIds.push(a.user_id);
+      });
+
+      noDriverFoundCustomerId = user_id || null;
+      if (!noDriverFoundCustomerId && order_id) {
+        const { data: ord } = await supabase
+          .from("orders")
+          .select("user_id")
+          .eq("id", order_id)
+          .maybeSingle();
+        noDriverFoundCustomerId = ord?.user_id || null;
       }
+      if (noDriverFoundCustomerId && !targetUserIds.includes(noDriverFoundCustomerId)) {
+        targetUserIds.push(noDriverFoundCustomerId);
+      }
+
     }
 
     if (targetUserIds.length === 0) {
