@@ -714,7 +714,11 @@ const Orders = () => {
               ].includes(order.status);
               const isActive =
                 order.status === "out_for_delivery" || order.status === "driver_assigned";
-              const isCancelled = order.status === "cancelled" || order.status === "rejected";
+              const isCancelled =
+                order.status === "cancelled" ||
+                order.status === "rejected" ||
+                order.status === "no_driver_found";
+
 
               return (
                 <div
