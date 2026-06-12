@@ -488,7 +488,22 @@ Deno.serve(async (req) => {
         } else if (isNoDriverAvailable && sub.user_id === noDriverCustomerId) {
           payload = noDriverPayload;
           isCustomerOneShot = true;
+        } else if (isNoDriverFound) {
+          if (noDriverFoundAdmins.has(sub.user_id)) {
+            payload = noDriverFoundAdminPayload;
+          } else if (sub.user_id === noDriverFoundCustomerId) {
+            payload = noDriverFoundCustomerPayload;
+            isCustomerOneShot = true;
+          } else {
+            continue;
+          }
         } else if (sub.user_id === restaurantOwnerId) {
+          payload = restaurantPayload;
+        } else if (dedupeKind && order_id && sub.user_id === user_id) {
+          // Only dedupe the customer-facing one-shot events
+          isCustomerOneShot = true;
+        }
+
           payload = restaurantPayload;
         } else if (dedupeKind && order_id && sub.user_id === user_id) {
           // Only dedupe the customer-facing one-shot events
