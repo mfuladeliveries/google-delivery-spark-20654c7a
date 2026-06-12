@@ -158,12 +158,20 @@ const rejectedConfig = {
   color: "text-destructive",
   bg: "bg-destructive/10",
 };
+const noDriverFoundConfig = {
+  label: "We're finding you a driver — our team has been notified",
+  icon: AlertCircle,
+  color: "text-destructive",
+  bg: "bg-destructive/10",
+};
 
 const getStatusConfig = (status: string) => {
   if (status === "cancelled") return cancelledConfig;
   if (status === "rejected") return rejectedConfig;
+  if (status === "no_driver_found") return noDriverFoundConfig;
   return statusSteps.find((s) => s.key === status) || statusSteps[0];
 };
+
 
 const getStepIndex = (status: string) => {
   const idx = statusSteps.findIndex((s) => s.key === status);
