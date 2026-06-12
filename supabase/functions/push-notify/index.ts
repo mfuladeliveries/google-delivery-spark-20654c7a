@@ -273,7 +273,9 @@ Deno.serve(async (req) => {
       }
       if (noDriverCustomerId && !targetUserIds.includes(noDriverCustomerId)) {
         targetUserIds.push(noDriverCustomerId);
+      }
     }
+
 
     // No-driver-FOUND (15min timeout escalation): notify ALL admins + the customer
     const noDriverFoundAdmins = new Set<string>();
