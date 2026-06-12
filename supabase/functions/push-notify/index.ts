@@ -399,6 +399,25 @@ Deno.serve(async (req) => {
       data: { url: "/orders", order_number, kind: "no_driver_available" },
     });
 
+    const noDriverFoundAdminPayload = JSON.stringify({
+      title: `🚨 No Driver for #${order_number}`,
+      body: `Order #${order_number} from ${restaurant || "restaurant"} has no driver after 15 minutes — please assign manually.`,
+      icon: "/notification-logo.png",
+      badge: "/favicon.ico",
+      tag: `no-driver-found-${order_number}`,
+      data: { url: "/admin", order_number, kind: "no_driver_found" },
+    });
+
+    const noDriverFoundCustomerPayload = JSON.stringify({
+      title: `🛵 Trouble finding a driver for #${order_number}`,
+      body: `We're having trouble finding a driver for your order. Our team has been alerted and will resolve this shortly.`,
+      icon: "/notification-logo.png",
+      badge: "/favicon.ico",
+      tag: `no-driver-found-${order_number}`,
+      data: { url: "/orders", order_number, kind: "no_driver_found" },
+    });
+
+
     let sent = 0;
     const expired: string[] = [];
 
