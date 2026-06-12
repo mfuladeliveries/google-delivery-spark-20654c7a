@@ -507,11 +507,7 @@ Deno.serve(async (req) => {
           isCustomerOneShot = true;
         }
 
-          payload = restaurantPayload;
-        } else if (dedupeKind && order_id && sub.user_id === user_id) {
-          // Only dedupe the customer-facing one-shot events
-          isCustomerOneShot = true;
-        }
+
 
         // Skip duplicate one-shot customer notifications
         if (isCustomerOneShot) {
