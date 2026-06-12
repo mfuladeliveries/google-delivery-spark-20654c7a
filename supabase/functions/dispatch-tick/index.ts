@@ -164,6 +164,47 @@ Deno.serve(async (req) => {
       });
     }
 
+    // === 15-minute no-driver timeout escalation ===
+    // Mark stuck orders as `no_driver_found` and notify admins + the customer.
+    const fifteenMinAgo = new Date(Date.now() - 15 * 60 * 1000).toISOString();
+    const { data: stuckOrders } = await supabase
+      .from("orders")
+      .select("id, order_number, restaurant, total, user_id")
+      .eq("status", "pending")
+      .is("driver_id", null)
+      .lt("created_at", fifteenMinAgo);
+
+    let escalated = 0;
+    if (stuckOrders && stuckOrders.length > 0) {
+      const ids = stuckOrders.map((o) => o.id);
+      const { error: updateErr } = await supabase
+        .from("orders")
+        .update({ status: "no_driver_found" })
+        .in("id", ids)
+        .eq("status", "pending")
+        .is("driver_id", null);
+
+      if (!updateErr) {
+        escalated = stuckOrders.length;
+        for (const o of stuckOrders) {
+          pushInvocations.push(
+            supabase.functions.invoke("push-notify", {
+              body: {
+                order_id: o.id,
+                order_number: o.order_number,
+                status: "no_driver_found",
+                restaurant: o.restaurant,
+                total: o.total,
+                user_id: o.user_id,
+              },
+            })
+          );
+        }
+      } else {
+        console.error("no_driver_found update failed:", updateErr);
+      }
+    }
+
     await Promise.allSettled(pushInvocations);
 
     return new Response(
@@ -171,10 +212,12 @@ Deno.serve(async (req) => {
         ok: true,
         advanced: result.advanced || 0,
         broadcasted: result.broadcasted || 0,
+        escalated,
         notifications: pushInvocations.length,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
+
   } catch (err) {
     console.error("dispatch-tick fatal:", err);
     return new Response(JSON.stringify({ error: String(err) }), {
