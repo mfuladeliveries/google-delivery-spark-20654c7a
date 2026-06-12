@@ -2719,7 +2719,7 @@ const OrdersTable = ({
                           <span
                             className={`rounded-full px-2 py-0.5 text-[10px] font-bold capitalize ${statusColors[order.status] || "bg-muted text-muted-foreground"}`}
                           >
-                            {order.status.replace(/_/g, " ")}
+                            {statusLabelOverrides[order.status] || order.status.replace(/_/g, " ")}
                           </span>
                           {(() => {
                             const delay = getDelayInfo(order);
