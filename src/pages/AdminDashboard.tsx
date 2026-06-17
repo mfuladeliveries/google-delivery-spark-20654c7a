@@ -649,7 +649,7 @@ const AdminDashboard = () => {
 
             <section>
               <h2 className="font-bold text-foreground mb-3">🕐 Recent Orders</h2>
-              <OrdersTable orders={recentOrders} onCancel={handleCancelOrder} />
+              <OrdersTable orders={recentOrders} onCancel={handleCancelOrder} onAssign={handleAssignDriver} />
             </section>
           </>
         )}
