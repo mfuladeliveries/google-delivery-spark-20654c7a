@@ -691,6 +691,7 @@ const AdminDashboard = () => {
                 );
               })}
               onCancel={handleCancelOrder}
+              onAssign={handleAssignDriver}
             />
           </>
         )}
