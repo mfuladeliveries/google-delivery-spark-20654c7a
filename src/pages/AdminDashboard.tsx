@@ -2603,9 +2603,11 @@ const RestaurantCard = ({
 const OrdersTable = ({
   orders,
   onCancel,
+  onAssign,
 }: {
   orders: RecentOrder[];
   onCancel?: (orderId: string, orderNumber: number) => void;
+  onAssign?: (order: RecentOrder) => void;
 }) => {
   const COL_COUNT = 12;
   const cancellable = (status: string) => !["delivered", "cancelled", "rejected"].includes(status);
