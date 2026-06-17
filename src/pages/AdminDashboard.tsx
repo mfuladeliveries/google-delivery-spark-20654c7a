@@ -36,6 +36,7 @@ import AdminFeeManagement from "@/components/admin/AdminFeeManagement";
 import OrderDispatchLog from "@/components/admin/OrderDispatchLog";
 import AdminMenuManager from "@/components/admin/AdminMenuManager";
 import { toast } from "sonner";
+import { sendPushNotification } from "@/lib/pushNotify";
 import { geocodeAddress } from "@/lib/geocode";
 import {
   Dialog,
@@ -224,6 +225,14 @@ const AdminDashboard = () => {
   const [cancelReasonChoice, setCancelReasonChoice] = useState("Restaurant closed");
   const [cancelReasonOther, setCancelReasonOther] = useState("");
   const [cancelSubmitting, setCancelSubmitting] = useState(false);
+  const [assignTarget, setAssignTarget] = useState<
+    { id: string; orderNumber: number; restaurant: string; total: number } | null
+  >(null);
+  const [onlineDrivers, setOnlineDrivers] = useState<
+    { user_id: string; name: string }[]
+  >([]);
+  const [selectedDriverId, setSelectedDriverId] = useState<string>("");
+  const [assignSubmitting, setAssignSubmitting] = useState(false);
 
   useEffect(() => {
     if (!authLoading && (!user || role !== "admin")) {
@@ -350,6 +359,67 @@ const AdminDashboard = () => {
     setCancelTarget(null);
     fetchStats();
   };
+
+  const handleAssignDriver = async (order: RecentOrder) => {
+    setAssignTarget({
+      id: order.id,
+      orderNumber: order.order_number,
+      restaurant: order.restaurant,
+      total: order.total,
+    });
+    setSelectedDriverId("");
+    setOnlineDrivers([]);
+    const { data: dps } = await supabase
+      .from("driver_profiles")
+      .select("user_id")
+      .eq("is_online", true)
+      .eq("is_suspended", false);
+    const ids = (dps || []).map((d) => d.user_id);
+    if (ids.length === 0) {
+      setOnlineDrivers([]);
+      return;
+    }
+    const { data: profs } = await supabase
+      .from("profiles")
+      .select("user_id, full_name")
+      .in("user_id", ids);
+    const list = (profs || [])
+      .map((p) => ({ user_id: p.user_id, name: p.full_name || "Driver" }))
+      .sort((a, b) => a.name.localeCompare(b.name));
+    setOnlineDrivers(list);
+  };
+
+  const submitAssignDriver = async () => {
+    if (!assignTarget || !selectedDriverId) return;
+    setAssignSubmitting(true);
+    const { error } = await supabase.rpc("admin_assign_driver", {
+      p_order_id: assignTarget.id,
+      p_driver_id: selectedDriverId,
+    });
+    setAssignSubmitting(false);
+    if (error) {
+      toast.error(error.message || "Failed to assign driver");
+      return;
+    }
+    const driverName =
+      onlineDrivers.find((d) => d.user_id === selectedDriverId)?.name || "driver";
+    sendPushNotification({
+      order_id: assignTarget.id,
+      order_number: assignTarget.orderNumber,
+      status: "driver_assigned",
+      restaurant: assignTarget.restaurant,
+      total: assignTarget.total,
+      target_user_id: selectedDriverId,
+    });
+    toast.success(
+      `Order #${assignTarget.orderNumber} manually assigned to ${driverName}`,
+    );
+    setAssignTarget(null);
+    setSelectedDriverId("");
+    fetchStats();
+  };
+
+
 
   const fetchUsers = async () => {
     const { data: roles } = await supabase.from("user_roles").select("user_id, role");
@@ -579,7 +649,7 @@ const AdminDashboard = () => {
 
             <section>
               <h2 className="font-bold text-foreground mb-3">🕐 Recent Orders</h2>
-              <OrdersTable orders={recentOrders} onCancel={handleCancelOrder} />
+              <OrdersTable orders={recentOrders} onCancel={handleCancelOrder} onAssign={handleAssignDriver} />
             </section>
           </>
         )}
@@ -621,6 +691,7 @@ const AdminDashboard = () => {
                 );
               })}
               onCancel={handleCancelOrder}
+              onAssign={handleAssignDriver}
             />
           </>
         )}
@@ -825,6 +896,66 @@ const AdminDashboard = () => {
               }
             >
               {cancelSubmitting ? "Cancelling..." : "Cancel order"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={!!assignTarget}
+        onOpenChange={(open) => {
+          if (!open) {
+            setAssignTarget(null);
+            setSelectedDriverId("");
+          }
+        }}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Assign driver to #{assignTarget?.orderNumber}</DialogTitle>
+            <DialogDescription>
+              Pick from drivers who are currently online. The driver will be notified immediately.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 py-2">
+            {onlineDrivers.length === 0 ? (
+              <p className="text-sm text-muted-foreground">
+                No drivers are online right now.
+              </p>
+            ) : (
+              <div className="space-y-1.5">
+                <Label htmlFor="assign-driver">Online drivers</Label>
+                <Select value={selectedDriverId} onValueChange={setSelectedDriverId}>
+                  <SelectTrigger id="assign-driver">
+                    <SelectValue placeholder="Select a driver" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {onlineDrivers.map((d) => (
+                      <SelectItem key={d.user_id} value={d.user_id}>
+                        {d.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+          </div>
+          <DialogFooter className="gap-2 sm:gap-2">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setAssignTarget(null);
+                setSelectedDriverId("");
+              }}
+              disabled={assignSubmitting}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={submitAssignDriver}
+              disabled={assignSubmitting || !selectedDriverId}
+            >
+              {assignSubmitting ? "Assigning..." : "Assign driver"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -2532,9 +2663,11 @@ const RestaurantCard = ({
 const OrdersTable = ({
   orders,
   onCancel,
+  onAssign,
 }: {
   orders: RecentOrder[];
   onCancel?: (orderId: string, orderNumber: number) => void;
+  onAssign?: (order: RecentOrder) => void;
 }) => {
   const COL_COUNT = 12;
   const cancellable = (status: string) => !["delivered", "cancelled", "rejected"].includes(status);
@@ -2756,16 +2889,26 @@ const OrdersTable = ({
                         )}
                       </td>
                       <td className="px-3 py-2.5 text-xs whitespace-nowrap">
-                        {cancellable(order.status) && onCancel ? (
-                          <button
-                            onClick={() => onCancel(order.id, order.order_number)}
-                            className="rounded-md border border-destructive/30 bg-destructive/5 px-2 py-1 text-[10px] font-bold text-destructive hover:bg-destructive/10"
-                          >
-                            Cancel
-                          </button>
-                        ) : (
-                          <span className="text-muted-foreground">—</span>
-                        )}
+                        <div className="flex flex-col gap-1">
+                          {order.status === "no_driver_found" && onAssign && (
+                            <button
+                              onClick={() => onAssign(order)}
+                              className="rounded-md border border-primary/40 bg-primary/10 px-2 py-1 text-[10px] font-bold text-primary hover:bg-primary/20"
+                            >
+                              Assign Driver
+                            </button>
+                          )}
+                          {cancellable(order.status) && onCancel ? (
+                            <button
+                              onClick={() => onCancel(order.id, order.order_number)}
+                              className="rounded-md border border-destructive/30 bg-destructive/5 px-2 py-1 text-[10px] font-bold text-destructive hover:bg-destructive/10"
+                            >
+                              Cancel
+                            </button>
+                          ) : order.status !== "no_driver_found" ? (
+                            <span className="text-muted-foreground">—</span>
+                          ) : null}
+                        </div>
                       </td>
                     </tr>
                     {showDispatch && (

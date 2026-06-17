@@ -169,7 +169,7 @@ Deno.serve(async (req) => {
     const fifteenMinAgo = new Date(Date.now() - 15 * 60 * 1000).toISOString();
     const { data: stuckOrders } = await supabase
       .from("orders")
-      .select("id, order_number, restaurant, total, user_id")
+      .select("id, order_number, restaurant, restaurant_id, total, user_id")
       .eq("status", "pending")
       .is("driver_id", null)
       .lt("created_at", fifteenMinAgo);
@@ -186,6 +186,22 @@ Deno.serve(async (req) => {
 
       if (!updateErr) {
         escalated = stuckOrders.length;
+
+        // Look up restaurant owners so we can notify them too
+        const restIds = Array.from(
+          new Set(stuckOrders.map((o) => o.restaurant_id).filter(Boolean))
+        ) as string[];
+        const ownerByRestaurant = new Map<string, string>();
+        if (restIds.length > 0) {
+          const { data: rests } = await supabase
+            .from("restaurants")
+            .select("id, owner_user_id")
+            .in("id", restIds);
+          (rests || []).forEach((r: any) => {
+            if (r.owner_user_id) ownerByRestaurant.set(r.id, r.owner_user_id);
+          });
+        }
+
         for (const o of stuckOrders) {
           pushInvocations.push(
             supabase.functions.invoke("push-notify", {
@@ -199,6 +215,22 @@ Deno.serve(async (req) => {
               },
             })
           );
+
+          const ownerId = o.restaurant_id ? ownerByRestaurant.get(o.restaurant_id) : null;
+          if (ownerId) {
+            pushInvocations.push(
+              supabase.functions.invoke("push-notify", {
+                body: {
+                  order_id: o.id,
+                  order_number: o.order_number,
+                  status: "no_driver_found_restaurant",
+                  restaurant: o.restaurant,
+                  total: o.total,
+                  target_user_id: ownerId,
+                },
+              })
+            );
+          }
         }
       } else {
         console.error("no_driver_found update failed:", updateErr);

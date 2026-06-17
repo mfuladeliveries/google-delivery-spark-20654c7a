@@ -1611,6 +1611,10 @@ export type Database = {
         Args: { p_notes?: string; p_request_id: string }
         Returns: undefined
       }
+      admin_assign_driver: {
+        Args: { p_driver_id: string; p_order_id: string }
+        Returns: undefined
+      }
       admin_cancel_order: {
         Args: { p_order_id: string; p_reason?: string }
         Returns: undefined
