@@ -414,6 +414,15 @@ Deno.serve(async (req) => {
       data: { url: "/admin", order_number, kind: "no_driver_found" },
     });
 
+    const noDriverFoundRestaurantPayload = JSON.stringify({
+      title: `🍽️ Driver Search Ongoing — #${order_number}`,
+      body: `Order #${order_number} is having trouble finding a driver. Please keep the food ready — we're working on it.`,
+      icon: "/notification-logo.png",
+      badge: "/favicon.ico",
+      tag: `no-driver-found-rest-${order_number}`,
+      data: { url: "/restaurant/dashboard", order_number, kind: "no_driver_found_restaurant" },
+    });
+
     const noDriverFoundCustomerPayload = JSON.stringify({
       title: `🛵 Trouble finding a driver for #${order_number}`,
       body: `We're having trouble finding a driver for your order. Our team has been alerted and will resolve this shortly.`,
