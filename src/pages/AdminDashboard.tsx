@@ -416,6 +416,10 @@ const AdminDashboard = () => {
     );
     setAssignTarget(null);
     setSelectedDriverId("");
+    fetchStats();
+  };
+
+
 
   const fetchUsers = async () => {
     const { data: roles } = await supabase.from("user_roles").select("user_id, role");
