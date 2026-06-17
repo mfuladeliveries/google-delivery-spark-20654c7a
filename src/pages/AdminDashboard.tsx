@@ -225,6 +225,14 @@ const AdminDashboard = () => {
   const [cancelReasonChoice, setCancelReasonChoice] = useState("Restaurant closed");
   const [cancelReasonOther, setCancelReasonOther] = useState("");
   const [cancelSubmitting, setCancelSubmitting] = useState(false);
+  const [assignTarget, setAssignTarget] = useState<
+    { id: string; orderNumber: number; restaurant: string; total: number } | null
+  >(null);
+  const [onlineDrivers, setOnlineDrivers] = useState<
+    { user_id: string; name: string }[]
+  >([]);
+  const [selectedDriverId, setSelectedDriverId] = useState<string>("");
+  const [assignSubmitting, setAssignSubmitting] = useState(false);
 
   useEffect(() => {
     if (!authLoading && (!user || role !== "admin")) {
