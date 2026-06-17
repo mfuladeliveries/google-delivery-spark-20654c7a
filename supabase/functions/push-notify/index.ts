@@ -176,6 +176,7 @@ Deno.serve(async (req) => {
     const isDispatchBroadcast = status === "dispatch_broadcast";
     const isNoDriverAvailable = status === "no_driver_available";
     const isNoDriverFound = status === "no_driver_found";
+    const isNoDriverFoundRestaurant = status === "no_driver_found_restaurant";
 
 
     // Detect refund-choice cancellations
