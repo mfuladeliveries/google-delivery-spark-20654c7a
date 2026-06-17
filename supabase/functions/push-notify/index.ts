@@ -515,6 +515,8 @@ Deno.serve(async (req) => {
           } else {
             continue;
           }
+        } else if (isNoDriverFoundRestaurant && sub.user_id === target_user_id) {
+          payload = noDriverFoundRestaurantPayload;
         } else if (sub.user_id === restaurantOwnerId) {
           payload = restaurantPayload;
         } else if (dedupeKind && order_id && sub.user_id === user_id) {
