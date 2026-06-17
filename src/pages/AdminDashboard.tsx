@@ -900,6 +900,66 @@ const AdminDashboard = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <Dialog
+        open={!!assignTarget}
+        onOpenChange={(open) => {
+          if (!open) {
+            setAssignTarget(null);
+            setSelectedDriverId("");
+          }
+        }}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Assign driver to #{assignTarget?.orderNumber}</DialogTitle>
+            <DialogDescription>
+              Pick from drivers who are currently online. The driver will be notified immediately.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 py-2">
+            {onlineDrivers.length === 0 ? (
+              <p className="text-sm text-muted-foreground">
+                No drivers are online right now.
+              </p>
+            ) : (
+              <div className="space-y-1.5">
+                <Label htmlFor="assign-driver">Online drivers</Label>
+                <Select value={selectedDriverId} onValueChange={setSelectedDriverId}>
+                  <SelectTrigger id="assign-driver">
+                    <SelectValue placeholder="Select a driver" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {onlineDrivers.map((d) => (
+                      <SelectItem key={d.user_id} value={d.user_id}>
+                        {d.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+          </div>
+          <DialogFooter className="gap-2 sm:gap-2">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setAssignTarget(null);
+                setSelectedDriverId("");
+              }}
+              disabled={assignSubmitting}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={submitAssignDriver}
+              disabled={assignSubmitting || !selectedDriverId}
+            >
+              {assignSubmitting ? "Assigning..." : "Assign driver"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
