@@ -2829,16 +2829,26 @@ const OrdersTable = ({
                         )}
                       </td>
                       <td className="px-3 py-2.5 text-xs whitespace-nowrap">
-                        {cancellable(order.status) && onCancel ? (
-                          <button
-                            onClick={() => onCancel(order.id, order.order_number)}
-                            className="rounded-md border border-destructive/30 bg-destructive/5 px-2 py-1 text-[10px] font-bold text-destructive hover:bg-destructive/10"
-                          >
-                            Cancel
-                          </button>
-                        ) : (
-                          <span className="text-muted-foreground">—</span>
-                        )}
+                        <div className="flex flex-col gap-1">
+                          {order.status === "no_driver_found" && onAssign && (
+                            <button
+                              onClick={() => onAssign(order)}
+                              className="rounded-md border border-primary/40 bg-primary/10 px-2 py-1 text-[10px] font-bold text-primary hover:bg-primary/20"
+                            >
+                              Assign Driver
+                            </button>
+                          )}
+                          {cancellable(order.status) && onCancel ? (
+                            <button
+                              onClick={() => onCancel(order.id, order.order_number)}
+                              className="rounded-md border border-destructive/30 bg-destructive/5 px-2 py-1 text-[10px] font-bold text-destructive hover:bg-destructive/10"
+                            >
+                              Cancel
+                            </button>
+                          ) : order.status !== "no_driver_found" ? (
+                            <span className="text-muted-foreground">—</span>
+                          ) : null}
+                        </div>
                       </td>
                     </tr>
                     {showDispatch && (
