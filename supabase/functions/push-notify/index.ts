@@ -306,6 +306,11 @@ Deno.serve(async (req) => {
 
     }
 
+    // No-driver-FOUND restaurant alert: targeted push to the restaurant owner
+    if (isNoDriverFoundRestaurant && target_user_id) {
+      if (!targetUserIds.includes(target_user_id)) targetUserIds.push(target_user_id);
+    }
+
     if (targetUserIds.length === 0) {
       return new Response(JSON.stringify({ sent: 0 }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
