@@ -360,6 +360,63 @@ const AdminDashboard = () => {
     fetchStats();
   };
 
+  const handleAssignDriver = async (order: RecentOrder) => {
+    setAssignTarget({
+      id: order.id,
+      orderNumber: order.order_number,
+      restaurant: order.restaurant,
+      total: order.total,
+    });
+    setSelectedDriverId("");
+    setOnlineDrivers([]);
+    const { data: dps } = await supabase
+      .from("driver_profiles")
+      .select("user_id")
+      .eq("is_online", true)
+      .eq("is_suspended", false);
+    const ids = (dps || []).map((d) => d.user_id);
+    if (ids.length === 0) {
+      setOnlineDrivers([]);
+      return;
+    }
+    const { data: profs } = await supabase
+      .from("profiles")
+      .select("user_id, full_name")
+      .in("user_id", ids);
+    const list = (profs || [])
+      .map((p) => ({ user_id: p.user_id, name: p.full_name || "Driver" }))
+      .sort((a, b) => a.name.localeCompare(b.name));
+    setOnlineDrivers(list);
+  };
+
+  const submitAssignDriver = async () => {
+    if (!assignTarget || !selectedDriverId) return;
+    setAssignSubmitting(true);
+    const { error } = await supabase.rpc("admin_assign_driver", {
+      p_order_id: assignTarget.id,
+      p_driver_id: selectedDriverId,
+    });
+    setAssignSubmitting(false);
+    if (error) {
+      toast.error(error.message || "Failed to assign driver");
+      return;
+    }
+    const driverName =
+      onlineDrivers.find((d) => d.user_id === selectedDriverId)?.name || "driver";
+    sendPushNotification({
+      order_id: assignTarget.id,
+      order_number: assignTarget.orderNumber,
+      status: "driver_assigned",
+      restaurant: assignTarget.restaurant,
+      total: assignTarget.total,
+      target_user_id: selectedDriverId,
+    });
+    toast.success(
+      `Order #${assignTarget.orderNumber} manually assigned to ${driverName}`,
+    );
+    setAssignTarget(null);
+    setSelectedDriverId("");
+
   const fetchUsers = async () => {
     const { data: roles } = await supabase.from("user_roles").select("user_id, role");
     if (roles) {
