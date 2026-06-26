@@ -2,6 +2,8 @@ import { useState, useEffect, Fragment } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { refreshZones } from "@/lib/serviceArea";
+
 import {
   Shield,
   TrendingUp,
@@ -488,8 +490,10 @@ const AdminDashboard = () => {
   const toggleRestaurantActive = async (id: string, isActive: boolean) => {
     await supabase.from("restaurants").update({ is_active: !isActive }).eq("id", id);
     setRestaurants((prev) => prev.map((r) => (r.id === id ? { ...r, is_active: !isActive } : r)));
+    refreshZones();
     toast.success(`Restaurant ${!isActive ? "activated" : "deactivated"}`);
   };
+
 
   const setRestaurantApprovalMode = async (id: string, mode: "auto" | "restaurant" | "admin") => {
     const requires = mode !== "auto";
@@ -800,9 +804,11 @@ const AdminDashboard = () => {
             onToggleActive={toggleRestaurantActive}
             onSetApprovalMode={setRestaurantApprovalMode}
             onRestaurantChanged={() => {
+              refreshZones();
               fetchRestaurants();
               fetchStats();
             }}
+
           />
         )}
 

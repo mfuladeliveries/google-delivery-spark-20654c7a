@@ -71,22 +71,25 @@ const Cart = ({
       return;
     }
     (async () => {
-      const { data } = await supabase
-        .from("restaurants")
-        .select("lat,lng")
-        .eq("name", restaurantName)
-        .maybeSingle();
-      if (cancelled) return;
-      if (typeof data?.lat === "number" && typeof data?.lng === "number") {
-        setRestaurantCoords({ lat: data.lat, lng: data.lng });
-      } else {
-        setRestaurantCoords(null);
+      const { getCatalog } = await import("@/lib/catalog");
+      try {
+        const cat = await getCatalog();
+        if (cancelled) return;
+        const r = cat.restaurants.find((x) => x.name === restaurantName);
+        if (r && typeof r.lat === "number" && typeof r.lng === "number") {
+          setRestaurantCoords({ lat: r.lat, lng: r.lng });
+        } else {
+          setRestaurantCoords(null);
+        }
+      } catch {
+        if (!cancelled) setRestaurantCoords(null);
       }
     })();
     return () => {
       cancelled = true;
     };
   }, [restaurantName]);
+
 
   const distanceToRestaurant = restaurantCoords
     ? geo.distanceTo(restaurantCoords.lat, restaurantCoords.lng)

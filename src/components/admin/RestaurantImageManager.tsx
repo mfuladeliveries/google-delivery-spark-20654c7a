@@ -362,7 +362,9 @@ const RestaurantImageManager = ({
       })
       .eq("id", restaurantId);
     setSaving(false);
+    void import("@/lib/serviceArea").then(({ refreshZones }) => refreshZones());
     if (error) {
+
       toast.error(error.message || "Failed to save");
       return;
     }

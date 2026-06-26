@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { refreshZones } from "@/lib/serviceArea";
+
 import {
   ArrowLeft,
   Plus,
@@ -1374,8 +1376,10 @@ const DeleteRestaurantDialog = ({
       return;
     }
     toast.success(`🗑️ ${restaurant.name} deleted`);
+    refreshZones();
     onOpenChange(false);
     onDeleted();
+
   };
 
   return (
@@ -1753,7 +1757,9 @@ const RestaurantInfoDialog = ({
       return;
     }
     toast.success("✅ Restaurant info updated");
+    refreshZones();
     onSaved({ ...restaurant, ...(data as any) });
+
   };
 
   return (
