@@ -125,63 +125,11 @@ const OrderNotifications = () => {
       channels.push(ch);
     }
 
-    // Restaurant notifications: new incoming orders
-    if (role === "restaurant") {
-      const ch = supabase
-        .channel("restaurant-notifications")
-        .on(
-          "postgres_changes",
-          {
-            event: "INSERT",
-            schema: "public",
-            table: "orders",
-          },
-          (payload: any) => {
-            const orderNumber = payload.new?.order_number;
-            if (!orderNumber) return;
-            const title = "🔔 New Order Received";
-            const body = `Order #${orderNumber} — R${payload.new?.total || 0}`;
-            toast.info(title, { description: body });
-            if (document.hidden) sendBrowserNotification(title, body);
-          },
-        )
-        .subscribe();
-      channels.push(ch);
-    }
-
-    // Driver notifications: orders ready for pickup (auto-accepted on creation OR moved to ready by restaurant)
-    if (role === "driver") {
-      const handleReady = (payload: any) => {
-        if (payload.new?.status === "ready" && !payload.new?.driver_id) {
-          const title = "🚗 New Delivery Available";
-          const body = `Order #${payload.new?.order_number} ready at ${payload.new?.restaurant || "restaurant"}`;
-          toast.info(title, { description: body });
-          if (document.hidden) sendBrowserNotification(title, body);
-        }
-      };
-      const ch = supabase
-        .channel("driver-notifications")
-        .on(
-          "postgres_changes",
-          {
-            event: "INSERT",
-            schema: "public",
-            table: "orders",
-          },
-          handleReady,
-        )
-        .on(
-          "postgres_changes",
-          {
-            event: "UPDATE",
-            schema: "public",
-            table: "orders",
-          },
-          handleReady,
-        )
-        .subscribe();
-      channels.push(ch);
-    }
+    // Restaurant + driver alerts are delivered exclusively via Web Push
+    // (`push-notify` edge function). We deliberately do NOT open an
+    // unfiltered Realtime channel here — at scale that fans out every
+    // order INSERT/UPDATE to every signed-in restaurant/driver, which is
+    // the single biggest Realtime cost driver.
 
     return () => {
       channels.forEach((ch) => supabase.removeChannel(ch));
