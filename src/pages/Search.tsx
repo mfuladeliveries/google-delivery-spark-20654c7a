@@ -72,12 +72,9 @@ const Search = () => {
 
   const doSearch = async (q: string) => {
     setLoading(true);
-    const [{ data: rests }, { data: items }] = await Promise.all([
-      supabase
-        .from("restaurants")
-        .select("id, name, cuisine, rating, delivery_time, min_order, description")
-        .ilike("name", `%${q}%`)
-        .order("name"),
+    const { getCatalog } = await import("@/lib/catalog");
+    const [cat, itemsRes] = await Promise.all([
+      getCatalog().catch(() => null),
       supabase
         .from("menu_items")
         .select("id, name, description, price, image, category, restaurant_id")
@@ -85,22 +82,22 @@ const Search = () => {
         .ilike("name", `%${q}%`)
         .limit(20),
     ]);
-    setRestaurants((rests as Restaurant[]) || []);
+    const needle = q.toLowerCase();
+    const rests = (cat?.restaurants ?? [])
+      .filter((r) => r.name.toLowerCase().includes(needle))
+      .sort((a, b) => a.name.localeCompare(b.name));
+    setRestaurants(rests as unknown as Restaurant[]);
 
-    // Fetch restaurant names for menu items
+    const items = itemsRes.data;
     if (items && items.length > 0) {
-      const restIds = [...new Set(items.map((i) => i.restaurant_id))];
-      const { data: restNames } = await supabase
-        .from("restaurants")
-        .select("id, name")
-        .in("id", restIds);
-      const restMap = Object.fromEntries((restNames || []).map((r) => [r.id, r.name]));
+      const restMap = Object.fromEntries((cat?.restaurants ?? []).map((r) => [r.id, r.name]));
       setMenuItems(items.map((i) => ({ ...i, restaurant_name: restMap[i.restaurant_id] || "" })));
     } else {
       setMenuItems([]);
     }
     setLoading(false);
   };
+
 
   const totalResults = restaurants.length + menuItems.length;
 

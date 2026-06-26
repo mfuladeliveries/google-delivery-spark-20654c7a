@@ -190,33 +190,39 @@ const CheckoutDialog = ({
     if (!open) return;
     if (!primaryRestaurantId && !primaryRestaurantName) return;
     let alive = true;
-    const query = supabase
-      .from("restaurants")
-      .select("name,location,lat,lng")
-      .eq("is_active", true);
-    const filtered = primaryRestaurantId
-      ? query.eq("id", primaryRestaurantId)
-      : query.eq("name", primaryRestaurantName);
-    filtered.maybeSingle().then(({ data }) => {
-      if (!alive) return;
-      if (data && typeof data.lat === "number" && typeof data.lng === "number") {
-        setRestaurantCoords({ lat: data.lat, lng: data.lng });
-      } else {
-        setRestaurantCoords(null);
+    (async () => {
+      const { getCatalog } = await import("@/lib/catalog");
+      try {
+        const cat = await getCatalog();
+        if (!alive) return;
+        const data = cat.restaurants.find((r) =>
+          primaryRestaurantId ? r.id === primaryRestaurantId : r.name === primaryRestaurantName,
+        );
+        if (data && typeof data.lat === "number" && typeof data.lng === "number") {
+          setRestaurantCoords({ lat: data.lat, lng: data.lng });
+        } else {
+          setRestaurantCoords(null);
+        }
+        if (data) {
+          setRestaurantInfo({
+            name: data.name || primaryRestaurantName,
+            location: ((data.address as string) || "").trim(),
+          });
+        } else {
+          setRestaurantInfo(null);
+        }
+      } catch {
+        if (alive) {
+          setRestaurantCoords(null);
+          setRestaurantInfo(null);
+        }
       }
-      if (data) {
-        setRestaurantInfo({
-          name: (data.name as string) || primaryRestaurantName,
-          location: ((data.location as string) || "").trim(),
-        });
-      } else {
-        setRestaurantInfo(null);
-      }
-    });
+    })();
     return () => {
       alive = false;
     };
   }, [open, primaryRestaurantName, primaryRestaurantId]);
+
 
   // Match the customer's verified coords against the active delivery zones.
   // A delivery is allowed only if the address falls within ANY zone's radius.

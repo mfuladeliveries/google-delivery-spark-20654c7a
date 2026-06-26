@@ -118,24 +118,28 @@ export function useCart() {
       return;
     }
     let alive = true;
-    supabase
-      .from("restaurants")
-      .select("lat,lng")
-      .eq("name", primaryRestaurantName)
-      .eq("is_active", true)
-      .maybeSingle()
-      .then(({ data }) => {
-        if (!alive) return;
-        if (data && typeof data.lat === "number" && typeof data.lng === "number") {
-          setRestaurantCoords({ lat: data.lat, lng: data.lng });
-        } else {
-          setRestaurantCoords(null);
-        }
-      });
+    import("@/lib/catalog").then(({ getCatalog }) => {
+      getCatalog()
+        .then((cat) => {
+          if (!alive) return;
+          const r = cat.restaurants.find(
+            (x) => x.name === primaryRestaurantName && x.is_active,
+          );
+          if (r && typeof r.lat === "number" && typeof r.lng === "number") {
+            setRestaurantCoords({ lat: r.lat, lng: r.lng });
+          } else {
+            setRestaurantCoords(null);
+          }
+        })
+        .catch(() => {
+          if (alive) setRestaurantCoords(null);
+        });
+    });
     return () => {
       alive = false;
     };
   }, [primaryRestaurantName]);
+
 
   /** Add a fully-configured line. If an identical line exists, increment qty. */
   const addItemWithOptions = useCallback(
