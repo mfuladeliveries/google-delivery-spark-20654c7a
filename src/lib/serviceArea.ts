@@ -53,21 +53,21 @@ export const calcZoneFee = (
 let zoneCache: DeliveryZone[] | null = null;
 let zonePromise: Promise<DeliveryZone[]> | null = null;
 
-/** Load active zones (with coords). Cached for the session. */
+/** Load active zones (with coords). Cached for the session and shared with
+ * `getCatalog()` via the same edge function so we only pay for one round-trip. */
 export const getActiveZones = async (): Promise<DeliveryZone[]> => {
   if (zoneCache) return zoneCache;
   if (zonePromise) return zonePromise;
   zonePromise = (async () => {
-    const { data } = await supabase
-      .from("delivery_areas")
-      .select(
-        "id, name, suburb, lat, lng, radius_km, delivery_fee, base_fee, price_per_km, min_fee, max_fee, is_active",
-      )
-      .eq("is_active", true)
-      .not("lat", "is", null)
-      .not("lng", "is", null);
-    zoneCache = (data ?? []) as DeliveryZone[];
-    return zoneCache;
+    try {
+      const { getCatalog } = await import("@/lib/catalog");
+      const catalog = await getCatalog();
+      zoneCache = (catalog.delivery_areas ?? []) as DeliveryZone[];
+      return zoneCache;
+    } catch {
+      zoneCache = [];
+      return zoneCache;
+    }
   })();
   return zonePromise;
 };

@@ -187,18 +187,23 @@ const Index = () => {
   const [zones, setZones] = useState<DeliveryZone[]>([]);
 
   useEffect(() => {
-    const fetchRestaurants = async () => {
-      const { data } = await supabase
-        .from("restaurants")
-        .select("*")
-        .order("name");
-      if (data) setRestaurants(data as Restaurant[]);
-      setLoading(false);
+    let cancelled = false;
+    (async () => {
+      try {
+        const { getCatalog } = await import("@/lib/catalog");
+        const catalog = await getCatalog();
+        if (cancelled) return;
+        setRestaurants((catalog.restaurants ?? []) as unknown as Restaurant[]);
+        setZones(catalog.delivery_areas ?? []);
+      } catch {
+        if (!cancelled) setRestaurants([]);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
     };
-    fetchRestaurants();
-    getActiveZones()
-      .then(setZones)
-      .catch(() => setZones([]));
   }, []);
 
   // Load + live-sync the signed-in customer's favourites.
