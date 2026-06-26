@@ -75,7 +75,11 @@ export const getActiveZones = async (): Promise<DeliveryZone[]> => {
 export const refreshZones = (): void => {
   zoneCache = null;
   zonePromise = null;
+  // Also clear the catalog cache so newly-edited zones/restaurants appear
+  // immediately on the next call instead of waiting out the TTL.
+  void import("@/lib/catalog").then(({ invalidateCatalog }) => invalidateCatalog());
 };
+
 
 export interface ZoneMatch {
   zone: DeliveryZone;
