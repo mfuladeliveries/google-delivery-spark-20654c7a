@@ -1374,8 +1374,10 @@ const DeleteRestaurantDialog = ({
       return;
     }
     toast.success(`🗑️ ${restaurant.name} deleted`);
+    refreshZones();
     onOpenChange(false);
     onDeleted();
+
   };
 
   return (
@@ -1753,7 +1755,9 @@ const RestaurantInfoDialog = ({
       return;
     }
     toast.success("✅ Restaurant info updated");
+    refreshZones();
     onSaved({ ...restaurant, ...(data as any) });
+
   };
 
   return (
