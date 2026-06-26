@@ -34,7 +34,7 @@ Deno.serve(async (req) => {
       supabase
         .from("restaurants")
         .select(
-          "id, name, cuisine, image_url, rating, total_reviews, delivery_time, lat, lng, is_active, is_open, opens_at, closes_at, area_id, address, suburb, description, min_order",
+          "id, name, cuisine, image_url, rating, total_reviews, delivery_time, lat, lng, is_active, is_open, opens_at, closes_at, area_id, address:location, suburb, description, min_order",
         )
         .order("name"),
       supabase
