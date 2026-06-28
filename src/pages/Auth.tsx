@@ -139,7 +139,7 @@ const Auth = () => {
         setShowOtp(true);
         setOtp("");
         setResendCooldown(60);
-        setMessage("We sent a 6-digit code to your email. Enter it below to verify.");
+        setMessage("We sent an 8-digit code to your email. Enter it below to verify.");
       }
     }
     setLoading(false);
@@ -147,7 +147,7 @@ const Auth = () => {
 
   const handleVerifyOtp = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (loading) return;
+    if (loading || otp.length !== 8) return;
     setError("");
     setLoading(true);
     const { error } = await supabase.auth.verifyOtp({
@@ -193,18 +193,18 @@ const Auth = () => {
                   pattern="[0-9]*"
                   autoComplete="one-time-code"
                   autoFocus
-                  maxLength={6}
+                  maxLength={8}
                   value={otp}
-                  onChange={(e) => setOtp(e.target.value.replace(/\D/g, ""))}
+                  onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 8))}
                   required
                   className="w-full rounded-xl border border-border bg-card px-4 py-2.5 text-center text-lg tracking-[0.5em] text-card-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-                  placeholder="000000"
+                  placeholder="00000000"
                 />
               </div>
               {error && <p className="text-sm text-destructive">{error}</p>}
               <button
                 type="submit"
-                disabled={loading || otp.length < 6}
+                disabled={loading || otp.length !== 8}
                 className="btn-glow w-full rounded-xl gradient-maroon py-2.5 font-display font-bold text-primary-foreground transition-transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50"
               >
                 {loading ? "Verifying..." : "Verify"}
