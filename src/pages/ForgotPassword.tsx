@@ -121,8 +121,8 @@ const ForgotPassword = () => {
   const verifyOtp = async () => {
     setOtpError("");
     const code = otpCode.replace(/\D/g, "");
-    if (code.length < 6) {
-      setOtpError("Please enter the full code from your email.");
+    if (code.length !== 8) {
+      setOtpError("Please enter the full 8-digit code from your email.");
       return;
     }
     setOtpVerifying(true);
