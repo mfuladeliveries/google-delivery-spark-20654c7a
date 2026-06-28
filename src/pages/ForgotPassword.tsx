@@ -193,12 +193,14 @@ const ForgotPassword = () => {
                       <button
                         type="button"
                         onClick={resendVerification}
-                        disabled={verifyLoading}
+                        disabled={verifyLoading || secondsLeft > 0}
                         className="btn-glow mt-3 flex w-full items-center justify-center gap-2 rounded-xl gradient-maroon py-2.5 font-display font-bold text-primary-foreground transition-transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50"
                       >
                         {verifyLoading && <Loader2 className="h-4 w-4 animate-spin" />}
                         {verifyLoading ? (
                           "Sending..."
+                        ) : secondsLeft > 0 ? (
+                          `Resend in ${secondsLeft}s`
                         ) : (
                           <>
                             <Send className="h-4 w-4" /> Resend Verification Email
