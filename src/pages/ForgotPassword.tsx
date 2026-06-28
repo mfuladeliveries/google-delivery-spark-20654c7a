@@ -121,8 +121,8 @@ const ForgotPassword = () => {
   const verifyOtp = async () => {
     setOtpError("");
     const code = otpCode.replace(/\D/g, "");
-    if (code.length < 6) {
-      setOtpError("Please enter the full code from your email.");
+    if (code.length !== 8) {
+      setOtpError("Please enter the full 8-digit code from your email.");
       return;
     }
     setOtpVerifying(true);
@@ -229,7 +229,7 @@ const ForgotPassword = () => {
                             setOtpError("");
                           }}
                           disabled={otpVerifying || otpSuccess}
-                          placeholder="123456"
+                          placeholder="00000000"
                           className="w-full rounded-xl border border-border bg-card px-4 py-2.5 text-center font-mono text-lg tracking-[0.4em] text-card-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-60"
                         />
                         {otpError && (
@@ -238,7 +238,7 @@ const ForgotPassword = () => {
                         <button
                           type="button"
                           onClick={verifyOtp}
-                          disabled={otpVerifying || otpSuccess || otpCode.length < 6}
+                          disabled={otpVerifying || otpSuccess || otpCode.length !== 8}
                           className="btn-glow mt-3 flex w-full items-center justify-center gap-2 rounded-xl gradient-maroon py-2.5 font-display font-bold text-primary-foreground transition-transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50"
                         >
                           {otpVerifying && <Loader2 className="h-4 w-4 animate-spin" />}
