@@ -137,6 +137,8 @@ const Auth = () => {
       if (error) setError(mapSignupError(error.message));
       else {
         setShowOtp(true);
+        setOtp("");
+        setResendCooldown(60);
         setMessage("We sent a 6-digit code to your email. Enter it below to verify.");
       }
     }
