@@ -103,6 +103,7 @@ const ForgotPassword = () => {
   const resendVerification = async () => {
     setVerifyLoading(true);
     setVerifyMsg("");
+    setOtpError("");
     const { error: sbError } = await supabase.auth.resend({
       type: "signup",
       email: email.trim(),
@@ -113,6 +114,30 @@ const ForgotPassword = () => {
       return;
     }
     setVerifyMsg("Verification email resent! Check your inbox (and Spam folder).");
+    setSecondsLeft(RESEND_COOLDOWN);
+    setTimeout(() => otpInputRef.current?.focus(), 100);
+  };
+
+  const verifyOtp = async () => {
+    setOtpError("");
+    const code = otpCode.replace(/\D/g, "");
+    if (code.length < 6) {
+      setOtpError("Please enter the full code from your email.");
+      return;
+    }
+    setOtpVerifying(true);
+    const { error: sbError } = await supabase.auth.verifyOtp({
+      email: email.trim(),
+      token: code,
+      type: "email",
+    });
+    setOtpVerifying(false);
+    if (sbError) {
+      setOtpError("Invalid or expired code. Please try again or resend.");
+      return;
+    }
+    setOtpSuccess(true);
+    setTimeout(() => navigate("/", { replace: true }), 1200);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
