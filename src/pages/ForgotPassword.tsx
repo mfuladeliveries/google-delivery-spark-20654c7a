@@ -15,6 +15,7 @@ const MAX_RESENDS = 3;
 const RESEND_COOLDOWN = 60;
 
 const ForgotPassword = () => {
+  const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [sent, setSent] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -25,6 +26,11 @@ const ForgotPassword = () => {
   const [unverified, setUnverified] = useState(false);
   const [verifyLoading, setVerifyLoading] = useState(false);
   const [verifyMsg, setVerifyMsg] = useState("");
+  const [otpCode, setOtpCode] = useState("");
+  const [otpError, setOtpError] = useState("");
+  const [otpVerifying, setOtpVerifying] = useState(false);
+  const [otpSuccess, setOtpSuccess] = useState(false);
+  const otpInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (secondsLeft <= 0) return;
