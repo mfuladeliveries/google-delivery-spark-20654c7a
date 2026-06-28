@@ -321,22 +321,8 @@ const Index = () => {
     const matchesFavourite = !favouritesOnly || favouriteIds.has(r.id);
     let matchesArea = true;
     if (hasEffectiveCoords) {
-      if (currentZone == null) {
-        matchesArea = false;
-      } else if (r.area_id === currentZone.zone.id) {
-        matchesArea = true;
-      } else if (
-        r.area_id == null &&
-        r.lat != null &&
-        r.lng != null &&
-        currentZone.zone.lat != null &&
-        currentZone.zone.lng != null
-      ) {
-        const dz = distanceKm(currentZone.zone.lat, currentZone.zone.lng, r.lat, r.lng);
-        matchesArea = dz <= Number(currentZone.zone.radius_km);
-      } else {
-        matchesArea = false;
-      }
+      // Strict: only show restaurants explicitly assigned to the customer's current delivery area.
+      matchesArea = currentZone != null && r.area_id === currentZone.zone.id;
     }
     return matchesCuisine && matchesSearch && matchesArea && matchesOpen && matchesRating && matchesFavourite;
   });
