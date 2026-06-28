@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
-import { Link } from "react-router-dom";
-import { Mail, Loader2, ArrowLeft, MessageCircle, AlertCircle, Send } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
+import { Mail, Loader2, ArrowLeft, MessageCircle, AlertCircle, Send, CheckCircle2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { storeInfo } from "@/data/menu";
 import { getPasswordResetRedirect } from "@/lib/passwordReset";
@@ -15,6 +15,7 @@ const MAX_RESENDS = 3;
 const RESEND_COOLDOWN = 60;
 
 const ForgotPassword = () => {
+  const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [sent, setSent] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -25,6 +26,11 @@ const ForgotPassword = () => {
   const [unverified, setUnverified] = useState(false);
   const [verifyLoading, setVerifyLoading] = useState(false);
   const [verifyMsg, setVerifyMsg] = useState("");
+  const [otpCode, setOtpCode] = useState("");
+  const [otpError, setOtpError] = useState("");
+  const [otpVerifying, setOtpVerifying] = useState(false);
+  const [otpSuccess, setOtpSuccess] = useState(false);
+  const otpInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (secondsLeft <= 0) return;
@@ -97,6 +103,7 @@ const ForgotPassword = () => {
   const resendVerification = async () => {
     setVerifyLoading(true);
     setVerifyMsg("");
+    setOtpError("");
     const { error: sbError } = await supabase.auth.resend({
       type: "signup",
       email: email.trim(),
@@ -107,6 +114,30 @@ const ForgotPassword = () => {
       return;
     }
     setVerifyMsg("Verification email resent! Check your inbox (and Spam folder).");
+    setSecondsLeft(RESEND_COOLDOWN);
+    setTimeout(() => otpInputRef.current?.focus(), 100);
+  };
+
+  const verifyOtp = async () => {
+    setOtpError("");
+    const code = otpCode.replace(/\D/g, "");
+    if (code.length < 6) {
+      setOtpError("Please enter the full code from your email.");
+      return;
+    }
+    setOtpVerifying(true);
+    const { error: sbError } = await supabase.auth.verifyOtp({
+      email: email.trim(),
+      token: code,
+      type: "email",
+    });
+    setOtpVerifying(false);
+    if (sbError) {
+      setOtpError("Invalid or expired code. Please try again or resend.");
+      return;
+    }
+    setOtpSuccess(true);
+    setTimeout(() => navigate("/", { replace: true }), 1200);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -162,12 +193,14 @@ const ForgotPassword = () => {
                       <button
                         type="button"
                         onClick={resendVerification}
-                        disabled={verifyLoading}
+                        disabled={verifyLoading || secondsLeft > 0}
                         className="btn-glow mt-3 flex w-full items-center justify-center gap-2 rounded-xl gradient-maroon py-2.5 font-display font-bold text-primary-foreground transition-transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50"
                       >
                         {verifyLoading && <Loader2 className="h-4 w-4 animate-spin" />}
                         {verifyLoading ? (
                           "Sending..."
+                        ) : secondsLeft > 0 ? (
+                          `Resend in ${secondsLeft}s`
                         ) : (
                           <>
                             <Send className="h-4 w-4" /> Resend Verification Email
@@ -175,6 +208,53 @@ const ForgotPassword = () => {
                         )}
                       </button>
                       {verifyMsg && <p className="mt-2 text-xs text-primary">{verifyMsg}</p>}
+
+                      <div className="mt-4 border-t border-destructive/20 pt-4">
+                        <label className="mb-1 block text-xs font-semibold text-foreground">
+                          Enter the code from your email
+                        </label>
+                        <p className="mb-2 text-[11px] text-muted-foreground">
+                          Paste or type the verification code we sent to your inbox.
+                        </p>
+                        <input
+                          ref={otpInputRef}
+                          type="text"
+                          inputMode="numeric"
+                          autoComplete="one-time-code"
+                          pattern="[0-9]*"
+                          maxLength={8}
+                          value={otpCode}
+                          onChange={(e) => {
+                            setOtpCode(e.target.value.replace(/\D/g, "").slice(0, 8));
+                            setOtpError("");
+                          }}
+                          disabled={otpVerifying || otpSuccess}
+                          placeholder="123456"
+                          className="w-full rounded-xl border border-border bg-card px-4 py-2.5 text-center font-mono text-lg tracking-[0.4em] text-card-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-60"
+                        />
+                        {otpError && (
+                          <p className="mt-2 text-xs text-destructive">{otpError}</p>
+                        )}
+                        <button
+                          type="button"
+                          onClick={verifyOtp}
+                          disabled={otpVerifying || otpSuccess || otpCode.length < 6}
+                          className="btn-glow mt-3 flex w-full items-center justify-center gap-2 rounded-xl gradient-maroon py-2.5 font-display font-bold text-primary-foreground transition-transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50"
+                        >
+                          {otpVerifying && <Loader2 className="h-4 w-4 animate-spin" />}
+                          {otpSuccess && <CheckCircle2 className="h-4 w-4" />}
+                          {otpSuccess
+                            ? "Verified — redirecting..."
+                            : otpVerifying
+                              ? "Verifying..."
+                              : "Verify Email"}
+                        </button>
+                        {secondsLeft > 0 && (
+                          <p className="mt-2 text-center text-[11px] text-muted-foreground">
+                            You can resend the code in {secondsLeft}s
+                          </p>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>
