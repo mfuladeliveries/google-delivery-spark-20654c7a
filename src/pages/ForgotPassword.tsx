@@ -238,7 +238,7 @@ const ForgotPassword = () => {
                         <button
                           type="button"
                           onClick={verifyOtp}
-                          disabled={otpVerifying || otpSuccess || otpCode.length < 6}
+                          disabled={otpVerifying || otpSuccess || otpCode.length !== 8}
                           className="btn-glow mt-3 flex w-full items-center justify-center gap-2 rounded-xl gradient-maroon py-2.5 font-display font-bold text-primary-foreground transition-transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50"
                         >
                           {otpVerifying && <Loader2 className="h-4 w-4 animate-spin" />}
