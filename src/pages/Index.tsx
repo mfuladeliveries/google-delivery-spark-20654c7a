@@ -319,11 +319,10 @@ const Index = () => {
     const matchesOpen = !openNowOnly || isRestaurantOpen(r.opens_at, r.closes_at);
     const matchesRating = minRating === 0 || (r.rating ?? 0) >= minRating;
     const matchesFavourite = !favouritesOnly || favouriteIds.has(r.id);
-    let matchesArea = true;
-    if (hasEffectiveCoords) {
-      // Strict: only show restaurants explicitly assigned to the customer's current delivery area.
-      matchesArea = currentZone != null && r.area_id === currentZone.zone.id;
-    }
+    // Strict: only show restaurants assigned to the Mfuleni delivery area.
+    // Other restaurants stay hidden until an admin explicitly enables their area.
+    const MFULENI_AREA_ID = "710be50f-0238-4ea2-b492-d565b307a93a";
+    const matchesArea = r.area_id === MFULENI_AREA_ID;
     return matchesCuisine && matchesSearch && matchesArea && matchesOpen && matchesRating && matchesFavourite;
   });
 
