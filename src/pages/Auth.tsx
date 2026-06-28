@@ -18,8 +18,22 @@ const Auth = () => {
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
   const [showPwd, setShowPwd] = useState(false);
+  const [resendCooldown, setResendCooldown] = useState(0);
+  const otpInputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
   const { user, roles, loading: authLoading } = useAuth();
+
+  useEffect(() => {
+    if (resendCooldown <= 0) return;
+    const t = setInterval(() => setResendCooldown((s) => (s > 0 ? s - 1 : 0)), 1000);
+    return () => clearInterval(t);
+  }, [resendCooldown]);
+
+  useEffect(() => {
+    if (showOtp) {
+      setTimeout(() => otpInputRef.current?.focus(), 50);
+    }
+  }, [showOtp]);
 
   // Wait for roles to load before redirecting so provider-only users
   // go straight to their dashboard (no flicker through customer home).
