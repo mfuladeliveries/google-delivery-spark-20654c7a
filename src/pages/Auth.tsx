@@ -153,15 +153,10 @@ const Auth = () => {
     const { error } = await supabase.auth.verifyOtp({
       email: email.trim(),
       token: otp,
-      type: "signup",
+      type: "email",
     });
     if (error) {
-      const m = error.message.toLowerCase();
-      if (m.includes("expired") || m.includes("invalid")) {
-        setError("That code is invalid or has expired. Please request a new one.");
-      } else {
-        setError("Verification failed. Please try again.");
-      }
+      setError("Invalid or expired code, please try again.");
     }
     setLoading(false);
   };
