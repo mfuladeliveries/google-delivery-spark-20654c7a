@@ -187,8 +187,12 @@ const Auth = () => {
                   Verification Code
                 </label>
                 <input
+                  ref={otpInputRef}
                   type="text"
                   inputMode="numeric"
+                  pattern="[0-9]*"
+                  autoComplete="one-time-code"
+                  autoFocus
                   maxLength={6}
                   value={otp}
                   onChange={(e) => setOtp(e.target.value.replace(/\D/g, ""))}
@@ -203,22 +207,34 @@ const Auth = () => {
                 disabled={loading || otp.length < 6}
                 className="btn-glow w-full rounded-xl gradient-maroon py-2.5 font-display font-bold text-primary-foreground transition-transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50"
               >
-                {loading ? "Verifying..." : "Verify & Sign In"}
+                {loading ? "Verifying..." : "Verify"}
               </button>
               <button
                 type="button"
-                disabled={loading}
+                disabled={loading || resendCooldown > 0}
                 onClick={async () => {
+                  if (resendCooldown > 0) return;
                   setError("");
                   setLoading(true);
-                  const { error } = await supabase.auth.resend({ type: "signup", email });
+                  const { error } = await supabase.auth.resend({
+                    type: "signup",
+                    email: email.trim(),
+                  });
                   if (error) setError(error.message);
-                  else setMessage("A new code has been sent to your email.");
+                  else {
+                    setMessage("A new code has been sent to your email.");
+                    setResendCooldown(60);
+                    setTimeout(() => otpInputRef.current?.focus(), 50);
+                  }
                   setLoading(false);
                 }}
-                className="w-full text-sm font-semibold text-primary hover:underline disabled:opacity-50"
+                className="w-full text-sm font-semibold text-primary hover:underline disabled:opacity-50 disabled:no-underline"
               >
-                {loading ? "Sending..." : "Resend Code"}
+                {loading
+                  ? "Sending..."
+                  : resendCooldown > 0
+                    ? `Resend code in ${resendCooldown}s`
+                    : "Resend code"}
               </button>
               <button
                 type="button"
