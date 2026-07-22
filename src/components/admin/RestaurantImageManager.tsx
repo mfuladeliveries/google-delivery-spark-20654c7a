@@ -113,8 +113,18 @@ interface UploadProgress {
 const validateFile = (file: File): string | null => {
   if (!ACCEPTED_TYPES.includes(file.type)) return "Only JPG, PNG, or WebP images are allowed";
   if (file.size > MAX_BYTES)
-    return `Image must be under 2MB (got ${(file.size / 1024 / 1024).toFixed(1)}MB)`;
+    return `Image must be under 5MB (got ${(file.size / 1024 / 1024).toFixed(1)}MB)`;
   return null;
+};
+
+// Extract the storage object path from a public URL. Returns null if the URL
+// doesn't belong to our storage bucket (e.g. external CDN or data URL).
+const pathFromPublicUrl = (url: string | null | undefined): string | null => {
+  if (!url) return null;
+  const marker = "/storage/v1/object/public/food-images/";
+  const idx = url.indexOf(marker);
+  if (idx === -1) return null;
+  return url.slice(idx + marker.length);
 };
 
 const uploadToBucket = async (
