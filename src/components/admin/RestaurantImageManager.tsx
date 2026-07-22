@@ -31,7 +31,7 @@ class UploadCancelledError extends Error {
 }
 
 const ACCEPTED_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
-const MAX_BYTES = 2 * 1024 * 1024; // 2MB original-file cap (pre-compression)
+const MAX_BYTES = 5 * 1024 * 1024; // 5MB original-file cap (pre-compression)
 const FALLBACK_IMG =
   "https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=600&h=300&fit=crop";
 
