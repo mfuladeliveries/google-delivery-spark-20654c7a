@@ -430,7 +430,7 @@ const RestaurantImageManager = ({
         <DialogHeader>
           <DialogTitle className="text-base">🖼️ Manage images — {restaurantName}</DialogTitle>
           <DialogDescription className="text-xs">
-            JPG, PNG or WebP · max 2MB per image · auto-compressed before upload · changes save when
+            JPG, PNG or WebP · max 5MB per image · auto-compressed before upload · changes save when
             you click "Save Changes"
           </DialogDescription>
         </DialogHeader>
