@@ -187,6 +187,9 @@ const RestaurantImageManager = ({
   const [dragKind, setDragKind] = useState<"logo" | "banner" | "gallery" | null>(null);
   const [progress, setProgress] = useState<UploadProgress[]>([]);
   const galleryRef = useRef<HTMLInputElement>(null);
+  // Original URLs when the dialog opened — used to detect replaced/removed images
+  // so we can garbage-collect the old files from storage after a successful save.
+  const originalRef = useRef<ImageState>({ logo_url: null, banner_url: null, gallery_images: [] });
   // Map of upload id → AbortController so we can cancel individual files.
   const controllersRef = useRef<Map<string, AbortController>>(new Map());
 
