@@ -170,17 +170,14 @@ const Search = () => {
                     >
                       <div className="h-16 w-16 flex-shrink-0 overflow-hidden rounded-xl bg-muted">
                         <img
-                          src={
-                            restaurantImages[r.name] ||
-                            "https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=200&h=200&fit=crop"
-                          }
+                          src={r.image_url || FALLBACK_IMG}
                           alt={r.name}
                           className="h-full w-full object-cover"
                           onError={(e) => {
-                            (e.target as HTMLImageElement).src =
-                              "https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=200&h=200&fit=crop";
+                            (e.target as HTMLImageElement).src = FALLBACK_IMG;
                           }}
                         />
+
                       </div>
                       <div className="flex-1 min-w-0">
                         <RestaurantName as="h3" size="md" name={r.name} className="truncate" />
