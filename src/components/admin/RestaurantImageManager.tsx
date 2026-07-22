@@ -626,7 +626,7 @@ const RestaurantImageManager = ({
                   dragKind === "banner" ? "border-primary bg-primary/5" : "border-border bg-card"
                 }`}
               >
-                <div className="relative aspect-[3/1] w-full overflow-hidden rounded-xl bg-muted mb-3">
+                <div className="relative aspect-video w-full overflow-hidden rounded-xl bg-muted mb-3">
                   {state.banner_url ? (
                     <img
                       src={state.banner_url}
