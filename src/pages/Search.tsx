@@ -16,7 +16,9 @@ interface Restaurant {
   delivery_time: string;
   min_order: number;
   description: string;
+  image_url?: string | null;
 }
+
 
 interface MenuItemResult {
   id: string;
@@ -29,24 +31,9 @@ interface MenuItemResult {
   restaurant_name?: string;
 }
 
-const restaurantImages: Record<string, string> = {
-  Kitchen: "https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=400&h=200&fit=crop",
-  "Mdala Tshisanyama":
-    "https://images.unsplash.com/photo-1544025162-d76694265947?w=400&h=200&fit=crop",
-  KFC: "https://images.unsplash.com/photo-1562967914-608f82629710?w=400&h=200&fit=crop",
-  "Debonnairs Pizza":
-    "https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=400&h=200&fit=crop",
-  McDonalds: "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=400&h=200&fit=crop",
-  Pedros: "https://images.unsplash.com/photo-1598515214211-89d3c73ae83b?w=400&h=200&fit=crop",
-  "BURGER KING":
-    "https://images.unsplash.com/photo-1571091718767-18b5b1457add?w=400&h=200&fit=crop",
-  "Hungry Lion": "https://images.unsplash.com/photo-1562967914-608f82629710?w=400&h=200&fit=crop",
-  "Fellos Fishery":
-    "https://images.unsplash.com/photo-1559847844-5315695dadae?w=400&h=200&fit=crop",
-  Shop: "https://images.unsplash.com/photo-1578916171728-46686eac8d58?w=400&h=200&fit=crop",
-  Liquor: "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400&h=200&fit=crop",
-  Steers: "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=400&h=200&fit=crop",
-};
+const FALLBACK_IMG =
+  "https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=400&h=200&fit=crop";
+
 
 const Search = () => {
   const navigate = useNavigate();
@@ -183,17 +170,14 @@ const Search = () => {
                     >
                       <div className="h-16 w-16 flex-shrink-0 overflow-hidden rounded-xl bg-muted">
                         <img
-                          src={
-                            restaurantImages[r.name] ||
-                            "https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=200&h=200&fit=crop"
-                          }
+                          src={r.image_url || FALLBACK_IMG}
                           alt={r.name}
                           className="h-full w-full object-cover"
                           onError={(e) => {
-                            (e.target as HTMLImageElement).src =
-                              "https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=200&h=200&fit=crop";
+                            (e.target as HTMLImageElement).src = FALLBACK_IMG;
                           }}
                         />
+
                       </div>
                       <div className="flex-1 min-w-0">
                         <RestaurantName as="h3" size="md" name={r.name} className="truncate" />
