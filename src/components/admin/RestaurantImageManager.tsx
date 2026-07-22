@@ -31,7 +31,7 @@ class UploadCancelledError extends Error {
 }
 
 const ACCEPTED_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
-const MAX_BYTES = 2 * 1024 * 1024; // 2MB original-file cap (pre-compression)
+const MAX_BYTES = 5 * 1024 * 1024; // 5MB original-file cap (pre-compression)
 const FALLBACK_IMG =
   "https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=600&h=300&fit=crop";
 
@@ -113,8 +113,18 @@ interface UploadProgress {
 const validateFile = (file: File): string | null => {
   if (!ACCEPTED_TYPES.includes(file.type)) return "Only JPG, PNG, or WebP images are allowed";
   if (file.size > MAX_BYTES)
-    return `Image must be under 2MB (got ${(file.size / 1024 / 1024).toFixed(1)}MB)`;
+    return `Image must be under 5MB (got ${(file.size / 1024 / 1024).toFixed(1)}MB)`;
   return null;
+};
+
+// Extract the storage object path from a public URL. Returns null if the URL
+// doesn't belong to our storage bucket (e.g. external CDN or data URL).
+const pathFromPublicUrl = (url: string | null | undefined): string | null => {
+  if (!url) return null;
+  const marker = "/storage/v1/object/public/food-images/";
+  const idx = url.indexOf(marker);
+  if (idx === -1) return null;
+  return url.slice(idx + marker.length);
 };
 
 const uploadToBucket = async (
@@ -177,6 +187,9 @@ const RestaurantImageManager = ({
   const [dragKind, setDragKind] = useState<"logo" | "banner" | "gallery" | null>(null);
   const [progress, setProgress] = useState<UploadProgress[]>([]);
   const galleryRef = useRef<HTMLInputElement>(null);
+  // Original URLs when the dialog opened — used to detect replaced/removed images
+  // so we can garbage-collect the old files from storage after a successful save.
+  const originalRef = useRef<ImageState>({ logo_url: null, banner_url: null, gallery_images: [] });
   // Map of upload id → AbortController so we can cancel individual files.
   const controllersRef = useRef<Map<string, AbortController>>(new Map());
 
@@ -213,11 +226,13 @@ const RestaurantImageManager = ({
       if (error) {
         toast.error("Failed to load images");
       } else {
-        setState({
+        const loaded: ImageState = {
           logo_url: data.logo_url,
           banner_url: data.banner_url,
           gallery_images: data.gallery_images || [],
-        });
+        };
+        setState(loaded);
+        originalRef.current = loaded;
       }
       setLoading(false);
     })();
@@ -361,14 +376,42 @@ const RestaurantImageManager = ({
         logo: state.logo_url || "",
       })
       .eq("id", restaurantId);
-    setSaving(false);
-    void import("@/lib/serviceArea").then(({ refreshZones }) => refreshZones());
     if (error) {
-
+      setSaving(false);
       toast.error(error.message || "Failed to save");
       return;
     }
-    toast.success("Restaurant images updated successfully");
+
+    // Best-effort cleanup: delete storage objects for images that were replaced
+    // or removed during this edit session. Only touches files inside our bucket.
+    try {
+      const orig = originalRef.current;
+      const keptGallery = new Set(state.gallery_images);
+      const toDelete: string[] = [];
+      if (orig.logo_url && orig.logo_url !== state.logo_url) {
+        const p = pathFromPublicUrl(orig.logo_url);
+        if (p) toDelete.push(p);
+      }
+      if (orig.banner_url && orig.banner_url !== state.banner_url) {
+        const p = pathFromPublicUrl(orig.banner_url);
+        if (p) toDelete.push(p);
+      }
+      for (const url of orig.gallery_images) {
+        if (!keptGallery.has(url)) {
+          const p = pathFromPublicUrl(url);
+          if (p) toDelete.push(p);
+        }
+      }
+      if (toDelete.length > 0) {
+        await supabase.storage.from("food-images").remove(toDelete);
+      }
+    } catch {
+      // Cleanup failures are non-fatal — the DB is already updated.
+    }
+
+    setSaving(false);
+    void import("@/lib/serviceArea").then(({ refreshZones }) => refreshZones());
+    toast.success("Restaurant image updated successfully.");
     onSaved();
     onClose();
   };
@@ -387,7 +430,7 @@ const RestaurantImageManager = ({
         <DialogHeader>
           <DialogTitle className="text-base">🖼️ Manage images — {restaurantName}</DialogTitle>
           <DialogDescription className="text-xs">
-            JPG, PNG or WebP · max 2MB per image · auto-compressed before upload · changes save when
+            JPG, PNG or WebP · max 5MB per image · auto-compressed before upload · changes save when
             you click "Save Changes"
           </DialogDescription>
         </DialogHeader>
@@ -583,7 +626,7 @@ const RestaurantImageManager = ({
                   dragKind === "banner" ? "border-primary bg-primary/5" : "border-border bg-card"
                 }`}
               >
-                <div className="relative aspect-[3/1] w-full overflow-hidden rounded-xl bg-muted mb-3">
+                <div className="relative aspect-video w-full overflow-hidden rounded-xl bg-muted mb-3">
                   {state.banner_url ? (
                     <img
                       src={state.banner_url}
