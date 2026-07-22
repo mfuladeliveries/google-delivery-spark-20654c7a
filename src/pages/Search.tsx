@@ -16,7 +16,9 @@ interface Restaurant {
   delivery_time: string;
   min_order: number;
   description: string;
+  image_url?: string | null;
 }
+
 
 interface MenuItemResult {
   id: string;
