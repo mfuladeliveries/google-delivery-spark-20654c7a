@@ -376,14 +376,42 @@ const RestaurantImageManager = ({
         logo: state.logo_url || "",
       })
       .eq("id", restaurantId);
-    setSaving(false);
-    void import("@/lib/serviceArea").then(({ refreshZones }) => refreshZones());
     if (error) {
-
+      setSaving(false);
       toast.error(error.message || "Failed to save");
       return;
     }
-    toast.success("Restaurant images updated successfully");
+
+    // Best-effort cleanup: delete storage objects for images that were replaced
+    // or removed during this edit session. Only touches files inside our bucket.
+    try {
+      const orig = originalRef.current;
+      const keptGallery = new Set(state.gallery_images);
+      const toDelete: string[] = [];
+      if (orig.logo_url && orig.logo_url !== state.logo_url) {
+        const p = pathFromPublicUrl(orig.logo_url);
+        if (p) toDelete.push(p);
+      }
+      if (orig.banner_url && orig.banner_url !== state.banner_url) {
+        const p = pathFromPublicUrl(orig.banner_url);
+        if (p) toDelete.push(p);
+      }
+      for (const url of orig.gallery_images) {
+        if (!keptGallery.has(url)) {
+          const p = pathFromPublicUrl(url);
+          if (p) toDelete.push(p);
+        }
+      }
+      if (toDelete.length > 0) {
+        await supabase.storage.from("food-images").remove(toDelete);
+      }
+    } catch {
+      // Cleanup failures are non-fatal — the DB is already updated.
+    }
+
+    setSaving(false);
+    void import("@/lib/serviceArea").then(({ refreshZones }) => refreshZones());
+    toast.success("Restaurant image updated successfully.");
     onSaved();
     onClose();
   };
