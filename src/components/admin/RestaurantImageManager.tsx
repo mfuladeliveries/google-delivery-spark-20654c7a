@@ -226,11 +226,13 @@ const RestaurantImageManager = ({
       if (error) {
         toast.error("Failed to load images");
       } else {
-        setState({
+        const loaded: ImageState = {
           logo_url: data.logo_url,
           banner_url: data.banner_url,
           gallery_images: data.gallery_images || [],
-        });
+        };
+        setState(loaded);
+        originalRef.current = loaded;
       }
       setLoading(false);
     })();
