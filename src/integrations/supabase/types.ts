@@ -1831,6 +1831,13 @@ export type Database = {
         }[]
       }
       request_withdrawal: { Args: { p_amount: number }; Returns: string }
+      restaurant_update_order_status: {
+  Args: {
+    p_order_id: string
+    p_status: string
+  }
+  Returns: Json
+}
       restaurant_decide_availability: {
         Args: { p_accept: boolean; p_order_id: string; p_reason?: string }
         Returns: Json
