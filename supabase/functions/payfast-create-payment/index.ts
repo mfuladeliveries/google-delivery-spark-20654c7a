@@ -151,6 +151,50 @@ Deno.serve(async (req) => {
     const signature = await buildPayfastSignature(fields, PASSPHRASE);
     fields.signature = signature;
 
+    // --- TEMPORARY PAYFAST DIAGNOSTICS ---
+const safeFields = Object.fromEntries(
+  Object.entries(fields).map(([key, value]) => {
+    if (["merchant_key", "email_address", "cell_number"].includes(key)) {
+      return [key, "[REDACTED]"];
+    }
+    return [key, value];
+  }),
+);
+
+const safeEncodedParts = Object.entries(fields)
+  .filter(([key, value]) =>
+    key !== "signature" &&
+    value !== null &&
+    value !== undefined &&
+    value !== ""
+  )
+  .map(([key, value]) => {
+    const redactedValue = ["merchant_key", "email_address", "cell_number"].includes(key)
+      ? "[REDACTED]"
+      : String(value).trim();
+
+    return `${key}=${pfEncode(redactedValue)}`;
+  });
+
+const safeEncodedParameterString =
+  safeEncodedParts.join("&") +
+  (PASSPHRASE ? "&passphrase=[REDACTED]" : "");
+
+console.log("PAYFAST_DIAGNOSTIC", {
+  mode: MODE,
+  process_url: PROCESS_URL,
+  merchant_id_set: Boolean(MERCHANT_ID),
+  merchant_key_set: Boolean(MERCHANT_KEY),
+  passphrase_set: Boolean(PASSPHRASE),
+  ordered_field_names: Object.keys(fields),
+  payment_method: fields.payment_method ?? "(absent)",
+  notify_url: fields.notify_url,
+  encoded_parameter_shape: safeEncodedParameterString,
+  generated_signature: signature,
+  fields_to_frontend: safeFields,
+});
+// --- END TEMPORARY PAYFAST DIAGNOSTICS ---
+
     return new Response(
       JSON.stringify({
         process_url: PROCESS_URL,
