@@ -13,8 +13,14 @@ const corsHeaders = {
 
 const MERCHANT_ID = Deno.env.get("PAYFAST_MERCHANT_ID") ?? "";
 const MERCHANT_KEY = Deno.env.get("PAYFAST_MERCHANT_KEY") ?? "";
-const PASSPHRASE = Deno.env.get("PAYFAST_PASSPHRASE") ?? "";
 const MODE = (Deno.env.get("PAYFAST_MODE") ?? "sandbox").toLowerCase();
+// In sandbox the shared PayFast test account has no passphrase, so the live
+// passphrase must never be used to sign sandbox requests. An explicit
+// PAYFAST_SANDBOX_PASSPHRASE (set on your own sandbox account) takes priority.
+const SANDBOX_PASSPHRASE = Deno.env.get("PAYFAST_SANDBOX_PASSPHRASE") ?? "";
+const PASSPHRASE =
+  MODE === "live" ? (Deno.env.get("PAYFAST_PASSPHRASE") ?? "") : SANDBOX_PASSPHRASE;
+
 
 const PROCESS_URL =
   MODE === "live"
