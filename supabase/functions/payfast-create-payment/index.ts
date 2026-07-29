@@ -13,8 +13,14 @@ const corsHeaders = {
 
 const MERCHANT_ID = Deno.env.get("PAYFAST_MERCHANT_ID") ?? "";
 const MERCHANT_KEY = Deno.env.get("PAYFAST_MERCHANT_KEY") ?? "";
-const PASSPHRASE = Deno.env.get("PAYFAST_PASSPHRASE") ?? "";
 const MODE = (Deno.env.get("PAYFAST_MODE") ?? "sandbox").toLowerCase();
+// In sandbox the shared PayFast test account has no passphrase, so the live
+// passphrase must never be used to sign sandbox requests. An explicit
+// PAYFAST_SANDBOX_PASSPHRASE (set on your own sandbox account) takes priority.
+const SANDBOX_PASSPHRASE = Deno.env.get("PAYFAST_SANDBOX_PASSPHRASE") ?? "";
+const PASSPHRASE =
+  MODE === "live" ? (Deno.env.get("PAYFAST_PASSPHRASE") ?? "") : SANDBOX_PASSPHRASE;
+
 
 const PROCESS_URL =
   MODE === "live"
@@ -148,52 +154,20 @@ Deno.serve(async (req) => {
       if (!fields[k]) delete fields[k];
     }
 
-    const signature = await buildPayfastSignature(fields, PASSPHRASE);
-    fields.signature = signature;
-
-    // --- TEMPORARY PAYFAST DIAGNOSTICS ---
-const safeFields = Object.fromEntries(
-  Object.entries(fields).map(([key, value]) => {
-    if (["merchant_key", "email_address", "cell_number"].includes(key)) {
-      return [key, "[REDACTED]"];
+    // PayFast's shared sandbox account rejects any signature (it has no
+    // passphrase configured). Only sign when we actually have a passphrase.
+    if (MODE === "live" || PASSPHRASE) {
+      fields.signature = await buildPayfastSignature(fields, PASSPHRASE);
     }
-    return [key, value];
-  }),
-);
 
-const safeEncodedParts = Object.entries(fields)
-  .filter(([key, value]) =>
-    key !== "signature" &&
-    value !== null &&
-    value !== undefined &&
-    value !== ""
-  )
-  .map(([key, value]) => {
-    const redactedValue = ["merchant_key", "email_address", "cell_number"].includes(key)
-      ? "[REDACTED]"
-      : String(value).trim();
 
-    return `${key}=${pfEncode(redactedValue)}`;
-  });
+    console.log("payfast-create-payment ok", {
+      mode: MODE,
+      process_url: PROCESS_URL,
+      order_number: order.order_number,
+      fields: Object.keys(fields),
+    });
 
-const safeEncodedParameterString =
-  safeEncodedParts.join("&") +
-  (PASSPHRASE ? "&passphrase=[REDACTED]" : "");
-
-console.log("PAYFAST_DIAGNOSTIC", {
-  mode: MODE,
-  process_url: PROCESS_URL,
-  merchant_id_set: Boolean(MERCHANT_ID),
-  merchant_key_set: Boolean(MERCHANT_KEY),
-  passphrase_set: Boolean(PASSPHRASE),
-  ordered_field_names: Object.keys(fields),
-  payment_method: fields.payment_method ?? "(absent)",
-  notify_url: fields.notify_url,
-  encoded_parameter_shape: safeEncodedParameterString,
-  generated_signature: signature,
-  fields_to_frontend: safeFields,
-});
-// --- END TEMPORARY PAYFAST DIAGNOSTICS ---
 
     return new Response(
       JSON.stringify({

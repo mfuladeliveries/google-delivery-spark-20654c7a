@@ -1,0 +1,1 @@
+UPDATE public.orders SET status = 'cancelled' WHERE id = '75ec5c2e-af39-4586-b72f-9849648e1e03';
