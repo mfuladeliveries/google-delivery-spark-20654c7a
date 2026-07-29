@@ -154,8 +154,12 @@ Deno.serve(async (req) => {
       if (!fields[k]) delete fields[k];
     }
 
-    const signature = await buildPayfastSignature(fields, PASSPHRASE);
-    fields.signature = signature;
+    // PayFast's shared sandbox account rejects any signature (it has no
+    // passphrase configured). Only sign when we actually have a passphrase.
+    if (MODE === "live" || PASSPHRASE) {
+      fields.signature = await buildPayfastSignature(fields, PASSPHRASE);
+    }
+
 
     console.log("payfast-create-payment ok", {
       mode: MODE,
