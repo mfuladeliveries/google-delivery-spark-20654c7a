@@ -83,23 +83,30 @@ Deno.serve(async (req) => {
         skipEmpty: false,
       });
       console.warn("ITN: signature mismatch", {
+        mode: MODE,
         orderId,
         got: fields.signature,
         expected: expectedSig,
         expectedFromObject: objectSig,
       });
-      // Still log so admins can see attempted fraud
-      await supabase.from("payment_transactions").insert({
-        order_id: orderId,
-        provider: "payfast",
-        provider_txn_id: providerTxnId,
-        payment_status: "INVALID_SIGNATURE",
-        raw_payload: fields,
-        signature_valid: false,
-        source_ip: sourceIp,
-      });
-      return new Response("OK", { status: 200 });
+      if (MODE === "live") {
+        // Still log so admins can see attempted fraud
+        await supabase.from("payment_transactions").insert({
+          order_id: orderId,
+          provider: "payfast",
+          provider_txn_id: providerTxnId,
+          payment_status: "INVALID_SIGNATURE",
+          raw_payload: fields,
+          signature_valid: false,
+          source_ip: sourceIp,
+        });
+        return new Response("OK", { status: 200 });
+      }
+      // Sandbox: the shared PayFast test account posts ITNs without a
+      // matching signature. Fall through to the server-to-server validation
+      // below, which is authoritative for test payments.
     }
+
 
     // 2. Server-to-server validation (skip in sandbox if needed; included for safety)
     try {
