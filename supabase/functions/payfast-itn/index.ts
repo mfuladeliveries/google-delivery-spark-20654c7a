@@ -16,8 +16,11 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
-const PASSPHRASE = Deno.env.get("PAYFAST_PASSPHRASE") ?? "";
 const MODE = (Deno.env.get("PAYFAST_MODE") ?? "sandbox").toLowerCase();
+const SANDBOX_PASSPHRASE = Deno.env.get("PAYFAST_SANDBOX_PASSPHRASE") ?? "";
+const PASSPHRASE =
+  MODE === "live" ? (Deno.env.get("PAYFAST_PASSPHRASE") ?? "") : SANDBOX_PASSPHRASE;
+
 const VALIDATE_URL =
   MODE === "live"
     ? "https://www.payfast.co.za/eng/query/validate"
