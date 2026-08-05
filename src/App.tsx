@@ -197,6 +197,21 @@ const App = () => (
                 </RoleGuard>
               }
             />
+            <Route
+              path="/admin/dispatch"
+              element={
+                <RoleGuard
+                  allow={["admin"]}
+                  requireAuth
+                  redirectUnauthedTo="/auth"
+                  loadingLabel="Loading dispatch monitor…"
+                >
+                  <AdminDispatchMonitor />
+                </RoleGuard>
+              }
+            />
+
+
 
             <Route
               path="/profile"
