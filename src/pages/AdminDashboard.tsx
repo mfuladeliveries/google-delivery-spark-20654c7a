@@ -605,7 +605,13 @@ const AdminDashboard = () => {
               <p className="text-[10px] text-muted-foreground">Mfula Deliveries</p>
             </div>
           </div>
-          <div className="ml-auto">
+          <div className="ml-auto flex items-center gap-2">
+            <Link
+              to="/admin/dispatch"
+              className="rounded-xl border border-border px-2.5 py-1.5 text-[11px] font-bold text-muted-foreground hover:bg-secondary hover:text-foreground"
+            >
+              Dispatch Monitor
+            </Link>
             <InstallAppButton variant="admin" compact />
           </div>
         </div>
