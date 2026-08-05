@@ -1619,6 +1619,16 @@ export type Database = {
         Args: { p_order_id: string; p_reason?: string }
         Returns: undefined
       }
+      admin_dispatch_runs: {
+        Args: { p_limit?: number }
+        Returns: {
+          content: string
+          created: string
+          error_msg: string
+          id: number
+          status_code: number
+        }[]
+      }
       admin_mark_bank_refund_paid: {
         Args: { p_order_id: string }
         Returns: undefined
