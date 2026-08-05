@@ -21,6 +21,7 @@ import DriverDashboard from "./pages/DriverDashboard";
 import DriverAuth from "./pages/DriverAuth";
 import AdminDashboard from "./pages/AdminDashboard";
 import AdminDiagnostics from "./pages/AdminDiagnostics";
+import AdminDispatchMonitor from "./pages/AdminDispatchMonitor";
 import Profile from "./pages/Profile";
 import Search from "./pages/Search";
 import Install from "./pages/Install";
@@ -196,6 +197,21 @@ const App = () => (
                 </RoleGuard>
               }
             />
+            <Route
+              path="/admin/dispatch"
+              element={
+                <RoleGuard
+                  allow={["admin"]}
+                  requireAuth
+                  redirectUnauthedTo="/auth"
+                  loadingLabel="Loading dispatch monitor…"
+                >
+                  <AdminDispatchMonitor />
+                </RoleGuard>
+              }
+            />
+
+
 
             <Route
               path="/profile"
