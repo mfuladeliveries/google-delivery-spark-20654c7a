@@ -137,6 +137,7 @@ const DriverDashboard = () => {
   // Initial load + realtime
   useEffect(() => {
     if (!user) return;
+    console.info("[driver] session ready", { driverUserId: user.id });
     fetchAll();
 
     const channel = supabase
@@ -144,7 +145,9 @@ const DriverDashboard = () => {
       .on("postgres_changes", { event: "*", schema: "public", table: "orders" }, () => {
         fetchOrders();
       })
-      .subscribe();
+      .subscribe((status) => {
+        console.info("[driver] realtime subscription", { status, driverUserId: user.id });
+      });
 
     return () => {
       supabase.removeChannel(channel);
@@ -155,17 +158,29 @@ const DriverDashboard = () => {
   useEffect(() => {
     if (!driverProfile?.is_online || !user) return;
     if (activeOffer) return;
-    const targeted = pendingOrders.find(
-      (o) =>
-        o.offered_to_driver_id === user.id &&
-        o.offer_expires_at &&
-        new Date(o.offer_expires_at).getTime() > Date.now() &&
-        !respondedOfferIdsRef.current.has(o.id),
-    );
+    // Newest valid, unexpired, unanswered offer wins.
+    const targeted = [...pendingOrders]
+      .filter(
+        (o) =>
+          o.offered_to_driver_id === user.id &&
+          o.offer_expires_at &&
+          new Date(o.offer_expires_at).getTime() > Date.now() &&
+          !respondedOfferIdsRef.current.has(o.id),
+      )
+      .sort(
+        (a, b) =>
+          new Date(b.offer_expires_at!).getTime() - new Date(a.offer_expires_at!).getTime(),
+      )[0];
     if (targeted) {
+      console.info("[driver] offer received", {
+        orderId: targeted.id,
+        orderNumber: targeted.order_number,
+        expiresAt: targeted.offer_expires_at,
+      });
       setActiveOffer(targeted);
     }
   }, [pendingOrders, driverProfile?.is_online, activeOffer, user]);
+
 
   // Auto-dismiss the modal once the offer expires (so the chain can advance)
   useEffect(() => {
@@ -336,12 +351,12 @@ const DriverDashboard = () => {
   const fetchOrders = async () => {
     // Hide anything older than 12 hours — auto-expired
     const cutoff = new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString();
-    const [{ data: pending }, { data: mine }] = await Promise.all([
-      // Pull orders visible to me (RLS: targeted offer to me OR broadcast phase)
+    const [{ data: pending, error: pendingErr }, { data: mine, error: mineErr }] = await Promise.all([
+      // Pull orders visible to me (view self-filters: offered to me / mine / broadcast)
       (supabase as any)
         .from("driver_orders")
         .select(
-          "id, order_number, restaurant, customer_address, delivery_fee, created_at, items, offer_expires_at, offered_to_driver_id, dispatch_phase",
+          "id, order_number, restaurant, customer_address, delivery_fee, created_at, items, offer_expires_at, offered_to_driver_id, dispatch_phase, address_tag, customer_lat, customer_lng",
         )
         .eq("status", "ready")
         .is("driver_id", null)
@@ -361,6 +376,27 @@ const DriverDashboard = () => {
         .order("created_at"),
     ]);
 
+    if (pendingErr || mineErr) {
+      console.error("[driver] order fetch failed", {
+        driverUserId: user?.id,
+        pendingError: pendingErr?.message,
+        assignedError: mineErr?.message,
+      });
+      toast.error(
+        pendingErr?.message || mineErr?.message
+          ? `Couldn't load deliveries: ${pendingErr?.message || mineErr?.message}`
+          : "Couldn't load deliveries. Please check your connection.",
+      );
+
+    }
+
+    console.info("[driver] orders loaded", {
+      driverUserId: user?.id,
+      openOffers: (pending || []).filter((o: any) => o.offered_to_driver_id === user?.id).length,
+      broadcastVisible: (pending || []).filter((o: any) => o.dispatch_phase === "broadcast").length,
+      assigned: (mine || []).length,
+    });
+
     if (pending)
       setPendingOrders(
         (pending as any[]).map((o: any) => ({
@@ -373,6 +409,7 @@ const DriverDashboard = () => {
       );
     if (mine) setMyOrders(mine.map((o) => ({ ...o, items: (o.items as any[]) || [] })));
   };
+
 
   const fetchCompletedOrders = async () => {
     const { data } = await (supabase as any)
@@ -430,10 +467,21 @@ const DriverDashboard = () => {
       }
     }
     setTogglingOnline(true);
-    await supabase.from("driver_profiles").update({ is_online: newStatus }).eq("user_id", user!.id);
+    const { error: onlineErr } = await supabase
+      .from("driver_profiles")
+      .update({ is_online: newStatus, location_updated_at: new Date().toISOString() })
+      .eq("user_id", user!.id);
+    if (onlineErr) {
+      console.error("[driver] online toggle failed", { driverUserId: user?.id, error: onlineErr.message });
+      toast.error(`Couldn't update your status: ${onlineErr.message}`);
+      setTogglingOnline(false);
+      return;
+    }
+    console.info("[driver] online status updated", { driverUserId: user?.id, isOnline: newStatus });
     setDriverProfile((prev) => (prev ? { ...prev, is_online: newStatus } : prev));
     toast.success(newStatus ? "You're now online! 🟢" : "You're now offline 🔴");
     setTogglingOnline(false);
+
 
     // When a driver comes online, trigger dispatch so any pending orders that
     // were waiting (because no driver was available earlier) can be offered to
