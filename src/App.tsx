@@ -27,6 +27,9 @@ import Search from "./pages/Search";
 import Install from "./pages/Install";
 import GetApp from "./pages/GetApp";
 import About from "./pages/About";
+import TermsAndConditions from "./pages/TermsAndConditions";
+import DeliveryPolicy from "./pages/DeliveryPolicy";
+import RefundPolicy from "./pages/RefundPolicy";
 import RouteAwareInstallPrompt from "@/components/RouteAwareInstallPrompt";
 import SplashScreen from "@/components/SplashScreen";
 import ActiveOrderBanner from "@/components/ActiveOrderBanner";
@@ -238,6 +241,9 @@ const App = () => (
             <Route path="/install/:variant" element={<Install />} />
             <Route path="/get-app" element={<GetApp />} />
             <Route path="/about" element={<About />} />
+            <Route path="/terms-and-conditions" element={<TermsAndConditions />} />
+            <Route path="/delivery-policy" element={<DeliveryPolicy />} />
+           <Route path="/refund-policy" element={<RefundPolicy />} /> 
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
