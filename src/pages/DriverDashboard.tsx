@@ -336,12 +336,12 @@ const DriverDashboard = () => {
   const fetchOrders = async () => {
     // Hide anything older than 12 hours — auto-expired
     const cutoff = new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString();
-    const [{ data: pending }, { data: mine }] = await Promise.all([
-      // Pull orders visible to me (RLS: targeted offer to me OR broadcast phase)
+    const [{ data: pending, error: pendingErr }, { data: mine, error: mineErr }] = await Promise.all([
+      // Pull orders visible to me (view self-filters: offered to me / mine / broadcast)
       (supabase as any)
         .from("driver_orders")
         .select(
-          "id, order_number, restaurant, customer_address, delivery_fee, created_at, items, offer_expires_at, offered_to_driver_id, dispatch_phase",
+          "id, order_number, restaurant, customer_address, delivery_fee, created_at, items, offer_expires_at, offered_to_driver_id, dispatch_phase, address_tag, customer_lat, customer_lng",
         )
         .eq("status", "ready")
         .is("driver_id", null)
@@ -361,6 +361,26 @@ const DriverDashboard = () => {
         .order("created_at"),
     ]);
 
+    if (pendingErr || mineErr) {
+      console.error("[driver] order fetch failed", {
+        driverUserId: user?.id,
+        pendingError: pendingErr?.message,
+        assignedError: mineErr?.message,
+      });
+      toast({
+        title: "Couldn't load deliveries",
+        description: pendingErr?.message || mineErr?.message || "Please check your connection.",
+        variant: "destructive",
+      });
+    }
+
+    console.info("[driver] orders loaded", {
+      driverUserId: user?.id,
+      openOffers: (pending || []).filter((o: any) => o.offered_to_driver_id === user?.id).length,
+      broadcastVisible: (pending || []).filter((o: any) => o.dispatch_phase === "broadcast").length,
+      assigned: (mine || []).length,
+    });
+
     if (pending)
       setPendingOrders(
         (pending as any[]).map((o: any) => ({
@@ -373,6 +393,7 @@ const DriverDashboard = () => {
       );
     if (mine) setMyOrders(mine.map((o) => ({ ...o, items: (o.items as any[]) || [] })));
   };
+
 
   const fetchCompletedOrders = async () => {
     const { data } = await (supabase as any)
