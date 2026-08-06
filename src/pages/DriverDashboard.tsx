@@ -367,11 +367,12 @@ const DriverDashboard = () => {
         pendingError: pendingErr?.message,
         assignedError: mineErr?.message,
       });
-      toast({
-        title: "Couldn't load deliveries",
-        description: pendingErr?.message || mineErr?.message || "Please check your connection.",
-        variant: "destructive",
-      });
+      toast.error(
+        pendingErr?.message || mineErr?.message
+          ? `Couldn't load deliveries: ${pendingErr?.message || mineErr?.message}`
+          : "Couldn't load deliveries. Please check your connection.",
+      );
+
     }
 
     console.info("[driver] orders loaded", {
@@ -451,10 +452,21 @@ const DriverDashboard = () => {
       }
     }
     setTogglingOnline(true);
-    await supabase.from("driver_profiles").update({ is_online: newStatus }).eq("user_id", user!.id);
+    const { error: onlineErr } = await supabase
+      .from("driver_profiles")
+      .update({ is_online: newStatus, location_updated_at: new Date().toISOString() })
+      .eq("user_id", user!.id);
+    if (onlineErr) {
+      console.error("[driver] online toggle failed", { driverUserId: user?.id, error: onlineErr.message });
+      toast.error(`Couldn't update your status: ${onlineErr.message}`);
+      setTogglingOnline(false);
+      return;
+    }
+    console.info("[driver] online status updated", { driverUserId: user?.id, isOnline: newStatus });
     setDriverProfile((prev) => (prev ? { ...prev, is_online: newStatus } : prev));
     toast.success(newStatus ? "You're now online! 🟢" : "You're now offline 🔴");
     setTogglingOnline(false);
+
 
     // When a driver comes online, trigger dispatch so any pending orders that
     // were waiting (because no driver was available earlier) can be offered to
