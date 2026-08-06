@@ -1533,10 +1533,10 @@ export type Database = {
           cancelled_at?: string | null
           created_at?: string | null
           customer_address?: string | null
-          customer_contact?: string | null
+          customer_contact?: never
           customer_lat?: number | null
           customer_lng?: number | null
-          customer_name?: string | null
+          customer_name?: never
           delivered_at?: string | null
           delivery_fee?: number | null
           dispatch_phase?: string | null
@@ -1568,10 +1568,10 @@ export type Database = {
           cancelled_at?: string | null
           created_at?: string | null
           customer_address?: string | null
-          customer_contact?: string | null
+          customer_contact?: never
           customer_lat?: number | null
           customer_lng?: number | null
-          customer_name?: string | null
+          customer_name?: never
           delivered_at?: string | null
           delivery_fee?: number | null
           dispatch_phase?: string | null
