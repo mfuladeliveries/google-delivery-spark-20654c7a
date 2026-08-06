@@ -137,6 +137,7 @@ const DriverDashboard = () => {
   // Initial load + realtime
   useEffect(() => {
     if (!user) return;
+    console.info("[driver] session ready", { driverUserId: user.id });
     fetchAll();
 
     const channel = supabase
@@ -144,7 +145,9 @@ const DriverDashboard = () => {
       .on("postgres_changes", { event: "*", schema: "public", table: "orders" }, () => {
         fetchOrders();
       })
-      .subscribe();
+      .subscribe((status) => {
+        console.info("[driver] realtime subscription", { status, driverUserId: user.id });
+      });
 
     return () => {
       supabase.removeChannel(channel);
@@ -155,17 +158,29 @@ const DriverDashboard = () => {
   useEffect(() => {
     if (!driverProfile?.is_online || !user) return;
     if (activeOffer) return;
-    const targeted = pendingOrders.find(
-      (o) =>
-        o.offered_to_driver_id === user.id &&
-        o.offer_expires_at &&
-        new Date(o.offer_expires_at).getTime() > Date.now() &&
-        !respondedOfferIdsRef.current.has(o.id),
-    );
+    // Newest valid, unexpired, unanswered offer wins.
+    const targeted = [...pendingOrders]
+      .filter(
+        (o) =>
+          o.offered_to_driver_id === user.id &&
+          o.offer_expires_at &&
+          new Date(o.offer_expires_at).getTime() > Date.now() &&
+          !respondedOfferIdsRef.current.has(o.id),
+      )
+      .sort(
+        (a, b) =>
+          new Date(b.offer_expires_at!).getTime() - new Date(a.offer_expires_at!).getTime(),
+      )[0];
     if (targeted) {
+      console.info("[driver] offer received", {
+        orderId: targeted.id,
+        orderNumber: targeted.order_number,
+        expiresAt: targeted.offer_expires_at,
+      });
       setActiveOffer(targeted);
     }
   }, [pendingOrders, driverProfile?.is_online, activeOffer, user]);
+
 
   // Auto-dismiss the modal once the offer expires (so the chain can advance)
   useEffect(() => {
