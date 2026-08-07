@@ -32,6 +32,8 @@ import { AddressAutocomplete, type ValidatedAddress } from "@/components/Address
 import { SavedAddressDialog } from "@/components/SavedAddressDialog";
 import { findNearestZone, OUT_OF_ZONE_MESSAGE, DEFAULT_ZONE_RADIUS_KM } from "@/lib/serviceArea";
 import { savePendingPaymentOrder } from "@/lib/pendingPaymentOrder";
+import { POLICY_VERSIONS } from "@/lib/policies";
+import { Link } from "react-router-dom";
 
 // Lazy-load the heavy Leaflet map picker only when the user opens it.
 const AddressMapPicker = lazy(() => import("@/components/AddressMapPicker"));
@@ -133,6 +135,7 @@ const CheckoutDialog = ({
   // 'cc' = card, 'ef' = Instant EFT. PayFast accepts either via the payment_method field.
   const [payfastMethod, setPayfastMethod] = useState<"cc" | "ef">("cc");
   const [loading, setLoading] = useState(false);
+  const [policiesAccepted, setPoliciesAccepted] = useState(false);
   const [profileLoaded, setProfileLoaded] = useState(false);
   const [restaurantCoords, setRestaurantCoords] = useState<{ lat: number; lng: number } | null>(
     null,
@@ -615,6 +618,19 @@ const CheckoutDialog = ({
       const orderResult = order as Record<string, unknown> | null;
       const orderNum = orderResult?.order_number || "N/A";
       const orderId = orderResult?.order_id as string;
+
+      // Persist the customer's policy acceptance alongside the order.
+      if (orderId) {
+        const { error: policyErr } = await supabase.from("order_policy_acceptances").insert({
+          order_id: orderId,
+          user_id: user.id,
+          accepted_at: new Date().toISOString(),
+          terms_version: POLICY_VERSIONS.terms,
+          delivery_policy_version: POLICY_VERSIONS.delivery,
+          refund_policy_version: POLICY_VERSIONS.refund,
+        });
+        if (policyErr) console.warn("Failed to record policy acceptance", policyErr);
+      }
 
       // Apply wallet credits if selected
       if (orderId && creditsToApply > 0) {
