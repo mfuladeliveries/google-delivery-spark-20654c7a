@@ -407,6 +407,11 @@ const CheckoutDialog = ({
       return;
     }
 
+    if (!policiesAccepted) {
+      toast.error("Please accept the Terms, Delivery and Refund policies to continue.");
+      return;
+    }
+
     const trimmedUnit = houseNumber.trim();
     const trimmedStreet = address.trim();
     const fullAddress = trimmedUnit ? `${trimmedUnit} ${trimmedStreet}` : trimmedStreet;
@@ -1321,10 +1326,55 @@ const CheckoutDialog = ({
             </div>
           </div>
 
+          {/* Policy notice + required agreement */}
+          <div className="rounded-2xl border border-border bg-muted/40 p-3">
+            <p className="text-[11px] leading-relaxed text-muted-foreground">
+              By placing this order, you confirm that you have read and agree to the Mfula Deliveries{" "}
+              <Link
+                to="/terms-and-conditions"
+                target="_blank"
+                className="font-semibold text-primary underline"
+              >
+                Terms and Conditions
+              </Link>
+              ,{" "}
+              <Link
+                to="/delivery-policy"
+                target="_blank"
+                className="font-semibold text-primary underline"
+              >
+                Delivery Policy
+              </Link>
+              , and{" "}
+              <Link
+                to="/refund-policy"
+                target="_blank"
+                className="font-semibold text-primary underline"
+              >
+                Refund and Cancellation Policy
+              </Link>
+              .
+            </p>
+            <label className="mt-3 flex cursor-pointer items-start gap-2.5 text-xs font-medium text-foreground">
+              <input
+                type="checkbox"
+                checked={policiesAccepted}
+                onChange={(e) => setPoliciesAccepted(e.target.checked)}
+                data-testid="checkout-policy-agreement"
+                className="mt-0.5 h-4 w-4 shrink-0 accent-primary"
+              />
+              <span>
+                I agree to the Terms and Conditions, Delivery Policy, and Refund and Cancellation
+                Policy.
+              </span>
+            </label>
+          </div>
+
           <button
             onClick={handleCheckout}
             disabled={
               loading ||
+              !policiesAccepted ||
               !name.trim() ||
               !contact.trim() ||
               !addressVerified ||
