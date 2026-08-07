@@ -5,9 +5,9 @@
  */
 export const POLICY_CONTACT = {
   business: "Mfula Deliveries",
-  email: "[INSERT BUSINESS EMAIL]",
-  phone: "[INSERT NUMBER]",
-  area: "Cape Town, Western Cape, South Africa",
+  email: "[mfuladeliveries@gmail.com]",
+  phone: "[0686768409]",
+  area: "Mfuleni, Cape Town, Western Cape, South Africa",
 };
 
 export const POLICY_VERSIONS = {
