@@ -1,6 +1,7 @@
 import { MapPin, Mail, Phone, ExternalLink } from "lucide-react";
 import { Link } from "react-router-dom";
 import { storeInfo } from "@/data/menu";
+import { POLICY_LINKS } from "@/lib/policies";
 
 const Footer = () => {
   return (
@@ -98,6 +99,23 @@ const Footer = () => {
               </li>
             </ul>
           </div>
+        </div>
+
+        {/* Legal */}
+        <div className="mt-8 pt-6 border-t border-primary-foreground/20">
+          <h4 className="font-semibold text-sm text-gold mb-3">Legal</h4>
+          <ul className="flex flex-col sm:flex-row sm:flex-wrap gap-2 sm:gap-6">
+            {POLICY_LINKS.map((link) => (
+              <li key={link.to}>
+                <Link
+                  to={link.to}
+                  className="text-sm text-primary-foreground/70 hover:text-gold transition-colors underline-offset-4 hover:underline"
+                >
+                  {link.label}
+                </Link>
+              </li>
+            ))}
+          </ul>
         </div>
 
         {/* Bottom bar */}
