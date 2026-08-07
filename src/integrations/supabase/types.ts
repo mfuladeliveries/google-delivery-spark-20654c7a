@@ -764,6 +764,61 @@ export type Database = {
         }
         Relationships: []
       }
+      order_policy_acceptances: {
+        Row: {
+          accepted_at: string
+          created_at: string
+          delivery_policy_version: string
+          id: string
+          order_id: string
+          refund_policy_version: string
+          terms_version: string
+          user_id: string | null
+        }
+        Insert: {
+          accepted_at?: string
+          created_at?: string
+          delivery_policy_version: string
+          id?: string
+          order_id: string
+          refund_policy_version: string
+          terms_version: string
+          user_id?: string | null
+        }
+        Update: {
+          accepted_at?: string
+          created_at?: string
+          delivery_policy_version?: string
+          id?: string
+          order_id?: string
+          refund_policy_version?: string
+          terms_version?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_policy_acceptances_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "driver_job_board"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_policy_acceptances_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "driver_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_policy_acceptances_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       order_ratings: {
         Row: {
           comment: string | null
