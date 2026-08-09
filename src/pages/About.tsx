@@ -114,7 +114,7 @@ const About = () => {
                 <h1 className="font-display text-2xl sm:text-3xl font-bold text-foreground">
                   {content.title}
                 </h1>
-                <p className="text-sm sm:text-base text-muted-foreground leading-relaxed max-w-xl">
+                <p className="text-sm sm:text-base text-muted-foreground leading-relaxed max-w-xl whitespace-pre-wrap">
                   {content.description}
                 </p>
               </>
