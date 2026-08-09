@@ -21,7 +21,7 @@ export interface AboutContent {
 export const DEFAULT_ABOUT: AboutContent = {
   title: "About Mfula Deliveries",
   description:
-    "Mfula Deliveries is a fast, reliable food delivery service connecting local restaurants with customers in Mfuleni and surrounding areas. Our mission is to make ordering food simple, affordable, and convenient while supporting local businesses.",
+    "Founded in 2019, Mfula Deliveries is a local food delivery platform created to make ordering from your favourite restaurants simple, convenient, and reliable.\n\nWe connect customers with restaurants and local delivery drivers, making it easy to browse menus, place orders, make secure payments, and have food delivered directly to your doorstep.\n\nSince our establishment, our mission has been to provide affordable and dependable delivery services while supporting local businesses, creating earning opportunities for drivers, and making everyday life more convenient for the communities we serve.\n\nAt Mfula Deliveries, we believe great food should never be too far away.\n\nLocal food. Local drivers. Delivered to you.",
   mission:
     "To deliver quality meals quickly while empowering local restaurants and creating opportunities for drivers.",
   services: [
@@ -114,7 +114,7 @@ const About = () => {
                 <h1 className="font-display text-2xl sm:text-3xl font-bold text-foreground">
                   {content.title}
                 </h1>
-                <p className="text-sm sm:text-base text-muted-foreground leading-relaxed max-w-xl">
+                <p className="text-sm sm:text-base text-muted-foreground leading-relaxed max-w-xl whitespace-pre-wrap">
                   {content.description}
                 </p>
               </>
