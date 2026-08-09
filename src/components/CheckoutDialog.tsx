@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { CartItem } from "@/hooks/useCart";
 import { storeInfo } from "@/data/menu";
+import { generateDeliveryPin } from "@/lib/deliveryPin";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useCustomerCredits } from "@/hooks/useCustomerCredits";
@@ -531,9 +532,7 @@ const CheckoutDialog = ({
         }
       }
 
-      const pinBuf = new Uint32Array(1);
-      crypto.getRandomValues(pinBuf);
-      const deliveryCode = String(100000 + (pinBuf[0] % 900000));
+      const deliveryCode = generateDeliveryPin();
 
       const orderItems = items.map((ci) => ({
         id: ci.item.id,
