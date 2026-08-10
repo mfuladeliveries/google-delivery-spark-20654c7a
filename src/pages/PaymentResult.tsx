@@ -43,11 +43,11 @@ const PaymentResult = () => {
 
   // Redirect immediately if we have zero identifying information
   useEffect(() => {
-    console.log("PayFast Return:", window.location.href);
     if (!orderId && !orderNumber && !cachedOrder) {
       navigate("/orders", { replace: true });
     }
   }, [orderId, orderNumber, cachedOrder, navigate]);
+
 
   const refreshStatus = useCallback(() => {
     setRefreshing(true);
