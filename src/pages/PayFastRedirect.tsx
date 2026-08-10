@@ -70,12 +70,6 @@ const PayFastRedirect = () => {
         setError(msg);
         return;
       }
-
-      if (import.meta.env.PROD && data.mode !== "live") {
-        setError("Payment configuration error — please contact support before retrying (ref: sandbox-in-prod).");
-        return;
-      }
-
       setProcessUrl(data.process_url);
       setFields(data.fields);
     } catch (e) {
