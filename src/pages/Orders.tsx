@@ -1022,36 +1022,6 @@ const Orders = () => {
                       </p>
                     )}
 
-                    {/* Pending payment recovery — reuse the same order, no duplicates */}
-                    {order.status === "pending_payment" && !isCancelled && (
-                      <div className="mt-3 rounded-xl border border-primary/30 bg-primary/5 p-3">
-                        <p className="text-sm font-bold text-foreground">
-                          💳 Payment not completed
-                        </p>
-                        <p className="mt-0.5 text-xs text-muted-foreground">
-                          This order is reserved and still awaiting payment. Continue where you left
-                          off — no new order will be created.
-                        </p>
-                        <button
-                          onClick={() =>
-                            navigate("/pay/payfast", {
-                              state: {
-                                orderId: order.id,
-                                orderNumber: order.order_number,
-                                total: order.total,
-                                restaurant: order.restaurant,
-                              },
-                            })
-                          }
-                          className="btn-glow mt-3 flex w-full items-center justify-center gap-1.5 rounded-xl gradient-maroon px-3 py-2.5 text-xs font-bold text-primary-foreground hover:opacity-90"
-                        >
-                          <Wallet className="h-3.5 w-3.5" />
-                          Continue payment
-                        </button>
-                      </div>
-                    )}
-
-
                     {/* Cancellation reason */}
                     {isCancelled && order.cancel_reason && (
                       <p className="mt-2 rounded-xl border border-destructive/20 bg-destructive/5 px-3 py-2 text-xs text-destructive">
