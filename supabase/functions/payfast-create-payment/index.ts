@@ -116,11 +116,20 @@ Deno.serve(async (req) => {
       .split(/\s+/);
     const lastName = rest.join(" ") || firstName;
 
-    // Origin for return/cancel — fall back to project-published domain.
+    // Origin for return/cancel — only approved Mfula Deliveries origins are
+    // honoured so an external site can never control the PayFast redirect.
+    const DEFAULT_ORIGIN = "https://mfuladeliveries.online";
+    const ALLOWED_ORIGINS = new Set([
+      "https://mfuladeliveries.online",
+      "https://www.mfuladeliveries.online",
+    ]);
+    // Localhost is accepted only when running against the sandbox.
+    const isDevOrigin =
+      MODE !== "live" && /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(returnOrigin);
+    const candidate = returnOrigin.replace(/\/$/, "");
     const origin =
-      returnOrigin && /^https?:\/\//.test(returnOrigin)
-        ? returnOrigin.replace(/\/$/, "")
-        : "https://google-delivery-spark.lovable.app";
+      ALLOWED_ORIGINS.has(candidate) || isDevOrigin ? candidate : DEFAULT_ORIGIN;
+
 
     const itnUrl = `${SUPABASE_URL}/functions/v1/payfast-itn`;
 
