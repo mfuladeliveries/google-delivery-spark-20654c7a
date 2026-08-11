@@ -284,6 +284,8 @@ export function useCart() {
     delivery,
     total,
     totalItems,
+    activeRestaurantName,
     zoneName: zone?.zone.name ?? null,
+
   };
 }
