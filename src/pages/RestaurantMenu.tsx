@@ -128,6 +128,13 @@ const RestaurantMenu = () => {
 
   const noDrivers = !!coverage && !coverage.covered;
   const canOrder = !locationBlocked && !outOfRange && !noDrivers;
+  // Cart already holds another restaurant's items (the companion store is always allowed).
+  const cartLockedElsewhere =
+    !!cart.activeRestaurantName &&
+    !!restaurant?.name &&
+    cart.activeRestaurantName !== restaurant.name &&
+    !isCompanionStore(restaurant.name);
+
 
   useEffect(() => {
     const fetchData = async () => {
