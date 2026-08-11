@@ -119,7 +119,9 @@ export function useCart() {
     const names = items
       .map((ci) => ci.item.restaurantName || ci.item.category)
       .filter(Boolean) as string[];
-    return names[0] || "";
+    // Prefer the actual restaurant over the companion store for fee pricing.
+    return names.find((n) => !isCompanionStore(n)) || names[0] || "";
+
   }, [items]);
 
   const [restaurantCoords, setRestaurantCoords] = useState<{
