@@ -1,8 +1,22 @@
 import { useState, useCallback, useEffect, useMemo } from "react";
+import { toast } from "sonner";
 import { MenuItem, SizeOption, AddOnOption, CutOption, storeInfo } from "@/data/menu";
 import { useCustomerLocation } from "@/hooks/useCustomerLocation";
 import { supabase } from "@/integrations/supabase/client";
 import { calcZoneFee, distanceKm } from "@/lib/serviceArea";
+
+/** General store that may always be combined with one restaurant's order. */
+export const COMPANION_STORE = "Mfula Shop";
+
+export function isCompanionStore(name?: string | null): boolean {
+  return (name || "").trim().toLowerCase() === COMPANION_STORE.toLowerCase();
+}
+
+function itemRestaurant(item: MenuItem): string {
+  return (item.restaurantName || "").trim();
+}
+
+
 
 export interface CartItem {
   /** Stable per-line key — same dish with different cut/size/sauces/pieces becomes a separate line. */
