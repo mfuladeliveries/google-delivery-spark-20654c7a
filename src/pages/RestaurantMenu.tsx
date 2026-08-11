@@ -14,7 +14,7 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { useCart } from "@/hooks/useCart";
+import { useCart, COMPANION_STORE, isCompanionStore } from "@/hooks/useCart";
 import { useAuth } from "@/hooks/useAuth";
 import {
   useGeoLocation,
