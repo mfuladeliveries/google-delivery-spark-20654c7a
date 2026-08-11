@@ -14,7 +14,7 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { useCart } from "@/hooks/useCart";
+import { useCart, COMPANION_STORE, isCompanionStore } from "@/hooks/useCart";
 import { useAuth } from "@/hooks/useAuth";
 import {
   useGeoLocation,
@@ -128,6 +128,13 @@ const RestaurantMenu = () => {
 
   const noDrivers = !!coverage && !coverage.covered;
   const canOrder = !locationBlocked && !outOfRange && !noDrivers;
+  // Cart already holds another restaurant's items (the companion store is always allowed).
+  const cartLockedElsewhere =
+    !!cart.activeRestaurantName &&
+    !!restaurant?.name &&
+    cart.activeRestaurantName !== restaurant.name &&
+    !isCompanionStore(restaurant.name);
+
 
   useEffect(() => {
     const fetchData = async () => {
@@ -410,7 +417,29 @@ const RestaurantMenu = () => {
             </div>
           </div>
         )}
+        {cartLockedElsewhere && (
+          <div className="mb-4 flex items-start gap-3 rounded-2xl border-2 border-primary/40 bg-primary/5 p-4">
+            <AlertTriangle className="mt-0.5 h-5 w-5 flex-shrink-0 text-primary" />
+            <div className="flex-1 text-sm text-foreground">
+              <p className="font-bold">Your cart is from {cart.activeRestaurantName}</p>
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                You can only order from one restaurant at a time (plus {COMPANION_STORE}). Clear
+                your cart to order from {restaurant.name}.
+              </p>
+              <button
+                onClick={() => {
+                  cart.clearCart();
+                  toast.success("Cart cleared — you can now order from this restaurant.");
+                }}
+                className="btn-glow mt-2 inline-flex items-center gap-1.5 rounded-full gradient-maroon px-4 py-1.5 text-xs font-bold text-primary-foreground shadow-maroon"
+              >
+                Clear cart
+              </button>
+            </div>
+          </div>
+        )}
         {geo.ready && canOrder && distance != null && (
+
           <div className="mb-3 inline-flex items-center gap-1.5 rounded-full bg-emerald-500/15 px-3 py-1 text-[11px] font-bold text-emerald-600 dark:text-emerald-400">
             <MapPin className="h-3 w-3" /> {distance.toFixed(1)} km away · within delivery range
             {coverage?.address_tag ? ` · ${coverage.address_tag}` : ""}
@@ -557,7 +586,7 @@ const RestaurantMenu = () => {
                             e.stopPropagation();
                             handleAddItem(item);
                           }}
-                          disabled={!canOrder}
+                          disabled={!canOrder || cartLockedElsewhere}
                           data-testid="menu-add-button"
                           className="btn-glow flex items-center gap-1 rounded-xl gradient-maroon px-3 py-1.5 text-xs font-bold text-primary-foreground transition-transform hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
                         >
@@ -590,7 +619,7 @@ const RestaurantMenu = () => {
                           </span>
                           <button
                             onClick={() => handleAddItem(item)}
-                            disabled={!canOrder}
+                            disabled={!canOrder || cartLockedElsewhere}
                             aria-label={hasOptions ? "Add another with options" : "Add one"}
                             className="btn-glow flex h-7 w-7 items-center justify-center rounded-full gradient-maroon text-primary-foreground disabled:opacity-50 disabled:cursor-not-allowed"
                           >
@@ -651,8 +680,10 @@ const RestaurantMenu = () => {
         item={customizeItem ? toMenuItem(customizeItem) : null}
         onClose={() => setCustomizeItem(null)}
         onAdd={(menuItem, qty, cut, size, addOns, pieces) => {
-          for (let i = 0; i < qty; i++)
-            cart.addItemWithOptions(menuItem, cut, size, addOns, pieces);
+          for (let i = 0; i < qty; i++) {
+            const ok = cart.addItemWithOptions(menuItem, cut, size, addOns, pieces);
+            if (!ok) break;
+          }
         }}
       />
       <BottomNav />

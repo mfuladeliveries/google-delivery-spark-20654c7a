@@ -262,6 +262,17 @@ const DriverActiveDelivery = ({
                 <DeliveryVerification orderId={order.id} onVerified={onDeliveryComplete} />
               )}
 
+              {/* Live chat with customer */}
+              {user && (
+                <OrderChat
+                  orderId={order.id}
+                  userId={user.id}
+                  role="driver"
+                  counterpartyLabel={order.customer_name?.split(" ")[0] || "Customer"}
+                />
+              )}
+
+
               {/* Progress bar */}
               <div className="relative">
                 <div className="flex items-center justify-between mb-2">
@@ -373,16 +384,6 @@ const DriverActiveDelivery = ({
                   <Phone className="h-5 w-5" />
                 </a>
               </div>
-
-              {/* Live chat with customer */}
-              {user && (
-                <OrderChat
-                  orderId={order.id}
-                  userId={user.id}
-                  role="driver"
-                  counterpartyLabel={order.customer_name?.split(" ")[0] || "Customer"}
-                />
-              )}
 
               {/* Order items */}
               <div className="rounded-xl border border-border p-3">
