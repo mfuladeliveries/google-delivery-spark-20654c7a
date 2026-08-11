@@ -586,7 +586,7 @@ const RestaurantMenu = () => {
                             e.stopPropagation();
                             handleAddItem(item);
                           }}
-                          disabled={!canOrder}
+                          disabled={!canOrder || cartLockedElsewhere}
                           data-testid="menu-add-button"
                           className="btn-glow flex items-center gap-1 rounded-xl gradient-maroon px-3 py-1.5 text-xs font-bold text-primary-foreground transition-transform hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
                         >
@@ -619,7 +619,7 @@ const RestaurantMenu = () => {
                           </span>
                           <button
                             onClick={() => handleAddItem(item)}
-                            disabled={!canOrder}
+                            disabled={!canOrder || cartLockedElsewhere}
                             aria-label={hasOptions ? "Add another with options" : "Add one"}
                             className="btn-glow flex h-7 w-7 items-center justify-center rounded-full gradient-maroon text-primary-foreground disabled:opacity-50 disabled:cursor-not-allowed"
                           >
@@ -680,8 +680,10 @@ const RestaurantMenu = () => {
         item={customizeItem ? toMenuItem(customizeItem) : null}
         onClose={() => setCustomizeItem(null)}
         onAdd={(menuItem, qty, cut, size, addOns, pieces) => {
-          for (let i = 0; i < qty; i++)
-            cart.addItemWithOptions(menuItem, cut, size, addOns, pieces);
+          for (let i = 0; i < qty; i++) {
+            const ok = cart.addItemWithOptions(menuItem, cut, size, addOns, pieces);
+            if (!ok) break;
+          }
         }}
       />
       <BottomNav />
