@@ -141,7 +141,12 @@ export function useCart() {
   }, [primaryRestaurantName]);
 
 
-  /** Add a fully-configured line. If an identical line exists, increment qty. */
+  /**
+   * Add a fully-configured line. If an identical line exists, increment qty.
+   * Business rule: a cart may hold items from ONE restaurant, plus items from
+   * the Mfula Shop (a general store that always rides along with any order).
+   * Returns false when the item was rejected.
+   */
   const addItemWithOptions = useCallback(
     (
       item: MenuItem,
@@ -149,7 +154,20 @@ export function useCart() {
       size?: SizeOption,
       addOns?: AddOnOption[],
       pieces?: number,
-    ) => {
+    ): boolean => {
+      const incomingRestaurant = itemRestaurant(item);
+      const blocker = items
+        .map((ci) => itemRestaurant(ci.item))
+        .find((name) => name && !isCompanionStore(name) && name !== incomingRestaurant);
+
+      if (blocker && !isCompanionStore(incomingRestaurant)) {
+        toast.error(`Your cart already has items from ${blocker}.`, {
+          description: `You can only order from one restaurant at a time (plus ${COMPANION_STORE}). Clear your cart to order from ${incomingRestaurant || "this restaurant"}.`,
+          duration: 6000,
+        });
+        return false;
+      }
+
       const lineKey = buildLineKey(item.id, cut, size, addOns, pieces);
       const unitPrice = computeUnitPrice(item, cut, size, addOns, pieces);
       setItems((prev) => {
@@ -173,9 +191,11 @@ export function useCart() {
           },
         ];
       });
+      return true;
     },
-    [],
+    [items],
   );
+
 
   /** Quick-add for items with no options (back-compat). */
   const addItem = useCallback(
