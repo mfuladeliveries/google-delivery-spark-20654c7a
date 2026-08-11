@@ -215,11 +215,20 @@ export function useCart() {
 
   /** Quick-add for items with no options (back-compat). */
   const addItem = useCallback(
-    (item: MenuItem) => {
-      addItemWithOptions(item, undefined, undefined, undefined, undefined);
-    },
+    (item: MenuItem): boolean =>
+      addItemWithOptions(item, undefined, undefined, undefined, undefined),
     [addItemWithOptions],
   );
+
+  /** Restaurant currently locked in by the cart (companion store excluded). */
+  const activeRestaurantName = useMemo(
+    () =>
+      items
+        .map((ci) => (ci.item.restaurantName || "").trim())
+        .find((n) => n && !isCompanionStore(n)) || null,
+    [items],
+  );
+
 
   /** Increment quantity for an existing line by lineKey. */
   const incrementLine = useCallback((lineKey: string) => {
