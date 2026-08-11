@@ -410,7 +410,29 @@ const RestaurantMenu = () => {
             </div>
           </div>
         )}
+        {cartLockedElsewhere && (
+          <div className="mb-4 flex items-start gap-3 rounded-2xl border-2 border-primary/40 bg-primary/5 p-4">
+            <AlertTriangle className="mt-0.5 h-5 w-5 flex-shrink-0 text-primary" />
+            <div className="flex-1 text-sm text-foreground">
+              <p className="font-bold">Your cart is from {cart.activeRestaurantName}</p>
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                You can only order from one restaurant at a time (plus {COMPANION_STORE}). Clear
+                your cart to order from {restaurant.name}.
+              </p>
+              <button
+                onClick={() => {
+                  cart.clearCart();
+                  toast.success("Cart cleared — you can now order from this restaurant.");
+                }}
+                className="btn-glow mt-2 inline-flex items-center gap-1.5 rounded-full gradient-maroon px-4 py-1.5 text-xs font-bold text-primary-foreground shadow-maroon"
+              >
+                Clear cart
+              </button>
+            </div>
+          </div>
+        )}
         {geo.ready && canOrder && distance != null && (
+
           <div className="mb-3 inline-flex items-center gap-1.5 rounded-full bg-emerald-500/15 px-3 py-1 text-[11px] font-bold text-emerald-600 dark:text-emerald-400">
             <MapPin className="h-3 w-3" /> {distance.toFixed(1)} km away · within delivery range
             {coverage?.address_tag ? ` · ${coverage.address_tag}` : ""}
