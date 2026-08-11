@@ -371,6 +371,8 @@ const RestaurantImageManager = ({
       .update({
         logo_url: state.logo_url,
         banner_url: state.banner_url,
+        // customer-facing cards + cached catalog read `image_url`
+        image_url: state.banner_url,
         gallery_images: state.gallery_images,
         // keep legacy `logo` in sync so older code paths still work
         logo: state.logo_url || "",
