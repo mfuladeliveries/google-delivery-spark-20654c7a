@@ -1,0 +1,1 @@
+UPDATE public.restaurants SET image_url = banner_url WHERE image_url IS NULL AND banner_url IS NOT NULL;
