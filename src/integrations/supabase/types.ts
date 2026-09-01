@@ -940,13 +940,19 @@ export type Database = {
           offer_expires_at: string | null
           offered_to_driver_id: string | null
           order_number: number
+          paid_at: string | null
+          payment_amount: number | null
+          payment_checkout_id: string | null
           payment_completed_at: string | null
+          payment_currency: string | null
           payment_failed_at: string | null
           payment_failure_reason: string | null
           payment_initiated_at: string | null
           payment_method: string
           payment_provider: string | null
           payment_provider_txn_id: string | null
+          payment_reference: string | null
+          payment_refunded_at: string | null
           payment_status: string
           picked_up_at: string | null
           picking_up_at: string | null
@@ -998,13 +1004,19 @@ export type Database = {
           offer_expires_at?: string | null
           offered_to_driver_id?: string | null
           order_number?: number
+          paid_at?: string | null
+          payment_amount?: number | null
+          payment_checkout_id?: string | null
           payment_completed_at?: string | null
+          payment_currency?: string | null
           payment_failed_at?: string | null
           payment_failure_reason?: string | null
           payment_initiated_at?: string | null
           payment_method?: string
           payment_provider?: string | null
           payment_provider_txn_id?: string | null
+          payment_reference?: string | null
+          payment_refunded_at?: string | null
           payment_status?: string
           picked_up_at?: string | null
           picking_up_at?: string | null
@@ -1056,13 +1068,19 @@ export type Database = {
           offer_expires_at?: string | null
           offered_to_driver_id?: string | null
           order_number?: number
+          paid_at?: string | null
+          payment_amount?: number | null
+          payment_checkout_id?: string | null
           payment_completed_at?: string | null
+          payment_currency?: string | null
           payment_failed_at?: string | null
           payment_failure_reason?: string | null
           payment_initiated_at?: string | null
           payment_method?: string
           payment_provider?: string | null
           payment_provider_txn_id?: string | null
+          payment_reference?: string | null
+          payment_refunded_at?: string | null
           payment_status?: string
           picked_up_at?: string | null
           picking_up_at?: string | null
@@ -1161,6 +1179,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      payment_webhook_events: {
+        Row: {
+          created_at: string
+          event_id: string
+          event_type: string | null
+          id: string
+          order_id: string | null
+          payload: Json
+          processed_at: string
+          provider: string
+        }
+        Insert: {
+          created_at?: string
+          event_id: string
+          event_type?: string | null
+          id?: string
+          order_id?: string | null
+          payload?: Json
+          processed_at?: string
+          provider?: string
+        }
+        Update: {
+          created_at?: string
+          event_id?: string
+          event_type?: string | null
+          id?: string
+          order_id?: string | null
+          payload?: Json
+          processed_at?: string
+          provider?: string
+        }
+        Relationships: []
       }
       peak_surcharge_windows: {
         Row: {
@@ -1742,53 +1793,40 @@ export type Database = {
         Returns: Json
       }
       claim_order: { Args: { p_order_id: string }; Returns: boolean }
-      confirm_payfast_payment: {
+      confirm_online_payment: {
         Args: {
           p_amount_fee: number
           p_amount_gross: number
           p_amount_net: number
+          p_checkout_id: string
+          p_currency: string
           p_order_id: string
+          p_payment_id: string
           p_payment_method: string
-          p_provider_txn_id: string
+          p_provider: string
           p_raw_payload: Json
+          p_reference: string
           p_source_ip?: string
         }
         Returns: Json
       }
-      create_verified_order:
-        | {
-            Args: {
-              p_customer_address: string
-              p_customer_contact: string
-              p_customer_lat: number
-              p_customer_lng: number
-              p_customer_name: string
-              p_delivery_code?: string
-              p_items: Json
-              p_payment_method?: string
-              p_restaurant_name: string
-              p_special_notes?: string
-              p_tip?: number
-            }
-            Returns: Json
-          }
-        | {
-            Args: {
-              p_customer_address: string
-              p_customer_contact: string
-              p_customer_lat: number
-              p_customer_lng: number
-              p_customer_name: string
-              p_delivery_code?: string
-              p_items: Json
-              p_payment_method?: string
-              p_restaurant_id?: string
-              p_restaurant_name: string
-              p_special_notes?: string
-              p_tip?: number
-            }
-            Returns: Json
-          }
+      create_verified_order: {
+        Args: {
+          p_customer_address: string
+          p_customer_contact: string
+          p_customer_lat: number
+          p_customer_lng: number
+          p_customer_name: string
+          p_delivery_code?: string
+          p_items: Json
+          p_payment_method?: string
+          p_restaurant_id?: string
+          p_restaurant_name: string
+          p_special_notes?: string
+          p_tip?: number
+        }
+        Returns: Json
+      }
       current_peak_surcharge: { Args: never; Returns: number }
       customer_cancel_pending_order: {
         Args: { p_order_id: string }
@@ -1867,14 +1905,25 @@ export type Database = {
         }
         Returns: undefined
       }
-      mark_payfast_payment_failed: {
+      mark_online_payment_failed: {
         Args: {
           p_order_id: string
-          p_provider_txn_id: string
+          p_payment_id: string
+          p_provider: string
           p_raw_payload: Json
           p_reason: string
           p_source_ip?: string
           p_status: string
+        }
+        Returns: undefined
+      }
+      mark_online_payment_refunded: {
+        Args: {
+          p_amount: number
+          p_order_id: string
+          p_payment_id: string
+          p_provider: string
+          p_raw_payload: Json
         }
         Returns: undefined
       }
