@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { Loader2, CreditCard, AlertTriangle, RefreshCw, Bike } from "lucide-react";
+import { Loader2, CreditCard, AlertTriangle, RefreshCw, Bike, ShieldCheck } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { clearPendingPaymentOrder, loadPendingPaymentOrder } from "@/lib/pendingPaymentOrder";
 import { toast } from "sonner";
@@ -10,11 +10,9 @@ interface PayState {
   orderNumber: number | string;
   total: number;
   restaurant?: string;
-  /** PayFast payment_method hint: 'cc' = card, 'ef' = Instant EFT. Optional. */
-  payfastMethod?: "cc" | "ef";
 }
 
-const PayFastRedirect = () => {
+const YocoPayment = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -34,52 +32,55 @@ const PayFastRedirect = () => {
   }, [location.key]);
 
   const [error, setError] = useState<string | null>(null);
-  const [fields, setFields] = useState<Record<string, string> | null>(null);
-  const [processUrl, setProcessUrl] = useState<string>("");
   const [retrying, setRetrying] = useState(false);
   const [waitingForDriver, setWaitingForDriver] = useState(false);
-  const formRef = useRef<HTMLFormElement>(null);
   const calledRef = useRef(false);
   const busyRef = useRef(false);
 
-  const invokePayment = useCallback(async () => {
+  const startCheckout = useCallback(async () => {
     if (!state?.orderId || busyRef.current) return;
     busyRef.current = true;
     setError(null);
     try {
-      const { data, error: fnErr } = await supabase.functions.invoke("payfast-create-payment", {
+      const { data, error: fnErr } = await supabase.functions.invoke("yoco-create-checkout", {
         body: {
           order_id: state.orderId,
           return_origin: window.location.origin,
-          payment_method: state.payfastMethod,
         },
       });
 
-      if (data && typeof data === "object" && (data as Record<string, unknown>).fallback) {
-        setError("Payment service is temporarily unavailable. Please try again shortly.");
+      const payload = (data ?? {}) as {
+        redirect_url?: string;
+        already_paid?: boolean;
+        error?: string;
+      };
+
+      if (payload.already_paid) {
+        navigate(`/payment/result?order=${state.orderNumber}&order_id=${state.orderId}`, {
+          replace: true,
+        });
         return;
       }
 
-      if (fnErr || !data?.process_url || !data?.fields) {
-        const msg =
-          (fnErr as Error)?.message ||
-          (data && typeof data === "object" && (data as Record<string, unknown>).error
-            ? String((data as Record<string, unknown>).error)
-            : null) ||
-          "Could not start PayFast checkout. Please try again.";
-        setError(msg);
+      if (fnErr || !payload.redirect_url) {
+        setError(
+          payload.error ||
+            (fnErr as Error)?.message ||
+            "Could not start the secure checkout. Please try again.",
+        );
         return;
       }
-      setProcessUrl(data.process_url);
-      setFields(data.fields);
+
+      // Hand the customer over to Yoco's hosted checkout.
+      window.location.href = payload.redirect_url;
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to start payment.");
     } finally {
       busyRef.current = false;
     }
-  }, [state]);
+  }, [state, navigate]);
 
-  // Before launching PayFast, ensure a driver is online for this order's area.
+  // Before launching the checkout, ensure a driver is online for this order's area.
   // If none, hold on a "Waiting for driver…" screen and re-poll every 15s.
   useEffect(() => {
     if (!state?.orderId) {
@@ -107,7 +108,7 @@ const PayFastRedirect = () => {
         if (cancelled) return;
         if (typeof lat !== "number" || typeof lng !== "number") {
           setWaitingForDriver(false);
-          invokePayment();
+          startCheckout();
           return;
         }
         const { data: cov } = await supabase.rpc("check_area_coverage", {
@@ -123,7 +124,7 @@ const PayFastRedirect = () => {
           return;
         }
         setWaitingForDriver(false);
-        invokePayment();
+        startCheckout();
       };
 
       poll();
@@ -135,22 +136,14 @@ const PayFastRedirect = () => {
       cancelled = true;
       if (timer) clearTimeout(timer);
     };
-  }, [state, navigate, invokePayment]);
+  }, [state, navigate, startCheckout]);
 
   const handleRetry = async () => {
     if (busyRef.current) return;
     setRetrying(true);
-    await invokePayment();
+    await startCheckout();
     setRetrying(false);
   };
-
-  // Auto-submit once we have fields.
-  useEffect(() => {
-    if (fields && processUrl && formRef.current) {
-      const t = setTimeout(() => formRef.current?.submit(), 600);
-      return () => clearTimeout(t);
-    }
-  }, [fields, processUrl]);
 
   if (error) {
     return (
@@ -243,7 +236,7 @@ const PayFastRedirect = () => {
           Securing your payment
         </h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Redirecting you to PayFast for order #{state?.orderNumber}…
+          Taking you to Yoco's secure checkout for order #{state?.orderNumber}…
         </p>
         {typeof state?.total === "number" && (
           <p className="mt-2 font-display text-2xl font-bold text-primary">
@@ -253,58 +246,13 @@ const PayFastRedirect = () => {
         <div className="mt-5 flex items-center justify-center gap-2 text-xs text-muted-foreground">
           <Loader2 className="h-4 w-4 animate-spin" /> Please don't close this window.
         </div>
-
-        {fields && processUrl && (
-          <form ref={formRef} action={processUrl} method="post" className="hidden">
-            {Object.entries(fields).map(([k, v]) => (
-              <input key={k} type="hidden" name={k} value={v} />
-            ))}
-            <button type="submit">Continue to PayFast</button>
-          </form>
-        )}
-
-        {fields && processUrl && (
-          <button
-            type="button"
-            onClick={() => formRef.current?.submit()}
-            className="mt-5 w-full rounded-xl border border-border bg-background py-2.5 text-xs font-semibold text-muted-foreground"
-          >
-            Tap if not redirected automatically
-          </button>
-        )}
-
-        {/* Sandbox test card info — only shown in dev/sandbox builds, hidden in production */}
-        {import.meta.env.DEV && (
-          <div className="mt-5 rounded-2xl border border-dashed border-border bg-muted/40 p-4 text-left">
-            <p className="text-[11px] font-bold uppercase tracking-wide text-primary">
-              Sandbox test details
-            </p>
-            <p className="mt-1 text-[11px] text-muted-foreground">
-              Use these on the PayFast sandbox checkout — no real money is charged.
-            </p>
-            <dl className="mt-3 space-y-1.5 text-xs">
-              <div className="flex justify-between gap-3">
-                <dt className="text-muted-foreground">Card number</dt>
-                <dd className="font-mono font-semibold text-foreground">4000 0000 0000 0002</dd>
-              </div>
-              <div className="flex justify-between gap-3">
-                <dt className="text-muted-foreground">Expiry</dt>
-                <dd className="font-mono font-semibold text-foreground">12/30</dd>
-              </div>
-              <div className="flex justify-between gap-3">
-                <dt className="text-muted-foreground">CVV</dt>
-                <dd className="font-mono font-semibold text-foreground">123</dd>
-              </div>
-              <div className="flex justify-between gap-3">
-                <dt className="text-muted-foreground">3D Secure password</dt>
-                <dd className="font-mono font-semibold text-foreground">12345</dd>
-              </div>
-            </dl>
-          </div>
-        )}
+        <p className="mt-4 inline-flex items-center justify-center gap-1.5 text-[11px] text-muted-foreground">
+          <ShieldCheck className="h-3.5 w-3.5 text-primary" />
+          Card details are entered on Yoco's secure page — never on our servers.
+        </p>
       </div>
     </div>
   );
 };
 
-export default PayFastRedirect;
+export default YocoPayment;
