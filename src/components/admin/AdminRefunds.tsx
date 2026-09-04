@@ -18,6 +18,9 @@ interface RefundRow {
   refunded_at: string | null;
   restaurant: string;
   payment_method: string;
+  payment_status: string | null;
+  payment_provider: string | null;
+  payment_checkout_id: string | null;
 }
 
 const TABS = ["bank_pending", "pending", "bank_paid", "credited"] as const;
@@ -42,7 +45,7 @@ const AdminRefunds = () => {
       const { data } = await supabase
         .from("orders")
         .select(
-          "id, order_number, user_id, customer_name, customer_contact, total, refund_amount, refund_method, refund_status, cancelled_at, cancel_reason, refunded_at, restaurant, payment_method",
+          "id, order_number, user_id, customer_name, customer_contact, total, refund_amount, refund_method, refund_status, cancelled_at, cancel_reason, refunded_at, restaurant, payment_method, payment_status, payment_provider, payment_checkout_id",
         )
         .not("refund_status", "is", null)
         .order("cancelled_at", { ascending: false });
@@ -100,6 +103,36 @@ const AdminRefunds = () => {
       })
       .catch(() => {});
   };
+
+  // Refund the original card payment straight back through Yoco.
+  const refundViaYoco = async (r: RefundRow) => {
+    if (
+      !window.confirm(
+        `Refund R${Number(r.refund_amount || r.total).toFixed(2)} to the customer's card via Yoco for order #${r.order_number}?`,
+      )
+    )
+      return;
+    setActingId(r.id);
+    const { data, error } = await supabase.functions.invoke("yoco-refund", {
+      body: { order_id: r.id, amount: Number(r.refund_amount) || undefined },
+    });
+    setActingId(null);
+    const payload = (data ?? {}) as { ok?: boolean; status?: string; error?: string };
+    if (error || payload.error) {
+      toast.error(payload.error || (error as Error)?.message || "Yoco refund failed");
+      return;
+    }
+    toast.success(
+      payload.status === "pending"
+        ? `Refund for #${r.order_number} submitted — Yoco is processing it.`
+        : `Card refund for #${r.order_number} completed.`,
+    );
+  };
+
+  const canYocoRefund = (r: RefundRow) =>
+    r.payment_method === "online" &&
+    r.payment_status === "paid" &&
+    !!r.payment_checkout_id;
 
   if (loading) {
     return (
@@ -230,6 +263,16 @@ const AdminRefunds = () => {
                 <p className="mt-2 text-[11px] text-muted-foreground">
                   Waiting for customer to choose wallet credit or bank refund.
                 </p>
+              )}
+
+              {canYocoRefund(r) && (
+                <button
+                  onClick={() => refundViaYoco(r)}
+                  disabled={actingId === r.id}
+                  className="mt-2 w-full rounded-xl border-2 border-primary/40 bg-primary/5 py-2 text-xs font-bold text-primary hover:bg-primary/10 disabled:opacity-50"
+                >
+                  {actingId === r.id ? "Processing…" : "💳 Refund card via Yoco"}
+                </button>
               )}
             </div>
           ))}
