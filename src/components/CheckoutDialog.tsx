@@ -27,7 +27,7 @@ import { useCustomerLocation } from "@/hooks/useCustomerLocation";
 import { useCustomerAddresses, type SavedAddress } from "@/hooks/useCustomerAddresses";
 import { z } from "zod";
 import { toast } from "sonner";
-// dispatchAndNotify removed — dispatch is now triggered server-side after PayFast ITN confirms payment.
+// dispatchAndNotify removed — dispatch is triggered server-side once the Yoco webhook confirms payment.
 import { useNavigate } from "react-router-dom";
 import { AddressAutocomplete, type ValidatedAddress } from "@/components/AddressAutocomplete";
 import { SavedAddressDialog } from "@/components/SavedAddressDialog";
@@ -452,7 +452,7 @@ const CheckoutDialog = ({
 
     // Note: we no longer block here when no driver is online. The order is
     // created in `pending_payment`/`awaiting_restaurant` state and the
-    // PayFast redirect screen shows a "Waiting for driver…" hold until a
+    // Yoco payment screen shows a "Waiting for driver…" hold until a
     // driver in the area comes online.
 
     const result = checkoutSchema.safeParse({
@@ -571,7 +571,7 @@ const CheckoutDialog = ({
         .join(" | ");
 
       // Driver coverage is intentionally NOT re-checked here as a gate — the
-      // PayFast redirect screen polls coverage and shows "Waiting for driver…"
+      // Yoco payment screen polls coverage and shows "Waiting for driver…"
       // if none are online yet, so the order can still be placed.
 
       const { data: order, error: orderError } = await supabase.rpc("create_verified_order", {
@@ -671,7 +671,7 @@ const CheckoutDialog = ({
       onClose();
 
       // If the restaurant must accept the order first, take the customer to a
-      // wait screen instead of PayFast. Payment is initiated only AFTER the
+      // wait screen instead of the Yoco checkout. Payment is initiated only AFTER the
       // restaurant confirms availability.
       if (orderStatus === "awaiting_restaurant") {
         toast.info("Waiting for the restaurant to confirm…", {
@@ -696,13 +696,12 @@ const CheckoutDialog = ({
         duration: 3000,
       });
 
-      navigate("/pay/payfast", {
+      navigate("/pay/yoco", {
         state: {
           orderId,
           orderNumber: orderNum,
           total: orderTotalNum,
           restaurant: restaurants[0] || undefined,
-          payfastMethod,
         },
         replace: true,
       });
@@ -1179,49 +1178,24 @@ const CheckoutDialog = ({
             </div>
           )}
 
-          {/* Payment Method — both options route to PayFast, but pre-select card or EFT */}
+          {/* Payment — single secure card checkout hosted by Yoco */}
           <div>
             <label className="mb-2 block text-sm font-semibold text-foreground">
               💳 Payment Method
             </label>
-            <div className="grid grid-cols-2 gap-2">
-              <button
-                type="button"
-                onClick={() => setPayfastMethod("cc")}
-                className={`flex items-center gap-2.5 rounded-xl border-2 p-3 text-left transition-all ${
-                  payfastMethod === "cc"
-                    ? "border-primary bg-primary/5"
-                    : "border-border bg-card hover:bg-secondary"
-                }`}
-              >
-                <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-primary/10">
-                  <CreditCard className="h-4.5 w-4.5 text-primary" />
-                </div>
-                <div className="min-w-0">
-                  <p className="text-xs font-bold text-foreground">Pay by Card</p>
-                  <p className="text-[10px] text-muted-foreground">Visa · Mastercard</p>
-                </div>
-              </button>
-              <button
-                type="button"
-                onClick={() => setPayfastMethod("ef")}
-                className={`flex items-center gap-2.5 rounded-xl border-2 p-3 text-left transition-all ${
-                  payfastMethod === "ef"
-                    ? "border-primary bg-primary/5"
-                    : "border-border bg-card hover:bg-secondary"
-                }`}
-              >
-                <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-primary/10">
-                  <Wallet className="h-4.5 w-4.5 text-primary" />
-                </div>
-                <div className="min-w-0">
-                  <p className="text-xs font-bold text-foreground">Pay by EFT</p>
-                  <p className="text-[10px] text-muted-foreground">Instant bank transfer</p>
-                </div>
-              </button>
+            <div className="flex items-center gap-2.5 rounded-xl border-2 border-primary bg-primary/5 p-3">
+              <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-primary/10">
+                <CreditCard className="h-4.5 w-4.5 text-primary" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-xs font-bold text-foreground">Pay securely with Yoco</p>
+                <p className="text-[10px] text-muted-foreground">
+                  Visa · Mastercard · card details never touch our servers
+                </p>
+              </div>
             </div>
             <p className="mt-1.5 text-[10px] text-muted-foreground">
-              Both options are processed securely by PayFast.
+              You'll be redirected to Yoco's secure checkout to complete payment.
             </p>
           </div>
           <div>

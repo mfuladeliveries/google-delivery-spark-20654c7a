@@ -196,7 +196,7 @@ const OrderConfirmation = () => {
         return;
       }
 
-      // Payment is still being confirmed by PayFast (ITN webhook is async).
+      // Payment is still being confirmed by Yoco (webhook is async).
       // Show a friendly "confirming payment" state and poll until it flips.
       if (status === "pending_payment") {
         const totalRaw = (statusData as any).total;
@@ -316,7 +316,7 @@ const OrderConfirmation = () => {
   } = data;
 
   const handlePayNow = () => {
-    navigate("/pay/payfast", {
+    navigate("/pay/yoco", {
       state: {
         orderId,
         orderNumber,
@@ -382,7 +382,7 @@ const OrderConfirmation = () => {
           ) : paymentPending ? (
             <div className="mt-2 flex flex-col items-center gap-3">
               <p className="text-sm text-muted-foreground max-w-xs">
-                We're waiting for PayFast to confirm your payment. This usually takes a few seconds
+                We're waiting for Yoco to confirm your payment. This usually takes a few seconds
                 — this page will update automatically.
               </p>
               <button
@@ -504,7 +504,7 @@ const OrderConfirmation = () => {
                     : "bg-blue-100 text-blue-700"
                 }`}
               >
-                {paymentMethod === "cash" ? "💵 Cash on delivery" : "💳 Paid online (PayFast)"}
+                {paymentMethod === "cash" ? "💵 Cash on delivery" : "💳 Paid online (Yoco)"}
               </span>
             )}
           </div>
