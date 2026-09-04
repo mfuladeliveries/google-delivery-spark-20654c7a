@@ -80,6 +80,9 @@ interface RecentOrder {
   restaurant: string;
   created_at: string;
   payment_method: string;
+  payment_status: string | null;
+  payment_provider: string | null;
+  payment_provider_txn_id: string | null;
   driver_id: string | null;
   delivered_at: string | null;
   dispatch_phase: string | null;
@@ -285,7 +288,7 @@ const AdminDashboard = () => {
       supabase
         .from("orders")
         .select(
-          "total, delivery_fee, status, created_at, order_number, customer_name, restaurant, payment_method, id, driver_id, delivered_at, dispatch_phase, offered_to_driver_id, missed_by_driver_ids, admin_delivery_code",
+          "total, delivery_fee, status, created_at, order_number, customer_name, restaurant, payment_method, payment_status, payment_provider, payment_provider_txn_id, id, driver_id, delivered_at, dispatch_phase, offered_to_driver_id, missed_by_driver_ids, admin_delivery_code",
         )
         .order("created_at", { ascending: false }),
       supabase.from("restaurants").select("id", { count: "exact" }),
@@ -2858,6 +2861,33 @@ const OrdersTable = ({
                           {order.payment_method === "online" ? "💳" : "💵"}{" "}
                           {order.payment_method || "cash"}
                         </span>
+                        {order.payment_method === "online" && (
+                          <div className="mt-1 flex flex-col items-start gap-0.5">
+                            <span
+                              className={`rounded-full px-1.5 py-0.5 text-[9px] font-bold capitalize ${
+                                order.payment_status === "paid"
+                                  ? "bg-green-100 text-green-700"
+                                  : order.payment_status === "refunded"
+                                    ? "bg-purple-100 text-purple-700"
+                                    : order.payment_status === "failed" ||
+                                        order.payment_status === "cancelled"
+                                      ? "bg-red-100 text-red-700"
+                                      : "bg-amber-100 text-amber-700"
+                              }`}
+                            >
+                              {order.payment_status || "pending"}
+                              {order.payment_provider ? ` · ${order.payment_provider}` : ""}
+                            </span>
+                            {order.payment_provider_txn_id && (
+                              <span
+                                className="max-w-[110px] truncate font-mono text-[8px] text-muted-foreground"
+                                title={order.payment_provider_txn_id}
+                              >
+                                {order.payment_provider_txn_id}
+                              </span>
+                            )}
+                          </div>
+                        )}
                       </td>
                       <td className="px-3 py-2.5">
                         <div className="flex flex-col items-start gap-1">
