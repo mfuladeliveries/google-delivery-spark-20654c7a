@@ -60,7 +60,7 @@ export const storeInfo: StoreInfo = {
   deliveryCharge: 55,
   tax: 0.05,
   minimumOrder: 40,
-  paymentNote: "Pay securely online or with cash on delivery",
+  paymentNote: "Secure card payments powered by Yoco",
   areas: "Mfuleni, Bluedowns, Bosasa, Eesteriver, Summerville",
 };
 

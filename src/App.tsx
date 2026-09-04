@@ -13,7 +13,7 @@ import ForgotPassword from "./pages/ForgotPassword";
 import Orders from "./pages/Orders";
 import OrderConfirmation from "./pages/OrderConfirmation";
 import PaymentResult from "./pages/PaymentResult";
-import PayFastRedirect from "./pages/PayFastRedirect";
+import YocoPayment from "./pages/YocoPayment";
 import NotFound from "./pages/NotFound";
 import RestaurantMenu from "./pages/RestaurantMenu";
 import RestaurantDashboard from "./pages/RestaurantDashboard";
@@ -91,10 +91,19 @@ const App = () => (
             />
             <Route path="/payment/result" element={<PaymentResult />} />
             <Route
+              path="/pay/yoco"
+              element={
+                <RoleGuard allow={["customer", "admin"]} requireAuth redirectUnauthedTo="/auth">
+                  <YocoPayment />
+                </RoleGuard>
+              }
+            />
+            {/* Legacy PayFast path — keep old links/bookmarks working */}
+            <Route
               path="/pay/payfast"
               element={
                 <RoleGuard allow={["customer", "admin"]} requireAuth redirectUnauthedTo="/auth">
-                  <PayFastRedirect />
+                  <YocoPayment />
                 </RoleGuard>
               }
             />

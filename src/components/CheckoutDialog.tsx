@@ -129,12 +129,9 @@ const CheckoutDialog = ({
   const [scheduleTime, setScheduleTime] = useState("");
   const [tip, setTip] = useState(0);
   const [customTip, setCustomTip] = useState("");
-  // PayFast-only — kept as a constant to minimise churn through the rest of the file.
+  // Online-only — kept as a constant to minimise churn through the rest of the file.
   const paymentMethod: "online" = "online";
   const setPaymentMethod = (_: "online") => {}; // no-op kept for legacy refs
-  // Which PayFast payment method to pre-select on the hosted checkout.
-  // 'cc' = card, 'ef' = Instant EFT. PayFast accepts either via the payment_method field.
-  const [payfastMethod, setPayfastMethod] = useState<"cc" | "ef">("cc");
   const [loading, setLoading] = useState(false);
   const [policiesAccepted, setPoliciesAccepted] = useState(false);
   const [profileLoaded, setProfileLoaded] = useState(false);

@@ -6,7 +6,7 @@ export interface PendingPaymentOrder {
   savedAt: number;
 }
 
-const STORAGE_KEY = "pending_payfast_order";
+const STORAGE_KEY = "pending_online_payment_order";
 const MAX_AGE_MS = 1000 * 60 * 60 * 6;
 
 const canUseStorage = () => typeof window !== "undefined" && !!window.localStorage;
