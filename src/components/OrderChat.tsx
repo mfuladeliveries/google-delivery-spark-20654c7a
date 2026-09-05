@@ -47,11 +47,14 @@ const CUSTOMER_QUICK = [
 ];
 
 const DRIVER_QUICK = [
-  "On my way",
-  "I'm outside",
-  "Can't find the address — please share landmark",
-  "Restaurant is delayed, sorry",
+  "I'm on my way",
+  "I've arrived",
+  "Your order has been collected",
+  "Please come outside",
+  "I'm having difficulty finding your address",
+  "There may be a slight delay",
 ];
+
 
 const MAX_LEN = 500;
 const MAX_FILE_BYTES = 8 * 1024 * 1024; // 8 MB
@@ -100,7 +103,10 @@ export const OrderChat = ({ orderId, userId, role, counterpartyLabel }: OrderCha
   const [messages, setMessages] = useState<Message[]>([]);
   const [draft, setDraft] = useState("");
   const [sending, setSending] = useState(false);
+  const [sendError, setSendError] = useState<string | null>(null);
+  const [lastFailedText, setLastFailedText] = useState<string | null>(null);
   const [unreadCount, setUnreadCount] = useState(0);
+
   const [uploading, setUploading] = useState(false);
   const [recording, setRecording] = useState(false);
   const [recordSeconds, setRecordSeconds] = useState(0);
@@ -208,18 +214,34 @@ export const OrderChat = ({ orderId, userId, role, counterpartyLabel }: OrderCha
     attachment_url?: string;
     attachment_type?: "image" | "audio";
   }) => {
-    const { error } = await supabase.from("order_messages").insert({
-      order_id: orderId,
-      sender_id: userId,
-      sender_role: role,
-      message: payload.message ?? null,
-      attachment_url: payload.attachment_url ?? null,
-      attachment_type: payload.attachment_type ?? null,
-    });
-    if (error) {
-      toast.error("Couldn't send message");
+    // sender_id always comes from the authenticated session, never from props alone.
+    const { data: authData } = await supabase.auth.getUser();
+    const authedId = authData?.user?.id ?? userId;
+
+    const { data, error } = await supabase
+      .from("order_messages")
+      .insert({
+        order_id: orderId,
+        sender_id: authedId,
+        sender_role: role,
+        message: payload.message ?? null,
+        attachment_url: payload.attachment_url ?? null,
+        attachment_type: payload.attachment_type ?? null,
+      })
+      .select("*")
+      .single();
+
+    if (error || !data) {
+      console.error("order_messages insert failed:", error);
+      setSendError("Message failed to send. Please try again.");
+      toast.error("Message failed to send. Please try again.");
       return false;
     }
+
+    // Show it right away — realtime dedupes by id.
+    const msg = data as unknown as Message;
+    setMessages((prev) => (prev.some((m) => m.id === msg.id) ? prev : [...prev, msg]));
+    setSendError(null);
     return true;
   };
 
@@ -227,10 +249,18 @@ export const OrderChat = ({ orderId, userId, role, counterpartyLabel }: OrderCha
     const trimmed = text.trim().slice(0, MAX_LEN);
     if (!trimmed || sending) return;
     setSending(true);
+    setSendError(null);
+    setLastFailedText(null);
     const ok = await insertMessage({ message: trimmed });
     setSending(false);
-    if (ok) setDraft("");
+    if (ok) {
+      setDraft("");
+    } else {
+      setLastFailedText(trimmed);
+      if (!draft.trim()) setDraft(trimmed);
+    }
   };
+
 
   const uploadAttachment = async (blob: Blob, kind: "image" | "audio", ext: string) => {
     if (blob.size > MAX_FILE_BYTES) {
@@ -439,20 +469,45 @@ export const OrderChat = ({ orderId, userId, role, counterpartyLabel }: OrderCha
 
             {/* Quick replies */}
             <div className="border-t border-border px-3 py-2">
-              <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-hide">
+              <p className="mb-1.5 text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
+                Quick responses
+              </p>
+              <div className="flex flex-wrap gap-1.5">
                 {quick.map((q) => (
                   <button
                     key={q}
                     type="button"
                     disabled={sending || uploading || recording}
                     onClick={() => send(q)}
-                    className="flex-shrink-0 rounded-full border border-border bg-secondary px-3 py-1.5 text-xs font-medium text-foreground hover:bg-primary/10 hover:border-primary/30 transition-colors disabled:opacity-50"
+                    className="rounded-full border border-border bg-secondary px-3 py-2 text-xs font-medium text-foreground hover:bg-primary/10 hover:border-primary/30 transition-colors disabled:opacity-50"
                   >
                     {q}
                   </button>
                 ))}
               </div>
             </div>
+
+            {sending && (
+              <div className="flex items-center gap-1.5 border-t border-border px-3 py-1.5 text-[11px] font-semibold text-primary">
+                <Loader2 className="h-3 w-3 animate-spin" /> Sending…
+              </div>
+            )}
+
+            {sendError && !sending && (
+              <div className="flex items-center gap-2 border-t border-border bg-destructive/10 px-3 py-2 text-[11px] font-semibold text-destructive">
+                <span className="flex-1">{sendError}</span>
+                {lastFailedText && (
+                  <button
+                    type="button"
+                    onClick={() => send(lastFailedText)}
+                    className="rounded-lg border border-destructive/40 px-2 py-1 font-bold"
+                  >
+                    Retry
+                  </button>
+                )}
+              </div>
+            )}
+
 
             {/* Composer */}
             <form
