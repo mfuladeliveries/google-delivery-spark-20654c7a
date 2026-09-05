@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { Loader2, CreditCard, AlertTriangle, RefreshCw, Bike, ShieldCheck } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { clearPendingPaymentOrder, loadPendingPaymentOrder } from "@/lib/pendingPaymentOrder";
+import { getYocoReturnOrigin } from "@/lib/yoco";
 import { toast } from "sonner";
 
 interface PayState {
@@ -45,7 +46,7 @@ const YocoPayment = () => {
       const { data, error: fnErr } = await supabase.functions.invoke("yoco-create-checkout", {
         body: {
           order_id: state.orderId,
-          return_origin: window.location.origin,
+          return_origin: getYocoReturnOrigin(),
         },
       });
 
