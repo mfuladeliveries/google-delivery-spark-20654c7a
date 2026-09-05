@@ -30,6 +30,7 @@ import BottomNav from "@/components/BottomNav";
 import AdminEarnings from "@/components/admin/AdminEarnings";
 import AdminWithdrawals from "@/components/admin/AdminWithdrawals";
 import AdminRefunds from "@/components/admin/AdminRefunds";
+import AdminPinOverrides from "@/components/admin/AdminPinOverrides";
 import AdminDriverRequests from "@/components/admin/AdminDriverRequests";
 import AdminDrivers from "@/components/admin/AdminDrivers";
 import AdminAboutEditor from "@/components/admin/AdminAboutEditor";

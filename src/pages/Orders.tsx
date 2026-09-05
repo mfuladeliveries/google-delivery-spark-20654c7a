@@ -27,6 +27,7 @@ import {
 import { storeInfo } from "@/data/menu";
 import BottomNav from "@/components/BottomNav";
 import OrderTrackingMap from "@/components/OrderTrackingMap";
+import DeliveryPinCard from "@/components/DeliveryPinCard";
 import { toast } from "sonner";
 import { getHomeRouteForRoles } from "@/lib/homeRoute";
 import { useNotificationPrefs } from "@/hooks/useNotificationPrefs";
