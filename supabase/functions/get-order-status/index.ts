@@ -1,6 +1,6 @@
 // Returns the current status + payment_status for an order, scoped to the
 // authenticated user. Used by the order confirmation page to poll while the
-// PayFast ITN webhook finalises payment.
+// Yoco webhook finalises payment.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
 const corsHeaders = {
