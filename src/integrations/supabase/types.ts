@@ -1936,6 +1936,10 @@ export type Database = {
         }
         Returns: number
       }
+      order_sender_role_valid: {
+        Args: { _order_id: string; _role: string; _user_id: string }
+        Returns: boolean
+      }
       read_email_batch: {
         Args: { batch_size: number; queue_name: string; vt: number }
         Returns: {
