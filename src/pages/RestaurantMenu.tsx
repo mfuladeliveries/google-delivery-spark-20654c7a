@@ -44,6 +44,7 @@ interface Restaurant {
   cuisine: string;
   lat: number | null;
   lng: number | null;
+  is_active?: boolean;
 }
 
 interface DbMenuItem {
@@ -295,6 +296,14 @@ const RestaurantMenu = () => {
     if (noDrivers) {
       toast.error("No drivers are online in your area right now.", {
         description: "Please try again in a few minutes.",
+      });
+      return;
+    }
+    // Stop the customer up front instead of failing at checkout when an admin
+    // has switched this restaurant off.
+    if (restaurant && restaurant.is_active === false) {
+      toast.error("This restaurant is currently unavailable for orders.", {
+        description: "Please choose another restaurant nearby.",
       });
       return;
     }
