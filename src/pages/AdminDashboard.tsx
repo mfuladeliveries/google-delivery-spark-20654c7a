@@ -2820,14 +2820,19 @@ const OrdersTable = ({
                         )}
                       </td>
                       <td className="px-3 py-2.5">
-                        {order.admin_delivery_code && cancellable(order.status) ? (
-                          <span className="rounded-md bg-primary/10 px-2 py-0.5 text-xs font-bold tracking-[0.2em] text-primary">
-                            {order.admin_delivery_code}
-                          </span>
+                        {cancellable(order.status) ? (
+                          <AdminPinCell
+                            orderId={order.id}
+                            currentPin={pinOverrides[order.id] || order.admin_delivery_code}
+                            onNewPin={(pin) =>
+                              setPinOverrides((prev) => ({ ...prev, [order.id]: pin }))
+                            }
+                          />
                         ) : (
                           <span className="text-muted-foreground text-xs">—</span>
                         )}
                       </td>
+
                       <td className="px-3 py-2.5 font-semibold text-primary">R{order.total}</td>
                       <td className="px-3 py-2.5 text-[10px] whitespace-nowrap">
                         {order.delivery_fee != null && Number(order.delivery_fee) > 0 ? (
