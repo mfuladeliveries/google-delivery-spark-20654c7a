@@ -123,9 +123,27 @@ const YocoPayment = () => {
     const run = async () => {
       const { data: order } = await supabase
         .from("orders")
-        .select("customer_lat, customer_lng, customer_address")
+        .select("customer_lat, customer_lng, customer_address, status, payment_status")
         .eq("id", state.orderId)
         .maybeSingle();
+
+      if (cancelled) return;
+
+      // Stop early when this order can no longer be paid for, so we never hit
+      // the edge function with an un-payable order (409 / blank screen).
+      if (order && order.payment_status === "paid") {
+        clearPendingPaymentOrder(state.orderNumber);
+        navigate(`/payment/result?order=${state.orderNumber}&order_id=${state.orderId}`, {
+          replace: true,
+        });
+        return;
+      }
+      if (order && order.status !== "pending_payment") {
+        clearPendingPaymentOrder(state.orderNumber);
+        toast.error("This order is no longer awaiting payment.");
+        navigate("/orders", { replace: true });
+        return;
+      }
 
       const lat = order?.customer_lat as number | null | undefined;
       const lng = order?.customer_lng as number | null | undefined;
@@ -133,6 +151,7 @@ const YocoPayment = () => {
 
       const poll = async () => {
         if (cancelled) return;
+
         if (typeof lat !== "number" || typeof lng !== "number") {
           setWaitingForDriver(false);
           startCheckout();
