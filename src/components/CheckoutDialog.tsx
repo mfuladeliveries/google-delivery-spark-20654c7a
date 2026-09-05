@@ -17,7 +17,7 @@ import {
   Star,
   BookmarkPlus,
 } from "lucide-react";
-import { CartItem } from "@/hooks/useCart";
+import { CartItem, isCompanionStore } from "@/hooks/useCart";
 import { storeInfo } from "@/data/menu";
 import { generateDeliveryPin } from "@/lib/deliveryPin";
 import { supabase } from "@/integrations/supabase/client";
@@ -149,11 +149,24 @@ const CheckoutDialog = ({
     ],
     [items],
   );
-  const primaryRestaurantName = restaurants[0] || "";
+  // The companion store (Mfula Shop) may ride along with any order, so it must
+  // never be treated as the order's restaurant.
+  const primaryRestaurantName = useMemo(
+    () => restaurants.find((n) => !isCompanionStore(n)) || restaurants[0] || "",
+    [restaurants],
+  );
   const primaryRestaurantId = useMemo(
-    () => items.map((ci) => ci.item.restaurantId).find(Boolean) || null,
+    () =>
+      items
+        .filter((ci) => !isCompanionStore(ci.item.restaurantName))
+        .map((ci) => ci.item.restaurantId)
+        .find(Boolean) || null,
     [items],
   );
+  // Stale carts (saved before restaurant IDs were stored on items) only carry a
+  // name — we resolve the real UUID from the catalog as a fallback.
+  const [resolvedRestaurantId, setResolvedRestaurantId] = useState<string | null>(null);
+  const checkoutRestaurantId = primaryRestaurantId ?? resolvedRestaurantId;
 
   // Sync incoming food note from cart
   useEffect(() => {
