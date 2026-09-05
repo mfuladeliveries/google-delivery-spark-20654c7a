@@ -46,7 +46,7 @@ const YocoPayment = () => {
       const { data, error: fnErr } = await supabase.functions.invoke("yoco-create-checkout", {
         body: {
           order_id: state.orderId,
-          return_origin: window.location.origin,
+          return_origin: getYocoReturnOrigin(),
         },
       });
 
