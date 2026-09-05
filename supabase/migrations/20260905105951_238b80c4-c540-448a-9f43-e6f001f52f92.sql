@@ -1,0 +1,1 @@
+REVOKE ALL ON FUNCTION public.enforce_driver_profile_update_columns() FROM PUBLIC, anon, authenticated;
