@@ -323,8 +323,21 @@ const Index = () => {
     // Other restaurants stay hidden until an admin explicitly enables their area.
     const MFULENI_AREA_ID = "710be50f-0238-4ea2-b492-d565b307a93a";
     const matchesArea = r.area_id === MFULENI_AREA_ID;
-    return matchesCuisine && matchesSearch && matchesArea && matchesOpen && matchesRating && matchesFavourite;
+    // Only show places that can actually take an order: switched on by an admin
+    // and with a real map location (the general store rides along without one).
+    const isCompanion = r.name.trim().toLowerCase() === "mfula shop";
+    const orderable = r.is_active && (isCompanion || (r.lat != null && r.lng != null));
+    return (
+      orderable &&
+      matchesCuisine &&
+      matchesSearch &&
+      matchesArea &&
+      matchesOpen &&
+      matchesRating &&
+      matchesFavourite
+    );
   });
+
 
   // Sort: nearby first, then by distance asc, then by rating desc as tiebreaker.
   const sorted = useMemo(() => {

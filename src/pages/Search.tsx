@@ -70,18 +70,25 @@ const Search = () => {
         .limit(20),
     ]);
     const needle = q.toLowerCase();
-    const rests = (cat?.restaurants ?? [])
+    // Only restaurants an admin has switched on (and with a real location) can
+    // be ordered from, so hide the rest from search results entirely.
+    const orderable = (cat?.restaurants ?? []).filter(
+      (r) => r.is_active && (r.lat != null && r.lng != null || r.name.trim().toLowerCase() === "mfula shop"),
+    );
+    const rests = orderable
       .filter((r) => r.name.toLowerCase().includes(needle))
       .sort((a, b) => a.name.localeCompare(b.name));
     setRestaurants(rests as unknown as Restaurant[]);
 
-    const items = itemsRes.data;
-    if (items && items.length > 0) {
-      const restMap = Object.fromEntries((cat?.restaurants ?? []).map((r) => [r.id, r.name]));
+    const orderableIds = new Set(orderable.map((r) => r.id));
+    const items = (itemsRes.data ?? []).filter((i) => orderableIds.has(i.restaurant_id));
+    if (items.length > 0) {
+      const restMap = Object.fromEntries(orderable.map((r) => [r.id, r.name]));
       setMenuItems(items.map((i) => ({ ...i, restaurant_name: restMap[i.restaurant_id] || "" })));
     } else {
       setMenuItems([]);
     }
+
     setLoading(false);
   };
 
