@@ -469,20 +469,45 @@ export const OrderChat = ({ orderId, userId, role, counterpartyLabel }: OrderCha
 
             {/* Quick replies */}
             <div className="border-t border-border px-3 py-2">
-              <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-hide">
+              <p className="mb-1.5 text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
+                Quick responses
+              </p>
+              <div className="flex flex-wrap gap-1.5">
                 {quick.map((q) => (
                   <button
                     key={q}
                     type="button"
                     disabled={sending || uploading || recording}
                     onClick={() => send(q)}
-                    className="flex-shrink-0 rounded-full border border-border bg-secondary px-3 py-1.5 text-xs font-medium text-foreground hover:bg-primary/10 hover:border-primary/30 transition-colors disabled:opacity-50"
+                    className="rounded-full border border-border bg-secondary px-3 py-2 text-xs font-medium text-foreground hover:bg-primary/10 hover:border-primary/30 transition-colors disabled:opacity-50"
                   >
                     {q}
                   </button>
                 ))}
               </div>
             </div>
+
+            {sending && (
+              <div className="flex items-center gap-1.5 border-t border-border px-3 py-1.5 text-[11px] font-semibold text-primary">
+                <Loader2 className="h-3 w-3 animate-spin" /> Sending…
+              </div>
+            )}
+
+            {sendError && !sending && (
+              <div className="flex items-center gap-2 border-t border-border bg-destructive/10 px-3 py-2 text-[11px] font-semibold text-destructive">
+                <span className="flex-1">{sendError}</span>
+                {lastFailedText && (
+                  <button
+                    type="button"
+                    onClick={() => send(lastFailedText)}
+                    className="rounded-lg border border-destructive/40 px-2 py-1 font-bold"
+                  >
+                    Retry
+                  </button>
+                )}
+              </div>
+            )}
+
 
             {/* Composer */}
             <form
