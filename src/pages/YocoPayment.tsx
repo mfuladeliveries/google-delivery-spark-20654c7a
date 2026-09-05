@@ -77,12 +77,16 @@ const YocoPayment = () => {
 
       // The order is no longer payable (cancelled, expired or already handled):
       // drop the stale saved order so we don't loop on this screen.
-      if (payload.error === "This order is not awaiting payment.") {
+      const notPayable =
+        (payload.error ?? "").toLowerCase().includes("not awaiting payment") ||
+        (payload.error ?? "").toLowerCase().includes("order not found");
+      if (notPayable) {
         clearPendingPaymentOrder(state.orderNumber);
         toast.error("This order is no longer awaiting payment.");
         navigate("/orders", { replace: true });
         return;
       }
+
 
       if (fnErr || !payload.redirect_url) {
         setError(
