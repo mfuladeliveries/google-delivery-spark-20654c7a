@@ -50,16 +50,37 @@ const YocoPayment = () => {
         },
       });
 
-      const payload = (data ?? {}) as {
+      let payload = (data ?? {}) as {
         redirect_url?: string;
         already_paid?: boolean;
         error?: string;
       };
 
+      // Non-2xx responses put the JSON body on the error's context.
+      if (fnErr && !payload.redirect_url) {
+        const ctx = (fnErr as unknown as { context?: Response }).context;
+        if (ctx && typeof ctx.json === "function") {
+          try {
+            payload = { ...payload, ...(await ctx.clone().json()) };
+          } catch {
+            /* ignore non-JSON bodies */
+          }
+        }
+      }
+
       if (payload.already_paid) {
         navigate(`/payment/result?order=${state.orderNumber}&order_id=${state.orderId}`, {
           replace: true,
         });
+        return;
+      }
+
+      // The order is no longer payable (cancelled, expired or already handled):
+      // drop the stale saved order so we don't loop on this screen.
+      if (payload.error === "This order is not awaiting payment.") {
+        clearPendingPaymentOrder(state.orderNumber);
+        toast.error("This order is no longer awaiting payment.");
+        navigate("/orders", { replace: true });
         return;
       }
 
@@ -71,6 +92,7 @@ const YocoPayment = () => {
         );
         return;
       }
+
 
       // Hand the customer over to Yoco's hosted checkout.
       window.location.href = payload.redirect_url;
