@@ -44,6 +44,7 @@ interface Restaurant {
   cuisine: string;
   lat: number | null;
   lng: number | null;
+  is_active?: boolean;
 }
 
 interface DbMenuItem {
