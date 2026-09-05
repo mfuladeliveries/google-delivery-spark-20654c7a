@@ -593,10 +593,18 @@ const CheckoutDialog = ({
       // Yoco payment screen polls coverage and shows "Waiting for driver…"
       // if none are online yet, so the order can still be placed.
 
+      // Debug trace: what restaurant identity is actually used for this order.
+      console.info("[checkout] placing order", {
+        cartRestaurantId: primaryRestaurantId,
+        resolvedRestaurantId,
+        restaurantIdSent: checkoutRestaurantId,
+        restaurantNameSent: primaryRestaurantName,
+      });
+
       const { data: order, error: orderError } = await supabase.rpc("create_verified_order", {
         p_items: orderItems,
-        p_restaurant_name: restaurants[0] || "",
-        p_restaurant_id: primaryRestaurantId ?? undefined,
+        p_restaurant_name: primaryRestaurantName,
+        p_restaurant_id: checkoutRestaurantId ?? undefined,
         p_customer_name: name.trim(),
         p_customer_contact: contact.trim(),
         p_customer_address: fullAddress,
@@ -609,27 +617,54 @@ const CheckoutDialog = ({
       });
 
       if (orderError) {
-        console.error(
-          "Order placement failed:",
-          orderError.message,
-          orderError.details,
-          orderError.hint,
-        );
-        const isRateLimited =
-          orderError.code === "42901" || /too many orders/i.test(orderError.message || "");
+        console.error("[checkout] order placement failed", {
+          code: orderError.code,
+          message: orderError.message,
+          details: orderError.details,
+          hint: orderError.hint,
+          restaurantIdSent: checkoutRestaurantId,
+          restaurantNameSent: primaryRestaurantName,
+        });
+        const msg = orderError.message || "";
+        const isRateLimited = orderError.code === "42901" || /too many orders/i.test(msg);
+        const notFound = /could not be found|not found/i.test(msg);
+        const unavailable = /currently unavailable/i.test(msg);
+        const closed = /currently closed/i.test(msg);
+        const noDrivers = /no drivers are online/i.test(msg);
+        const noItems = /no valid items/i.test(msg);
         const isOutOfRange =
-          orderError.code === "22023" ||
-          /not available in your area/i.test(orderError.message || "");
-        const title = isRateLimited
-          ? "You're placing orders too quickly"
-          : isOutOfRange
-            ? "Delivery not available in your area"
-            : "Failed to place your order, try again.";
-        const description = isRateLimited
-          ? "Please wait about a minute before placing another order."
-          : isOutOfRange
-            ? "Please pick a delivery location closer to our service area."
-            : orderError.message;
+          /not available in your area/i.test(msg) ||
+          (orderError.code === "22023" &&
+            !notFound &&
+            !unavailable &&
+            !closed &&
+            !noDrivers &&
+            !noItems);
+
+        let title = "We could not place your order. Please try again.";
+        let description: string | undefined = msg;
+        if (isRateLimited) {
+          title = "You're placing orders too quickly";
+          description = "Please wait about a minute before placing another order.";
+        } else if (notFound) {
+          title = "Restaurant could not be found.";
+          description = "Please clear your cart and add the items again.";
+        } else if (unavailable) {
+          title = "This restaurant is currently unavailable for orders.";
+          description = "Please choose another restaurant nearby.";
+        } else if (closed) {
+          title = "This restaurant is closed right now.";
+          description = "Please try again during their opening hours.";
+        } else if (noDrivers) {
+          title = "No drivers are online in your area right now.";
+          description = "Please try again in a few minutes.";
+        } else if (noItems) {
+          title = "Some items are no longer available.";
+          description = "Please clear your cart and add the items again.";
+        } else if (isOutOfRange) {
+          title = "Delivery not available in your area";
+          description = "Please pick a delivery location closer to our service area.";
+        }
         toast.error(title, { description });
         setLoading(false);
         return;
