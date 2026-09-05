@@ -27,6 +27,7 @@ import {
 import { storeInfo } from "@/data/menu";
 import BottomNav from "@/components/BottomNav";
 import OrderTrackingMap from "@/components/OrderTrackingMap";
+import DeliveryPinCard from "@/components/DeliveryPinCard";
 import { toast } from "sonner";
 import { getHomeRouteForRoles } from "@/lib/homeRoute";
 import { useNotificationPrefs } from "@/hooks/useNotificationPrefs";
@@ -962,20 +963,20 @@ const Orders = () => {
                       })()}
 
                     {/* Delivery PIN shown directly under order number until delivered */}
-                    {(deliveryPins[order.id] || order.delivery_code) &&
-                      order.status !== "delivered" &&
-                      !isCancelled && (
-                        <div className="mb-3 flex items-center gap-2 rounded-lg border border-primary/20 bg-primary/5 px-3 py-1.5">
-                          <ShieldCheck className="h-4 w-4 text-primary shrink-0" />
-                          <span className="text-xs text-muted-foreground">Delivery PIN:</span>
-                          <span className="text-base font-bold tracking-[0.3em] text-primary">
-                            {deliveryPins[order.id] || order.delivery_code}
-                          </span>
-                          <span className="ml-auto text-[9px] text-muted-foreground">
-                            Share with driver
-                          </span>
-                        </div>
-                      )}
+                    {order.status !== "delivered" && !isCancelled && (
+                      <DeliveryPinCard
+                        orderId={order.id}
+                        localPin={deliveryPins[order.id] || order.delivery_code || ""}
+                        onPinChanged={(pin) => {
+                          setDeliveryPins((prev) => {
+                            const next = { ...prev, [order.id]: pin };
+                            localStorage.setItem("delivery_pins", JSON.stringify(next));
+                            return next;
+                          });
+                        }}
+                      />
+                    )}
+
 
                     {/* Live GPS Map — only on this Orders page when out_for_delivery (final leg) */}
                     {isActive && order.status === "out_for_delivery" && (

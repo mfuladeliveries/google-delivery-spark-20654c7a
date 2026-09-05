@@ -30,6 +30,7 @@ import BottomNav from "@/components/BottomNav";
 import AdminEarnings from "@/components/admin/AdminEarnings";
 import AdminWithdrawals from "@/components/admin/AdminWithdrawals";
 import AdminRefunds from "@/components/admin/AdminRefunds";
+import AdminPinOverrides from "@/components/admin/AdminPinOverrides";
 import AdminDriverRequests from "@/components/admin/AdminDriverRequests";
 import AdminDrivers from "@/components/admin/AdminDrivers";
 import AdminAboutEditor from "@/components/admin/AdminAboutEditor";
@@ -670,6 +671,8 @@ const AdminDashboard = () => {
         {/* Orders Tab */}
         {tab === "orders" && (
           <>
+            <AdminPinOverrides />
+
             <div className="mb-3 relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <input
@@ -2674,6 +2677,50 @@ const RestaurantCard = ({
   );
 };
 
+// Admin PIN cell — shows the active delivery PIN and can issue a fresh one
+// when a customer says the PIN never arrived.
+const AdminPinCell = ({
+  orderId,
+  currentPin,
+  onNewPin,
+}: {
+  orderId: string;
+  currentPin?: string | null;
+  onNewPin: (pin: string) => void;
+}) => {
+  const [busy, setBusy] = useState(false);
+  const regenerate = async () => {
+    setBusy(true);
+    const { data, error } = await supabase.rpc("regenerate_delivery_pin" as any, {
+      p_order_id: orderId,
+    });
+    if (error) {
+      console.error("regenerate pin failed", error);
+      toast.error(error.message || "Could not create a new PIN");
+    } else if (data) {
+      onNewPin(data as string);
+      toast.success(`New PIN: ${data} — the customer sees it on their order screen`, {
+        duration: 12000,
+      });
+    }
+    setBusy(false);
+  };
+  return (
+    <div className="flex items-center gap-1.5">
+      <span className="rounded-md bg-primary/10 px-2 py-0.5 text-xs font-bold tracking-[0.2em] text-primary">
+        {currentPin || "——————"}
+      </span>
+      <button
+        onClick={regenerate}
+        disabled={busy}
+        className="rounded-md border border-border px-1.5 py-0.5 text-[10px] font-bold text-muted-foreground hover:bg-secondary disabled:opacity-50"
+      >
+        {busy ? "…" : "New PIN"}
+      </button>
+    </div>
+  );
+};
+
 // Extracted orders table component
 const OrdersTable = ({
   orders,
@@ -2686,8 +2733,10 @@ const OrdersTable = ({
 }) => {
   const COL_COUNT = 12;
   const cancellable = (status: string) => !["delivered", "cancelled", "rejected"].includes(status);
+  const [pinOverrides, setPinOverrides] = useState<Record<string, string>>({});
   // Live driver-split percentage so each delivery fee shows the actual payout split.
   const [splitPct, setSplitPct] = useState<number>(70);
+
   useEffect(() => {
     let alive = true;
     const fetchPct = async () => {
@@ -2817,14 +2866,19 @@ const OrdersTable = ({
                         )}
                       </td>
                       <td className="px-3 py-2.5">
-                        {order.admin_delivery_code && cancellable(order.status) ? (
-                          <span className="rounded-md bg-primary/10 px-2 py-0.5 text-xs font-bold tracking-[0.2em] text-primary">
-                            {order.admin_delivery_code}
-                          </span>
+                        {cancellable(order.status) ? (
+                          <AdminPinCell
+                            orderId={order.id}
+                            currentPin={pinOverrides[order.id] || order.admin_delivery_code}
+                            onNewPin={(pin) =>
+                              setPinOverrides((prev) => ({ ...prev, [order.id]: pin }))
+                            }
+                          />
                         ) : (
                           <span className="text-muted-foreground text-xs">—</span>
                         )}
                       </td>
+
                       <td className="px-3 py-2.5 font-semibold text-primary">R{order.total}</td>
                       <td className="px-3 py-2.5 text-[10px] whitespace-nowrap">
                         {order.delivery_fee != null && Number(order.delivery_fee) > 0 ? (

@@ -211,6 +211,82 @@ export type Database = {
         }
         Relationships: []
       }
+      delivery_pin_overrides: {
+        Row: {
+          admin_notes: string | null
+          approved_by: string | null
+          approved_by_email: string | null
+          created_at: string
+          customer_name: string
+          decided_at: string | null
+          driver_id: string | null
+          driver_name: string
+          id: string
+          order_id: string
+          reason: string
+          requested_at: string
+          status: string
+          updated_at: string
+          used_at: string | null
+        }
+        Insert: {
+          admin_notes?: string | null
+          approved_by?: string | null
+          approved_by_email?: string | null
+          created_at?: string
+          customer_name?: string
+          decided_at?: string | null
+          driver_id?: string | null
+          driver_name?: string
+          id?: string
+          order_id: string
+          reason?: string
+          requested_at?: string
+          status?: string
+          updated_at?: string
+          used_at?: string | null
+        }
+        Update: {
+          admin_notes?: string | null
+          approved_by?: string | null
+          approved_by_email?: string | null
+          created_at?: string
+          customer_name?: string
+          decided_at?: string | null
+          driver_id?: string | null
+          driver_name?: string
+          id?: string
+          order_id?: string
+          reason?: string
+          requested_at?: string
+          status?: string
+          updated_at?: string
+          used_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "delivery_pin_overrides_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "driver_job_board"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "delivery_pin_overrides_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "driver_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "delivery_pin_overrides_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       driver_access_requests: {
         Row: {
           admin_notes: string | null
@@ -1725,6 +1801,10 @@ export type Database = {
         Args: { p_order_id: string; p_reason?: string }
         Returns: undefined
       }
+      admin_decide_pin_override: {
+        Args: { p_approve: boolean; p_notes?: string; p_request_id: string }
+        Returns: undefined
+      }
       admin_dispatch_runs: {
         Args: { p_limit?: number }
         Returns: {
@@ -1856,8 +1936,24 @@ export type Database = {
         Args: { p_order_id: string; p_reason?: string }
         Returns: undefined
       }
+      driver_complete_with_override: {
+        Args: { p_order_id: string }
+        Returns: boolean
+      }
       driver_decline_offer: { Args: { p_order_id: string }; Returns: undefined }
+      driver_pin_override_status: {
+        Args: { p_order_id: string }
+        Returns: string
+      }
       driver_request_dispatch: { Args: never; Returns: Json }
+      driver_request_pin_override: {
+        Args: { p_order_id: string }
+        Returns: string
+      }
+      driver_resend_customer_pin: {
+        Args: { p_order_id: string }
+        Returns: Json
+      }
       driver_update_order: {
         Args: {
           p_lat?: number
@@ -1882,6 +1978,7 @@ export type Database = {
         }
         Returns: Json
       }
+      get_active_delivery_pin: { Args: { p_order_id: string }; Returns: string }
       get_customer_balance: { Args: { p_user_id?: string }; Returns: number }
       get_driver_balance: { Args: { p_driver_id: string }; Returns: number }
       has_role: {
@@ -1948,6 +2045,7 @@ export type Database = {
           read_ct: number
         }[]
       }
+      regenerate_delivery_pin: { Args: { p_order_id: string }; Returns: string }
       request_withdrawal: { Args: { p_amount: number }; Returns: string }
       restaurant_decide_availability: {
         Args: { p_accept: boolean; p_order_id: string; p_reason?: string }
