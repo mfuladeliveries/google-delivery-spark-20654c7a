@@ -55,6 +55,30 @@ Deno.serve(async (req) => {
       idempotencyKey: `key-check-${user.id}`,
     });
 
+    // Probe the refund endpoint too. The checkout above is unpaid, so Yoco
+    // should reject the refund — an auth/permission error here would instead
+    // mean the key cannot use the refunds API at all.
+    let refundProbe: Record<string, unknown> = { skipped: true };
+    try {
+      const res = await fetch(
+        `https://payments.yoco.com/api/checkouts/${encodeURIComponent(checkout.id)}/refund`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${Deno.env.get("YOCO_SECRET_KEY")}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ amount: 10000 }),
+        },
+      );
+      const text = await res.text();
+      let parsed: Record<string, unknown> = {};
+      try { parsed = text ? JSON.parse(text) : {}; } catch { parsed = { raw: text }; }
+      refundProbe = { http_status: res.status, response: parsed };
+    } catch (e) {
+      refundProbe = { error: e instanceof Error ? e.message : String(e) };
+    }
+
     return json({
       ok: true,
       key_prefix: keyPrefix,
@@ -62,6 +86,7 @@ Deno.serve(async (req) => {
       checkout_id: checkout.id,
       status: checkout.status ?? null,
       redirect_url: checkout.redirectUrl ?? null,
+      refund_probe: refundProbe,
     });
   } catch (err) {
     console.error("yoco-key-check error", err);
