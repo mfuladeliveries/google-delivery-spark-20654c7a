@@ -47,11 +47,14 @@ const CUSTOMER_QUICK = [
 ];
 
 const DRIVER_QUICK = [
-  "On my way",
-  "I'm outside",
-  "Can't find the address — please share landmark",
-  "Restaurant is delayed, sorry",
+  "I'm on my way",
+  "I've arrived",
+  "Your order has been collected",
+  "Please come outside",
+  "I'm having difficulty finding your address",
+  "There may be a slight delay",
 ];
+
 
 const MAX_LEN = 500;
 const MAX_FILE_BYTES = 8 * 1024 * 1024; // 8 MB
