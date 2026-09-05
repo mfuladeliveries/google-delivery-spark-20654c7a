@@ -209,9 +209,15 @@ const CheckoutDialog = ({
       try {
         const cat = await getCatalog();
         if (!alive) return;
-        const data = cat.restaurants.find((r) =>
-          primaryRestaurantId ? r.id === primaryRestaurantId : r.name === primaryRestaurantName,
+        const norm = (s: string) => s.trim().toLowerCase();
+        const matches = cat.restaurants.filter((r) =>
+          primaryRestaurantId
+            ? r.id === primaryRestaurantId
+            : norm(r.name) === norm(primaryRestaurantName),
         );
+        // Duplicate names exist in the catalog — prefer the one that is switched on.
+        const data = matches.find((r) => r.is_active) || matches[0];
+        setResolvedRestaurantId(data?.id ?? null);
         if (data && typeof data.lat === "number" && typeof data.lng === "number") {
           setRestaurantCoords({ lat: data.lat, lng: data.lng });
         } else {
