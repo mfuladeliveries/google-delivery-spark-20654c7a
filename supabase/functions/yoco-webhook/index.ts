@@ -132,10 +132,27 @@ Deno.serve(async (req) => {
         });
       }
       console.error("yoco-webhook: ledger insert failed", dupErr);
+      await logFailure(supabase, {
+        stage: "ledger_insert_failed",
+        event_id: eventId || null,
+        event_type: eventType,
+        order_id: orderId,
+        error_message: dupErr.message,
+        payload: event as unknown as Record<string, unknown>,
+        source_ip: sourceIp,
+      });
     }
 
     if (!orderId) {
       console.warn("yoco-webhook: could not resolve order", { eventType, checkoutId, paymentId });
+      await logFailure(supabase, {
+        stage: "order_unresolved",
+        event_id: eventId || null,
+        event_type: eventType,
+        error_message: `No order matched checkout ${checkoutId ?? "—"} / payment ${paymentId ?? "—"}`,
+        payload: event as unknown as Record<string, unknown>,
+        source_ip: sourceIp,
+      });
       return new Response(JSON.stringify({ received: true }), {
         status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
