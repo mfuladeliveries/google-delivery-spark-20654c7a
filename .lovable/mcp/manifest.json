@@ -1,0 +1,133 @@
+{
+  "version": 1,
+  "sdk_version": "2.0.4",
+  "path": "/mcp",
+  "auth": {
+    "type": "oauth",
+    "issuer": "https://kdplufybixfqsqhyixxw.supabase.co/auth/v1",
+    "accepted_audiences": [
+      "authenticated"
+    ]
+  },
+  "mcp": {
+    "server": {
+      "name": "mfula-deliveries",
+      "version": "0.1.0",
+      "title": "Mfula Deliveries"
+    },
+    "tools": [
+      {
+        "name": "list_restaurants",
+        "title": "List restaurants",
+        "description": "List restaurants available for delivery on Mfula Deliveries, optionally filtered by a name or cuisine search term.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "search": {
+              "type": "string",
+              "description": "Optional name or cuisine search term."
+            },
+            "limit": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50,
+              "description": "Maximum results (default 20)."
+            }
+          },
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "get_restaurant_menu",
+        "title": "Get restaurant menu",
+        "description": "Get the available menu items and prices for one restaurant by its id.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "restaurant_id": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Restaurant id from list_restaurants."
+            },
+            "category": {
+              "type": "string",
+              "description": "Optional menu category filter."
+            }
+          },
+          "required": [
+            "restaurant_id"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "list_my_orders",
+        "title": "List my orders",
+        "description": "List the signed-in customer's recent Mfula Deliveries orders, newest first.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "limit": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50,
+              "description": "Maximum results (default 10)."
+            },
+            "status": {
+              "type": "string",
+              "description": "Optional order status filter."
+            }
+          },
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "track_order",
+        "title": "Track an order",
+        "description": "Get the current delivery status and timeline of one of the signed-in customer's orders by order number.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "order_number": {
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "description": "The order number shown in the app."
+            }
+          },
+          "required": [
+            "order_number"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      }
+    ]
+  }
+}
