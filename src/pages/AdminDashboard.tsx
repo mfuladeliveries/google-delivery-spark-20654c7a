@@ -614,6 +614,24 @@ const AdminDashboard = () => {
           </div>
           <div className="ml-auto flex items-center gap-2">
             <Link
+              to="/admin/incidents"
+              className="rounded-xl border border-border px-2.5 py-1.5 text-[11px] font-bold text-muted-foreground hover:bg-secondary hover:text-foreground"
+            >
+              Incidents
+            </Link>
+            <Link
+              to="/admin/support"
+              className="rounded-xl border border-border px-2.5 py-1.5 text-[11px] font-bold text-muted-foreground hover:bg-secondary hover:text-foreground"
+            >
+              Support
+            </Link>
+            <Link
+              to="/admin/report"
+              className="rounded-xl border border-border px-2.5 py-1.5 text-[11px] font-bold text-muted-foreground hover:bg-secondary hover:text-foreground"
+            >
+              Report
+            </Link>
+            <Link
               to="/admin/diagnostics"
               className="rounded-xl border border-border px-2.5 py-1.5 text-[11px] font-bold text-muted-foreground hover:bg-secondary hover:text-foreground"
             >
