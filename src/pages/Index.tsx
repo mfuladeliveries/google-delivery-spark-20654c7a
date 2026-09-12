@@ -961,7 +961,7 @@ const Index = () => {
                 return matchesCuisine && matchesSearch;
               });
 
-              if (hasEffectiveCoords && currentZone == null) {
+              if (activeArea == null) {
                 return (
                   <div className="rounded-2xl border border-border bg-card py-16 text-center shadow-card">
                     <MapPinOff className="mx-auto mb-3 h-12 w-12 text-primary/60" />
@@ -990,11 +990,11 @@ const Index = () => {
                 );
               }
 
-              if (currentZone && matchesFilters.length === 0 && !search.trim() && selectedCuisine === "All") {
+              if (activeArea && !search.trim() && selectedCuisine === "All") {
                 return (
                   <div className="rounded-2xl border border-border bg-card py-16 text-center shadow-card">
                     <UtensilsCrossed className="mx-auto mb-3 h-12 w-12 text-muted-foreground/50" />
-                    <p className="font-semibold text-foreground">No restaurants in {currentZone.zone.name} yet</p>
+                    <p className="font-semibold text-foreground">No restaurants in {activeArea.name} yet</p>
                     <p className="mx-auto mt-1 max-w-xs text-sm text-muted-foreground">
                       We're onboarding restaurants in your area. Check back soon!
                     </p>
