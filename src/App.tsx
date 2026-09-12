@@ -24,6 +24,7 @@ import AdminDashboard from "./pages/AdminDashboard";
 import AdminDiagnostics from "./pages/AdminDiagnostics";
 import AdminDispatchMonitor from "./pages/AdminDispatchMonitor";
 import AdminIncidents from "./pages/AdminIncidents";
+import AdminYocoFailures from "./pages/AdminYocoFailures";
 import AdminDailyReport from "./pages/AdminDailyReport";
 import AdminSupport from "./pages/AdminSupport";
 import DriverPerformance from "./pages/DriverPerformance";
