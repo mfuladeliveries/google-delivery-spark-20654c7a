@@ -39,6 +39,11 @@ const Auth = () => {
   // go straight to their dashboard (no flicker through customer home).
   useEffect(() => {
     if (authLoading || !user || roles.length === 0) return;
+    const next = safeNextPath();
+    if (next) {
+      window.location.replace(next);
+      return;
+    }
     const installPath = shouldNudgeInstall(roles);
     if (installPath) {
       markInstallNudged();
