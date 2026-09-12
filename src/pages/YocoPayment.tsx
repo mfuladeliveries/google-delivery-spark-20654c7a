@@ -213,6 +213,21 @@ const YocoPayment = () => {
     setRetrying(false);
   };
 
+  // Fail-safe: if we're still sitting on the spinner 45s after starting a
+  // checkout, the redirect to Yoco failed silently — drop the spinner and
+  // show the retry screen instead of trapping the customer here.
+  useEffect(() => {
+    if (error || waitingForDriver) return;
+    const timer = window.setTimeout(() => {
+      if (handoffKey) sessionStorage.removeItem(handoffKey);
+      setError(
+        "We couldn't reach Yoco's secure checkout. Check your internet connection and try again.",
+      );
+    }, 45000);
+    return () => window.clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [error, waitingForDriver, handoffKey]);
+
   if (error) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center px-4">
