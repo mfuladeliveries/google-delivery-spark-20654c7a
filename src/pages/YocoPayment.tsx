@@ -38,6 +38,13 @@ const YocoPayment = () => {
   const calledRef = useRef(false);
   const busyRef = useRef(false);
 
+  // Remembers that we already handed this order over to Yoco. If the customer
+  // lands back on this page afterwards (failed payment, back button), we must
+  // NOT auto-launch a new checkout — route them to the result screen instead.
+  const handoffKey = state?.orderId ? `yoco_handoff_${state.orderId}` : null;
+  const wasHandedOff = () =>
+    !!handoffKey && sessionStorage.getItem(handoffKey) === "1";
+
   const startCheckout = useCallback(async () => {
     if (!state?.orderId || busyRef.current) return;
     busyRef.current = true;
@@ -98,13 +105,17 @@ const YocoPayment = () => {
       }
 
 
-      // Hand the customer over to Yoco's hosted checkout.
+      // Hand the customer over to Yoco's hosted checkout. Remember the handoff
+      // so a return visit to this page goes to the result screen instead of
+      // looping straight back into Yoco.
+      if (handoffKey) sessionStorage.setItem(handoffKey, "1");
       window.location.href = payload.redirect_url;
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to start payment.");
     } finally {
       busyRef.current = false;
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state, navigate]);
 
   // Before launching the checkout, ensure a driver is online for this order's area.
@@ -114,6 +125,17 @@ const YocoPayment = () => {
       navigate("/orders", { replace: true });
       return;
     }
+
+    // Returning from Yoco (failed/cancelled payment or the back button):
+    // don't start another checkout — let the result screen verify the
+    // payment server-side and show the right outcome.
+    if (wasHandedOff()) {
+      navigate(`/payment/result?order=${state.orderNumber}&order_id=${state.orderId}`, {
+        replace: true,
+      });
+      return;
+    }
+
     if (calledRef.current) return;
     calledRef.current = true;
 
@@ -190,6 +212,21 @@ const YocoPayment = () => {
     await startCheckout();
     setRetrying(false);
   };
+
+  // Fail-safe: if we're still sitting on the spinner 45s after starting a
+  // checkout, the redirect to Yoco failed silently — drop the spinner and
+  // show the retry screen instead of trapping the customer here.
+  useEffect(() => {
+    if (error || waitingForDriver) return;
+    const timer = window.setTimeout(() => {
+      if (handoffKey) sessionStorage.removeItem(handoffKey);
+      setError(
+        "We couldn't reach Yoco's secure checkout. Check your internet connection and try again.",
+      );
+    }, 45000);
+    return () => window.clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [error, waitingForDriver, handoffKey]);
 
   if (error) {
     return (
@@ -296,6 +333,12 @@ const YocoPayment = () => {
           <ShieldCheck className="h-3.5 w-3.5 text-primary" />
           Card details are entered on Yoco's secure page — never on our servers.
         </p>
+        <button
+          onClick={() => navigate("/orders", { replace: true })}
+          className="mt-4 w-full rounded-xl border border-border bg-background py-3 text-sm font-bold text-foreground"
+        >
+          Back to orders
+        </button>
       </div>
     </div>
   );
