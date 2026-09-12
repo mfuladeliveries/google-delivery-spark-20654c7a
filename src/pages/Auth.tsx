@@ -8,6 +8,15 @@ import { getHomeRouteForRoles } from "@/lib/homeRoute";
 import { shouldNudgeInstall, markInstallNudged } from "@/lib/installRedirect";
 import { Eye, EyeOff } from "lucide-react";
 
+// Returns a validated same-origin relative path to return to after sign-in
+// (used by the agent-integration consent flow), or null.
+const safeNextPath = (): string | null => {
+  const raw = new URLSearchParams(window.location.search).get("next");
+  if (!raw) return null;
+  if (!raw.startsWith("/") || raw.startsWith("//")) return null;
+  return raw;
+};
+
 const Auth = () => {
   const [isLogin, setIsLogin] = useState(true);
   const [showOtp, setShowOtp] = useState(false);
@@ -39,6 +48,11 @@ const Auth = () => {
   // go straight to their dashboard (no flicker through customer home).
   useEffect(() => {
     if (authLoading || !user || roles.length === 0) return;
+    const next = safeNextPath();
+    if (next) {
+      window.location.replace(next);
+      return;
+    }
     const installPath = shouldNudgeInstall(roles);
     if (installPath) {
       markInstallNudged();
@@ -133,7 +147,14 @@ const Auth = () => {
         return;
       }
 
-      const { error } = await supabase.auth.signUp({ email: email.trim(), password });
+      const next = safeNextPath();
+      const { error } = await supabase.auth.signUp({
+        email: email.trim(),
+        password,
+        options: next
+          ? { emailRedirectTo: `${window.location.origin}${next}` }
+          : undefined,
+      });
       if (error) setError(mapSignupError(error.message));
       else {
         setShowOtp(true);
@@ -318,7 +339,7 @@ const Auth = () => {
                 type="button"
                 onClick={async () => {
                   const { error } = await lovable.auth.signInWithOAuth("google", {
-                    redirect_uri: window.location.origin,
+                    redirect_uri: `${window.location.origin}${safeNextPath() ?? ""}`,
                   });
                   if (error) setError(error.message);
                 }}

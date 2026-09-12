@@ -15,6 +15,7 @@ import OrderConfirmation from "./pages/OrderConfirmation";
 import PaymentResult from "./pages/PaymentResult";
 import YocoPayment from "./pages/YocoPayment";
 import NotFound from "./pages/NotFound";
+import OAuthConsent from "./pages/OAuthConsent";
 import RestaurantMenu from "./pages/RestaurantMenu";
 import RestaurantDashboard from "./pages/RestaurantDashboard";
 import DriverDashboard from "./pages/DriverDashboard";
@@ -253,6 +254,7 @@ const App = () => (
             <Route path="/terms-and-conditions" element={<TermsAndConditions />} />
             <Route path="/delivery-policy" element={<DeliveryPolicy />} />
             <Route path="/refund-policy" element={<RefundPolicy />} />
+            <Route path="/.lovable/oauth/consent" element={<OAuthConsent />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
