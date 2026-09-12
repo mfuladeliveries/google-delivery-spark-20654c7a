@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, lazy, Suspense } from "react";
+import { useState, useEffect, useMemo, useRef, lazy, Suspense } from "react";
 import {
   X,
   Package,
@@ -16,6 +16,7 @@ import {
   Plus,
   Star,
   BookmarkPlus,
+  Tag,
 } from "lucide-react";
 import { CartItem, isCompanionStore } from "@/hooks/useCart";
 import { storeInfo } from "@/data/menu";
@@ -114,6 +115,9 @@ const CheckoutDialog = ({
   const [saveForNextTime, setSaveForNextTime] = useState(false);
   const [nextTimeLabel, setNextTimeLabel] = useState("Home");
   const [useWallet, setUseWallet] = useState(false);
+  const [checkoutCode, setCheckoutCode] = useState("");
+  const [codePreview, setCodePreview] = useState<{ code: string; type: "promo" | "referral"; discount: number } | null>(null);
+  const [checkingCode, setCheckingCode] = useState(false);
   const [name, setName] = useState("");
   const [contact, setContact] = useState("");
   const [address, setAddress] = useState("");
@@ -133,6 +137,11 @@ const CheckoutDialog = ({
   const paymentMethod: "online" = "online";
   const setPaymentMethod = (_: "online") => {}; // no-op kept for legacy refs
   const [loading, setLoading] = useState(false);
+  // Synchronous guard against double-tap/double-click submitting the order
+  // twice before React re-renders the disabled button. `loading` state alone
+  // isn't enough because a fast double-tap can fire both click handlers
+  // before the first state update is reflected in the DOM.
+  const submittingRef = useRef(false);
   const [policiesAccepted, setPoliciesAccepted] = useState(false);
   const [profileLoaded, setProfileLoaded] = useState(false);
   const [restaurantCoords, setRestaurantCoords] = useState<{ lat: number; lng: number } | null>(
@@ -390,8 +399,10 @@ const CheckoutDialog = ({
   // (which may be stale if the address was changed mid-checkout).
   const effectiveDelivery = zoneFee != null ? zoneFee : delivery;
   const grossTotal = subtotal + tax + effectiveDelivery + actualTip;
-  const creditsToApply = useWallet && walletBalance > 0 ? Math.min(walletBalance, grossTotal) : 0;
-  const total = Math.max(0, grossTotal - creditsToApply);
+  const codeDiscount = codePreview?.discount ?? 0;
+  const discountedGrossTotal = Math.max(0, grossTotal - codeDiscount);
+  const creditsToApply = useWallet && walletBalance > 0 ? Math.min(walletBalance, discountedGrossTotal) : 0;
+  const total = Math.max(0, discountedGrossTotal - creditsToApply);
 
   // Load profile to prefill name + contact. We deliberately do NOT prefill the
   // delivery address — it must always be re-selected from autocomplete or the
@@ -413,7 +424,50 @@ const CheckoutDialog = ({
     loadProfile();
   }, [user, profileLoaded]);
 
+  const validateCheckoutCode = async () => {
+    if (!user || !checkoutCode.trim()) return;
+    setCheckingCode(true);
+    try {
+      const code = checkoutCode.trim().toUpperCase();
+      const { data: promos } = await (supabase as any).from("promo_codes").select("code,discount_type,discount_value,min_order,max_discount,active,starts_at,ends_at").eq("code", code).limit(1);
+      const promo = promos?.[0];
+      if (promo) {
+        if (subtotal < Number(promo.min_order || 0)) throw new Error(`Minimum order is R${Number(promo.min_order).toFixed(2)}`);
+        let discount = promo.discount_type === "percent" ? subtotal * Number(promo.discount_value) / 100 : Number(promo.discount_value);
+        if (promo.max_discount != null) discount = Math.min(discount, Number(promo.max_discount));
+        discount = Math.min(discount, grossTotal);
+        setCodePreview({ code, type: "promo", discount });
+        toast.success(`Promo applied: save R${discount.toFixed(2)}`);
+        return;
+      }
+      const { data: refs } = await (supabase as any).from("referral_codes").select("code,user_id").eq("code", code).limit(1);
+      if (refs?.[0]) {
+        if (refs[0].user_id === user.id) throw new Error("You cannot use your own referral code");
+        const discount = Math.min(10, grossTotal);
+        setCodePreview({ code, type: "referral", discount });
+        toast.success(`Referral applied: save R${discount.toFixed(2)}`);
+        return;
+      }
+      throw new Error("Invalid or expired code");
+    } catch (e) {
+      setCodePreview(null);
+      toast.error(e instanceof Error ? e.message : "Could not validate code");
+    } finally { setCheckingCode(false); }
+  };
+
   const handleCheckout = async () => {
+    // Synchronous re-entrancy guard: blocks a second invocation fired by a
+    // fast double-tap before React has re-rendered the disabled button.
+    if (submittingRef.current) return;
+    submittingRef.current = true;
+    try {
+      await handleCheckoutInner();
+    } finally {
+      submittingRef.current = false;
+    }
+  };
+
+  const handleCheckoutInner = async () => {
     if (!user) {
       toast.error("Please sign in to place an order.");
       return;
@@ -674,6 +728,16 @@ const CheckoutDialog = ({
       const orderNum = orderResult?.order_number || "N/A";
       const orderId = orderResult?.order_id as string;
 
+      // Apply the validated promo/referral code server-side before payment is created.
+      if (orderId && codePreview?.code) {
+        const { error: codeErr } = await (supabase as any).rpc("apply_checkout_code", { p_order_id: orderId, p_code: codePreview.code });
+        if (codeErr) {
+          toast.error(codeErr.message || "Could not apply promo/referral code");
+          setLoading(false);
+          return;
+        }
+      }
+
       // Persist the customer's policy acceptance alongside the order.
       if (orderId) {
         const { error: policyErr } = await supabase.from("order_policy_acceptances").insert({
@@ -708,8 +772,16 @@ const CheckoutDialog = ({
         localStorage.setItem("delivery_pins", JSON.stringify(pins));
       }
 
-      const orderTotalNum = Number(orderResult?.total) || 0;
-      const orderStatus = String(orderResult?.status || "pending_payment");
+      // Re-read the authoritative total after promo/referral and wallet adjustments.
+      let orderTotalNum = Number(orderResult?.total) || 0;
+      let orderStatus = String(orderResult?.status || "pending_payment");
+      if (orderId) {
+        const { data: refreshedOrder } = await supabase.from("orders").select("total,status").eq("id", orderId).maybeSingle();
+        if (refreshedOrder) {
+          orderTotalNum = Number(refreshedOrder.total) || 0;
+          orderStatus = String(refreshedOrder.status || orderStatus);
+        }
+      }
 
       if (orderId) {
         savePendingPaymentOrder({
@@ -1199,6 +1271,16 @@ const CheckoutDialog = ({
             )}
           </div>
 
+          {/* Promo / referral code */}
+          <div className="rounded-2xl border border-border bg-card p-4">
+            <label className="mb-2 flex items-center gap-2 text-sm font-bold text-foreground"><Tag className="h-4 w-4 text-primary" /> Promo or referral code</label>
+            <div className="flex gap-2">
+              <input value={checkoutCode} onChange={(e)=>{setCheckoutCode(e.target.value.toUpperCase()); setCodePreview(null);}} placeholder="e.g. MFULA10 or MFABC123" className="min-w-0 flex-1 rounded-xl border border-border bg-background px-3 py-2.5 text-sm uppercase" />
+              <button type="button" disabled={!checkoutCode.trim() || checkingCode} onClick={validateCheckoutCode} className="rounded-xl bg-primary px-4 py-2 text-xs font-bold text-primary-foreground disabled:opacity-50">{checkingCode ? "Checking…" : "Apply"}</button>
+            </div>
+            {codePreview && <p className="mt-2 text-xs font-semibold text-emerald-700">✓ {codePreview.code} · saving {storeInfo.currency}{codePreview.discount.toFixed(2)}</p>}
+          </div>
+
           {/* Wallet Credits */}
           {walletBalance > 0 && (
             <div className="rounded-2xl border-2 border-primary/30 bg-primary/5 p-4">
@@ -1324,6 +1406,12 @@ const CheckoutDialog = ({
                   {storeInfo.currency}
                   {actualTip.toFixed(2)}
                 </span>
+              </div>
+            )}
+            {codeDiscount > 0 && (
+              <div className="flex justify-between text-emerald-700">
+                <span>{codePreview?.type === "referral" ? "Referral discount" : "Promo discount"}</span>
+                <span>−{storeInfo.currency}{codeDiscount.toFixed(2)}</span>
               </div>
             )}
             {creditsToApply > 0 && (

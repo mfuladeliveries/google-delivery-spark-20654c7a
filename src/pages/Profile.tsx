@@ -12,6 +12,8 @@ import {
   Package,
   ChevronRight,
   Wallet,
+  Gift,
+  Copy,
 } from "lucide-react";
 import { storeInfo } from "@/data/menu";
 import BottomNav from "@/components/BottomNav";
@@ -60,6 +62,7 @@ const Profile = () => {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [locating, setLocating] = useState(false);
+  const [referralCode, setReferralCode] = useState("");
 
   useEffect(() => {
     if (!authLoading && !user) navigate("/auth");
@@ -88,6 +91,8 @@ const Profile = () => {
           address: prof.address || "",
         });
       if (orders) setRecentOrders(orders as Order[]);
+      const { data: refCode } = await (supabase as any).rpc("get_or_create_referral_code");
+      if (refCode) setReferralCode(String(refCode));
       setLoading(false);
     };
     load();
@@ -186,6 +191,18 @@ const Profile = () => {
             Credits from cancelled orders apply automatically at checkout.
           </p>
         </div>
+
+        {/* Referral code */}
+        {role === "customer" && referralCode && (
+          <div className="rounded-2xl border border-border bg-card p-4 shadow-card">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10"><Gift className="h-5 w-5 text-primary" /></div>
+              <div className="min-w-0 flex-1"><p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Your referral code</p><p className="text-xl font-black tracking-wider text-foreground">{referralCode}</p></div>
+              <button type="button" onClick={()=>{navigator.clipboard?.writeText(referralCode);}} className="rounded-xl border border-border p-2.5 text-muted-foreground hover:bg-secondary" aria-label="Copy referral code"><Copy className="h-4 w-4" /></button>
+            </div>
+            <p className="mt-2 text-[11px] text-muted-foreground">A new customer gets R10 off their first order. You receive R10 wallet credit after their first delivery.</p>
+          </div>
+        )}
 
         {/* Wallet history */}
         <WalletHistory />

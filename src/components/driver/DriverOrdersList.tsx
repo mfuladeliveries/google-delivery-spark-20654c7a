@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import {
   MapPin,
   Clock,
@@ -13,6 +13,7 @@ import {
   X,
   Loader2,
 } from "lucide-react";
+import { estimatedRemainingMinutes, sortDriverOrders } from "@/lib/operations";
 
 interface Order {
   id: string;
@@ -194,6 +195,9 @@ const OrderCard = ({
             <Clock className="h-3 w-3" />
             {minutesAgo}m ago
           </span>
+          {isAssigned && (
+            <span className="text-[10px] font-semibold text-primary">~{estimatedRemainingMinutes(order.status)}m left</span>
+          )}
           <span className="ml-auto text-[10px] text-muted-foreground">
             {order.items.length} items
           </span>
@@ -259,10 +263,11 @@ const DriverOrdersList = ({
   rejectingId,
 }: DriverOrdersListProps) => {
   const [distances, setDistances] = useState<Record<string, number | null>>({});
+  const prioritisedAssigned = useMemo(() => sortDriverOrders(assignedOrders), [assignedOrders]);
 
   useEffect(() => {
     if (!driverLocation) return;
-    const all = [...assignedOrders, ...availableOrders];
+    const all = [...prioritisedAssigned, ...availableOrders];
     all.forEach(async (order) => {
       if (distances[order.id] !== undefined) return;
       const key = order.customer_address || order.restaurant;
@@ -295,7 +300,7 @@ const DriverOrdersList = ({
         setDistances((p) => ({ ...p, [order.id]: null }));
       }
     });
-  }, [assignedOrders, availableOrders, driverLocation]);
+  }, [prioritisedAssigned, availableOrders, driverLocation]);
 
   return (
     <div className="space-y-4">
@@ -311,13 +316,19 @@ const DriverOrdersList = ({
       {/* Assigned section */}
       {assignedOrders.length > 0 && (
         <section>
+          {assignedOrders.length > 1 && (
+            <div className="mb-3 rounded-2xl border border-amber-500/30 bg-amber-500/10 p-3">
+              <p className="text-sm font-bold text-foreground">Current Trips · {assignedOrders.length} active deliveries</p>
+              <p className="mt-1 text-xs text-muted-foreground">Priority order is shown automatically: deliver food already collected first, then complete restaurant pickups.</p>
+            </div>
+          )}
           <div className="flex items-center gap-2 mb-2 px-1">
             <Truck className="h-4 w-4 text-primary" />
             <h2 className="text-sm font-bold text-foreground">My Deliveries</h2>
             <span className="text-xs text-muted-foreground">({assignedOrders.length})</span>
           </div>
           <div className="space-y-3">
-            {assignedOrders.map((o) => (
+            {prioritisedAssigned.map((o) => (
               <OrderCard
                 key={o.id}
                 order={o}

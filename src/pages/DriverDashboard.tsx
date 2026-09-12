@@ -19,6 +19,7 @@ import DriverOrdersList from "@/components/driver/DriverOrdersList";
 import NewOrderModal from "@/components/driver/NewOrderModal";
 import DriverActiveDelivery from "@/components/driver/DriverActiveDelivery";
 import DriverEarnings from "@/components/driver/DriverEarnings";
+import DriverPerformance from "@/components/driver/DriverPerformance";
 import DriverWithdrawals from "@/components/driver/DriverWithdrawals";
 import DriverProfileTab from "@/components/driver/DriverProfile";
 import DriverServiceArea from "@/components/driver/DriverServiceArea";
@@ -733,7 +734,10 @@ const DriverDashboard = () => {
         )}
 
         {tab === "earnings" && (
-          <DriverEarnings driverProfile={driverProfile} completedOrders={completedOrders} />
+          <div className="space-y-6">
+            <DriverEarnings driverProfile={driverProfile} completedOrders={completedOrders} />
+            {user?.id && <DriverPerformance driverId={user.id} />}
+          </div>
         )}
 
         {tab === "withdraw" && <DriverWithdrawals />}

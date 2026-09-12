@@ -1,0 +1,20 @@
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { toast } from "sonner";
+import { Plus, Tag, ToggleLeft, ToggleRight } from "lucide-react";
+
+type Promo = { id:string; code:string; discount_type:"percent"|"fixed"; discount_value:number; min_order:number; max_discount:number|null; usage_limit:number|null; usage_count:number; active:boolean; ends_at:string|null };
+export default function AdminPromotions(){
+  const [rows,setRows]=useState<Promo[]>([]); const [loading,setLoading]=useState(true); const [show,setShow]=useState(false);
+  const [form,setForm]=useState({code:"",type:"percent",value:"10",min:"0",max:"",limit:""});
+  const load=async()=>{setLoading(true); const {data,error}=await (supabase as any).from("promo_codes").select("*").order("created_at",{ascending:false}); if(error) toast.error(error.message); setRows((data??[]) as Promo[]); setLoading(false);};
+  useEffect(()=>{load()},[]);
+  const create=async()=>{ const code=form.code.trim().toUpperCase(); if(!code) return toast.error("Enter a promo code"); const {error}=await (supabase as any).from("promo_codes").insert({code,discount_type:form.type,discount_value:Number(form.value),min_order:Number(form.min||0),max_discount:form.max?Number(form.max):null,usage_limit:form.limit?Number(form.limit):null}); if(error) return toast.error(error.message); toast.success("Promo code created"); setShow(false); setForm({code:"",type:"percent",value:"10",min:"0",max:"",limit:""}); load();};
+  const toggle=async(p:Promo)=>{const {error}=await (supabase as any).from("promo_codes").update({active:!p.active}).eq("id",p.id); if(error) toast.error(error.message); else load();};
+  return <div className="space-y-4"><div className="flex items-center justify-between"><div><h2 className="font-bold text-lg">Promo codes</h2><p className="text-sm text-muted-foreground">Create discounts and control usage.</p></div><Button size="sm" onClick={()=>setShow(!show)}><Plus className="h-4 w-4 mr-1"/>New promo</Button></div>
+  {show&&<Card><CardContent className="p-4 grid gap-3 md:grid-cols-3"><Input placeholder="Code e.g. MFULA10" value={form.code} onChange={e=>setForm({...form,code:e.target.value.toUpperCase()})}/><select className="rounded-md border bg-background px-3 text-sm" value={form.type} onChange={e=>setForm({...form,type:e.target.value})}><option value="percent">Percent %</option><option value="fixed">Fixed rand</option></select><Input type="number" placeholder="Value" value={form.value} onChange={e=>setForm({...form,value:e.target.value})}/><Input type="number" placeholder="Minimum order" value={form.min} onChange={e=>setForm({...form,min:e.target.value})}/><Input type="number" placeholder="Max discount (optional)" value={form.max} onChange={e=>setForm({...form,max:e.target.value})}/><Input type="number" placeholder="Usage limit (optional)" value={form.limit} onChange={e=>setForm({...form,limit:e.target.value})}/><Button onClick={create} className="md:col-span-3">Create promo code</Button></CardContent></Card>}
+  {loading?<p className="text-sm text-muted-foreground">Loading promos…</p>:<div className="grid gap-3">{rows.length===0&&<p className="text-sm text-muted-foreground">No promo codes yet.</p>}{rows.map(p=><Card key={p.id}><CardContent className="p-4 flex items-center gap-3"><div className="h-9 w-9 rounded-xl bg-primary/10 flex items-center justify-center"><Tag className="h-4 w-4 text-primary"/></div><div className="flex-1"><p className="font-bold">{p.code}</p><p className="text-xs text-muted-foreground">{p.discount_type==="percent"?`${p.discount_value}% off`:`R${p.discount_value} off`} · min R{p.min_order} · used {p.usage_count}{p.usage_limit?`/${p.usage_limit}`:""}</p></div><button onClick={()=>toggle(p)} className={p.active?"text-emerald-600":"text-muted-foreground"}>{p.active?<ToggleRight className="h-7 w-7"/>:<ToggleLeft className="h-7 w-7"/>}</button></CardContent></Card>)}</div>}</div>;
+}

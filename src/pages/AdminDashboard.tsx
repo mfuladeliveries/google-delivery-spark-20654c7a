@@ -38,6 +38,7 @@ import AdminDeliveryAreas from "@/components/admin/AdminDeliveryAreas";
 import AdminFeeManagement from "@/components/admin/AdminFeeManagement";
 import OrderDispatchLog from "@/components/admin/OrderDispatchLog";
 import AdminMenuManager from "@/components/admin/AdminMenuManager";
+import AdminPromotions from "@/components/admin/AdminPromotions";
 import { toast } from "sonner";
 import { sendPushNotification } from "@/lib/pushNotify";
 import { geocodeAddress } from "@/lib/geocode";
@@ -206,6 +207,7 @@ const AdminDashboard = () => {
     | "drivers"
     | "areas"
     | "fees"
+    | "promos"
     | "about"
   >("overview");
   const [stats, setStats] = useState<Stats>({
@@ -593,6 +595,7 @@ const AdminDashboard = () => {
     "drivers",
     "areas",
     "fees",
+    "promos",
     "about",
   ] as const;
 
@@ -611,10 +614,16 @@ const AdminDashboard = () => {
           </div>
           <div className="ml-auto flex items-center gap-2">
             <Link
+              to="/admin/diagnostics"
+              className="rounded-xl border border-border px-2.5 py-1.5 text-[11px] font-bold text-muted-foreground hover:bg-secondary hover:text-foreground"
+            >
+              Health
+            </Link>
+            <Link
               to="/admin/dispatch"
               className="rounded-xl border border-border px-2.5 py-1.5 text-[11px] font-bold text-muted-foreground hover:bg-secondary hover:text-foreground"
             >
-              Dispatch Monitor
+              Dispatch
             </Link>
             <InstallAppButton variant="admin" compact />
           </div>
@@ -843,6 +852,8 @@ const AdminDashboard = () => {
 
         {/* Delivery Fee Management (peak surcharges + audit log) */}
         {tab === "fees" && <AdminFeeManagement />}
+
+        {tab === "promos" && <AdminPromotions />}
 
         {/* About Page Editor */}
         {tab === "about" && (

@@ -48,5 +48,10 @@ bun run e2e:report           # open the last HTML report
 
 - Tests **share the live database**. Run them serially (the config does this) and prefer dedicated test accounts.
 - The customer spec places a **real** order — the admin cleanup spec then cancels it. If the admin spec fails to run, you'll need to cancel the order manually.
-- Tests pre-grant geolocation to Johannesburg CBD so the service-area check passes. Adjust `geolocation` in `playwright.config.ts` if your service area is configured elsewhere.
+- Tests pre-grant geolocation to Mfuleni, Cape Town (-33.99472, 18.67583) so the service-area check uses a real in-service-area coordinate. Adjust `geolocation` in `playwright.config.ts` if your service area changes.
 - Drivers must already have bank details + be marked online via the dashboard if you want the order spec to dispatch to them; otherwise the order will sit in `ready` until the admin spec cancels it.
+
+
+## Multiple active deliveries regression
+
+`driver-multiple-orders.spec.ts` verifies the production rule that one online driver may carry more than one active delivery. For the live assertion to run, seed the E2E driver with one active order and leave at least one eligible ready order available to that same driver. The test then accepts the second order and confirms that two active orders are assigned simultaneously.

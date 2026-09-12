@@ -25,7 +25,7 @@ export default defineConfig({
     // The app reads geolocation in the checkout dialog. Pre-grant + mock to a known
     // in-service-area coordinate so create_verified_order's check_service_area passes.
     permissions: ["geolocation"],
-    geolocation: { latitude: -26.2041, longitude: 28.0473 }, // Johannesburg CBD
+    geolocation: { latitude: -33.99472, longitude: 18.67583 }, // Mfuleni, Cape Town
     locale: "en-ZA",
     timezoneId: "Africa/Johannesburg",
   },

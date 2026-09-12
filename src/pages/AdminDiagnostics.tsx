@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { ArrowLeft, RefreshCw, CheckCircle2, XCircle, Loader2, AlertTriangle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { summarizeOperations } from "@/lib/operations";
 
 type Status = "idle" | "checking" | "ok" | "fail" | "warn";
 
@@ -69,6 +70,7 @@ export default function AdminDiagnostics() {
   const [db, setDb] = useState<Check>(initial);
   const [edge, setEdge] = useState<Check>(initial);
   const [realtime, setRealtime] = useState<Check>(initial);
+  const [operations, setOperations] = useState<Check>(initial);
   const [running, setRunning] = useState(false);
 
   const runAll = useCallback(async () => {
@@ -147,6 +149,32 @@ export default function AdminDiagnostics() {
       setEdge({ status: "fail", label: "Edge function unreachable", detail: (err as Error).message });
     }
 
+    // Operations health: active, delayed, unpaid and no-driver orders
+    setOperations({ status: "checking", label: "Checking live order health…" });
+    try {
+      const t0 = performance.now();
+      const { data, error } = await supabase
+        .from("orders")
+        .select("status, created_at, payment_status, driver_id")
+        .order("created_at", { ascending: false })
+        .limit(250);
+      const dt = Math.round(performance.now() - t0);
+      if (error) {
+        setOperations({ status: "fail", label: "Could not read recent orders", detail: error.message, latencyMs: dt });
+      } else {
+        const summary = summarizeOperations((data as any[]) || []);
+        const problems = summary.stuck + summary.noDriver + summary.unpaid;
+        setOperations({
+          status: problems > 0 ? "warn" : "ok",
+          label: problems > 0 ? `${problems} operational item(s) need attention` : "No obvious operational blockers",
+          detail: `${summary.active} active · ${summary.stuck} delayed >60m · ${summary.noDriver} waiting >15m for driver · ${summary.unpaid} payment issue(s)`,
+          latencyMs: dt,
+        });
+      }
+    } catch (err) {
+      setOperations({ status: "fail", label: "Operations check failed", detail: (err as Error).message });
+    }
+
     // Realtime
     setRealtime({ status: "checking", label: "Connecting to realtime…" });
     await new Promise<void>((resolve) => {
@@ -178,8 +206,8 @@ export default function AdminDiagnostics() {
     runAll();
   }, [runAll]);
 
-  const overallOk = [auth, db, edge, realtime].every((c) => c.status === "ok");
-  const anyFail = [auth, db, edge, realtime].some((c) => c.status === "fail");
+  const overallOk = [auth, db, edge, realtime, operations].every((c) => c.status === "ok");
+  const anyFail = [auth, db, edge, realtime, operations].some((c) => c.status === "fail");
 
   return (
     <div className="min-h-screen bg-background pb-16">
@@ -248,6 +276,11 @@ export default function AdminDiagnostics() {
           title="Edge Functions"
           description="Invokes the get-catalog edge function and measures latency."
           check={edge}
+        />
+        <Row
+          title="Operations Health"
+          description="Checks recent orders for delays, missing drivers and payment problems."
+          check={operations}
         />
         <Row
           title="Realtime"

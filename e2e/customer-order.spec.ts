@@ -61,7 +61,7 @@ test.describe("Customer order flow", () => {
     if (await addressInput.isVisible().catch(() => false)) {
       await page.waitForTimeout(2000);
       const current = await addressInput.inputValue();
-      if (!current) await addressInput.fill("123 Test Street, Johannesburg");
+      if (!current) await addressInput.fill("Mfuleni, Cape Town");
     }
 
     // Final submit lives inside the checkout dialog.

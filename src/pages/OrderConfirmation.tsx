@@ -3,7 +3,6 @@ import { useLocation, useNavigate, useSearchParams, Link } from "react-router-do
 import {
   CheckCircle2,
   Clock,
-  KeyRound,
   StickyNote,
   Navigation,
   Package,
@@ -13,6 +12,7 @@ import {
   RefreshCw,
 } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
+import DeliveryPinCard from "@/components/DeliveryPinCard";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { RestaurantName } from "@/components/RestaurantName";
@@ -422,21 +422,15 @@ const OrderConfirmation = () => {
         </div>
 
         {/* Delivery PIN — only revealed once the order is fully placed:
-            online orders need payment approved; cash orders need restaurant acceptance. */}
-        {!paymentPending && !awaitingRestaurant && !rejected && deliveryPin !== "------" && (
-          <div className="mt-3 flex items-center gap-3 rounded-2xl border-2 border-primary/30 bg-primary/5 p-4">
-            <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl bg-primary/10">
-              <KeyRound className="h-5 w-5 text-primary" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-xs font-semibold text-foreground">Delivery PIN</p>
-              <p className="text-[11px] text-muted-foreground">
-                Share this with the driver on arrival
-              </p>
-            </div>
-            <p className="font-display text-2xl font-bold tracking-[0.2em] text-primary">
-              {deliveryPin}
-            </p>
+            online orders need payment approved; cash orders need restaurant acceptance.
+            Uses DeliveryPinCard (same as the Orders list) so the PIN is fetched
+            from the server via get_active_delivery_pin and can be regenerated
+            with "Resend PIN" if this device never saw it locally (e.g. after
+            the Yoco payment redirect, which drops React Router state and any
+            plaintext PIN the browser only kept in memory/localStorage). */}
+        {!paymentPending && !awaitingRestaurant && !rejected && orderId && (
+          <div className="mt-3">
+            <DeliveryPinCard orderId={orderId} localPin={deliveryPin !== "------" ? deliveryPin : ""} />
           </div>
         )}
 

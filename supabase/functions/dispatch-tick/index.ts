@@ -170,11 +170,16 @@ Deno.serve(async (req) => {
 
     // === 15-minute no-driver timeout escalation ===
     // Mark stuck orders as `no_driver_found` and notify admins + the customer.
+    // NOTE: orders that are actually looking for a driver sit at
+    // status = 'ready' with dispatch_phase in ('offer_a','offer_b','waiting')
+    // -- the live flow never sets status = 'pending', so that used to match
+    // zero rows and this escalation never fired.
     const fifteenMinAgo = new Date(Date.now() - 15 * 60 * 1000).toISOString();
     const { data: stuckOrders } = await supabase
       .from("orders")
       .select("id, order_number, restaurant, restaurant_id, total, user_id")
-      .eq("status", "pending")
+      .eq("status", "ready")
+      .in("dispatch_phase", ["offer_a", "offer_b", "waiting"])
       .is("driver_id", null)
       .lt("created_at", fifteenMinAgo);
 
@@ -185,7 +190,7 @@ Deno.serve(async (req) => {
         .from("orders")
         .update({ status: "no_driver_found" })
         .in("id", ids)
-        .eq("status", "pending")
+        .eq("status", "ready")
         .is("driver_id", null);
 
       if (!updateErr) {

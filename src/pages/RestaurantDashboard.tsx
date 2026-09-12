@@ -32,6 +32,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import FoodImageUpload from "@/components/FoodImageUpload";
 import InstallAppButton from "@/components/InstallAppButton";
 import RestaurantEarnings from "@/components/restaurant/RestaurantEarnings";
+import RestaurantPerformance from "@/components/restaurant/RestaurantPerformance";
 
 interface Order {
   id: string;
@@ -130,7 +131,7 @@ const statusFlow = ["confirmed", "preparing", "ready"];
 const RestaurantDashboard = () => {
   const { user, role, loading: authLoading } = useAuth();
   const navigate = useNavigate();
-  const [tab, setTab] = useState<"orders" | "menu" | "earnings">("orders");
+  const [tab, setTab] = useState<"orders" | "menu" | "earnings" | "performance">("orders");
   const [orders, setOrders] = useState<Order[]>([]);
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [restaurant, setRestaurant] = useState<Restaurant | null>(null);
@@ -290,7 +291,37 @@ const RestaurantDashboard = () => {
   const updateOrderStatus = async (orderId: string, status: string) => {
     const order = orders.find((o) => o.id === orderId);
     const oldStatus = order?.status;
-    await supabase.from("orders").update({ status }).eq("id", orderId);
+
+    // Don't touch orders that have already reached a terminal state — an
+    // update here is either a stale click from a second tab/device or a
+    // race with the driver/dispatch flow, and either way it must not
+    // silently revert an order that's already delivered/cancelled/rejected.
+    if (oldStatus && ["delivered", "cancelled", "rejected"].includes(oldStatus)) {
+      toast.error(`Order #${order?.order_number ?? ""} is already ${oldStatus} and can't be changed.`);
+      return;
+    }
+
+    // Optimistic-lock the write with the status we last saw, and read back
+    // the row so we know whether it actually changed (rather than assuming
+    // success and letting the UI drift out of sync with the database).
+    let updateQuery = supabase.from("orders").update({ status }).eq("id", orderId);
+    if (oldStatus) updateQuery = updateQuery.eq("status", oldStatus);
+    const { data: updatedRows, error: updateError } = await updateQuery.select("id");
+
+    if (updateError) {
+      console.error("Failed to update order status:", updateError);
+      toast.error(`Couldn't update order #${order?.order_number ?? ""}: ${updateError.message}`);
+      return;
+    }
+    if (!updatedRows || updatedRows.length === 0) {
+      // Someone else already changed this order's status since we last loaded it.
+      toast.error(
+        `Order #${order?.order_number ?? ""} was already updated elsewhere. Refreshing…`,
+      );
+      if (restaurant?.id) fetchOrdersFor(restaurant.id);
+      return;
+    }
+
     setOrders((prev) => prev.map((o) => (o.id === orderId ? { ...o, status } : o)));
 
     // When restaurant marks an order ready, start the targeted dispatch chain
@@ -465,7 +496,13 @@ const RestaurantDashboard = () => {
     () => orders.filter((o) => new Date(o.created_at) >= today),
     [orders],
   );
-  const pendingOrders = useMemo(() => orders.filter((o) => o.status === "pending"), [orders]);
+  // Freshly-paid orders land on "confirmed" (the legacy "pending" status is
+  // never actually set by the order-creation/payment flow, so it's kept here
+  // only for backward compatibility with any very old rows).
+  const pendingOrders = useMemo(
+    () => orders.filter((o) => o.status === "pending" || o.status === "confirmed"),
+    [orders],
+  );
   const inProgressOrders = useMemo(
     () =>
       orders.filter((o) =>
@@ -614,7 +651,7 @@ const RestaurantDashboard = () => {
           </div>
           <div className="flex items-center gap-2">
             <InstallAppButton variant="restaurant" compact />
-            {(["orders", "menu", "earnings"] as const).map((t) => (
+            {(["orders", "menu", "earnings", "performance"] as const).map((t) => (
               <button
                 key={t}
                 onClick={() => setTab(t)}
@@ -624,7 +661,7 @@ const RestaurantDashboard = () => {
                     : "text-muted-foreground hover:bg-secondary"
                 }`}
               >
-                {t === "orders" ? "Orders" : t === "menu" ? "Menu" : "Earnings"}
+                {t === "orders" ? "Orders" : t === "menu" ? "Menu" : t === "earnings" ? "Earnings" : "Performance"}
               </button>
             ))}
           </div>
@@ -769,7 +806,10 @@ const RestaurantDashboard = () => {
               <div className="space-y-3">
                 {filteredOrders.map((order) => {
                   const sc = STATUS_CONFIG[order.status] || STATUS_CONFIG.pending;
-                  const isPending = order.status === "pending";
+                  // "confirmed" is where a freshly-paid order actually lands
+                  // (see pendingOrders above) — it needs the same "NEW" call
+                  // to action as the legacy "pending" status.
+                  const isPending = order.status === "pending" || order.status === "confirmed";
 
                   return (
                     <Card
@@ -1233,6 +1273,10 @@ const RestaurantDashboard = () => {
 
         {tab === "earnings" && restaurant?.id && (
           <RestaurantEarnings restaurantId={restaurant.id} />
+        )}
+
+        {tab === "performance" && restaurant?.id && (
+          <RestaurantPerformance restaurantId={restaurant.id} />
         )}
       </main>
       <BottomNav />
