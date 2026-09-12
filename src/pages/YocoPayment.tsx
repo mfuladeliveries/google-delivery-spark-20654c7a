@@ -38,6 +38,13 @@ const YocoPayment = () => {
   const calledRef = useRef(false);
   const busyRef = useRef(false);
 
+  // Remembers that we already handed this order over to Yoco. If the customer
+  // lands back on this page afterwards (failed payment, back button), we must
+  // NOT auto-launch a new checkout — route them to the result screen instead.
+  const handoffKey = state?.orderId ? `yoco_handoff_${state.orderId}` : null;
+  const wasHandedOff = () =>
+    !!handoffKey && sessionStorage.getItem(handoffKey) === "1";
+
   const startCheckout = useCallback(async () => {
     if (!state?.orderId || busyRef.current) return;
     busyRef.current = true;
