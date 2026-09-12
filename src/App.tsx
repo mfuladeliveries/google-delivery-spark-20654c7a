@@ -253,6 +253,7 @@ const App = () => (
             <Route path="/terms-and-conditions" element={<TermsAndConditions />} />
             <Route path="/delivery-policy" element={<DeliveryPolicy />} />
             <Route path="/refund-policy" element={<RefundPolicy />} />
+            <Route path="/.lovable/oauth/consent" element={<OAuthConsent />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
