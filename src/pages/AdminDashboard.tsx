@@ -62,6 +62,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import InstallAppButton from "@/components/InstallAppButton";
 import { RestaurantName } from "@/components/RestaurantName";
+import AdminAlertsBanner from "@/components/AdminAlertsBanner";
 
 interface Stats {
   totalOrders: number;
@@ -614,6 +615,24 @@ const AdminDashboard = () => {
           </div>
           <div className="ml-auto flex items-center gap-2">
             <Link
+              to="/admin/incidents"
+              className="rounded-xl border border-border px-2.5 py-1.5 text-[11px] font-bold text-muted-foreground hover:bg-secondary hover:text-foreground"
+            >
+              Incidents
+            </Link>
+            <Link
+              to="/admin/support"
+              className="rounded-xl border border-border px-2.5 py-1.5 text-[11px] font-bold text-muted-foreground hover:bg-secondary hover:text-foreground"
+            >
+              Support
+            </Link>
+            <Link
+              to="/admin/report"
+              className="rounded-xl border border-border px-2.5 py-1.5 text-[11px] font-bold text-muted-foreground hover:bg-secondary hover:text-foreground"
+            >
+              Report
+            </Link>
+            <Link
               to="/admin/diagnostics"
               className="rounded-xl border border-border px-2.5 py-1.5 text-[11px] font-bold text-muted-foreground hover:bg-secondary hover:text-foreground"
             >
@@ -656,6 +675,7 @@ const AdminDashboard = () => {
         {/* Overview Tab */}
         {tab === "overview" && (
           <>
+            <AdminAlertsBanner />
             <section className="mb-6">
               <h2 className="font-bold text-foreground mb-3">📊 Overview</h2>
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
