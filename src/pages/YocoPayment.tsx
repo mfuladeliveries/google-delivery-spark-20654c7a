@@ -333,6 +333,12 @@ const YocoPayment = () => {
           <ShieldCheck className="h-3.5 w-3.5 text-primary" />
           Card details are entered on Yoco's secure page — never on our servers.
         </p>
+        <button
+          onClick={() => navigate("/orders", { replace: true })}
+          className="mt-4 w-full rounded-xl border border-border bg-background py-3 text-sm font-bold text-foreground"
+        >
+          Back to orders
+        </button>
       </div>
     </div>
   );
