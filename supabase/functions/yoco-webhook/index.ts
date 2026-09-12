@@ -235,6 +235,20 @@ Deno.serve(async (req) => {
     });
   } catch (err) {
     console.error("yoco-webhook handler error", err);
+    let bodySnippet: Record<string, unknown> | null = null;
+    try {
+      bodySnippet = JSON.parse(rawBody) as Record<string, unknown>;
+    } catch {
+      bodySnippet = { raw: rawBody.slice(0, 2000) };
+    }
+    await logFailure(supabase, {
+      stage: "handler_error",
+      event_id: req.headers.get("webhook-id"),
+      event_type: bodySnippet?.type ? String(bodySnippet.type) : null,
+      error_message: err instanceof Error ? err.message : "Unknown handler error",
+      payload: bodySnippet,
+      source_ip: sourceIp,
+    });
     // 500 lets Yoco retry — the ledger keeps retries idempotent.
     return new Response(JSON.stringify({ error: "Handler error" }), {
       status: 500,
