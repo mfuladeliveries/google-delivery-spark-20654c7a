@@ -1892,6 +1892,57 @@ export type Database = {
         }
         Relationships: []
       }
+      yoco_webhook_failures: {
+        Row: {
+          created_at: string
+          error_message: string | null
+          event_id: string | null
+          event_type: string | null
+          id: string
+          order_id: string | null
+          order_number: number | null
+          payload: Json | null
+          resolution_note: string | null
+          resolved: boolean
+          resolved_at: string | null
+          resolved_by: string | null
+          source_ip: string | null
+          stage: string
+        }
+        Insert: {
+          created_at?: string
+          error_message?: string | null
+          event_id?: string | null
+          event_type?: string | null
+          id?: string
+          order_id?: string | null
+          order_number?: number | null
+          payload?: Json | null
+          resolution_note?: string | null
+          resolved?: boolean
+          resolved_at?: string | null
+          resolved_by?: string | null
+          source_ip?: string | null
+          stage: string
+        }
+        Update: {
+          created_at?: string
+          error_message?: string | null
+          event_id?: string | null
+          event_type?: string | null
+          id?: string
+          order_id?: string | null
+          order_number?: number | null
+          payload?: Json | null
+          resolution_note?: string | null
+          resolved?: boolean
+          resolved_at?: string | null
+          resolved_by?: string | null
+          source_ip?: string | null
+          stage?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       driver_job_board: {

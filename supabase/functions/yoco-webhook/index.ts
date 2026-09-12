@@ -20,15 +20,60 @@ const corsHeaders = {
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
+// Records a webhook failure so admins can see it in real time instead of it
+// dying in a console log. Never throws — logging must not break the handler.
+// deno-lint-ignore no-explicit-any
+async function logFailure(
+  supabase: any,
+  entry: {
+    stage: string;
+    event_id?: string | null;
+    event_type?: string | null;
+    order_id?: string | null;
+    order_number?: number | null;
+    error_message?: string | null;
+    payload?: Record<string, unknown> | null;
+    source_ip?: string | null;
+  },
+) {
+  try {
+    await supabase.from("yoco_webhook_failures").insert({
+      stage: entry.stage,
+      event_id: entry.event_id ?? null,
+      event_type: entry.event_type ?? null,
+      order_id: entry.order_id ?? null,
+      order_number: entry.order_number ?? null,
+      error_message: entry.error_message ?? null,
+      payload: entry.payload ?? null,
+      source_ip: entry.source_ip ?? null,
+    });
+  } catch (e) {
+    console.error("yoco-webhook: failure logging failed", e);
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "POST") return new Response("Method not allowed", { status: 405 });
 
   const rawBody = await req.text();
+  const supabase = createClient(SUPABASE_URL, SERVICE_KEY, { auth: { persistSession: false } });
 
   const verification = await verifyYocoWebhook(req.headers, rawBody);
   if (!verification.valid) {
     console.warn("yoco-webhook: rejected", verification.reason);
+    let bodySnippet: Record<string, unknown> | null = null;
+    try {
+      bodySnippet = JSON.parse(rawBody) as Record<string, unknown>;
+    } catch {
+      bodySnippet = { raw: rawBody.slice(0, 2000) };
+    }
+    await logFailure(supabase, {
+      stage: "signature_rejected",
+      event_id: req.headers.get("webhook-id"),
+      error_message: verification.reason ?? "Invalid signature",
+      payload: bodySnippet,
+    });
     return new Response(JSON.stringify({ error: "Invalid signature" }), {
       status: 401,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -37,8 +82,6 @@ Deno.serve(async (req) => {
 
   const sourceIp = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
     req.headers.get("cf-connecting-ip") || null;
-
-  const supabase = createClient(SUPABASE_URL, SERVICE_KEY, { auth: { persistSession: false } });
 
   try {
     const event = JSON.parse(rawBody) as {
@@ -89,10 +132,27 @@ Deno.serve(async (req) => {
         });
       }
       console.error("yoco-webhook: ledger insert failed", dupErr);
+      await logFailure(supabase, {
+        stage: "ledger_insert_failed",
+        event_id: eventId || null,
+        event_type: eventType,
+        order_id: orderId,
+        error_message: dupErr.message,
+        payload: event as unknown as Record<string, unknown>,
+        source_ip: sourceIp,
+      });
     }
 
     if (!orderId) {
       console.warn("yoco-webhook: could not resolve order", { eventType, checkoutId, paymentId });
+      await logFailure(supabase, {
+        stage: "order_unresolved",
+        event_id: eventId || null,
+        event_type: eventType,
+        error_message: `No order matched checkout ${checkoutId ?? "—"} / payment ${paymentId ?? "—"}`,
+        payload: event as unknown as Record<string, unknown>,
+        source_ip: sourceIp,
+      });
       return new Response(JSON.stringify({ received: true }), {
         status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -128,7 +188,18 @@ Deno.serve(async (req) => {
         p_amount: amountCents ? centsToRands(amountCents) : null,
         p_raw_payload: event as unknown as Record<string, unknown>,
       });
-      if (error) console.error("yoco-webhook: refund RPC failed", error);
+      if (error) {
+        console.error("yoco-webhook: refund RPC failed", error);
+        await logFailure(supabase, {
+          stage: "refund_confirmation_failed",
+          event_id: eventId || null,
+          event_type: eventType,
+          order_id: orderId,
+          error_message: error.message,
+          payload: event as unknown as Record<string, unknown>,
+          source_ip: sourceIp,
+        });
+      }
     } else if (
       eventType === "payment.failed" || eventType === "payment.cancelled" ||
       eventType === "checkout.failed"
@@ -142,7 +213,18 @@ Deno.serve(async (req) => {
         p_raw_payload: event as unknown as Record<string, unknown>,
         p_source_ip: sourceIp,
       });
-      if (error) console.error("yoco-webhook: fail RPC error", error);
+      if (error) {
+        console.error("yoco-webhook: fail RPC error", error);
+        await logFailure(supabase, {
+          stage: "failure_mark_failed",
+          event_id: eventId || null,
+          event_type: eventType,
+          order_id: orderId,
+          error_message: error.message,
+          payload: event as unknown as Record<string, unknown>,
+          source_ip: sourceIp,
+        });
+      }
     } else {
       console.log("yoco-webhook: unhandled event type", eventType);
     }
@@ -153,6 +235,20 @@ Deno.serve(async (req) => {
     });
   } catch (err) {
     console.error("yoco-webhook handler error", err);
+    let bodySnippet: Record<string, unknown> | null = null;
+    try {
+      bodySnippet = JSON.parse(rawBody) as Record<string, unknown>;
+    } catch {
+      bodySnippet = { raw: rawBody.slice(0, 2000) };
+    }
+    await logFailure(supabase, {
+      stage: "handler_error",
+      event_id: req.headers.get("webhook-id"),
+      event_type: bodySnippet?.type ? String(bodySnippet.type) : null,
+      error_message: err instanceof Error ? err.message : "Unknown handler error",
+      payload: bodySnippet,
+      source_ip: sourceIp,
+    });
     // 500 lets Yoco retry — the ledger keeps retries idempotent.
     return new Response(JSON.stringify({ error: "Handler error" }), {
       status: 500,
