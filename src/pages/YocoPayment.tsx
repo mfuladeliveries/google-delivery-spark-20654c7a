@@ -228,6 +228,35 @@ const YocoPayment = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [error, waitingForDriver, handoffKey]);
 
+  // Cancelled/back-button return: mobile browsers restore this page from a
+  // frozen snapshot (bfcache), so mount effects never re-run and the spinner
+  // would spin forever. Re-check the handoff flag whenever the page
+  // reappears (pageshow/visibilitychange/focus) and send the customer to the
+  // result screen, which verifies the payment server-side.
+  useEffect(() => {
+    const goToResult = () => {
+      if (!state?.orderId || !wasHandedOff()) return;
+      navigate(`/payment/result?order=${state.orderNumber}&order_id=${state.orderId}`, {
+        replace: true,
+      });
+    };
+    const onPageShow = (e: PageTransitionEvent) => {
+      if (e.persisted) goToResult();
+    };
+    const onVisible = () => {
+      if (document.visibilityState === "visible") goToResult();
+    };
+    window.addEventListener("pageshow", onPageShow);
+    window.addEventListener("focus", goToResult);
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      window.removeEventListener("pageshow", onPageShow);
+      window.removeEventListener("focus", goToResult);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state, navigate, handoffKey]);
+
   if (error) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center px-4">
