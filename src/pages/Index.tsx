@@ -933,8 +933,8 @@ const Index = () => {
               ? `Results for "${search}"`
               : selectedCuisine !== "All"
                 ? `${selectedCuisine} Restaurants`
-                : currentZone
-                  ? `📍 Restaurants in ${currentZone.zone.name}`
+                : activeArea
+                  ? `📍 Restaurants in ${activeArea.name}`
                   : hasEffectiveCoords
                     ? "📍 Restaurants near you"
                     : "🍽️ All Restaurants"}
