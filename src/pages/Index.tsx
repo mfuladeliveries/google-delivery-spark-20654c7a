@@ -310,18 +310,53 @@ const Index = () => {
     return findNearestZone(effectiveCoords.lat, effectiveCoords.lng, zones);
   }, [effectiveCoords?.lat, effectiveCoords?.lng, zones]);
 
-  // Annotate every restaurant with distance + nearby flag.
-  // Restaurants without coords are treated as out of range.
+  // The area the customer is browsing: their explicit choice wins, otherwise
+  // the area their location falls inside.
+  const activeAreaId = chosenAreaId ?? currentZone?.zone.id ?? null;
+  const activeArea = useMemo(
+    () => zones.find((z) => z.id === activeAreaId) ?? null,
+    [zones, activeAreaId],
+  );
+
+  // Remember the detected area the first time we can work it out, so the
+  // customer keeps seeing the same area after a refresh.
+  useEffect(() => {
+    if (!chosenAreaId && currentZone) {
+      setChosenAreaId(currentZone.zone.id);
+      setSelectedAreaId(currentZone.zone.id);
+    }
+  }, [chosenAreaId, currentZone]);
+
+  const chooseArea = (areaId: string) => {
+    setChosenAreaId(areaId);
+    setSelectedAreaId(areaId);
+    setAreaPickerOpen(false);
+  };
+
+  // Annotate every restaurant with the branch serving the selected area, plus
+  // distance + nearby flag measured from that branch.
   const annotated = useMemo(() => {
     return restaurants.map((r) => {
+      const branch = branchForArea(locations, r.id, activeAreaId);
+      const coords = branchCoords(r, branch);
+      const hours = branchHours(r, branch);
       const d =
-        effectiveCoords && r.lat != null && r.lng != null
-          ? distanceKm(effectiveCoords.lat, effectiveCoords.lng, r.lat, r.lng)
+        effectiveCoords && coords.lat != null && coords.lng != null
+          ? distanceKm(effectiveCoords.lat, effectiveCoords.lng, coords.lat, coords.lng)
           : null;
       const nearby = d != null && d <= DELIVERY_RADIUS_KM;
-      return { ...r, _distance: d, _nearby: nearby };
+      return {
+        ...r,
+        lat: coords.lat,
+        lng: coords.lng,
+        opens_at: hours.opens_at,
+        closes_at: hours.closes_at,
+        _branch: branch,
+        _distance: d,
+        _nearby: nearby,
+      };
     });
-  }, [restaurants, effectiveCoords?.lat, effectiveCoords?.lng]);
+  }, [restaurants, locations, activeAreaId, effectiveCoords?.lat, effectiveCoords?.lng]);
 
   const filtered = annotated.filter((r) => {
     const matchesCuisine = selectedCuisine === "All" || r.cuisine === selectedCuisine;
@@ -332,13 +367,11 @@ const Index = () => {
     const matchesOpen = !openNowOnly || isRestaurantOpen(r.opens_at, r.closes_at);
     const matchesRating = minRating === 0 || (r.rating ?? 0) >= minRating;
     const matchesFavourite = !favouritesOnly || favouriteIds.has(r.id);
-    // Strict: only show restaurants assigned to the Mfuleni delivery area.
-    // Other restaurants stay hidden until an admin explicitly enables their area.
-    const MFULENI_AREA_ID = "710be50f-0238-4ea2-b492-d565b307a93a";
-    const matchesArea = r.area_id === MFULENI_AREA_ID;
+    // Only restaurants with a live branch in the selected delivery area.
+    const isCompanion = isCompanionStore(r.name);
+    const matchesArea = activeAreaId ? isCompanion || r._branch != null : false;
     // Only show places that can actually take an order: switched on by an admin
     // and with a real map location (the general store rides along without one).
-    const isCompanion = r.name.trim().toLowerCase() === "mfula shop";
     const orderable = r.is_active && (isCompanion || (r.lat != null && r.lng != null));
     return (
       orderable &&
@@ -350,6 +383,7 @@ const Index = () => {
       matchesFavourite
     );
   });
+
 
 
   // Sort: nearby first, then by distance asc, then by rating desc as tiebreaker.
