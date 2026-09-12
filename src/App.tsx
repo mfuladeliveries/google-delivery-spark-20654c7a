@@ -15,6 +15,7 @@ import OrderConfirmation from "./pages/OrderConfirmation";
 import PaymentResult from "./pages/PaymentResult";
 import YocoPayment from "./pages/YocoPayment";
 import NotFound from "./pages/NotFound";
+import OAuthConsent from "./pages/OAuthConsent";
 import RestaurantMenu from "./pages/RestaurantMenu";
 import RestaurantDashboard from "./pages/RestaurantDashboard";
 import DriverDashboard from "./pages/DriverDashboard";
