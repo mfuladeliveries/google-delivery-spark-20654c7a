@@ -115,6 +115,7 @@ const YocoPayment = () => {
     } finally {
       busyRef.current = false;
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state, navigate]);
 
   // Before launching the checkout, ensure a driver is online for this order's area.
