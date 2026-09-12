@@ -949,17 +949,10 @@ const Index = () => {
           ) : sorted.length === 0 ? (
             (() => {
               // Decide which empty state to show. Three cases:
-              //   1) Customer is outside every active delivery area → "not in service area".
-              //   2) Customer is inside an area but no restaurants are assigned to it yet → "no restaurants in <area> yet".
+              //   1) No delivery area picked/detected → ask them to choose one.
+              //   2) Area picked but no restaurant has a branch there yet.
               //   3) Otherwise → generic "no results" for the current search/cuisine filter.
-              const matchesFilters = annotated.filter((r) => {
-                const matchesCuisine = selectedCuisine === "All" || r.cuisine === selectedCuisine;
-                const matchesSearch =
-                  !search.trim() ||
-                  r.name.toLowerCase().includes(search.toLowerCase()) ||
-                  r.cuisine.toLowerCase().includes(search.toLowerCase());
-                return matchesCuisine && matchesSearch;
-              });
+
 
               if (activeArea == null) {
                 return (
