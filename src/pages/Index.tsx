@@ -843,6 +843,51 @@ const Index = () => {
           </div>
         </section>
 
+        {/* Delivery area — confirm or change where you're ordering to */}
+        {zones.length > 0 && (
+          <section className="mb-6">
+            <div className="rounded-2xl border border-border bg-card p-4 shadow-card">
+              <div className="flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                    Delivery area
+                  </p>
+                  <p className="mt-0.5 flex items-center gap-1.5 truncate text-sm font-bold text-foreground">
+                    <MapPin className="h-4 w-4 flex-shrink-0 text-primary" />
+                    {activeArea ? activeArea.name : "Choose your area"}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setAreaPickerOpen((v) => !v)}
+                  className="flex-shrink-0 rounded-full border border-border bg-card px-4 py-2 text-xs font-semibold text-foreground transition-colors hover:bg-secondary"
+                >
+                  {areaPickerOpen ? "Close" : activeArea ? "Change" : "Select"}
+                </button>
+              </div>
+
+              {(areaPickerOpen || !activeArea) && (
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {zones.map((z) => (
+                    <button
+                      key={z.id}
+                      type="button"
+                      onClick={() => chooseArea(z.id)}
+                      className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition-all ${
+                        z.id === activeAreaId
+                          ? "border-primary bg-primary text-primary-foreground shadow-maroon"
+                          : "border-border bg-card text-foreground hover:bg-secondary"
+                      }`}
+                    >
+                      {z.name}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </section>
+        )}
+
         {/* Cuisine Categories */}
         <section className="mb-6">
           <h3 className="mb-3 text-base font-bold text-foreground">Cuisines</h3>
