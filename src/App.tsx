@@ -23,6 +23,9 @@ import DriverAuth from "./pages/DriverAuth";
 import AdminDashboard from "./pages/AdminDashboard";
 import AdminDiagnostics from "./pages/AdminDiagnostics";
 import AdminDispatchMonitor from "./pages/AdminDispatchMonitor";
+import AdminIncidents from "./pages/AdminIncidents";
+import AdminDailyReport from "./pages/AdminDailyReport";
+import AdminSupport from "./pages/AdminSupport";
 import DriverPerformance from "./pages/DriverPerformance";
 import Profile from "./pages/Profile";
 import Search from "./pages/Search";
@@ -221,6 +224,45 @@ const App = () => (
                   loadingLabel="Loading dispatch monitor…"
                 >
                   <AdminDispatchMonitor />
+                </RoleGuard>
+              }
+            />
+            <Route
+              path="/admin/incidents"
+              element={
+                <RoleGuard
+                  allow={["admin"]}
+                  requireAuth
+                  redirectUnauthedTo="/auth"
+                  loadingLabel="Loading incidents…"
+                >
+                  <AdminIncidents />
+                </RoleGuard>
+              }
+            />
+            <Route
+              path="/admin/report"
+              element={
+                <RoleGuard
+                  allow={["admin"]}
+                  requireAuth
+                  redirectUnauthedTo="/auth"
+                  loadingLabel="Loading daily report…"
+                >
+                  <AdminDailyReport />
+                </RoleGuard>
+              }
+            />
+            <Route
+              path="/admin/support"
+              element={
+                <RoleGuard
+                  allow={["admin"]}
+                  requireAuth
+                  redirectUnauthedTo="/auth"
+                  loadingLabel="Loading support…"
+                >
+                  <AdminSupport />
                 </RoleGuard>
               }
             />
