@@ -8,6 +8,15 @@ import { getHomeRouteForRoles } from "@/lib/homeRoute";
 import { shouldNudgeInstall, markInstallNudged } from "@/lib/installRedirect";
 import { Eye, EyeOff } from "lucide-react";
 
+// Returns a validated same-origin relative path to return to after sign-in
+// (used by the agent-integration consent flow), or null.
+const safeNextPath = (): string | null => {
+  const raw = new URLSearchParams(window.location.search).get("next");
+  if (!raw) return null;
+  if (!raw.startsWith("/") || raw.startsWith("//")) return null;
+  return raw;
+};
+
 const Auth = () => {
   const [isLogin, setIsLogin] = useState(true);
   const [showOtp, setShowOtp] = useState(false);
