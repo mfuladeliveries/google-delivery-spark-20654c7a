@@ -139,7 +139,14 @@ const RestaurantMenu = () => {
 
   useEffect(() => {
     const fetchData = async () => {
-      const { data: rest } = await supabase.from("restaurants").select("*").eq("id", id).single();
+      // Explicit column list: the owner account link is not readable by guests.
+      const { data: rest } = await supabase
+        .from("restaurants")
+        .select(
+          "id, name, description, logo, location, cuisine, rating, delivery_time, min_order, is_active, created_at, lat, lng, logo_url, banner_url, gallery_images, opens_at, closes_at, contact_number, operating_days, is_open, total_reviews, image_url, area_id, requires_confirmation, approval_mode, confirmation_timeout_minutes",
+        )
+        .eq("id", id)
+        .single();
 
       if (!rest) {
         navigate("/");
