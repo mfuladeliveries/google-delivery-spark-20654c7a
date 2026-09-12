@@ -147,7 +147,14 @@ const Auth = () => {
         return;
       }
 
-      const { error } = await supabase.auth.signUp({ email: email.trim(), password });
+      const next = safeNextPath();
+      const { error } = await supabase.auth.signUp({
+        email: email.trim(),
+        password,
+        options: next
+          ? { emailRedirectTo: `${window.location.origin}${next}` }
+          : undefined,
+      });
       if (error) setError(mapSignupError(error.message));
       else {
         setShowOtp(true);
