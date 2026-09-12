@@ -194,6 +194,9 @@ const Index = () => {
   // once the viewer is confirmed to be a guest or a customer.
 
   const [zones, setZones] = useState<DeliveryZone[]>([]);
+  const [locations, setLocations] = useState<RestaurantLocation[]>([]);
+  const [chosenAreaId, setChosenAreaId] = useState<string | null>(() => getSelectedAreaId());
+  const [areaPickerOpen, setAreaPickerOpen] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -204,6 +207,7 @@ const Index = () => {
         if (cancelled) return;
         setRestaurants((catalog.restaurants ?? []) as unknown as Restaurant[]);
         setZones(catalog.delivery_areas ?? []);
+        setLocations((catalog.restaurant_locations ?? []) as RestaurantLocation[]);
       } catch {
         if (!cancelled) setRestaurants([]);
       } finally {
