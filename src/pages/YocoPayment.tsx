@@ -125,6 +125,17 @@ const YocoPayment = () => {
       navigate("/orders", { replace: true });
       return;
     }
+
+    // Returning from Yoco (failed/cancelled payment or the back button):
+    // don't start another checkout — let the result screen verify the
+    // payment server-side and show the right outcome.
+    if (wasHandedOff()) {
+      navigate(`/payment/result?order=${state.orderNumber}&order_id=${state.orderId}`, {
+        replace: true,
+      });
+      return;
+    }
+
     if (calledRef.current) return;
     calledRef.current = true;
 
