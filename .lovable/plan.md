@@ -1,75 +1,33 @@
+# Restaurants organised by delivery area (brands + branches)
+
 ## Goal
-Make the Driver App a fully separated experience with its own login/signup, layout, route protection, approval workflow, and persistent session — without touching customer/restaurant/admin flows beyond what's needed for redirects.
+One card per restaurant brand (e.g. KFC), with separate branches per area. A customer confirms their area, sees only restaurants that have an active branch in that area, and the order is automatically tied to that area's branch (its address, coordinates, delivery fee and driver navigation).
 
-## What already exists (reuse)
-- Roles table + `has_role` + `app_role` enum (admin/customer/restaurant/driver)
-- `RoleGuard` for route gating
-- `/driver`, `/driver/*` and `/driver/auth` routes already gated to driver+admin
-- `DriverDashboard` with bottom nav for Orders / Active / History / Earnings / Profile
-- `homeRoute.ts` already prioritises admin > restaurant > driver > customer
-- `AppSwitcher` already hidden for driver-only users
-- `driver_profiles` with vehicle_type, license_url, id_document_url, bank fields
-- `driver_access_requests` table for admin approval
+## What the customer will see
+1. On the home screen the area is detected from their location, with a picker to change/confirm it (remembered for next visit).
+2. Only brands with an active, delivery-enabled branch in that area are listed — one card per brand, never duplicates.
+3. Opening a restaurant shows the branch for their area (branch name, address, hours). Distance, delivery fee and the driver's pickup point all use that branch.
+4. If a brand has no branch in the area, it simply doesn't appear.
 
-## Changes to make
+## What the admin will get
+A new "Branches" panel inside Admin → Restaurants for each restaurant:
+- Add/edit branches: area, branch name, address, coordinates (map pin), active toggle, delivery on/off, optional opening/closing time and days.
+- See at a glance which areas each restaurant serves.
+- Existing delivery-area management stays as it is.
 
-### 1. Driver-only sub-routes (URLs)
-Add these as aliases under the existing `RoleGuard allow=["driver","admin"]`:
-- `/driver/login` and `/driver/signup` → render `DriverAuth` (public, no guard)
-- `/driver/dashboard` → DriverDashboard (default tab)
-- `/driver/orders`, `/driver/active`, `/driver/history`, `/driver/earnings`, `/driver/profile` → DriverDashboard with the right tab pre-selected
-
-DriverDashboard already reads tab from path; just register the explicit routes so deep links work.
-
-### 2. Driver signup expansion
-Today `/driver/auth` only does email+password and submits a driver-access request. Expand the **signup** form to capture:
-- Full name, phone, email, password
-- ID number
-- Vehicle type, vehicle registration number
-- Driver license upload (file → `driver-docs` storage bucket)
-- Profile photo upload (→ `avatars` or new `driver-photos` bucket)
-
-On submit: create auth user → upload files → upsert `profiles` (full_name, contact_number) → upsert `driver_profiles` (vehicle_type, license_plate, id_document_url, license_url, profile_photo_url, id_number) → insert `driver_access_requests` with status `pending`.
-
-DB additions needed:
-- `driver_profiles.id_number text`
-- `driver_profiles.profile_photo_url text`
-- `driver_profiles.is_approved boolean default false`
-- `driver_profiles.is_suspended boolean default false`
-- Storage bucket `driver-docs` (private) with RLS: driver can upload/read own folder, admin can read all
-
-### 3. Approval gate at login
-- Driver login flow: after sign-in, check `driver_profiles.is_approved` and `is_suspended`.
-- If not approved: sign out + show "Your driver account is pending approval"
-- If suspended: sign out + show "Your driver account has been suspended"
-- Only approved, non-suspended drivers reach `/driver`
-
-### 4. Strict redirects (cross-role isolation)
-Update `RoleGuard` behaviour:
-- Customer routes (`/`, `/restaurant/:id`, `/search`, etc.) — wrap in `RoleGuard allow=["customer","admin"]` so a driver hitting them is bounced to `/driver`.
-- Currently `/restaurant/:id`, `/orders`, `/order-confirmation`, `/search` are unguarded. Add guards so a signed-in driver is redirected to `/driver`.
-- Driver auth routes (`/driver/auth`, `/driver/login`, `/driver/signup`) auto-redirect to `/driver` when an approved driver is already signed in.
-
-### 5. Admin tools
-`AdminDriverRequests` already approves/rejects. Add:
-- A new `AdminDrivers` panel listing all drivers with: approve toggle, suspend toggle, link to view documents (signed URLs from `driver-docs`).
-- Edge function `admin-driver-action` (or extend existing admin functions) to flip `is_approved` / `is_suspended` using service role.
-
-### 6. Persistent login
-Already handled by Supabase JS default (`persistSession: true` via the generated client). No code change needed; verify and document.
-
-## Out of scope (won't change)
-- Customer/restaurant/admin UI beyond adding redirect guards
-- Existing driver dispatch / earnings / withdrawals logic
-- Push notification stack
+## Data changes (no data loss)
+- New table `restaurant_locations`: restaurant, area, branch name, address, lat/lng, active, delivery_enabled, optional opens_at/closes_at/operating_days, timestamps.
+- Backfill: every existing restaurant gets one branch built from its current area, address and coordinates, so nothing breaks on day one.
+- `restaurants` keeps all its current columns (menus, images, hours, ratings stay untouched); brand-level fields remain the source of truth for logo/description/cuisine.
+- `orders` gains a nullable `restaurant_location_id` so each order records which branch it came from. Existing orders keep working unchanged.
+- Menus stay on the brand — no menu duplication. Per-branch availability/price overrides are left as a future extension point.
 
 ## Technical notes
-- DB migration for `driver_profiles` columns + `driver-docs` bucket + RLS
-- Admin function uses service role to set approval/suspension flags
-- File uploads: use `supabase.storage.from('driver-docs').upload()` with path `${user.id}/license.ext` and `${user.id}/id.ext`; profile photo to public `avatars` bucket if it exists, else `driver-docs`
-- DriverAuth becomes a tabbed login/signup with the expanded fields; routes `/driver/login` and `/driver/signup` deep-link to the right tab
-
-## Questions before I build
-1. Profile photos — should they be public (any signed-in user can view) or private (admin/driver only)? Affects bucket choice.
-2. Should I add the new `AdminDrivers` panel now, or is the existing `AdminDriverRequests` (approve at signup) enough for v1, with suspend coming later?
-3. Any specific vehicle types to allow (motorbike / car / bicycle / scooter), or free text?
+- Migration: create `restaurant_locations` (FKs to `restaurants`, `delivery_areas`), GRANTs (anon read of active branches, authenticated read, admin/owner write, service_role all), RLS policies, `updated_at` trigger, indexes on `(area_id, active)` and `(restaurant_id)`; backfill from `restaurants`; add `orders.restaurant_location_id`.
+- `create_verified_order` gains `p_restaurant_location_id`: validates the branch belongs to the restaurant, is active and delivery-enabled, and uses branch coordinates for the 8 km radius check and fee distance; falls back to restaurant coords when no branch is supplied. All existing validation, dedupe, option pricing and PIN logic preserved.
+- `get-catalog` edge function returns `restaurant_locations` alongside restaurants and areas; `src/lib/catalog.ts` types extended.
+- New `src/lib/restaurantAreas.ts`: pick the branch for a given area, group locations by restaurant, expose effective coords/hours per branch.
+- `src/pages/Index.tsx`: replace the hardcoded Mfuleni area filter with the selected/confirmed area; filter by "has an active branch in this area"; one card per brand using the resolved branch for distance and gating. Area picker component with persisted choice.
+- `src/pages/RestaurantMenu.tsx`, `src/pages/Search.tsx`, `src/components/CheckoutDialog.tsx`: carry the resolved branch through to fee calculation and order creation.
+- Admin: new `src/components/admin/RestaurantBranches.tsx` wired into the Restaurants tab, reusing the existing map picker and address autocomplete.
+- Dispatch/driver navigation uses the order's branch coordinates when present, otherwise the restaurant's.
