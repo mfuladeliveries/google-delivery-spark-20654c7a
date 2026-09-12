@@ -105,7 +105,10 @@ const YocoPayment = () => {
       }
 
 
-      // Hand the customer over to Yoco's hosted checkout.
+      // Hand the customer over to Yoco's hosted checkout. Remember the handoff
+      // so a return visit to this page goes to the result screen instead of
+      // looping straight back into Yoco.
+      if (handoffKey) sessionStorage.setItem(handoffKey, "1");
       window.location.href = payload.redirect_url;
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to start payment.");
