@@ -224,6 +224,19 @@ const App = () => (
                 </RoleGuard>
               }
             />
+            <Route
+              path="/driver/performance"
+              element={
+                <RoleGuard
+                  allow={["driver", "admin"]}
+                  requireAuth
+                  redirectUnauthedTo="/driver/auth"
+                  loadingLabel="Loading driver performance…"
+                >
+                  <DriverPerformance />
+                </RoleGuard>
+              }
+            />
 
 
 
