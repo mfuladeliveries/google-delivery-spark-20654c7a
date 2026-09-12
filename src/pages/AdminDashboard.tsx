@@ -62,6 +62,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import InstallAppButton from "@/components/InstallAppButton";
 import { RestaurantName } from "@/components/RestaurantName";
+import AdminAlertsBanner from "@/components/AdminAlertsBanner";
 
 interface Stats {
   totalOrders: number;
