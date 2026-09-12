@@ -674,6 +674,7 @@ const AdminDashboard = () => {
         {/* Overview Tab */}
         {tab === "overview" && (
           <>
+            <AdminAlertsBanner />
             <section className="mb-6">
               <h2 className="font-bold text-foreground mb-3">📊 Overview</h2>
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
