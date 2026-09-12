@@ -621,6 +621,12 @@ const AdminDashboard = () => {
               Incidents
             </Link>
             <Link
+              to="/admin/yoco-failures"
+              className="rounded-xl border border-border px-2.5 py-1.5 text-[11px] font-bold text-muted-foreground hover:bg-secondary hover:text-foreground"
+            >
+              Webhooks
+            </Link>
+            <Link
               to="/admin/support"
               className="rounded-xl border border-border px-2.5 py-1.5 text-[11px] font-bold text-muted-foreground hover:bg-secondary hover:text-foreground"
             >

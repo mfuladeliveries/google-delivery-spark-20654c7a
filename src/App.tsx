@@ -242,6 +242,19 @@ const App = () => (
               }
             />
             <Route
+              path="/admin/yoco-failures"
+              element={
+                <RoleGuard
+                  allow={["admin"]}
+                  requireAuth
+                  redirectUnauthedTo="/auth"
+                  loadingLabel="Loading webhook failures…"
+                >
+                  <AdminYocoFailures />
+                </RoleGuard>
+              }
+            />
+            <Route
               path="/admin/report"
               element={
                 <RoleGuard
