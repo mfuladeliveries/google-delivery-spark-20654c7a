@@ -604,10 +604,17 @@ const CheckoutDialog = ({
 
       const deliveryCode = generateDeliveryPin();
 
+      // Send the exact option choices so the server can price size/cut/add-on
+      // items from its own menu data (base price alone can be 0 for those).
       const orderItems = items.map((ci) => ({
         id: ci.item.id,
         quantity: ci.quantity,
+        size: ci.selectedSize?.name ?? null,
+        cut: ci.selectedCut?.name ?? null,
+        pieces: ci.selectedPieces ?? null,
+        add_ons: (ci.selectedAddOns || []).map((a) => a.name),
       }));
+
 
       // Build a per-item options summary so the kitchen + driver see what was picked.
       const optionsLines = items
