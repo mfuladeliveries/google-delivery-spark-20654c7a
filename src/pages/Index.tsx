@@ -33,6 +33,15 @@ import { menuItems } from "@/data/menu";
 import mfulaLogo from "@/assets/mfula-logo.png";
 import AddressAutocomplete, { type ValidatedAddress } from "@/components/AddressAutocomplete";
 import { distanceKm, getActiveZones, findNearestZone, type DeliveryZone, type ZoneMatch } from "@/lib/serviceArea";
+import {
+  branchForArea,
+  effectiveCoords as branchCoords,
+  effectiveHours as branchHours,
+  getSelectedAreaId,
+  isCompanionStore,
+  setSelectedAreaId,
+  type RestaurantLocation,
+} from "@/lib/restaurantAreas";
 import { toast } from "sonner";
 
 interface Restaurant extends RestaurantCardData {
@@ -185,6 +194,9 @@ const Index = () => {
   // once the viewer is confirmed to be a guest or a customer.
 
   const [zones, setZones] = useState<DeliveryZone[]>([]);
+  const [locations, setLocations] = useState<RestaurantLocation[]>([]);
+  const [chosenAreaId, setChosenAreaId] = useState<string | null>(() => getSelectedAreaId());
+  const [areaPickerOpen, setAreaPickerOpen] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -195,6 +207,7 @@ const Index = () => {
         if (cancelled) return;
         setRestaurants((catalog.restaurants ?? []) as unknown as Restaurant[]);
         setZones(catalog.delivery_areas ?? []);
+        setLocations((catalog.restaurant_locations ?? []) as RestaurantLocation[]);
       } catch {
         if (!cancelled) setRestaurants([]);
       } finally {
@@ -297,18 +310,53 @@ const Index = () => {
     return findNearestZone(effectiveCoords.lat, effectiveCoords.lng, zones);
   }, [effectiveCoords?.lat, effectiveCoords?.lng, zones]);
 
-  // Annotate every restaurant with distance + nearby flag.
-  // Restaurants without coords are treated as out of range.
+  // The area the customer is browsing: their explicit choice wins, otherwise
+  // the area their location falls inside.
+  const activeAreaId = chosenAreaId ?? currentZone?.zone.id ?? null;
+  const activeArea = useMemo(
+    () => zones.find((z) => z.id === activeAreaId) ?? null,
+    [zones, activeAreaId],
+  );
+
+  // Remember the detected area the first time we can work it out, so the
+  // customer keeps seeing the same area after a refresh.
+  useEffect(() => {
+    if (!chosenAreaId && currentZone) {
+      setChosenAreaId(currentZone.zone.id);
+      setSelectedAreaId(currentZone.zone.id);
+    }
+  }, [chosenAreaId, currentZone]);
+
+  const chooseArea = (areaId: string) => {
+    setChosenAreaId(areaId);
+    setSelectedAreaId(areaId);
+    setAreaPickerOpen(false);
+  };
+
+  // Annotate every restaurant with the branch serving the selected area, plus
+  // distance + nearby flag measured from that branch.
   const annotated = useMemo(() => {
     return restaurants.map((r) => {
+      const branch = branchForArea(locations, r.id, activeAreaId);
+      const coords = branchCoords(r, branch);
+      const hours = branchHours(r, branch);
       const d =
-        effectiveCoords && r.lat != null && r.lng != null
-          ? distanceKm(effectiveCoords.lat, effectiveCoords.lng, r.lat, r.lng)
+        effectiveCoords && coords.lat != null && coords.lng != null
+          ? distanceKm(effectiveCoords.lat, effectiveCoords.lng, coords.lat, coords.lng)
           : null;
       const nearby = d != null && d <= DELIVERY_RADIUS_KM;
-      return { ...r, _distance: d, _nearby: nearby };
+      return {
+        ...r,
+        lat: coords.lat,
+        lng: coords.lng,
+        opens_at: hours.opens_at,
+        closes_at: hours.closes_at,
+        _branch: branch,
+        _distance: d,
+        _nearby: nearby,
+      };
     });
-  }, [restaurants, effectiveCoords?.lat, effectiveCoords?.lng]);
+  }, [restaurants, locations, activeAreaId, effectiveCoords?.lat, effectiveCoords?.lng]);
 
   const filtered = annotated.filter((r) => {
     const matchesCuisine = selectedCuisine === "All" || r.cuisine === selectedCuisine;
@@ -319,13 +367,11 @@ const Index = () => {
     const matchesOpen = !openNowOnly || isRestaurantOpen(r.opens_at, r.closes_at);
     const matchesRating = minRating === 0 || (r.rating ?? 0) >= minRating;
     const matchesFavourite = !favouritesOnly || favouriteIds.has(r.id);
-    // Strict: only show restaurants assigned to the Mfuleni delivery area.
-    // Other restaurants stay hidden until an admin explicitly enables their area.
-    const MFULENI_AREA_ID = "710be50f-0238-4ea2-b492-d565b307a93a";
-    const matchesArea = r.area_id === MFULENI_AREA_ID;
+    // Only restaurants with a live branch in the selected delivery area.
+    const isCompanion = isCompanionStore(r.name);
+    const matchesArea = activeAreaId ? isCompanion || r._branch != null : false;
     // Only show places that can actually take an order: switched on by an admin
     // and with a real map location (the general store rides along without one).
-    const isCompanion = r.name.trim().toLowerCase() === "mfula shop";
     const orderable = r.is_active && (isCompanion || (r.lat != null && r.lng != null));
     return (
       orderable &&
@@ -337,6 +383,7 @@ const Index = () => {
       matchesFavourite
     );
   });
+
 
 
   // Sort: nearby first, then by distance asc, then by rating desc as tiebreaker.
@@ -796,6 +843,51 @@ const Index = () => {
           </div>
         </section>
 
+        {/* Delivery area — confirm or change where you're ordering to */}
+        {zones.length > 0 && (
+          <section className="mb-6">
+            <div className="rounded-2xl border border-border bg-card p-4 shadow-card">
+              <div className="flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                    Delivery area
+                  </p>
+                  <p className="mt-0.5 flex items-center gap-1.5 truncate text-sm font-bold text-foreground">
+                    <MapPin className="h-4 w-4 flex-shrink-0 text-primary" />
+                    {activeArea ? activeArea.name : "Choose your area"}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setAreaPickerOpen((v) => !v)}
+                  className="flex-shrink-0 rounded-full border border-border bg-card px-4 py-2 text-xs font-semibold text-foreground transition-colors hover:bg-secondary"
+                >
+                  {areaPickerOpen ? "Close" : activeArea ? "Change" : "Select"}
+                </button>
+              </div>
+
+              {(areaPickerOpen || !activeArea) && (
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {zones.map((z) => (
+                    <button
+                      key={z.id}
+                      type="button"
+                      onClick={() => chooseArea(z.id)}
+                      className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition-all ${
+                        z.id === activeAreaId
+                          ? "border-primary bg-primary text-primary-foreground shadow-maroon"
+                          : "border-border bg-card text-foreground hover:bg-secondary"
+                      }`}
+                    >
+                      {z.name}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </section>
+        )}
+
         {/* Cuisine Categories */}
         <section className="mb-6">
           <h3 className="mb-3 text-base font-bold text-foreground">Cuisines</h3>
@@ -841,8 +933,8 @@ const Index = () => {
               ? `Results for "${search}"`
               : selectedCuisine !== "All"
                 ? `${selectedCuisine} Restaurants`
-                : currentZone
-                  ? `📍 Restaurants in ${currentZone.zone.name}`
+                : activeArea
+                  ? `📍 Restaurants in ${activeArea.name}`
                   : hasEffectiveCoords
                     ? "📍 Restaurants near you"
                     : "🍽️ All Restaurants"}
@@ -857,19 +949,12 @@ const Index = () => {
           ) : sorted.length === 0 ? (
             (() => {
               // Decide which empty state to show. Three cases:
-              //   1) Customer is outside every active delivery area → "not in service area".
-              //   2) Customer is inside an area but no restaurants are assigned to it yet → "no restaurants in <area> yet".
+              //   1) No delivery area picked/detected → ask them to choose one.
+              //   2) Area picked but no restaurant has a branch there yet.
               //   3) Otherwise → generic "no results" for the current search/cuisine filter.
-              const matchesFilters = annotated.filter((r) => {
-                const matchesCuisine = selectedCuisine === "All" || r.cuisine === selectedCuisine;
-                const matchesSearch =
-                  !search.trim() ||
-                  r.name.toLowerCase().includes(search.toLowerCase()) ||
-                  r.cuisine.toLowerCase().includes(search.toLowerCase());
-                return matchesCuisine && matchesSearch;
-              });
 
-              if (hasEffectiveCoords && currentZone == null) {
+
+              if (activeArea == null) {
                 return (
                   <div className="rounded-2xl border border-border bg-card py-16 text-center shadow-card">
                     <MapPinOff className="mx-auto mb-3 h-12 w-12 text-primary/60" />
@@ -898,11 +983,11 @@ const Index = () => {
                 );
               }
 
-              if (currentZone && matchesFilters.length === 0 && !search.trim() && selectedCuisine === "All") {
+              if (activeArea && !search.trim() && selectedCuisine === "All") {
                 return (
                   <div className="rounded-2xl border border-border bg-card py-16 text-center shadow-card">
                     <UtensilsCrossed className="mx-auto mb-3 h-12 w-12 text-muted-foreground/50" />
-                    <p className="font-semibold text-foreground">No restaurants in {currentZone.zone.name} yet</p>
+                    <p className="font-semibold text-foreground">No restaurants in {activeArea.name} yet</p>
                     <p className="mx-auto mt-1 max-w-xs text-sm text-muted-foreground">
                       We're onboarding restaurants in your area. Check back soon!
                     </p>

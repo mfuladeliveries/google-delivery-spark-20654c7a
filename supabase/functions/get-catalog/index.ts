@@ -30,7 +30,7 @@ Deno.serve(async (req) => {
       { auth: { persistSession: false, autoRefreshToken: false } },
     );
 
-    const [restaurantsRes, areasRes] = await Promise.all([
+    const [restaurantsRes, areasRes, locationsRes] = await Promise.all([
       supabase
         .from("restaurants")
         .select(
@@ -45,15 +45,23 @@ Deno.serve(async (req) => {
         .eq("is_active", true)
         .not("lat", "is", null)
         .not("lng", "is", null),
+      supabase
+        .from("restaurant_locations")
+        .select(
+          "id, restaurant_id, area_id, branch_name, address, lat, lng, active, delivery_enabled, opens_at, closes_at, operating_days",
+        )
+        .eq("active", true),
     ]);
 
     if (restaurantsRes.error) throw restaurantsRes.error;
     if (areasRes.error) throw areasRes.error;
+    if (locationsRes.error) throw locationsRes.error;
 
     return new Response(
       JSON.stringify({
         restaurants: restaurantsRes.data ?? [],
         delivery_areas: areasRes.data ?? [],
+        restaurant_locations: locationsRes.data ?? [],
         generated_at: new Date().toISOString(),
       }),
       {

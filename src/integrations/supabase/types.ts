@@ -1042,6 +1042,7 @@ export type Database = {
           refunded_at: string | null
           restaurant: string
           restaurant_id: string | null
+          restaurant_location_id: string | null
           round_offered_driver_ids: string[]
           special_notes: string | null
           status: string
@@ -1109,6 +1110,7 @@ export type Database = {
           refunded_at?: string | null
           restaurant?: string
           restaurant_id?: string | null
+          restaurant_location_id?: string | null
           round_offered_driver_ids?: string[]
           special_notes?: string | null
           status?: string
@@ -1176,6 +1178,7 @@ export type Database = {
           refunded_at?: string | null
           restaurant?: string
           restaurant_id?: string | null
+          restaurant_location_id?: string | null
           round_offered_driver_ids?: string[]
           special_notes?: string | null
           status?: string
@@ -1191,6 +1194,13 @@ export type Database = {
             columns: ["restaurant_id"]
             isOneToOne: false
             referencedRelation: "restaurants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_restaurant_location_id_fkey"
+            columns: ["restaurant_location_id"]
+            isOneToOne: false
+            referencedRelation: "restaurant_locations"
             referencedColumns: ["id"]
           },
         ]
@@ -1627,6 +1637,72 @@ export type Database = {
             columns: ["referred_order_id"]
             isOneToOne: false
             referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      restaurant_locations: {
+        Row: {
+          active: boolean
+          address: string
+          area_id: string | null
+          branch_name: string
+          closes_at: string | null
+          created_at: string
+          delivery_enabled: boolean
+          id: string
+          lat: number | null
+          lng: number | null
+          opens_at: string | null
+          operating_days: Json
+          restaurant_id: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          address?: string
+          area_id?: string | null
+          branch_name?: string
+          closes_at?: string | null
+          created_at?: string
+          delivery_enabled?: boolean
+          id?: string
+          lat?: number | null
+          lng?: number | null
+          opens_at?: string | null
+          operating_days?: Json
+          restaurant_id: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          address?: string
+          area_id?: string | null
+          branch_name?: string
+          closes_at?: string | null
+          created_at?: string
+          delivery_enabled?: boolean
+          id?: string
+          lat?: number | null
+          lng?: number | null
+          opens_at?: string | null
+          operating_days?: Json
+          restaurant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "restaurant_locations_area_id_fkey"
+            columns: ["area_id"]
+            isOneToOne: false
+            referencedRelation: "delivery_areas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "restaurant_locations_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "restaurants"
             referencedColumns: ["id"]
           },
         ]
@@ -2212,6 +2288,7 @@ export type Database = {
           p_items: Json
           p_payment_method?: string
           p_restaurant_id?: string
+          p_restaurant_location_id?: string
           p_restaurant_name: string
           p_special_notes?: string
           p_tip?: number
