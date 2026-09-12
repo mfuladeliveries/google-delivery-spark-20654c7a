@@ -22,6 +22,8 @@ const kindLabel: Record<string, string> = {
   refund: "Refund credited",
   spend: "Applied to order",
   adjustment: "Adjustment",
+  referral: "Referral reward",
+  reversal: "Credit returned",
 };
 
 const WalletHistory = () => {
