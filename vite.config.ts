@@ -16,6 +16,7 @@ export default defineConfig(({ mode }) => ({
   },
   plugins: [
     react(),
+    mcpPlugin(),
     mode === "development" && componentTagger(),
     VitePWA({
       // 'prompt' prevents the SW from silently activating + reloading the page
