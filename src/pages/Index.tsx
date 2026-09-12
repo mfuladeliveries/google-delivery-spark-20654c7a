@@ -33,6 +33,15 @@ import { menuItems } from "@/data/menu";
 import mfulaLogo from "@/assets/mfula-logo.png";
 import AddressAutocomplete, { type ValidatedAddress } from "@/components/AddressAutocomplete";
 import { distanceKm, getActiveZones, findNearestZone, type DeliveryZone, type ZoneMatch } from "@/lib/serviceArea";
+import {
+  branchForArea,
+  effectiveCoords as branchCoords,
+  effectiveHours as branchHours,
+  getSelectedAreaId,
+  isCompanionStore,
+  setSelectedAreaId,
+  type RestaurantLocation,
+} from "@/lib/restaurantAreas";
 import { toast } from "sonner";
 
 interface Restaurant extends RestaurantCardData {
