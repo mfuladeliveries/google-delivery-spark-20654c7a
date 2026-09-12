@@ -4,6 +4,7 @@
 // Postgres at all. We also keep an in-memory cache for the current session.
 import { supabase } from "@/integrations/supabase/client";
 import type { DeliveryZone } from "@/lib/serviceArea";
+import type { RestaurantLocation } from "@/lib/restaurantAreas";
 
 export interface CatalogRestaurant {
   id: string;
