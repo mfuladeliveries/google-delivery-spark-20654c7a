@@ -12,13 +12,12 @@ import {
   Package,
   ChevronRight,
   Wallet,
-  Gift,
-  Copy,
 } from "lucide-react";
 import { storeInfo } from "@/data/menu";
 import BottomNav from "@/components/BottomNav";
 import { useCustomerCredits } from "@/hooks/useCustomerCredits";
 import WalletHistory from "@/components/WalletHistory";
+import ReferralSection from "@/components/ReferralSection";
 import AppSwitcher from "@/components/AppSwitcher";
 import SavedAddressManager from "@/components/SavedAddressManager";
 import { getHomeRouteForRoles } from "@/lib/homeRoute";
