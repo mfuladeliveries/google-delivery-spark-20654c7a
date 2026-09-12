@@ -1003,6 +1003,7 @@ export type Database = {
           delivery_code: string | null
           delivery_code_hash: string | null
           delivery_fee: number
+          discount_amount: number
           dispatch_phase: string | null
           dispatch_round: number
           dispatch_started_at: string | null
@@ -1033,6 +1034,8 @@ export type Database = {
           picked_up_at: string | null
           picking_up_at: string | null
           pin_attempts: number
+          promo_code: string | null
+          referral_code: string | null
           refund_amount: number | null
           refund_method: string | null
           refund_status: string | null
@@ -1067,6 +1070,7 @@ export type Database = {
           delivery_code?: string | null
           delivery_code_hash?: string | null
           delivery_fee?: number
+          discount_amount?: number
           dispatch_phase?: string | null
           dispatch_round?: number
           dispatch_started_at?: string | null
@@ -1097,6 +1101,8 @@ export type Database = {
           picked_up_at?: string | null
           picking_up_at?: string | null
           pin_attempts?: number
+          promo_code?: string | null
+          referral_code?: string | null
           refund_amount?: number | null
           refund_method?: string | null
           refund_status?: string | null
@@ -1131,6 +1137,7 @@ export type Database = {
           delivery_code?: string | null
           delivery_code_hash?: string | null
           delivery_fee?: number
+          discount_amount?: number
           dispatch_phase?: string | null
           dispatch_round?: number
           dispatch_started_at?: string | null
@@ -1161,6 +1168,8 @@ export type Database = {
           picked_up_at?: string | null
           picking_up_at?: string | null
           pin_attempts?: number
+          promo_code?: string | null
+          referral_code?: string | null
           refund_amount?: number | null
           refund_method?: string | null
           refund_status?: string | null
@@ -1361,6 +1370,110 @@ export type Database = {
         }
         Relationships: []
       }
+      promo_codes: {
+        Row: {
+          active: boolean
+          code: string
+          created_at: string
+          created_by: string | null
+          discount_type: string
+          discount_value: number
+          ends_at: string | null
+          id: string
+          max_discount: number | null
+          min_order: number
+          starts_at: string
+          usage_count: number
+          usage_limit: number | null
+        }
+        Insert: {
+          active?: boolean
+          code: string
+          created_at?: string
+          created_by?: string | null
+          discount_type: string
+          discount_value: number
+          ends_at?: string | null
+          id?: string
+          max_discount?: number | null
+          min_order?: number
+          starts_at?: string
+          usage_count?: number
+          usage_limit?: number | null
+        }
+        Update: {
+          active?: boolean
+          code?: string
+          created_at?: string
+          created_by?: string | null
+          discount_type?: string
+          discount_value?: number
+          ends_at?: string | null
+          id?: string
+          max_discount?: number | null
+          min_order?: number
+          starts_at?: string
+          usage_count?: number
+          usage_limit?: number | null
+        }
+        Relationships: []
+      }
+      promo_redemptions: {
+        Row: {
+          created_at: string
+          discount_amount: number
+          id: string
+          order_id: string
+          promo_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          discount_amount: number
+          id?: string
+          order_id: string
+          promo_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          discount_amount?: number
+          id?: string
+          order_id?: string
+          promo_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "promo_redemptions_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: true
+            referencedRelation: "driver_job_board"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "promo_redemptions_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: true
+            referencedRelation: "driver_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "promo_redemptions_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: true
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "promo_redemptions_promo_id_fkey"
+            columns: ["promo_id"]
+            isOneToOne: false
+            referencedRelation: "promo_codes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       push_config: {
         Row: {
           created_at: string
@@ -1435,6 +1548,88 @@ export type Database = {
           window_started_at?: string
         }
         Relationships: []
+      }
+      referral_codes: {
+        Row: {
+          code: string
+          created_at: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      referrals: {
+        Row: {
+          created_at: string
+          id: string
+          referral_code: string
+          referred_discount: number
+          referred_order_id: string | null
+          referred_user_id: string
+          referrer_reward: number
+          referrer_user_id: string
+          rewarded_at: string | null
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          referral_code: string
+          referred_discount?: number
+          referred_order_id?: string | null
+          referred_user_id: string
+          referrer_reward?: number
+          referrer_user_id: string
+          rewarded_at?: string | null
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          referral_code?: string
+          referred_discount?: number
+          referred_order_id?: string | null
+          referred_user_id?: string
+          referrer_reward?: number
+          referrer_user_id?: string
+          rewarded_at?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "referrals_referred_order_id_fkey"
+            columns: ["referred_order_id"]
+            isOneToOne: false
+            referencedRelation: "driver_job_board"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "referrals_referred_order_id_fkey"
+            columns: ["referred_order_id"]
+            isOneToOne: false
+            referencedRelation: "driver_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "referrals_referred_order_id_fkey"
+            columns: ["referred_order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       restaurants: {
         Row: {
@@ -1578,6 +1773,67 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      whatsapp_notification_outbox: {
+        Row: {
+          attempts: number
+          created_at: string
+          event_key: string
+          id: string
+          last_error: string | null
+          message: string
+          order_id: string | null
+          recipient: string
+          sent_at: string | null
+          status: string
+        }
+        Insert: {
+          attempts?: number
+          created_at?: string
+          event_key: string
+          id?: string
+          last_error?: string | null
+          message: string
+          order_id?: string | null
+          recipient: string
+          sent_at?: string | null
+          status?: string
+        }
+        Update: {
+          attempts?: number
+          created_at?: string
+          event_key?: string
+          id?: string
+          last_error?: string | null
+          message?: string
+          order_id?: string | null
+          recipient?: string
+          sent_at?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "whatsapp_notification_outbox_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "driver_job_board"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "whatsapp_notification_outbox_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "driver_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "whatsapp_notification_outbox_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       withdrawal_requests: {
         Row: {
@@ -1836,6 +2092,10 @@ export type Database = {
         }
         Returns: undefined
       }
+      apply_checkout_code: {
+        Args: { p_code: string; p_order_id: string }
+        Returns: Json
+      }
       auto_cancel_stale_awaiting_orders: { Args: never; Returns: number }
       auto_cancel_stale_orders: { Args: never; Returns: number }
       calc_delivery_fee: {
@@ -1981,6 +2241,7 @@ export type Database = {
       get_active_delivery_pin: { Args: { p_order_id: string }; Returns: string }
       get_customer_balance: { Args: { p_user_id?: string }; Returns: number }
       get_driver_balance: { Args: { p_driver_id: string }; Returns: number }
+      get_or_create_referral_code: { Args: never; Returns: string }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
