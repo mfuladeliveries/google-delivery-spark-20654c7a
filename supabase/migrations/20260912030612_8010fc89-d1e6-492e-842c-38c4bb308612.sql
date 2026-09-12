@@ -1,0 +1,1 @@
+REVOKE ALL ON FUNCTION public.restore_credits_on_cancel() FROM PUBLIC, anon, authenticated;
