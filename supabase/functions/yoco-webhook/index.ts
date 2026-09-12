@@ -188,7 +188,18 @@ Deno.serve(async (req) => {
         p_amount: amountCents ? centsToRands(amountCents) : null,
         p_raw_payload: event as unknown as Record<string, unknown>,
       });
-      if (error) console.error("yoco-webhook: refund RPC failed", error);
+      if (error) {
+        console.error("yoco-webhook: refund RPC failed", error);
+        await logFailure(supabase, {
+          stage: "refund_confirmation_failed",
+          event_id: eventId || null,
+          event_type: eventType,
+          order_id: orderId,
+          error_message: error.message,
+          payload: event as unknown as Record<string, unknown>,
+          source_ip: sourceIp,
+        });
+      }
     } else if (
       eventType === "payment.failed" || eventType === "payment.cancelled" ||
       eventType === "checkout.failed"
@@ -202,7 +213,18 @@ Deno.serve(async (req) => {
         p_raw_payload: event as unknown as Record<string, unknown>,
         p_source_ip: sourceIp,
       });
-      if (error) console.error("yoco-webhook: fail RPC error", error);
+      if (error) {
+        console.error("yoco-webhook: fail RPC error", error);
+        await logFailure(supabase, {
+          stage: "failure_mark_failed",
+          event_id: eventId || null,
+          event_type: eventType,
+          order_id: orderId,
+          error_message: error.message,
+          payload: event as unknown as Record<string, unknown>,
+          source_ip: sourceIp,
+        });
+      }
     } else {
       console.log("yoco-webhook: unhandled event type", eventType);
     }
