@@ -33,9 +33,29 @@ export const useCustomerCredits = () => {
         },
         () => refresh(),
       )
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "credit_transactions",
+          filter: `user_id=eq.${user.id}`,
+        },
+        () => refresh(),
+      )
       .subscribe();
+
+    // Re-read the stored balance when the app is reopened or refocused
+    const onVisible = () => {
+      if (document.visibilityState === "visible") refresh();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    window.addEventListener("focus", onVisible);
+
     return () => {
       supabase.removeChannel(channel);
+      document.removeEventListener("visibilitychange", onVisible);
+      window.removeEventListener("focus", onVisible);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id]);
