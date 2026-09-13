@@ -28,6 +28,13 @@ import BottomNav from "@/components/BottomNav";
 import ProductCustomizeModal from "@/components/ProductCustomizeModal";
 import { RestaurantName } from "@/components/RestaurantName";
 import { popReorder } from "@/lib/reorder";
+import {
+  anyBranch,
+  branchForArea,
+  effectiveCoords as branchCoords,
+  getSelectedAreaId,
+  type RestaurantLocation,
+} from "@/lib/restaurantAreas";
 import { toast } from "sonner";
 
 interface Restaurant {
