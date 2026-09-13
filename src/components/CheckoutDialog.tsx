@@ -35,6 +35,12 @@ import { SavedAddressDialog } from "@/components/SavedAddressDialog";
 import { findNearestZone, OUT_OF_ZONE_MESSAGE, DEFAULT_ZONE_RADIUS_KM } from "@/lib/serviceArea";
 import { savePendingPaymentOrder } from "@/lib/pendingPaymentOrder";
 import { POLICY_VERSIONS } from "@/lib/policies";
+import {
+  anyBranch,
+  branchForArea,
+  getSelectedAreaId,
+  type RestaurantLocation,
+} from "@/lib/restaurantAreas";
 import { Link } from "react-router-dom";
 
 // Lazy-load the heavy Leaflet map picker only when the user opens it.
