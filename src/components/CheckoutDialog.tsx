@@ -227,15 +227,29 @@ const CheckoutDialog = ({
         // Duplicate names exist in the catalog — prefer the one that is switched on.
         const data = matches.find((r) => r.is_active) || matches[0];
         setResolvedRestaurantId(data?.id ?? null);
-        if (data && typeof data.lat === "number" && typeof data.lng === "number") {
-          setRestaurantCoords({ lat: data.lat, lng: data.lng });
+
+        // Use the branch that serves the customer's selected delivery area:
+        // its coordinates and address drive the fee, radius check and pickup.
+        const locs = (cat.restaurant_locations ?? []) as RestaurantLocation[];
+        const chosenBranch = data
+          ? (branchForArea(locs, data.id, getSelectedAreaId()) ?? anyBranch(locs, data.id))
+          : null;
+        setBranchId(chosenBranch?.id ?? null);
+
+        const lat = chosenBranch?.lat ?? data?.lat;
+        const lng = chosenBranch?.lng ?? data?.lng;
+        if (typeof lat === "number" && typeof lng === "number") {
+          setRestaurantCoords({ lat, lng });
         } else {
           setRestaurantCoords(null);
         }
         if (data) {
           setRestaurantInfo({
             name: data.name || primaryRestaurantName,
-            location: ((data.address as string) || "").trim(),
+            location: (
+              chosenBranch?.address ||
+              ((data.address as string) ?? "")
+            ).trim(),
           });
         } else {
           setRestaurantInfo(null);
