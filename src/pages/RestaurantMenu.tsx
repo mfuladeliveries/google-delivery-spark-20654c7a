@@ -394,6 +394,15 @@ const RestaurantMenu = () => {
         </button>
         <div className="absolute bottom-4 left-4 right-4">
           <RestaurantName as="h1" size="2xl" name={restaurant.name} />
+          {branch && (branch.branch_name || branch.address) && (
+            <p className="mt-1 flex items-center gap-1 text-xs text-white/90">
+              <MapPin className="h-3 w-3 flex-shrink-0" />
+              <span className="truncate">
+                {branch.branch_name || branch.address}
+                {branch.branch_name && branch.address ? ` · ${branch.address}` : ""}
+              </span>
+            </p>
+          )}
           <div className="flex items-center gap-3 mt-1.5">
             <span className="flex items-center gap-1 text-white text-xs">
               <Star className="h-3 w-3 fill-primary text-primary" /> {restaurant.rating}
