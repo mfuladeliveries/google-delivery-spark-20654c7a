@@ -35,6 +35,12 @@ import { SavedAddressDialog } from "@/components/SavedAddressDialog";
 import { findNearestZone, OUT_OF_ZONE_MESSAGE, DEFAULT_ZONE_RADIUS_KM } from "@/lib/serviceArea";
 import { savePendingPaymentOrder } from "@/lib/pendingPaymentOrder";
 import { POLICY_VERSIONS } from "@/lib/policies";
+import {
+  anyBranch,
+  branchForArea,
+  getSelectedAreaId,
+  type RestaurantLocation,
+} from "@/lib/restaurantAreas";
 import { Link } from "react-router-dom";
 
 // Lazy-load the heavy Leaflet map picker only when the user opens it.
@@ -176,6 +182,8 @@ const CheckoutDialog = ({
   // name — we resolve the real UUID from the catalog as a fallback.
   const [resolvedRestaurantId, setResolvedRestaurantId] = useState<string | null>(null);
   const checkoutRestaurantId = primaryRestaurantId ?? resolvedRestaurantId;
+  // Branch of the restaurant that serves the customer's delivery area.
+  const [branchId, setBranchId] = useState<string | null>(null);
 
   // Sync incoming food note from cart
   useEffect(() => {
@@ -227,15 +235,29 @@ const CheckoutDialog = ({
         // Duplicate names exist in the catalog — prefer the one that is switched on.
         const data = matches.find((r) => r.is_active) || matches[0];
         setResolvedRestaurantId(data?.id ?? null);
-        if (data && typeof data.lat === "number" && typeof data.lng === "number") {
-          setRestaurantCoords({ lat: data.lat, lng: data.lng });
+
+        // Use the branch that serves the customer's selected delivery area:
+        // its coordinates and address drive the fee, radius check and pickup.
+        const locs = (cat.restaurant_locations ?? []) as RestaurantLocation[];
+        const chosenBranch = data
+          ? (branchForArea(locs, data.id, getSelectedAreaId()) ?? anyBranch(locs, data.id))
+          : null;
+        setBranchId(chosenBranch?.id ?? null);
+
+        const lat = chosenBranch?.lat ?? data?.lat;
+        const lng = chosenBranch?.lng ?? data?.lng;
+        if (typeof lat === "number" && typeof lng === "number") {
+          setRestaurantCoords({ lat, lng });
         } else {
           setRestaurantCoords(null);
         }
         if (data) {
           setRestaurantInfo({
             name: data.name || primaryRestaurantName,
-            location: ((data.address as string) || "").trim(),
+            location: (
+              chosenBranch?.address ||
+              ((data.address as string) ?? "")
+            ).trim(),
           });
         } else {
           setRestaurantInfo(null);
@@ -666,6 +688,7 @@ const CheckoutDialog = ({
         p_items: orderItems,
         p_restaurant_name: primaryRestaurantName,
         p_restaurant_id: checkoutRestaurantId ?? undefined,
+        p_restaurant_location_id: branchId ?? undefined,
         p_customer_name: name.trim(),
         p_customer_contact: contact.trim(),
         p_customer_address: fullAddress,

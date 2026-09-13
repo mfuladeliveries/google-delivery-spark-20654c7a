@@ -26,6 +26,7 @@ import {
   Clock as ClockIcon,
 } from "lucide-react";
 import RestaurantImageManager from "@/components/admin/RestaurantImageManager";
+import RestaurantBranches from "@/components/admin/RestaurantBranches";
 import BottomNav from "@/components/BottomNav";
 import AdminEarnings from "@/components/admin/AdminEarnings";
 import AdminWithdrawals from "@/components/admin/AdminWithdrawals";
@@ -2156,6 +2157,7 @@ const RestaurantCard = ({
   const [coordLng, setCoordLng] = useState("");
   const [savingCoords, setSavingCoords] = useState(false);
   const [imagesOpen, setImagesOpen] = useState(false);
+  const [branchesOpen, setBranchesOpen] = useState(false);
   const [opensAt, setOpensAt] = useState("");
   const [closesAt, setClosesAt] = useState("");
   const [savingHours, setSavingHours] = useState(false);
@@ -2395,6 +2397,13 @@ const RestaurantCard = ({
           </div>
         </div>
         <div className="flex items-center gap-1.5 shrink-0">
+          <button
+            onClick={() => setBranchesOpen(true)}
+            className="rounded-xl bg-primary/10 p-1.5 text-primary hover:bg-primary/20 transition-colors"
+            title="Manage branches & areas"
+          >
+            <Store className="h-4 w-4" />
+          </button>
           <button
             onClick={() => setImagesOpen(true)}
             className="rounded-xl bg-primary/10 p-1.5 text-primary hover:bg-primary/20 transition-colors"
@@ -2708,6 +2717,15 @@ const RestaurantCard = ({
           </div>
         </div>
       )}
+
+      <RestaurantBranches
+        open={branchesOpen}
+        onClose={() => setBranchesOpen(false)}
+        restaurantId={r.id}
+        restaurantName={r.name}
+        areas={areas}
+        onSaved={onRestaurantChanged}
+      />
 
       <RestaurantImageManager
         open={imagesOpen}

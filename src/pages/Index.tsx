@@ -958,10 +958,10 @@ const Index = () => {
                 return (
                   <div className="rounded-2xl border border-border bg-card py-16 text-center shadow-card">
                     <MapPinOff className="mx-auto mb-3 h-12 w-12 text-primary/60" />
-                    <p className="font-semibold text-foreground">Not available in your area yet</p>
+                    <p className="font-semibold text-foreground">Pick your delivery area</p>
                     <p className="mx-auto mt-1 max-w-xs text-sm text-muted-foreground">
-                      We don't currently deliver to your location. We're expanding fast — check back soon, or update
-                      your address if it looks wrong.
+                      Choose the area you'd like your food delivered to and we'll show the restaurants that deliver
+                      there. Turning on your location picks it for you.
                     </p>
                     <div className="mt-5 flex flex-wrap items-center justify-center gap-2">
                       <button
@@ -1034,7 +1034,7 @@ const Index = () => {
           <section className="mb-6">
             <div className="mb-3 flex items-center justify-between">
               <h3 className="flex items-center gap-1.5 text-base font-bold text-foreground">
-                <Trophy className="h-4 w-4 text-primary" /> Top Rated in Mfuleni
+                <Trophy className="h-4 w-4 text-primary" /> Top Rated{activeArea ? ` in ${activeArea.name}` : ""}
               </h3>
               <button
                 onClick={() => {

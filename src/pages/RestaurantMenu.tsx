@@ -28,6 +28,13 @@ import BottomNav from "@/components/BottomNav";
 import ProductCustomizeModal from "@/components/ProductCustomizeModal";
 import { RestaurantName } from "@/components/RestaurantName";
 import { popReorder } from "@/lib/reorder";
+import {
+  anyBranch,
+  branchForArea,
+  effectiveCoords as branchCoords,
+  getSelectedAreaId,
+  type RestaurantLocation,
+} from "@/lib/restaurantAreas";
 import { toast } from "sonner";
 
 interface Restaurant {
@@ -93,10 +100,18 @@ const RestaurantMenu = () => {
   const [checkoutOpen, setCheckoutOpen] = useState(false);
   const [foodNote, setFoodNote] = useState<string | undefined>(undefined);
 
-  // Distance gating: customer must be within DELIVERY_RADIUS_KM of this
-  // restaurant's saved coordinates. Restaurants with no coords are blocked.
-  const distance = restaurant ? geo.distanceTo(restaurant.lat, restaurant.lng) : null;
-  const restaurantHasCoords = !!restaurant && restaurant.lat != null && restaurant.lng != null;
+  // The branch serving the customer's selected delivery area. Its coordinates
+  // drive distance gating, the delivery fee and the driver's pickup point.
+  const [branch, setBranch] = useState<RestaurantLocation | null>(null);
+  const pickupCoords = restaurant
+    ? branchCoords(restaurant, branch)
+    : { lat: null as number | null, lng: null as number | null };
+
+  // Distance gating: customer must be within DELIVERY_RADIUS_KM of the branch
+  // serving their area. Restaurants with no coords are blocked.
+  const distance = restaurant ? geo.distanceTo(pickupCoords.lat, pickupCoords.lng) : null;
+  const restaurantHasCoords =
+    !!restaurant && pickupCoords.lat != null && pickupCoords.lng != null;
   const locationBlocked = !geo.ready || !geo.hasCoords;
   const outOfRange =
     !locationBlocked &&
@@ -153,6 +168,17 @@ const RestaurantMenu = () => {
         return;
       }
       setRestaurant(rest as Restaurant);
+
+      // Resolve which branch of this restaurant serves the customer's area.
+      try {
+        const { getCatalog } = await import("@/lib/catalog");
+        const catalog = await getCatalog();
+        const locs = (catalog.restaurant_locations ?? []) as RestaurantLocation[];
+        const areaId = getSelectedAreaId();
+        setBranch(branchForArea(locs, rest.id, areaId) ?? anyBranch(locs, rest.id));
+      } catch {
+        /* branch is optional — fall back to the restaurant's own location */
+      }
 
       // Try DB menu items first, fall back to static data
       const { data: dbItems } = await supabase
@@ -368,6 +394,15 @@ const RestaurantMenu = () => {
         </button>
         <div className="absolute bottom-4 left-4 right-4">
           <RestaurantName as="h1" size="2xl" name={restaurant.name} />
+          {branch && (branch.branch_name || branch.address) && (
+            <p className="mt-1 flex items-center gap-1 text-xs text-white/90">
+              <MapPin className="h-3 w-3 flex-shrink-0" />
+              <span className="truncate">
+                {branch.branch_name || branch.address}
+                {branch.branch_name && branch.address ? ` · ${branch.address}` : ""}
+              </span>
+            </p>
+          )}
           <div className="flex items-center gap-3 mt-1.5">
             <span className="flex items-center gap-1 text-white text-xs">
               <Star className="h-3 w-3 fill-primary text-primary" /> {restaurant.rating}
