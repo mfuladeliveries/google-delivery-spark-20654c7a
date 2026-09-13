@@ -176,6 +176,8 @@ const CheckoutDialog = ({
   // name — we resolve the real UUID from the catalog as a fallback.
   const [resolvedRestaurantId, setResolvedRestaurantId] = useState<string | null>(null);
   const checkoutRestaurantId = primaryRestaurantId ?? resolvedRestaurantId;
+  // Branch of the restaurant that serves the customer's delivery area.
+  const [branchId, setBranchId] = useState<string | null>(null);
 
   // Sync incoming food note from cart
   useEffect(() => {
