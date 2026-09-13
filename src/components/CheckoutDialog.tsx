@@ -682,6 +682,7 @@ const CheckoutDialog = ({
         p_items: orderItems,
         p_restaurant_name: primaryRestaurantName,
         p_restaurant_id: checkoutRestaurantId ?? undefined,
+        p_restaurant_location_id: branchId ?? undefined,
         p_customer_name: name.trim(),
         p_customer_contact: contact.trim(),
         p_customer_address: fullAddress,
