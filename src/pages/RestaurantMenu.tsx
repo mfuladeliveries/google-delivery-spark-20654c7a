@@ -93,10 +93,18 @@ const RestaurantMenu = () => {
   const [checkoutOpen, setCheckoutOpen] = useState(false);
   const [foodNote, setFoodNote] = useState<string | undefined>(undefined);
 
-  // Distance gating: customer must be within DELIVERY_RADIUS_KM of this
-  // restaurant's saved coordinates. Restaurants with no coords are blocked.
-  const distance = restaurant ? geo.distanceTo(restaurant.lat, restaurant.lng) : null;
-  const restaurantHasCoords = !!restaurant && restaurant.lat != null && restaurant.lng != null;
+  // The branch serving the customer's selected delivery area. Its coordinates
+  // drive distance gating, the delivery fee and the driver's pickup point.
+  const [branch, setBranch] = useState<RestaurantLocation | null>(null);
+  const pickupCoords = restaurant
+    ? branchCoords(restaurant, branch)
+    : { lat: null as number | null, lng: null as number | null };
+
+  // Distance gating: customer must be within DELIVERY_RADIUS_KM of the branch
+  // serving their area. Restaurants with no coords are blocked.
+  const distance = restaurant ? geo.distanceTo(pickupCoords.lat, pickupCoords.lng) : null;
+  const restaurantHasCoords =
+    !!restaurant && pickupCoords.lat != null && pickupCoords.lng != null;
   const locationBlocked = !geo.ready || !geo.hasCoords;
   const outOfRange =
     !locationBlocked &&
