@@ -82,7 +82,7 @@ export const effectiveCoords = (
 ): { lat: number | null; lng: number | null } =>
   branch && branch.lat != null && branch.lng != null
     ? { lat: branch.lat, lng: branch.lng }
-    : { lat: restaurant.lat, lng: restaurant.lng };
+    : { lat: restaurant.lat ?? null, lng: restaurant.lng ?? null };
 
 /** Opening hours to use: branch overrides the brand when both are set. */
 export const effectiveHours = (
