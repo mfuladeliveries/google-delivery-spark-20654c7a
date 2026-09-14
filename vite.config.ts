@@ -28,6 +28,8 @@ export default defineConfig(({ mode }) => ({
       },
       includeAssets: ["favicon.ico", "placeholder.svg"],
       workbox: {
+        // Main bundle is over the 2 MiB default; allow it to be precached.
+        maximumFileSizeToCacheInBytes: 6 * 1024 * 1024,
         // Don't precache HTML — that's what causes "reload on resume" because
         // Workbox detects a new index.html hash and triggers skipWaiting.
         globPatterns: ["**/*.{js,css,ico,png,svg,jpg,jpeg,webp}"],

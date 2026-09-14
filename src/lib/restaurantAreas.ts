@@ -77,21 +77,21 @@ export const areaIdsForRestaurant = (
 
 /** Coordinates to use for a restaurant: the branch's when it has them. */
 export const effectiveCoords = (
-  restaurant: { lat: number | null; lng: number | null },
+  restaurant: { lat?: number | null; lng?: number | null },
   branch: RestaurantLocation | null,
 ): { lat: number | null; lng: number | null } =>
   branch && branch.lat != null && branch.lng != null
     ? { lat: branch.lat, lng: branch.lng }
-    : { lat: restaurant.lat, lng: restaurant.lng };
+    : { lat: restaurant.lat ?? null, lng: restaurant.lng ?? null };
 
 /** Opening hours to use: branch overrides the brand when both are set. */
 export const effectiveHours = (
-  restaurant: { opens_at: string | null; closes_at: string | null },
+  restaurant: { opens_at?: string | null; closes_at?: string | null },
   branch: RestaurantLocation | null,
 ): { opens_at: string | null; closes_at: string | null } =>
   branch && branch.opens_at && branch.closes_at
     ? { opens_at: branch.opens_at, closes_at: branch.closes_at }
-    : { opens_at: restaurant.opens_at, closes_at: restaurant.closes_at };
+    : { opens_at: restaurant.opens_at ?? null, closes_at: restaurant.closes_at ?? null };
 
 /** The general store rides along in every area. */
 export const isCompanionStore = (name: string | null | undefined): boolean =>

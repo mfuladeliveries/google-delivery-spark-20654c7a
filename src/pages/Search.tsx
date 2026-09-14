@@ -70,11 +70,21 @@ const Search = () => {
         .limit(20),
     ]);
     const needle = q.toLowerCase();
-    // Only restaurants an admin has switched on (and with a real location) can
-    // be ordered from, so hide the rest from search results entirely.
-    const orderable = (cat?.restaurants ?? []).filter(
-      (r) => r.is_active && (r.lat != null && r.lng != null || r.name.trim().toLowerCase() === "mfula shop"),
+    // Only restaurants an admin has switched on, that have a live branch in the
+    // customer's selected delivery area, can be ordered from.
+    const { branchForArea, effectiveCoords, getSelectedAreaId, isCompanionStore } = await import(
+      "@/lib/restaurantAreas"
     );
+    const areaId = getSelectedAreaId();
+    const locations = cat?.restaurant_locations ?? [];
+    const orderable = (cat?.restaurants ?? []).filter((r) => {
+      if (!r.is_active) return false;
+      if (isCompanionStore(r.name)) return true;
+      const branch = branchForArea(locations, r.id, areaId);
+      if (areaId && !branch) return false;
+      const coords = effectiveCoords(r, branch);
+      return coords.lat != null && coords.lng != null;
+    });
     const rests = orderable
       .filter((r) => r.name.toLowerCase().includes(needle))
       .sort((a, b) => a.name.localeCompare(b.name));
