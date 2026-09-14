@@ -77,7 +77,7 @@ export const areaIdsForRestaurant = (
 
 /** Coordinates to use for a restaurant: the branch's when it has them. */
 export const effectiveCoords = (
-  restaurant: { lat: number | null; lng: number | null },
+  restaurant: { lat?: number | null; lng?: number | null },
   branch: RestaurantLocation | null,
 ): { lat: number | null; lng: number | null } =>
   branch && branch.lat != null && branch.lng != null
