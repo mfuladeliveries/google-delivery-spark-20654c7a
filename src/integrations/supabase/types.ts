@@ -1650,7 +1650,10 @@ export type Database = {
           closes_at: string | null
           created_at: string
           delivery_enabled: boolean
+          delivery_fee: number | null
+          estimated_delivery_time: string | null
           id: string
+          is_open: boolean
           lat: number | null
           lng: number | null
           opens_at: string | null
@@ -1666,7 +1669,10 @@ export type Database = {
           closes_at?: string | null
           created_at?: string
           delivery_enabled?: boolean
+          delivery_fee?: number | null
+          estimated_delivery_time?: string | null
           id?: string
+          is_open?: boolean
           lat?: number | null
           lng?: number | null
           opens_at?: string | null
@@ -1682,7 +1688,10 @@ export type Database = {
           closes_at?: string | null
           created_at?: string
           delivery_enabled?: boolean
+          delivery_fee?: number | null
+          estimated_delivery_time?: string | null
           id?: string
+          is_open?: boolean
           lat?: number | null
           lng?: number | null
           opens_at?: string | null
