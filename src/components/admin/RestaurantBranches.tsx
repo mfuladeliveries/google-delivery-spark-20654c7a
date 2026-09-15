@@ -489,6 +489,20 @@ const BranchDetailEditor = ({
       />
       <div className="grid grid-cols-2 gap-2">
         <input
+          value={fee}
+          onChange={(e) => setFee(e.target.value)}
+          placeholder="Delivery fee (R)"
+          className="rounded-lg border border-border bg-background px-2.5 py-1.5 text-xs focus:border-primary focus:outline-none"
+        />
+        <input
+          value={eta}
+          onChange={(e) => setEta(e.target.value)}
+          placeholder="Delivery time"
+          className="rounded-lg border border-border bg-background px-2.5 py-1.5 text-xs focus:border-primary focus:outline-none"
+        />
+      </div>
+      <div className="grid grid-cols-2 gap-2">
+        <input
           value={lat}
           onChange={(e) => setLat(e.target.value)}
           placeholder="Latitude"
