@@ -142,7 +142,11 @@ const RestaurantBranches = ({
     const { error } = await supabase.from("restaurant_locations").update(values).eq("id", id);
     setBusyId(null);
     if (error) {
-      toast.error("Could not save: " + error.message);
+      toast.error(
+        error.code === "23505" || error.message.includes("duplicate key")
+          ? "This restaurant already has a branch in that delivery area."
+          : "Could not save: " + error.message,
+      );
       return;
     }
     toast.success(label);
