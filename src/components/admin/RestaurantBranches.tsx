@@ -355,6 +355,20 @@ const RestaurantBranches = ({
             </div>
             <div className="grid grid-cols-2 gap-2">
               <input
+                value={draft.delivery_fee}
+                onChange={(e) => setDraft({ ...draft, delivery_fee: e.target.value })}
+                placeholder="Delivery fee (R) — blank = area fee"
+                className="rounded-xl border border-border bg-card px-3 py-2 text-sm focus:border-primary focus:outline-none"
+              />
+              <input
+                value={draft.estimated_delivery_time}
+                onChange={(e) => setDraft({ ...draft, estimated_delivery_time: e.target.value })}
+                placeholder="Delivery time, e.g. 25-35 min"
+                className="rounded-xl border border-border bg-card px-3 py-2 text-sm focus:border-primary focus:outline-none"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <input
                 type="time"
                 value={draft.opens_at}
                 onChange={(e) => setDraft({ ...draft, opens_at: e.target.value })}
@@ -418,6 +432,8 @@ const BranchDetailEditor = ({
   const [address, setAddress] = useState(branch.address ?? "");
   const [lat, setLat] = useState(branch.lat != null ? String(branch.lat) : "");
   const [lng, setLng] = useState(branch.lng != null ? String(branch.lng) : "");
+  const [fee, setFee] = useState(branch.delivery_fee != null ? String(branch.delivery_fee) : "");
+  const [eta, setEta] = useState(branch.estimated_delivery_time ?? "");
   const [opens, setOpens] = useState(branch.opens_at ? branch.opens_at.slice(0, 5) : "");
   const [closes, setCloses] = useState(branch.closes_at ? branch.closes_at.slice(0, 5) : "");
 
@@ -439,11 +455,18 @@ const BranchDetailEditor = ({
       toast.error("Latitude and longitude must be numbers");
       return;
     }
+    const feeNum = fee.trim() === "" ? null : Number(fee);
+    if (feeNum !== null && (!Number.isFinite(feeNum) || feeNum < 0)) {
+      toast.error("Delivery fee must be a positive amount");
+      return;
+    }
     onSave({
       branch_name: name.trim(),
       address: address.trim(),
       lat: latNum,
       lng: lngNum,
+      delivery_fee: feeNum,
+      estimated_delivery_time: eta.trim() || null,
       opens_at: opens || null,
       closes_at: closes || null,
     });
