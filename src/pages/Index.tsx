@@ -36,6 +36,7 @@ import { distanceKm, getActiveZones, findNearestZone, type DeliveryZone, type Zo
 import {
   branchForArea,
   effectiveCoords as branchCoords,
+  effectiveDeliveryTime as branchEta,
   effectiveHours as branchHours,
   getSelectedAreaId,
   isCompanionStore,
