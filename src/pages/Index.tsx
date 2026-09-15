@@ -36,6 +36,7 @@ import { distanceKm, getActiveZones, findNearestZone, type DeliveryZone, type Zo
 import {
   branchForArea,
   effectiveCoords as branchCoords,
+  effectiveDeliveryTime as branchEta,
   effectiveHours as branchHours,
   getSelectedAreaId,
   isCompanionStore,
@@ -351,6 +352,7 @@ const Index = () => {
         lng: coords.lng,
         opens_at: hours.opens_at,
         closes_at: hours.closes_at,
+        delivery_time: branchEta(r, branch) ?? r.delivery_time,
         _branch: branch,
         _distance: d,
         _nearby: nearby,

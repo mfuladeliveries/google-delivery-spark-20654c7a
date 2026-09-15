@@ -16,6 +16,12 @@ export interface RestaurantLocation {
   lng: number | null;
   active: boolean;
   delivery_enabled: boolean;
+  /** Temporary open/closed switch for this branch. */
+  is_open?: boolean | null;
+  /** Flat delivery fee for this branch; null means use the area's fee. */
+  delivery_fee?: number | null;
+  /** e.g. "25-35 min"; null means use the restaurant's own estimate. */
+  estimated_delivery_time?: string | null;
   opens_at: string | null;
   closes_at: string | null;
   operating_days: Record<string, boolean> | null;
@@ -41,7 +47,8 @@ export const setSelectedAreaId = (areaId: string | null): void => {
   }
 };
 
-const orderable = (l: RestaurantLocation) => l.active && l.delivery_enabled;
+const orderable = (l: RestaurantLocation) =>
+  l.active && l.delivery_enabled && l.is_open !== false;
 
 /** The branch of `restaurantId` that serves `areaId` (null when none does). */
 export const branchForArea = (
@@ -92,6 +99,13 @@ export const effectiveHours = (
   branch && branch.opens_at && branch.closes_at
     ? { opens_at: branch.opens_at, closes_at: branch.closes_at }
     : { opens_at: restaurant.opens_at ?? null, closes_at: restaurant.closes_at ?? null };
+
+/** Estimated delivery time to show: the branch's when it has one. */
+export const effectiveDeliveryTime = (
+  restaurant: { delivery_time?: string | null },
+  branch: RestaurantLocation | null,
+): string | null =>
+  (branch?.estimated_delivery_time?.trim() || restaurant.delivery_time) ?? null;
 
 /** The general store rides along in every area. */
 export const isCompanionStore = (name: string | null | undefined): boolean =>

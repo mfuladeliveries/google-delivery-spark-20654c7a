@@ -29,6 +29,8 @@ type Draft = {
   address: string;
   lat: string;
   lng: string;
+  delivery_fee: string;
+  estimated_delivery_time: string;
   opens_at: string;
   closes_at: string;
 };
@@ -39,6 +41,8 @@ const emptyDraft: Draft = {
   address: "",
   lat: "",
   lng: "",
+  delivery_fee: "",
+  estimated_delivery_time: "",
   opens_at: "",
   closes_at: "",
 };
@@ -63,7 +67,7 @@ const RestaurantBranches = ({
     const { data, error } = await supabase
       .from("restaurant_locations")
       .select(
-        "id, restaurant_id, area_id, branch_name, address, lat, lng, active, delivery_enabled, opens_at, closes_at, operating_days",
+        "id, restaurant_id, area_id, branch_name, address, lat, lng, active, delivery_enabled, is_open, delivery_fee, estimated_delivery_time, opens_at, closes_at, operating_days",
       )
       .eq("restaurant_id", restaurantId)
       .order("branch_name");
@@ -97,6 +101,12 @@ const RestaurantBranches = ({
       return;
     }
 
+    const fee = draft.delivery_fee.trim() === "" ? null : Number(draft.delivery_fee);
+    if (fee !== null && (!Number.isFinite(fee) || fee < 0)) {
+      toast.error("Delivery fee must be a positive amount");
+      return;
+    }
+
     setSaving(true);
     const { error } = await supabase.from("restaurant_locations").insert({
       restaurant_id: restaurantId,
@@ -105,12 +115,18 @@ const RestaurantBranches = ({
       address: draft.address.trim(),
       lat,
       lng,
+      delivery_fee: fee,
+      estimated_delivery_time: draft.estimated_delivery_time.trim() || null,
       opens_at: draft.opens_at || null,
       closes_at: draft.closes_at || null,
     });
     setSaving(false);
     if (error) {
-      toast.error("Could not add branch: " + error.message);
+      toast.error(
+        error.code === "23505" || error.message.includes("duplicate key")
+          ? "This restaurant already has a branch in that delivery area."
+          : "Could not add branch: " + error.message,
+      );
       return;
     }
     toast.success(`${draft.branch_name.trim()} added`);
@@ -126,7 +142,11 @@ const RestaurantBranches = ({
     const { error } = await supabase.from("restaurant_locations").update(values).eq("id", id);
     setBusyId(null);
     if (error) {
-      toast.error("Could not save: " + error.message);
+      toast.error(
+        error.code === "23505" || error.message.includes("duplicate key")
+          ? "This restaurant already has a branch in that delivery area."
+          : "Could not save: " + error.message,
+      );
       return;
     }
     toast.success(label);
@@ -200,6 +220,13 @@ const RestaurantBranches = ({
                         ? ` · ${b.opens_at.slice(0, 5)}–${b.closes_at.slice(0, 5)}`
                         : ""}
                     </p>
+                    <p className="mt-0.5 text-[10px] text-muted-foreground">
+                      {b.delivery_fee != null
+                        ? `Fee R${Number(b.delivery_fee).toFixed(2)}`
+                        : "Fee: area default"}
+                      {" · "}
+                      {b.estimated_delivery_time?.trim() || "Time: restaurant default"}
+                    </p>
                   </div>
                   <button
                     onClick={() => remove(b)}
@@ -259,6 +286,21 @@ const RestaurantBranches = ({
                       />
                       Delivering
                     </label>
+                    <label className="flex items-center gap-1.5">
+                      <input
+                        type="checkbox"
+                        checked={b.is_open !== false}
+                        disabled={busyId === b.id}
+                        onChange={(e) =>
+                          patch(
+                            b.id,
+                            { is_open: e.target.checked },
+                            e.target.checked ? "Branch marked open" : "Branch marked closed",
+                          )
+                        }
+                      />
+                      Open
+                    </label>
                   </div>
                 </div>
 
@@ -312,6 +354,20 @@ const RestaurantBranches = ({
                 value={draft.lng}
                 onChange={(e) => setDraft({ ...draft, lng: e.target.value })}
                 placeholder="Longitude"
+                className="rounded-xl border border-border bg-card px-3 py-2 text-sm focus:border-primary focus:outline-none"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <input
+                value={draft.delivery_fee}
+                onChange={(e) => setDraft({ ...draft, delivery_fee: e.target.value })}
+                placeholder="Delivery fee (R) — blank = area fee"
+                className="rounded-xl border border-border bg-card px-3 py-2 text-sm focus:border-primary focus:outline-none"
+              />
+              <input
+                value={draft.estimated_delivery_time}
+                onChange={(e) => setDraft({ ...draft, estimated_delivery_time: e.target.value })}
+                placeholder="Delivery time, e.g. 25-35 min"
                 className="rounded-xl border border-border bg-card px-3 py-2 text-sm focus:border-primary focus:outline-none"
               />
             </div>
@@ -380,6 +436,8 @@ const BranchDetailEditor = ({
   const [address, setAddress] = useState(branch.address ?? "");
   const [lat, setLat] = useState(branch.lat != null ? String(branch.lat) : "");
   const [lng, setLng] = useState(branch.lng != null ? String(branch.lng) : "");
+  const [fee, setFee] = useState(branch.delivery_fee != null ? String(branch.delivery_fee) : "");
+  const [eta, setEta] = useState(branch.estimated_delivery_time ?? "");
   const [opens, setOpens] = useState(branch.opens_at ? branch.opens_at.slice(0, 5) : "");
   const [closes, setCloses] = useState(branch.closes_at ? branch.closes_at.slice(0, 5) : "");
 
@@ -401,11 +459,18 @@ const BranchDetailEditor = ({
       toast.error("Latitude and longitude must be numbers");
       return;
     }
+    const feeNum = fee.trim() === "" ? null : Number(fee);
+    if (feeNum !== null && (!Number.isFinite(feeNum) || feeNum < 0)) {
+      toast.error("Delivery fee must be a positive amount");
+      return;
+    }
     onSave({
       branch_name: name.trim(),
       address: address.trim(),
       lat: latNum,
       lng: lngNum,
+      delivery_fee: feeNum,
+      estimated_delivery_time: eta.trim() || null,
       opens_at: opens || null,
       closes_at: closes || null,
     });
@@ -426,6 +491,20 @@ const BranchDetailEditor = ({
         placeholder="Street address"
         className="w-full rounded-lg border border-border bg-background px-2.5 py-1.5 text-xs focus:border-primary focus:outline-none"
       />
+      <div className="grid grid-cols-2 gap-2">
+        <input
+          value={fee}
+          onChange={(e) => setFee(e.target.value)}
+          placeholder="Delivery fee (R)"
+          className="rounded-lg border border-border bg-background px-2.5 py-1.5 text-xs focus:border-primary focus:outline-none"
+        />
+        <input
+          value={eta}
+          onChange={(e) => setEta(e.target.value)}
+          placeholder="Delivery time"
+          className="rounded-lg border border-border bg-background px-2.5 py-1.5 text-xs focus:border-primary focus:outline-none"
+        />
+      </div>
       <div className="grid grid-cols-2 gap-2">
         <input
           value={lat}
