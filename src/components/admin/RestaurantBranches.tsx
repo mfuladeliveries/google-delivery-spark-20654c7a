@@ -216,6 +216,13 @@ const RestaurantBranches = ({
                         ? ` · ${b.opens_at.slice(0, 5)}–${b.closes_at.slice(0, 5)}`
                         : ""}
                     </p>
+                    <p className="mt-0.5 text-[10px] text-muted-foreground">
+                      {b.delivery_fee != null
+                        ? `Fee R${Number(b.delivery_fee).toFixed(2)}`
+                        : "Fee: area default"}
+                      {" · "}
+                      {b.estimated_delivery_time?.trim() || "Time: restaurant default"}
+                    </p>
                   </div>
                   <button
                     onClick={() => remove(b)}
@@ -274,6 +281,21 @@ const RestaurantBranches = ({
                         }
                       />
                       Delivering
+                    </label>
+                    <label className="flex items-center gap-1.5">
+                      <input
+                        type="checkbox"
+                        checked={b.is_open !== false}
+                        disabled={busyId === b.id}
+                        onChange={(e) =>
+                          patch(
+                            b.id,
+                            { is_open: e.target.checked },
+                            e.target.checked ? "Branch marked open" : "Branch marked closed",
+                          )
+                        }
+                      />
+                      Open
                     </label>
                   </div>
                 </div>
