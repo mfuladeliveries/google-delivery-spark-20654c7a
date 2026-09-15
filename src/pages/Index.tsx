@@ -352,6 +352,7 @@ const Index = () => {
         lng: coords.lng,
         opens_at: hours.opens_at,
         closes_at: hours.closes_at,
+        delivery_time: branchEta(r, branch) ?? r.delivery_time,
         _branch: branch,
         _distance: d,
         _nearby: nearby,
