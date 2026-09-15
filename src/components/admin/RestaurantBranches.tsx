@@ -29,6 +29,8 @@ type Draft = {
   address: string;
   lat: string;
   lng: string;
+  delivery_fee: string;
+  estimated_delivery_time: string;
   opens_at: string;
   closes_at: string;
 };
@@ -39,6 +41,8 @@ const emptyDraft: Draft = {
   address: "",
   lat: "",
   lng: "",
+  delivery_fee: "",
+  estimated_delivery_time: "",
   opens_at: "",
   closes_at: "",
 };
@@ -63,7 +67,7 @@ const RestaurantBranches = ({
     const { data, error } = await supabase
       .from("restaurant_locations")
       .select(
-        "id, restaurant_id, area_id, branch_name, address, lat, lng, active, delivery_enabled, opens_at, closes_at, operating_days",
+        "id, restaurant_id, area_id, branch_name, address, lat, lng, active, delivery_enabled, is_open, delivery_fee, estimated_delivery_time, opens_at, closes_at, operating_days",
       )
       .eq("restaurant_id", restaurantId)
       .order("branch_name");
@@ -97,6 +101,12 @@ const RestaurantBranches = ({
       return;
     }
 
+    const fee = draft.delivery_fee.trim() === "" ? null : Number(draft.delivery_fee);
+    if (fee !== null && (!Number.isFinite(fee) || fee < 0)) {
+      toast.error("Delivery fee must be a positive amount");
+      return;
+    }
+
     setSaving(true);
     const { error } = await supabase.from("restaurant_locations").insert({
       restaurant_id: restaurantId,
@@ -105,12 +115,18 @@ const RestaurantBranches = ({
       address: draft.address.trim(),
       lat,
       lng,
+      delivery_fee: fee,
+      estimated_delivery_time: draft.estimated_delivery_time.trim() || null,
       opens_at: draft.opens_at || null,
       closes_at: draft.closes_at || null,
     });
     setSaving(false);
     if (error) {
-      toast.error("Could not add branch: " + error.message);
+      toast.error(
+        error.code === "23505" || error.message.includes("duplicate key")
+          ? "This restaurant already has a branch in that delivery area."
+          : "Could not add branch: " + error.message,
+      );
       return;
     }
     toast.success(`${draft.branch_name.trim()} added`);
