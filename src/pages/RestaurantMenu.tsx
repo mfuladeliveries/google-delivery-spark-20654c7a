@@ -32,6 +32,7 @@ import {
   anyBranch,
   branchForArea,
   effectiveCoords as branchCoords,
+  effectiveDeliveryTime as branchEta,
   getSelectedAreaId,
   type RestaurantLocation,
 } from "@/lib/restaurantAreas";
@@ -408,7 +409,7 @@ const RestaurantMenu = () => {
               <Star className="h-3 w-3 fill-primary text-primary" /> {restaurant.rating}
             </span>
             <span className="flex items-center gap-1 text-white/80 text-xs">
-              <Clock className="h-3 w-3" /> {restaurant.delivery_time}
+              <Clock className="h-3 w-3" /> {branchEta(restaurant, branch)}
             </span>
             <span className="text-white/80 text-xs">Min R{restaurant.min_order}</span>
           </div>
