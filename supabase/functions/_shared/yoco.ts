@@ -376,7 +376,7 @@ export async function confirmPaidOrder(supabase: any, args: {
   const mode = args.mode ?? "live";
   const { data, error } = await supabase.rpc("confirm_online_payment", {
     p_order_id: args.orderId,
-    p_provider: mode === "test" ? "yoco_test" : "yoco",
+    p_provider: "yoco",
     p_payment_id: args.paymentId,
     p_checkout_id: args.checkoutId,
     p_reference: args.reference,
