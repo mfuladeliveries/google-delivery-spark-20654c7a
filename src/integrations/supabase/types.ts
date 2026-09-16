@@ -1022,6 +1022,7 @@ export type Database = {
           payment_checkout_id: string | null
           payment_completed_at: string | null
           payment_currency: string | null
+          payment_environment: string
           payment_failed_at: string | null
           payment_failure_reason: string | null
           payment_initiated_at: string | null
@@ -1090,6 +1091,7 @@ export type Database = {
           payment_checkout_id?: string | null
           payment_completed_at?: string | null
           payment_currency?: string | null
+          payment_environment?: string
           payment_failed_at?: string | null
           payment_failure_reason?: string | null
           payment_initiated_at?: string | null
@@ -1158,6 +1160,7 @@ export type Database = {
           payment_checkout_id?: string | null
           payment_completed_at?: string | null
           payment_currency?: string | null
+          payment_environment?: string
           payment_failed_at?: string | null
           payment_failure_reason?: string | null
           payment_initiated_at?: string | null
