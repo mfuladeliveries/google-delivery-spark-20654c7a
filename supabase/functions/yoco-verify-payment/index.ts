@@ -6,6 +6,7 @@ import {
   centsToRands,
   confirmPaidOrder,
   getYocoCheckout,
+  normalizeMode,
   runPostPaymentSideEffects,
 } from "../_shared/yoco.ts";
 
@@ -51,7 +52,7 @@ Deno.serve(async (req) => {
     let query = admin
       .from("orders")
       .select(
-        "id, user_id, order_number, total, status, payment_status, payment_checkout_id, payment_provider_txn_id, delivery_code, payment_failure_reason",
+        "id, user_id, order_number, total, status, payment_status, payment_checkout_id, payment_provider_txn_id, delivery_code, payment_failure_reason, payment_environment",
       );
     if (body.order_id) query = query.eq("id", body.order_id);
     else if (body.order_number) query = query.eq("order_number", Number(body.order_number));
@@ -61,6 +62,10 @@ Deno.serve(async (req) => {
     if (!order) return json({ error: "Order not found" }, 404);
     if (order.user_id !== user.id) return json({ error: "Not your order" }, 403);
 
+    // The order remembers which environment it was created in — never re-read
+    // it with the other environment's credentials.
+    const mode = normalizeMode(order.payment_environment);
+
     const respond = (extra: Record<string, unknown> = {}) =>
       json({
         order_id: order.id,
@@ -68,6 +73,7 @@ Deno.serve(async (req) => {
         total: Number(order.total),
         status: order.status,
         payment_status: order.payment_status,
+        payment_mode: mode,
         ...extra,
       });
 
@@ -79,7 +85,7 @@ Deno.serve(async (req) => {
       return respond({ checkout_status: "none" });
     }
 
-    const checkout = await getYocoCheckout(order.payment_checkout_id);
+    const checkout = await getYocoCheckout(order.payment_checkout_id, mode);
     const checkoutStatus = String(checkout?.status ?? "").toLowerCase();
 
     if (checkoutStatus === "completed" || checkoutStatus === "succeeded") {
@@ -92,6 +98,7 @@ Deno.serve(async (req) => {
         paymentMethod: "card",
         currency: String(checkout?.currency ?? "ZAR"),
         payload: (checkout ?? {}) as Record<string, unknown>,
+        mode,
       });
       if (result) await runPostPaymentSideEffects(admin, result);
 
@@ -109,6 +116,7 @@ Deno.serve(async (req) => {
         payment_status: fresh?.payment_status ?? "paid",
         delivery_code: fresh?.delivery_code ?? null,
         checkout_status: checkoutStatus,
+        payment_mode: mode,
       });
     }
 

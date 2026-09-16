@@ -1,7 +1,13 @@
 // Creates a Yoco hosted checkout for an order the caller owns.
 // The amount is always taken from the DB order total — never from the client.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.95.0";
-import { createYocoCheckout, getYocoCheckout, isTestMode } from "../_shared/yoco.ts";
+import {
+  createYocoCheckout,
+  getPaymentMode,
+  getYocoCheckout,
+  isTestMode,
+  testKeyConfigured,
+} from "../_shared/yoco.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -72,12 +78,21 @@ Deno.serve(async (req) => {
       return json({ error: "This order is not awaiting payment." }, 409);
     }
 
+    // Admin-selected environment. Test mode must never touch live credentials.
+    const mode = await getPaymentMode(admin);
+    if (mode === "test" && !testKeyConfigured()) {
+      return json({
+        error:
+          "Test payment mode is on, but no Yoco test key is configured. Add a sk_test key or switch back to Live mode.",
+      }, 409);
+    }
+
     const total = Number(order.total);
     if (!Number.isFinite(total) || total <= 0) return json({ error: "Invalid order total" }, 400);
 
     // Reuse an existing checkout when it is still usable (browser back / retry).
     if (order.payment_checkout_id) {
-      const existing = await getYocoCheckout(order.payment_checkout_id);
+      const existing = await getYocoCheckout(order.payment_checkout_id, mode);
       const status = String(existing?.status ?? "").toLowerCase();
       if (existing?.redirectUrl && (status === "created" || status === "started")) {
         return json({
@@ -85,7 +100,8 @@ Deno.serve(async (req) => {
           redirect_url: existing.redirectUrl,
           order_number: order.order_number,
           total,
-          test_mode: isTestMode(),
+          test_mode: isTestMode(mode),
+          payment_mode: mode,
           reused: true,
         });
       }
@@ -106,7 +122,8 @@ Deno.serve(async (req) => {
         reference,
         user_id: user.id,
       },
-      idempotencyKey: `order-${order.id}-${Math.round(total * 100)}`,
+      idempotencyKey: `order-${mode}-${order.id}-${Math.round(total * 100)}`,
+      mode,
     });
 
     if (!checkout?.redirectUrl) {
@@ -122,6 +139,7 @@ Deno.serve(async (req) => {
         payment_amount: total,
         payment_currency: "ZAR",
         payment_status: "pending",
+        payment_environment: mode,
         payment_initiated_at: new Date().toISOString(),
       })
       .eq("id", order.id);
@@ -132,7 +150,8 @@ Deno.serve(async (req) => {
       order_number: order.order_number,
       total,
       reference,
-      test_mode: isTestMode(),
+      test_mode: isTestMode(mode),
+      payment_mode: mode,
     });
   } catch (err) {
     console.error("yoco-create-checkout error", err);
