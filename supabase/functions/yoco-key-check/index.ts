@@ -2,7 +2,12 @@
 // R100 checkout exactly like the Yoco API example, then reports the result.
 // Admin-only: requires a valid user JWT with the admin role.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.95.0";
-import { createYocoCheckout, isTestMode } from "../_shared/yoco.ts";
+import {
+  createYocoCheckout,
+  getPaymentMode,
+  isTestMode,
+  keyPrefix as yocoKeyPrefix,
+} from "../_shared/yoco.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -43,7 +48,11 @@ Deno.serve(async (req) => {
     });
     if (!isAdmin) return json({ error: "Admins only" }, 403);
 
-    const keyPrefix = (Deno.env.get("YOCO_SECRET_KEY") ?? "").slice(0, 7);
+    const mode = await getPaymentMode(admin);
+    const keyPrefix = yocoKeyPrefix(mode);
+    const activeKey = mode === "test"
+      ? (Deno.env.get("YOCO_TEST_SECRET_KEY") ?? "")
+      : (Deno.env.get("YOCO_SECRET_KEY") ?? "");
 
     const checkout = await createYocoCheckout({
       amountRands: 100,
@@ -52,7 +61,8 @@ Deno.serve(async (req) => {
       cancelUrl: "https://mfuladeliveries.online/payment/result",
       failureUrl: "https://mfuladeliveries.online/payment/result",
       metadata: { diagnostic: "key-check" },
-      idempotencyKey: `key-check-${user.id}`,
+      idempotencyKey: `key-check-${mode}-${user.id}`,
+      mode,
     });
 
     // Probe the refund endpoint too. The checkout above is unpaid, so Yoco
@@ -65,7 +75,7 @@ Deno.serve(async (req) => {
         {
           method: "POST",
           headers: {
-            Authorization: `Bearer ${Deno.env.get("YOCO_SECRET_KEY")}`,
+            Authorization: `Bearer ${activeKey}`,
             "Content-Type": "application/json",
           },
           body: JSON.stringify({ amount: 10000 }),
@@ -82,7 +92,8 @@ Deno.serve(async (req) => {
     return json({
       ok: true,
       key_prefix: keyPrefix,
-      test_mode: isTestMode(),
+      payment_mode: mode,
+      test_mode: isTestMode(mode),
       checkout_id: checkout.id,
       status: checkout.status ?? null,
       redirect_url: checkout.redirectUrl ?? null,
@@ -93,8 +104,8 @@ Deno.serve(async (req) => {
     return json(
       {
         ok: false,
-        key_prefix: (Deno.env.get("YOCO_SECRET_KEY") ?? "").slice(0, 7) || null,
-        test_mode: isTestMode(),
+        key_prefix: null,
+        test_mode: null,
         error: err instanceof Error ? err.message : "Checkout creation failed",
       },
       500,

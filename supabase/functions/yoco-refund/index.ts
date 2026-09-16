@@ -1,6 +1,6 @@
 // Admin-only Yoco refund. Full refund by default, partial when `amount` is sent.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.95.0";
-import { isTestMode, refundYocoCheckout } from "../_shared/yoco.ts";
+import { isTestMode, normalizeMode, refundYocoCheckout } from "../_shared/yoco.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -50,7 +50,7 @@ Deno.serve(async (req) => {
     const admin = createClient(SUPABASE_URL, SERVICE_KEY, { auth: { persistSession: false } });
     const { data: order } = await admin
       .from("orders")
-      .select("id, total, payment_status, payment_checkout_id, payment_provider_txn_id")
+      .select("id, total, payment_status, payment_checkout_id, payment_provider_txn_id, payment_environment")
       .eq("id", orderId)
       .maybeSingle();
 
@@ -70,7 +70,8 @@ Deno.serve(async (req) => {
       return json({ error: "Invalid refund amount" }, 400);
     }
 
-    if (isTestMode()) {
+    const mode = normalizeMode(order.payment_environment);
+    if (isTestMode(mode)) {
       console.warn("yoco-refund: running against Yoco test keys — refunds may be unsupported");
     }
 
@@ -78,6 +79,7 @@ Deno.serve(async (req) => {
       order.payment_checkout_id,
       amount,
       `refund-${order.id}-${amount ?? "full"}`,
+      mode,
     );
 
     const status = String(result.status ?? "").toLowerCase();
@@ -92,7 +94,7 @@ Deno.serve(async (req) => {
       if (error) console.error("yoco-refund: mark refunded failed", error);
     }
 
-    return json({ ok: true, status: status || "pending", refund: result });
+    return json({ ok: true, status: status || "pending", payment_mode: mode, refund: result });
   } catch (err) {
     console.error("yoco-refund error", err);
     return json({ error: err instanceof Error ? err.message : "Refund failed" }, 500);

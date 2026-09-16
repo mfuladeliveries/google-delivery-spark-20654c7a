@@ -7,6 +7,7 @@ import {
   centsToRands,
   confirmPaidOrder,
   getYocoCheckout,
+  normalizeMode,
   runPostPaymentSideEffects,
   verifyYocoWebhook,
 } from "../_shared/yoco.ts";
@@ -159,9 +160,20 @@ Deno.serve(async (req) => {
       });
     }
 
+    // Which environment signed this event; fall back to what the order stored.
+    let mode = verification.mode ?? "live";
+    if (orderId) {
+      const { data: orderRow } = await supabase
+        .from("orders")
+        .select("payment_environment")
+        .eq("id", orderId)
+        .maybeSingle();
+      if (orderRow?.payment_environment) mode = normalizeMode(orderRow.payment_environment);
+    }
+
     if (eventType === "payment.succeeded") {
       // Re-read from Yoco so a spoofed/incorrect amount can never be trusted.
-      const checkout = checkoutId ? await getYocoCheckout(checkoutId) : null;
+      const checkout = checkoutId ? await getYocoCheckout(checkoutId, mode) : null;
       const amountCents = Number(
         checkout?.amount ?? payload.amount ?? 0,
       );
@@ -177,6 +189,7 @@ Deno.serve(async (req) => {
         currency: String(checkout?.currency ?? payload.currency ?? "ZAR"),
         payload: event as unknown as Record<string, unknown>,
         sourceIp,
+        mode,
       });
       if (result) await runPostPaymentSideEffects(supabase, result);
     } else if (eventType === "refund.succeeded") {
