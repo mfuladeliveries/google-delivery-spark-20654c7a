@@ -1022,6 +1022,7 @@ export type Database = {
           payment_checkout_id: string | null
           payment_completed_at: string | null
           payment_currency: string | null
+          payment_environment: string
           payment_failed_at: string | null
           payment_failure_reason: string | null
           payment_initiated_at: string | null
@@ -1090,6 +1091,7 @@ export type Database = {
           payment_checkout_id?: string | null
           payment_completed_at?: string | null
           payment_currency?: string | null
+          payment_environment?: string
           payment_failed_at?: string | null
           payment_failure_reason?: string | null
           payment_initiated_at?: string | null
@@ -1158,6 +1160,7 @@ export type Database = {
           payment_checkout_id?: string | null
           payment_completed_at?: string | null
           payment_currency?: string | null
+          payment_environment?: string
           payment_failed_at?: string | null
           payment_failure_reason?: string | null
           payment_initiated_at?: string | null
@@ -2322,6 +2325,10 @@ export type Database = {
         Returns: boolean
       }
       derive_address_tag: { Args: { p_address: string }; Returns: string }
+      detect_delivery_area: {
+        Args: { p_lat: number; p_lng: number }
+        Returns: Json
+      }
       dispatch_assign_next: { Args: { p_order_id: string }; Returns: Json }
       dispatch_tick: { Args: never; Returns: Json }
       distance_km: {
@@ -2379,6 +2386,22 @@ export type Database = {
       get_customer_balance: { Args: { p_user_id?: string }; Returns: number }
       get_driver_balance: { Args: { p_driver_id: string }; Returns: number }
       get_or_create_referral_code: { Args: never; Returns: string }
+      get_restaurants_for_location: {
+        Args: { p_lat: number; p_lng: number }
+        Returns: {
+          area_id: string
+          area_name: string
+          branch_address: string
+          branch_id: string
+          branch_lat: number
+          branch_lng: number
+          branch_name: string
+          delivery_fee: number
+          estimated_delivery_time: string
+          restaurant_id: string
+          restaurant_name: string
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
