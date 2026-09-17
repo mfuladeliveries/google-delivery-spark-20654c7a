@@ -2981,6 +2981,11 @@ const OrdersTable = ({
                           {order.payment_method === "online" ? "💳" : "💵"}{" "}
                           {order.payment_method || "cash"}
                         </span>
+                        {order.payment_environment === "test" && (
+                          <span className="ml-1 rounded-full bg-amber-200 px-1.5 py-0.5 text-[9px] font-bold text-amber-900">
+                            TEST
+                          </span>
+                        )}
                         {order.payment_method === "online" && (
                           <div className="mt-1 flex flex-col items-start gap-0.5">
                             <span
