@@ -26,6 +26,7 @@ const PaymentResult = () => {
   const [resolvedOrderNumber, setResolvedOrderNumber] = useState<string>("");
   const [resolvedTotal, setResolvedTotal] = useState<number | null>(null);
   const [deliveryPin, setDeliveryPin] = useState<string>("");
+  const [isTestPayment, setIsTestPayment] = useState(false);
 
   // Yoco appends nothing to our return URLs — we control the query string
   // ourselves when creating the checkout. The status hint below is only used
@@ -82,7 +83,10 @@ const PaymentResult = () => {
       status?: string;
       payment_status?: string;
       delivery_code?: string | null;
+      payment_mode?: string;
     };
+
+    setIsTestPayment(payload.payment_mode === "test");
 
     setResolvedOrderNumber(String(payload.order_number ?? orderNumber ?? ""));
     setResolvedTotal(
