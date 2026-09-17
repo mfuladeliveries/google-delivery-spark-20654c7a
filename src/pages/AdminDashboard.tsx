@@ -37,6 +37,7 @@ import AdminDrivers from "@/components/admin/AdminDrivers";
 import AdminAboutEditor from "@/components/admin/AdminAboutEditor";
 import AdminDeliveryAreas from "@/components/admin/AdminDeliveryAreas";
 import AdminFeeManagement from "@/components/admin/AdminFeeManagement";
+import AdminPaymentMode from "@/components/admin/AdminPaymentMode";
 import OrderDispatchLog from "@/components/admin/OrderDispatchLog";
 import AdminMenuManager from "@/components/admin/AdminMenuManager";
 import AdminPromotions from "@/components/admin/AdminPromotions";
@@ -87,6 +88,7 @@ interface RecentOrder {
   payment_status: string | null;
   payment_provider: string | null;
   payment_provider_txn_id: string | null;
+  payment_environment?: string | null;
   driver_id: string | null;
   delivered_at: string | null;
   dispatch_phase: string | null;
@@ -293,7 +295,7 @@ const AdminDashboard = () => {
       supabase
         .from("orders")
         .select(
-          "total, delivery_fee, status, created_at, order_number, customer_name, restaurant, payment_method, payment_status, payment_provider, payment_provider_txn_id, id, driver_id, delivered_at, dispatch_phase, offered_to_driver_id, missed_by_driver_ids, admin_delivery_code",
+          "total, delivery_fee, status, created_at, order_number, customer_name, restaurant, payment_method, payment_status, payment_provider, payment_provider_txn_id, payment_environment, id, driver_id, delivered_at, dispatch_phase, offered_to_driver_id, missed_by_driver_ids, admin_delivery_code",
         )
         .order("created_at", { ascending: false }),
       supabase.from("restaurants").select("id", { count: "exact" }),
@@ -597,6 +599,7 @@ const AdminDashboard = () => {
     "drivers",
     "areas",
     "fees",
+    "payments",
     "promos",
     "about",
   ] as const;
@@ -885,6 +888,8 @@ const AdminDashboard = () => {
 
         {/* Delivery Fee Management (peak surcharges + audit log) */}
         {tab === "fees" && <AdminFeeManagement />}
+
+        {tab === "payments" && <AdminPaymentMode />}
 
         {tab === "promos" && <AdminPromotions />}
 
