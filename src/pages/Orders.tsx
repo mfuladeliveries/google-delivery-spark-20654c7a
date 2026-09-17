@@ -64,6 +64,7 @@ interface Order {
   delivery_code: string;
   customer_address: string;
   payment_method?: string;
+  payment_environment?: string | null;
   cancel_reason?: string | null;
   refund_status?: "pending" | "credited" | "bank_pending" | "bank_paid" | null;
   refund_method?: "credits" | "bank" | null;
@@ -800,6 +801,11 @@ const Orders = () => {
                     <div className="flex items-center justify-between gap-2 mb-1">
                       <span className="font-bold text-foreground text-base">
                         Order #{order.order_number}
+                        {order.payment_environment === "test" && (
+                          <span className="ml-2 rounded-full bg-amber-200 px-2 py-0.5 text-[10px] font-bold text-amber-900 align-middle">
+                            TEST
+                          </span>
+                        )}
                       </span>
                       <RestaurantName
                         as="span"
