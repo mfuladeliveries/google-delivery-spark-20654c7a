@@ -211,6 +211,7 @@ const AdminDashboard = () => {
     | "drivers"
     | "areas"
     | "fees"
+    | "payments"
     | "promos"
     | "about"
   >("overview");
