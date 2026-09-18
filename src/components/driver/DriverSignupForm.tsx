@@ -68,16 +68,6 @@ const DriverSignupForm = ({ onSubmitted }: Props) => {
     set(k, f);
   };
 
-  const uploadDoc = async (userId: string, file: File, label: string) => {
-    const ext = file.name.split(".").pop()?.toLowerCase() || "bin";
-    const path = `${userId}/${label}-${Date.now()}.${ext}`;
-    const { error } = await supabase.storage
-      .from("driver-documents")
-      .upload(path, file, { upsert: true, contentType: file.type });
-    if (error) throw error;
-    return path; // store the storage path; admin generates signed URLs
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
@@ -94,7 +84,9 @@ const DriverSignupForm = ({ onSubmitted }: Props) => {
 
     setBusy(true);
 
-    // 1. Create the auth user
+    // 1. Create the auth user (sends the verification OTP email).
+    //    No session exists until the email is verified, so the remaining
+    //    writes happen server-side in the driver-signup function.
     const { data: signUp, error: signUpErr } = await supabase.auth.signUp({
       email: form.email.trim(),
       password: form.password,
@@ -105,52 +97,33 @@ const DriverSignupForm = ({ onSubmitted }: Props) => {
     });
     if (signUpErr || !signUp.user) {
       setBusy(false);
-      return setError(signUpErr?.message || "Could not create account");
+      const msg = signUpErr?.message || "Could not create account";
+      return setError(
+        msg.toLowerCase().includes("already")
+          ? "This email is already registered. Try signing in instead."
+          : msg,
+      );
     }
 
-    const userId = signUp.user.id;
-
     try {
-      // 2. Upload docs (driver-documents is private; RLS scopes to {user_id}/...)
-      const licensePath = await uploadDoc(userId, form.licenseFile!, "license");
-      const photoPath = await uploadDoc(userId, form.photoFile!, "photo");
+      // 2. Save profile, documents and the admin access request (server-side)
+      const body = new FormData();
+      body.set("user_id", signUp.user.id);
+      body.set("email", form.email.trim());
+      body.set("full_name", form.fullName.trim());
+      body.set("phone", form.phone.trim());
+      body.set("id_number", form.idNumber.trim());
+      body.set("vehicle_type", form.vehicleType);
+      body.set("vehicle_reg", form.vehicleReg.trim());
+      body.set("license", form.licenseFile!);
+      body.set("photo", form.photoFile!);
 
-      // 3. Save profile (full name + contact)
-      await supabase.from("profiles").upsert(
-        {
-          user_id: userId,
-          full_name: form.fullName.trim(),
-          contact_number: form.phone.trim(),
-        },
-        { onConflict: "user_id" },
-      );
-
-      // 4. Save driver profile (will exist after the trigger runs on driver role
-      //    being granted, but we upsert proactively so docs are saved now).
-      await supabase.from("driver_profiles").upsert(
-        {
-          user_id: userId,
-          vehicle_type: form.vehicleType,
-          license_plate: form.vehicleReg.trim(),
-          id_number: form.idNumber.trim(),
-          license_url: licensePath,
-          profile_photo_url: photoPath,
-          // id_document and license docs both live under driver-documents/{userId}
-          id_document_url: licensePath, // legacy column; safe placeholder
-        },
-        { onConflict: "user_id" },
-      );
-
-      // 5. Create the access request so admin can review
-      const message = [
-        `Vehicle: ${form.vehicleType} (${form.vehicleReg})`,
-        `ID: ${form.idNumber}`,
-        `Phone: ${form.phone}`,
-      ].join(" • ");
-      await supabase.from("driver_access_requests").insert({
-        user_id: userId,
-        message,
-      });
+      const { data, error: fnErr } = await supabase.functions.invoke("driver-signup", { body });
+      if (fnErr) {
+        const detail = (data as any)?.error || fnErr.message;
+        throw new Error(detail);
+      }
+      if ((data as any)?.error) throw new Error((data as any).error);
 
       onSubmitted(form.email.trim());
     } catch (err: any) {
