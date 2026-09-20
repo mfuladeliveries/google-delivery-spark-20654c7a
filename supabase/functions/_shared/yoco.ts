@@ -269,6 +269,12 @@ export async function verifyYocoWebhook(
   return { valid: false, reason: "signature mismatch" };
 }
 
+function toArrayBuffer(bytes: Uint8Array): ArrayBuffer {
+  const buf = new ArrayBuffer(bytes.byteLength);
+  new Uint8Array(buf).set(bytes);
+  return buf;
+}
+
 function constantTimeEquals(a: string, b: string): boolean {
   if (a.length !== b.length) return false;
   let diff = 0;
