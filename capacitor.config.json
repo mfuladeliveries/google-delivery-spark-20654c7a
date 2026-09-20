@@ -1,0 +1,9 @@
+{
+  "appId": "app.lovable.p7e028b9c92424dbdbcc228a828459554",
+  "appName": "google-delivery-spark",
+  "webDir": "dist",
+  "server": {
+    "url": "https://7e028b9c-9242-4dbd-bcc2-28a828459554.lovableproject.com?forceHideBadge=true",
+    "cleartext": true
+  }
+}
