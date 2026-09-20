@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">google-delivery-spark</string>
+    <string name="title_activity_main">google-delivery-spark</string>
+    <string name="package_name">app.lovable.p7e028b9c92424dbdbcc228a828459554</string>
+    <string name="custom_url_scheme">app.lovable.p7e028b9c92424dbdbcc228a828459554</string>
+</resources>
