@@ -237,7 +237,9 @@ export async function verifyYocoWebhook(
     .filter((part) => part.startsWith("v1,"))
     .map((part) => part.slice(3));
 
-  const signed = new TextEncoder().encode(`${id}.${timestamp}.${rawBody}`);
+  const signed = toArrayBuffer(
+    new TextEncoder().encode(`${id}.${timestamp}.${rawBody}`),
+  );
 
   for (const candidate of candidates) {
     const rawSecret = candidate.secret.startsWith("whsec_")
@@ -252,7 +254,7 @@ export async function verifyYocoWebhook(
 
     const key = await crypto.subtle.importKey(
       "raw",
-      keyBytes,
+      toArrayBuffer(keyBytes),
       { name: "HMAC", hash: "SHA-256" },
       false,
       ["sign"],
