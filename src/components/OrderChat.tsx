@@ -372,7 +372,7 @@ export const OrderChat = ({ orderId, userId, role, counterpartyLabel }: OrderCha
 
       {open && (
         <div
-          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-background/60 backdrop-blur-sm"
+          className="fixed inset-0 z-[70] flex items-end sm:items-center justify-center bg-background/60 backdrop-blur-sm"
           onClick={() => setOpen(false)}
         >
           <div
