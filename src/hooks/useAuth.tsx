@@ -111,6 +111,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     return () => {
       mounted = false;
+      window.clearTimeout(watchdog);
       subscription.unsubscribe();
     };
   }, []);
