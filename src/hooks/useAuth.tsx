@@ -61,6 +61,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     let mounted = true;
 
+    // Watchdog: on a flaky mobile connection the session/role lookup can hang
+    // indefinitely, which used to leave the app stuck on the loading screen.
+    // After 8s we stop blocking and render whatever we know; the auth state
+    // listener still fills in the session when the network recovers.
+    const watchdog = window.setTimeout(() => {
+      if (mounted) setLoading(false);
+    }, 8000);
+
     const loadSession = async () => {
       const {
         data: { session },
