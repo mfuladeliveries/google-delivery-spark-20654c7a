@@ -319,14 +319,15 @@ const Index = () => {
     [zones, activeAreaId],
   );
 
-  // Remember the detected area the first time we can work it out, so the
-  // customer keeps seeing the same area after a refresh.
+  // Whenever the picked-up location falls in a (different) area, switch the
+  // selected area to match it and remember it for refreshes/checkout.
+  const detectedAreaId = currentZone?.zone.id ?? null;
   useEffect(() => {
-    if (!chosenAreaId && currentZone) {
-      setChosenAreaId(currentZone.zone.id);
-      setSelectedAreaId(currentZone.zone.id);
+    if (detectedAreaId) {
+      setChosenAreaId(detectedAreaId);
+      setSelectedAreaId(detectedAreaId);
     }
-  }, [chosenAreaId, currentZone]);
+  }, [detectedAreaId]);
 
   const chooseArea = (areaId: string) => {
     setChosenAreaId(areaId);
