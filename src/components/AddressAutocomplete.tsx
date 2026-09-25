@@ -96,13 +96,13 @@ export const AddressAutocomplete = ({
     return () => window.clearTimeout(timer);
   }, [value, hasValidSelection, countryCode, sessionToken]);
 
-  // Close on outside click
+  // Close on outside tap (pointer events work for touch + mouse on Android)
   useEffect(() => {
-    const handler = (e: MouseEvent) => {
+    const handler = (e: Event) => {
       if (!containerRef.current?.contains(e.target as Node)) setOpen(false);
     };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
+    document.addEventListener("pointerdown", handler);
+    return () => document.removeEventListener("pointerdown", handler);
   }, []);
 
   const handlePick = async (s: PlaceSuggestion) => {
@@ -132,12 +132,30 @@ export const AddressAutocomplete = ({
       <div className="relative">
         <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
         <input
+          type="search"
+          name="mfula-delivery-lookup"
           value={value}
           onChange={(e) => onTextChange(e.target.value)}
-          onFocus={() => suggestions.length > 0 && setOpen(true)}
+          onInput={(e) => {
+            // Some Android keyboards (Gboard composition) skip onChange until commit.
+            const v = (e.target as HTMLInputElement).value;
+            if (v !== value) onTextChange(v);
+          }}
+          onFocus={(e) => {
+            if (suggestions.length > 0) setOpen(true);
+            // Keep the field + suggestions visible above the phone keyboard.
+            const el = e.currentTarget;
+            window.setTimeout(() => el.scrollIntoView({ block: "center", behavior: "smooth" }), 300);
+          }}
           placeholder={placeholder}
           disabled={disabled || resolving}
-          autoComplete="off"
+          // Chrome on Android ignores "off" and shows its own autofill box on top
+          // of our suggestions; a non-standard token suppresses it.
+          autoComplete="new-password"
+          autoCorrect="off"
+          autoCapitalize="words"
+          spellCheck={false}
+          enterKeyHint="search"
           aria-autocomplete="list"
           aria-expanded={open}
           className="w-full rounded-xl border border-border bg-card pl-9 pr-9 py-3 text-sm text-card-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all disabled:opacity-50"
@@ -181,7 +199,13 @@ export const AddressAutocomplete = ({
                 <button
                   key={s.place_id}
                   type="button"
-                  onClick={() => handlePick(s)}
+                  // Pick on pointerdown: on Android the tap first closes the
+                  // keyboard, shifting the layout so a normal click misses.
+                  onPointerDown={(e) => {
+                    e.preventDefault();
+                    handlePick(s);
+                  }}
+                  onClick={(e) => e.preventDefault()}
                   className="flex w-full items-start gap-2 rounded-lg px-3 py-2 text-left text-sm text-popover-foreground hover:bg-accent"
                 >
                   <MapPin className="mt-0.5 h-3.5 w-3.5 flex-shrink-0 text-primary" />
