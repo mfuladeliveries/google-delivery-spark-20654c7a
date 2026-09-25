@@ -33,11 +33,27 @@ export default defineConfig(({ mode }) => ({
         // Don't precache HTML — that's what causes "reload on resume" because
         // Workbox detects a new index.html hash and triggers skipWaiting.
         globPatterns: ["**/*.{js,css,ico,png,svg,jpg,jpeg,webp}"],
+        // index.html is NOT precached, so a precache navigate fallback would
+        // fail every launch of the installed app. Use network-first instead.
+        navigateFallback: null,
         navigateFallbackDenylist: [/^\/~oauth/],
+        runtimeCaching: [
+          {
+            urlPattern: ({ request, url }) =>
+              request.mode === "navigate" && !url.pathname.startsWith("/~oauth"),
+            handler: "NetworkFirst",
+            options: {
+              cacheName: "html-pages",
+              networkTimeoutSeconds: 5,
+              expiration: { maxEntries: 20 },
+            },
+          },
+        ],
         importScripts: ["/push-handler.js"],
-        // Don't take control of pages that were loaded before the SW activated.
-        clientsClaim: false,
-        skipWaiting: false,
+        // Activate new versions right away so installed apps never keep
+        // running an old version that points at deleted files.
+        clientsClaim: true,
+        skipWaiting: true,
         cleanupOutdatedCaches: true,
       },
       manifest: {
