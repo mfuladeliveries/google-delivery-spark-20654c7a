@@ -1,0 +1,2 @@
+# Project rules
+- Keep KFC-only image presentation in KfcProductImage, with a neutral local fallback and contain fitting, so picture failures never substitute another product or change other restaurant displays.
