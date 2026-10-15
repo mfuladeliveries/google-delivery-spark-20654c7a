@@ -67,6 +67,7 @@ interface DbMenuItem {
   image: string;
   category: string;
   is_available: boolean;
+  price_verified?: boolean;
   has_sizes?: boolean;
   sizes?: SizeOption[];
   has_add_ons?: boolean;
@@ -190,7 +191,7 @@ const RestaurantMenu = () => {
         .from("menu_items")
         .select("*")
         .eq("restaurant_id", id);
-      if (!isSteers(rest.name)) menuQuery = menuQuery.eq("is_available", true);
+      menuQuery = menuQuery.eq("is_available", true);
       const { data: dbItems } = await menuQuery;
 
       if (dbItems && dbItems.length > 0) {
@@ -202,6 +203,7 @@ const RestaurantMenu = () => {
           image: row.image_url || row.image || "",
           category: row.category ?? "",
           is_available: !!row.is_available,
+          price_verified: row.price_verified,
           has_sizes: !!row.has_sizes,
           sizes: Array.isArray(row.sizes) ? (row.sizes as SizeOption[]) : [],
           has_add_ons: !!row.has_add_ons,
@@ -309,7 +311,7 @@ const RestaurantMenu = () => {
     caption: item.description,
     image: item.image,
     price: item.price,
-    available: item.is_available,
+    available: item.is_available && !steersPricePending(restaurant?.name, item),
     has_sizes: item.has_sizes,
     sizes: item.sizes,
     has_add_ons: item.has_add_ons,
