@@ -1,2 +1,3 @@
 # Project rules
 - Keep KFC-only image presentation in KfcProductImage, with a neutral local fallback and contain fitting, so picture failures never substitute another product or change other restaurant displays.
+- Steers uses existing menu availability as the price-verification gate, zero only as an undisplayed pending sentinel, and Steers-only labelled illustrative imagery; this avoids altering other restaurants or payment logic.

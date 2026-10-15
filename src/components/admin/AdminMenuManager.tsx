@@ -52,6 +52,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { isRestaurantOpen } from "@/lib/restaurantHours";
 import FoodImageUpload from "@/components/FoodImageUpload";
+import { isSteers, steersPricePending } from "@/lib/steersMenu";
 
 const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"] as const;
 const CATEGORIES = ["Braai", "Sides", "Drinks", "Starters", "Mains", "Desserts", "Specials"];
@@ -312,6 +313,11 @@ const RestaurantDetail = ({
 
   const toggleAvailability = async (item: MenuItem) => {
     const next = !item.is_available;
+    if (next && isSteers(restaurant.name)) {
+      toast.info("Edit this product, enter the confirmed branch price, then mark it available.");
+      setEditingItem(item);
+      return;
+    }
     const { error } = await supabase
       .from("menu_items")
       .update({ is_available: next })
@@ -478,6 +484,8 @@ const RestaurantDetail = ({
       ) : (
         <div className="space-y-2">
           {filteredItems.map((item) => (
+            <div key={item.id} className="space-y-1">
+            {steersPricePending(restaurant.name, item) && <p className="text-xs text-primary">Branch price verification required — edit before enabling orders</p>}
             <MenuItemAdminCard
               key={item.id}
               item={item}
@@ -489,6 +497,7 @@ const RestaurantDetail = ({
                 setItems(items.map((i) => (i.id === updated.id ? updated : i)))
               }
             />
+            </div>
           ))}
         </div>
       )}
@@ -1455,6 +1464,7 @@ const MenuItemDialog = ({
     if (!name.trim()) return toast.error("Item name is required");
     const priceNum = parseFloat(price);
     if (Number.isNaN(priceNum) || priceNum < 0) return toast.error("Valid price required");
+    if (isSteers(restaurantName) && isAvailable && priceNum <= 0) return toast.error("Enter a verified branch price before making this Steers item available");
     if (!category) return toast.error("Category is required");
 
     const payload = {
@@ -1552,7 +1562,7 @@ const MenuItemDialog = ({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {CATEGORIES.map((c) => (
+                  {Array.from(new Set([...CATEGORIES, category, ...(isSteers(restaurantName) ? ["Phanda Burgers", "Burgers & Meals", "King Steer Meals", "Chicken", "Ribs", "Family Meals", "Chips", "Salads & Sides", "Drinks", "Desserts", "Kids Meals"] : [])])).map((c) => (
                     <SelectItem key={c} value={c}>
                       {c}
                     </SelectItem>
