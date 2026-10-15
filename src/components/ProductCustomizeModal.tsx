@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { X, Check, Plus, Minus, Star, Drumstick } from "lucide-react";
 import { MenuItem, SizeOption, AddOnOption, CutOption, storeInfo } from "@/data/menu";
 import { computeUnitPrice } from "@/hooks/useCart";
+import KfcProductImage from "@/components/KfcProductImage";
 
 interface ProductCustomizeModalProps {
   open: boolean;
@@ -137,7 +138,11 @@ const ProductCustomizeModal = ({ open, item, onClose, onAdd }: ProductCustomizeM
 
         {/* Header image */}
         <div className="relative">
-          {item.image ? (
+          {item.restaurantName === "KFC" ? (
+            <div className="h-44 w-full overflow-hidden bg-muted">
+              <KfcProductImage src={item.image} name={item.name} />
+            </div>
+          ) : item.image ? (
             <div className="h-44 w-full overflow-hidden bg-muted">
               <img src={item.image} alt={item.name} className="h-full w-full object-cover" />
             </div>

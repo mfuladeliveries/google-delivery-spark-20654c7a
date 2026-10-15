@@ -26,6 +26,7 @@ import Cart from "@/components/Cart";
 import CheckoutDialog from "@/components/CheckoutDialog";
 import BottomNav from "@/components/BottomNav";
 import ProductCustomizeModal from "@/components/ProductCustomizeModal";
+import KfcProductImage from "@/components/KfcProductImage";
 import { RestaurantName } from "@/components/RestaurantName";
 import { popReorder } from "@/lib/reorder";
 import {
@@ -594,7 +595,9 @@ const RestaurantMenu = () => {
                   className="flex cursor-pointer gap-3 rounded-2xl border border-border bg-card p-3 shadow-card transition-colors hover:border-primary/40"
                 >
                   <div className="h-20 w-20 flex-shrink-0 overflow-hidden rounded-xl bg-muted">
-                    {item.image ? (
+                    {restaurant.name === "KFC" ? (
+                      <KfcProductImage src={item.image} name={item.name} />
+                    ) : item.image ? (
                       <img
                         src={item.image}
                         alt={item.name}
