@@ -3,6 +3,8 @@ import { X, Check, Plus, Minus, Star, Drumstick } from "lucide-react";
 import { MenuItem, SizeOption, AddOnOption, CutOption, storeInfo } from "@/data/menu";
 import { computeUnitPrice } from "@/hooks/useCart";
 import KfcProductImage from "@/components/KfcProductImage";
+import SteersProductImage from "@/components/SteersProductImage";
+import { isSteers } from "@/lib/steersMenu";
 
 interface ProductCustomizeModalProps {
   open: boolean;
@@ -141,6 +143,10 @@ const ProductCustomizeModal = ({ open, item, onClose, onAdd }: ProductCustomizeM
           {item.restaurantName === "KFC" ? (
             <div className="h-44 w-full overflow-hidden bg-muted">
               <KfcProductImage src={item.image} name={item.name} />
+            </div>
+          ) : isSteers(item.restaurantName) ? (
+            <div className="h-44 w-full overflow-hidden bg-muted">
+              <SteersProductImage src={item.image} name={item.name} />
             </div>
           ) : item.image ? (
             <div className="h-44 w-full overflow-hidden bg-muted">

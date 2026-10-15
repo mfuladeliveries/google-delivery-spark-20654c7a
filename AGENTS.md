@@ -1,2 +1,4 @@
 # Project rules
 - Keep KFC-only image presentation in KfcProductImage, with a neutral local fallback and contain fitting, so picture failures never substitute another product or change other restaurant displays.
+- Steers uses a separate price_verified flag and Steers-only order validation while is_available controls visibility; other menus default to verified to preserve their behavior. Admin confirmation applies to all configured branches because the existing menu is brand-level.
+- Keep Steers imagery isolated in SteersProductImage, label generated category pictures as illustrations, and never replace failed photos with another product.

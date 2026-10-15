@@ -680,6 +680,7 @@ export type Database = {
           is_popular: boolean
           name: string
           price: number
+          price_verified: boolean
           restaurant_id: string
           sizes: Json
         }
@@ -699,6 +700,7 @@ export type Database = {
           is_popular?: boolean
           name?: string
           price?: number
+          price_verified?: boolean
           restaurant_id: string
           sizes?: Json
         }
@@ -718,6 +720,7 @@ export type Database = {
           is_popular?: boolean
           name?: string
           price?: number
+          price_verified?: boolean
           restaurant_id?: string
           sizes?: Json
         }

@@ -52,6 +52,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { isRestaurantOpen } from "@/lib/restaurantHours";
 import FoodImageUpload from "@/components/FoodImageUpload";
+import { isSteers, steersPricePending } from "@/lib/steersMenu";
 
 const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"] as const;
 const CATEGORIES = ["Braai", "Sides", "Drinks", "Starters", "Mains", "Desserts", "Specials"];
@@ -105,6 +106,7 @@ interface MenuItem {
   image: string;
   image_url: string | null;
   is_available: boolean;
+  price_verified?: boolean;
   is_popular: boolean;
   has_sizes: boolean;
   sizes: SizeOption[];
@@ -312,6 +314,11 @@ const RestaurantDetail = ({
 
   const toggleAvailability = async (item: MenuItem) => {
     const next = !item.is_available;
+    if (next && isSteers(restaurant.name)) {
+      toast.info("Edit this product, enter the confirmed branch price, then mark it available.");
+      setEditingItem(item);
+      return;
+    }
     const { error } = await supabase
       .from("menu_items")
       .update({ is_available: next })
@@ -478,6 +485,8 @@ const RestaurantDetail = ({
       ) : (
         <div className="space-y-2">
           {filteredItems.map((item) => (
+            <div key={item.id} className="space-y-1">
+            {steersPricePending(restaurant.name, item) && <p className="text-xs text-primary">Branch price verification required — edit before enabling orders</p>}
             <MenuItemAdminCard
               key={item.id}
               item={item}
@@ -489,6 +498,7 @@ const RestaurantDetail = ({
                 setItems(items.map((i) => (i.id === updated.id ? updated : i)))
               }
             />
+            </div>
           ))}
         </div>
       )}
@@ -1435,6 +1445,7 @@ const MenuItemDialog = ({
   const [category, setCategory] = useState(existing?.category || CATEGORIES[0]);
   const [imageUrl, setImageUrl] = useState(existing?.image_url || existing?.image || "");
   const [isAvailable, setIsAvailable] = useState(existing?.is_available ?? true);
+  const [priceVerified, setPriceVerified] = useState(existing?.price_verified === true);
   const [isPopular, setIsPopular] = useState(existing?.is_popular ?? false);
   const [hasSizes, setHasSizes] = useState(existing?.has_sizes ?? false);
   const [sizes, setSizes] = useState<SizeOption[]>(
@@ -1455,6 +1466,7 @@ const MenuItemDialog = ({
     if (!name.trim()) return toast.error("Item name is required");
     const priceNum = parseFloat(price);
     if (Number.isNaN(priceNum) || priceNum < 0) return toast.error("Valid price required");
+    if (isSteers(restaurantName) && priceVerified && priceNum <= 0) return toast.error("Enter a verified branch price before enabling orders");
     if (!category) return toast.error("Category is required");
 
     const payload = {
@@ -1466,6 +1478,7 @@ const MenuItemDialog = ({
       image: imageUrl,
       image_url: imageUrl || null,
       is_available: isAvailable,
+      ...(isSteers(restaurantName) ? { price_verified: priceVerified } : {}),
       is_popular: isPopular,
       has_sizes: hasSizes,
       sizes: (hasSizes ? sizes.filter((s) => s.name.trim()) : []) as any,
@@ -1541,7 +1554,7 @@ const MenuItemDialog = ({
                 type="number"
                 step="0.01"
                 value={price}
-                onChange={(e) => setPrice(e.target.value)}
+                onChange={(e) => { setPrice(e.target.value); if (isSteers(restaurantName)) setPriceVerified(false); }}
                 placeholder="0.00"
               />
             </div>
@@ -1552,7 +1565,7 @@ const MenuItemDialog = ({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {CATEGORIES.map((c) => (
+                  {Array.from(new Set([...CATEGORIES, category, ...(isSteers(restaurantName) ? ["Phanda Burgers", "Burgers & Meals", "King Steer Meals", "Chicken", "Ribs", "Family Meals", "Chips", "Salads & Sides", "Drinks", "Desserts", "Kids Meals"] : [])])).map((c) => (
                     <SelectItem key={c} value={c}>
                       {c}
                     </SelectItem>
@@ -1561,6 +1574,11 @@ const MenuItemDialog = ({
               </Select>
             </div>
           </div>
+
+          {isSteers(restaurantName) && <div className="flex items-center justify-between gap-3 border border-border p-3">
+            <Label className="text-xs">Price confirmed for all configured Steers branches</Label>
+            <Switch checked={priceVerified} onCheckedChange={setPriceVerified} />
+          </div>}
 
           {/* Sizes */}
           <div className="rounded-xl border border-border p-3">

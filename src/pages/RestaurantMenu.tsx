@@ -27,6 +27,9 @@ import CheckoutDialog from "@/components/CheckoutDialog";
 import BottomNav from "@/components/BottomNav";
 import ProductCustomizeModal from "@/components/ProductCustomizeModal";
 import KfcProductImage from "@/components/KfcProductImage";
+import SteersProductImage from "@/components/SteersProductImage";
+import { isSteers, steersPricePending } from "@/lib/steersMenu";
+import { Button } from "@/components/ui/button";
 import { RestaurantName } from "@/components/RestaurantName";
 import { popReorder } from "@/lib/reorder";
 import {
@@ -64,6 +67,7 @@ interface DbMenuItem {
   image: string;
   category: string;
   is_available: boolean;
+  price_verified?: boolean;
   has_sizes?: boolean;
   sizes?: SizeOption[];
   has_add_ons?: boolean;
@@ -177,17 +181,18 @@ const RestaurantMenu = () => {
         const catalog = await getCatalog();
         const locs = (catalog.restaurant_locations ?? []) as RestaurantLocation[];
         const areaId = getSelectedAreaId();
-        setBranch(branchForArea(locs, rest.id, areaId) ?? anyBranch(locs, rest.id));
+        setBranch(branchForArea(locs, rest.id, areaId) ?? (isSteers(rest.name) && areaId ? null : anyBranch(locs, rest.id)));
       } catch {
         /* branch is optional — fall back to the restaurant's own location */
       }
 
       // Try DB menu items first, fall back to static data
-      const { data: dbItems } = await supabase
+      let menuQuery = supabase
         .from("menu_items")
         .select("*")
-        .eq("restaurant_id", id)
-        .eq("is_available", true);
+        .eq("restaurant_id", id);
+      menuQuery = menuQuery.eq("is_available", true);
+      const { data: dbItems } = await menuQuery;
 
       if (dbItems && dbItems.length > 0) {
         const normalized: DbMenuItem[] = dbItems.map((row: any) => ({
@@ -198,6 +203,7 @@ const RestaurantMenu = () => {
           image: row.image_url || row.image || "",
           category: row.category ?? "",
           is_available: !!row.is_available,
+          price_verified: row.price_verified,
           has_sizes: !!row.has_sizes,
           sizes: Array.isArray(row.sizes) ? (row.sizes as SizeOption[]) : [],
           has_add_ons: !!row.has_add_ons,
@@ -206,6 +212,8 @@ const RestaurantMenu = () => {
           cuts: Array.isArray(row.cuts) ? (row.cuts as CutOption[]) : [],
         }));
         setMenuItems(normalized);
+      } else if (isSteers(rest.name)) {
+        setMenuItems([]);
       } else {
         // Use static data filtered by restaurant name
         const staticItems: DbMenuItem[] = staticMenuItems
@@ -238,7 +246,7 @@ const RestaurantMenu = () => {
     let skipped = 0;
     seeds.forEach(({ id: seedId, quantity }) => {
       const match = menuItems.find((m) => m.id === seedId);
-      if (!match) {
+      if (!match || steersPricePending(restaurant?.name, match)) {
         skipped += 1;
         return;
       }
@@ -303,7 +311,7 @@ const RestaurantMenu = () => {
     caption: item.description,
     image: item.image,
     price: item.price,
-    available: item.is_available,
+    available: item.is_available && !steersPricePending(restaurant?.name, item),
     has_sizes: item.has_sizes,
     sizes: item.sizes,
     has_add_ons: item.has_add_ons,
@@ -315,6 +323,14 @@ const RestaurantMenu = () => {
   const [customizeItem, setCustomizeItem] = useState<DbMenuItem | null>(null);
 
   const handleAddItem = (item: DbMenuItem) => {
+    if (steersPricePending(restaurant?.name, item)) {
+      toast.info("Price awaiting branch verification");
+      return;
+    }
+    if (isSteers(restaurant?.name) && getSelectedAreaId() && !branch) {
+      toast.error("Steers is not available in your selected delivery area.");
+      return;
+    }
     if (locationBlocked) {
       toast.error("Please enable location services to see restaurants available near you.");
       return;
@@ -577,6 +593,7 @@ const RestaurantMenu = () => {
           <div className="space-y-3">
             {filtered.map((item) => {
               const qty = getItemQty(item.id);
+              const pendingPrice = steersPricePending(restaurant.name, item);
               const hasOptions = itemHasOptions(item);
               const fromPrice =
                 item.has_cuts && (item.cuts?.length ?? 0) > 0
@@ -597,6 +614,8 @@ const RestaurantMenu = () => {
                   <div className="h-20 w-20 flex-shrink-0 overflow-hidden rounded-xl bg-muted">
                     {restaurant.name === "KFC" ? (
                       <KfcProductImage src={item.image} name={item.name} />
+                    ) : isSteers(restaurant.name) ? (
+                      <SteersProductImage src={item.image} name={item.name} />
                     ) : item.image ? (
                       <img
                         src={item.image}
@@ -616,7 +635,7 @@ const RestaurantMenu = () => {
                   <div className="flex flex-1 flex-col justify-between min-w-0">
                     <div>
                       <div className="flex items-center gap-1.5">
-                        <h4 className="font-semibold text-sm text-foreground truncate">
+                        <h4 className={`font-semibold text-sm text-foreground ${isSteers(restaurant.name) ? "break-words" : "truncate"}`}>
                           {item.name}
                         </h4>
                         {hasOptions && (
@@ -633,15 +652,15 @@ const RestaurantMenu = () => {
                     </div>
                     <div className="flex items-center justify-between mt-2">
                       <span className="font-bold text-sm text-primary">
-                        {item.has_cuts || item.has_sizes ? "From " : ""}R{fromPrice}
+                        {pendingPrice ? "Price awaiting verification" : <>{item.has_cuts || item.has_sizes ? "From " : ""}R{fromPrice}</>}
                       </span>
                       {qty === 0 ? (
-                        <button
+                        <Button
                           onClick={(e) => {
                             e.stopPropagation();
                             handleAddItem(item);
                           }}
-                          disabled={!canOrder || cartLockedElsewhere}
+                          disabled={pendingPrice || !canOrder || cartLockedElsewhere || (isSteers(restaurant.name) && !!getSelectedAreaId() && !branch)}
                           data-testid="menu-add-button"
                           className="btn-glow flex items-center gap-1 rounded-xl gradient-maroon px-3 py-1.5 text-xs font-bold text-primary-foreground transition-transform hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
                         >
@@ -654,7 +673,7 @@ const RestaurantMenu = () => {
                               <Plus className="h-3.5 w-3.5" /> Add
                             </>
                           )}
-                        </button>
+                        </Button>
                       ) : (
                         <div
                           className="flex items-center gap-2"
