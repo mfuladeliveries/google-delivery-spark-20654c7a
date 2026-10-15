@@ -44,3 +44,4 @@ Closed onboarding for providers (admin-led). Customer self-service.
 - [Coordinate Validation](mem://security/coordinate-validation) — Autocomplete-only addresses, map confirm, 8km server-enforced radius, invalid_order_attempts log
 - [Legal Policies](mem://features/legal-policies) — Public terms/delivery/refund pages, footer links, required checkout acceptance logging
 - [Payment Test Mode](mem://features/payment-test-mode) — Admin Live/Test switch, orders.payment_environment, separate Yoco test keys
+- [Steers menu accuracy](mem://features/steers-menu) — Official sources, branch-verified prices and permitted imagery only
