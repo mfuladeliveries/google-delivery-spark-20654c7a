@@ -12,6 +12,7 @@
 - [ ] Activate a Mfuleni Steers branch — blocked by missing confirmed branch coordinates/assignment; existing Mfuleni branch remains inactive, not substituted with Delft.
 
 # Burger King South Africa
-- [ ] Check official menu and credible prices; reuse the existing Burger King restaurant and branch.
-- [ ] Save nonduplicate menu products with sourced prices and keep unconfirmed prices non-orderable.
-- [ ] Verify saved menu, price display, and existing restaurant preservation.
+- [x] Check official King Value menu and advertised prices; reuse the existing Burger King restaurant and Blue Downs branch.
+- [x] Save 16 missing products and fill 4 existing zero prices with sourced reference prices; preserve existing positive prices and block unconfirmed prices.
+- [x] Verify all 20 King Value entries and prices on phones, disabled ordering, no overflow/runtime errors, 11 passing price/branch tests, and unchanged other-restaurant data digest.
+- [ ] Confirm Blue Downs delivery prices before enabling the 20 King Value products — blocked by missing branch confirmation.
