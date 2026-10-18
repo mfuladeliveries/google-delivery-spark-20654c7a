@@ -52,7 +52,8 @@ import {
 } from "@/components/ui/alert-dialog";
 import { isRestaurantOpen } from "@/lib/restaurantHours";
 import FoodImageUpload from "@/components/FoodImageUpload";
-import { isSteers, steersPricePending } from "@/lib/steersMenu";
+import { isSteers } from "@/lib/steersMenu";
+import { menuPricePending, requiresMenuPriceVerification } from "@/lib/menuPriceVerification";
 
 const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"] as const;
 const CATEGORIES = ["Braai", "Sides", "Drinks", "Starters", "Mains", "Desserts", "Specials"];
@@ -314,7 +315,7 @@ const RestaurantDetail = ({
 
   const toggleAvailability = async (item: MenuItem) => {
     const next = !item.is_available;
-    if (next && isSteers(restaurant.name)) {
+    if (next && requiresMenuPriceVerification(restaurant.name)) {
       toast.info("Edit this product, enter the confirmed branch price, then mark it available.");
       setEditingItem(item);
       return;
@@ -486,7 +487,7 @@ const RestaurantDetail = ({
         <div className="space-y-2">
           {filteredItems.map((item) => (
             <div key={item.id} className="space-y-1">
-            {steersPricePending(restaurant.name, item) && <p className="text-xs text-primary">Branch price verification required — edit before enabling orders</p>}
+            {menuPricePending(restaurant.name, item) && <p className="text-xs text-primary">Branch price verification required — edit before enabling orders</p>}
             <MenuItemAdminCard
               key={item.id}
               item={item}
@@ -1466,7 +1467,7 @@ const MenuItemDialog = ({
     if (!name.trim()) return toast.error("Item name is required");
     const priceNum = parseFloat(price);
     if (Number.isNaN(priceNum) || priceNum < 0) return toast.error("Valid price required");
-    if (isSteers(restaurantName) && priceVerified && priceNum <= 0) return toast.error("Enter a verified branch price before enabling orders");
+    if (requiresMenuPriceVerification(restaurantName) && priceVerified && priceNum <= 0) return toast.error("Enter a verified branch price before enabling orders");
     if (!category) return toast.error("Category is required");
 
     const payload = {
@@ -1478,7 +1479,7 @@ const MenuItemDialog = ({
       image: imageUrl,
       image_url: imageUrl || null,
       is_available: isAvailable,
-      ...(isSteers(restaurantName) ? { price_verified: priceVerified } : {}),
+      ...(requiresMenuPriceVerification(restaurantName) ? { price_verified: priceVerified } : {}),
       is_popular: isPopular,
       has_sizes: hasSizes,
       sizes: (hasSizes ? sizes.filter((s) => s.name.trim()) : []) as any,
@@ -1554,7 +1555,7 @@ const MenuItemDialog = ({
                 type="number"
                 step="0.01"
                 value={price}
-                onChange={(e) => { setPrice(e.target.value); if (isSteers(restaurantName)) setPriceVerified(false); }}
+                onChange={(e) => { setPrice(e.target.value); if (requiresMenuPriceVerification(restaurantName)) setPriceVerified(false); }}
                 placeholder="0.00"
               />
             </div>
@@ -1575,8 +1576,8 @@ const MenuItemDialog = ({
             </div>
           </div>
 
-          {isSteers(restaurantName) && <div className="flex items-center justify-between gap-3 border border-border p-3">
-            <Label className="text-xs">Price confirmed for all configured Steers branches</Label>
+          {requiresMenuPriceVerification(restaurantName) && <div className="flex items-center justify-between gap-3 border border-border p-3">
+            <Label className="text-xs">Price confirmed for all configured {restaurantName} branches</Label>
             <Switch checked={priceVerified} onCheckedChange={setPriceVerified} />
           </div>}
 

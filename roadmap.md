@@ -10,3 +10,9 @@
 - [x] Verify all 65 saved images load in the customer menu on phones/desktop; pending-price Add buttons disabled, no horizontal overflow, no runtime errors.
 - [ ] Confirm branch prices and run a real Steers cart/checkout flow — blocked by missing branch-confirmed prices (0 verified).
 - [ ] Activate a Mfuleni Steers branch — blocked by missing confirmed branch coordinates/assignment; existing Mfuleni branch remains inactive, not substituted with Delft.
+
+# Burger King South Africa
+- [x] Check official King Value menu and advertised prices; reuse the existing Burger King restaurant and Blue Downs branch.
+- [x] Save 16 missing products and fill 4 existing zero prices with sourced reference prices; preserve existing positive prices and block unconfirmed prices.
+- [x] Verify all 20 King Value entries and prices on phones, disabled ordering, no overflow/runtime errors, 11 passing price/branch tests, and unchanged other-restaurant data digest.
+- [ ] Confirm Blue Downs delivery prices before enabling the 20 King Value products — blocked by missing branch confirmation.

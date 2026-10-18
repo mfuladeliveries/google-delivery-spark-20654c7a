@@ -5,6 +5,8 @@ import { computeUnitPrice } from "@/hooks/useCart";
 import KfcProductImage from "@/components/KfcProductImage";
 import SteersProductImage from "@/components/SteersProductImage";
 import { isSteers } from "@/lib/steersMenu";
+import { isBurgerKing } from "@/lib/menuPriceVerification";
+import BurgerKingProductImage from "@/components/BurgerKingProductImage";
 
 interface ProductCustomizeModalProps {
   open: boolean;
@@ -147,6 +149,10 @@ const ProductCustomizeModal = ({ open, item, onClose, onAdd }: ProductCustomizeM
           ) : isSteers(item.restaurantName) ? (
             <div className="h-44 w-full overflow-hidden bg-muted">
               <SteersProductImage src={item.image} name={item.name} />
+            </div>
+          ) : isBurgerKing(item.restaurantName) ? (
+            <div className="h-44 w-full overflow-hidden bg-muted">
+              <BurgerKingProductImage src={item.image} name={item.name} />
             </div>
           ) : item.image ? (
             <div className="h-44 w-full overflow-hidden bg-muted">
