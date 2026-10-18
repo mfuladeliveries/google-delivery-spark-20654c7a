@@ -28,7 +28,9 @@ import BottomNav from "@/components/BottomNav";
 import ProductCustomizeModal from "@/components/ProductCustomizeModal";
 import KfcProductImage from "@/components/KfcProductImage";
 import SteersProductImage from "@/components/SteersProductImage";
-import { isSteers, steersPricePending } from "@/lib/steersMenu";
+import { isSteers } from "@/lib/steersMenu";
+import { isBurgerKing, menuPricePending, requiresMenuPriceVerification } from "@/lib/menuPriceVerification";
+import BurgerKingProductImage from "@/components/BurgerKingProductImage";
 import { Button } from "@/components/ui/button";
 import { RestaurantName } from "@/components/RestaurantName";
 import { popReorder } from "@/lib/reorder";
@@ -181,7 +183,7 @@ const RestaurantMenu = () => {
         const catalog = await getCatalog();
         const locs = (catalog.restaurant_locations ?? []) as RestaurantLocation[];
         const areaId = getSelectedAreaId();
-        setBranch(branchForArea(locs, rest.id, areaId) ?? (isSteers(rest.name) && areaId ? null : anyBranch(locs, rest.id)));
+        setBranch(branchForArea(locs, rest.id, areaId) ?? (requiresMenuPriceVerification(rest.name) && areaId ? null : anyBranch(locs, rest.id)));
       } catch {
         /* branch is optional — fall back to the restaurant's own location */
       }
@@ -212,7 +214,7 @@ const RestaurantMenu = () => {
           cuts: Array.isArray(row.cuts) ? (row.cuts as CutOption[]) : [],
         }));
         setMenuItems(normalized);
-      } else if (isSteers(rest.name)) {
+      } else if (requiresMenuPriceVerification(rest.name)) {
         setMenuItems([]);
       } else {
         // Use static data filtered by restaurant name
@@ -246,7 +248,7 @@ const RestaurantMenu = () => {
     let skipped = 0;
     seeds.forEach(({ id: seedId, quantity }) => {
       const match = menuItems.find((m) => m.id === seedId);
-      if (!match || steersPricePending(restaurant?.name, match)) {
+      if (!match || menuPricePending(restaurant?.name, match)) {
         skipped += 1;
         return;
       }
@@ -311,7 +313,7 @@ const RestaurantMenu = () => {
     caption: item.description,
     image: item.image,
     price: item.price,
-    available: item.is_available && !steersPricePending(restaurant?.name, item),
+    available: item.is_available && !menuPricePending(restaurant?.name, item),
     has_sizes: item.has_sizes,
     sizes: item.sizes,
     has_add_ons: item.has_add_ons,
@@ -323,12 +325,12 @@ const RestaurantMenu = () => {
   const [customizeItem, setCustomizeItem] = useState<DbMenuItem | null>(null);
 
   const handleAddItem = (item: DbMenuItem) => {
-    if (steersPricePending(restaurant?.name, item)) {
+    if (menuPricePending(restaurant?.name, item)) {
       toast.info("Price awaiting branch verification");
       return;
     }
-    if (isSteers(restaurant?.name) && getSelectedAreaId() && !branch) {
-      toast.error("Steers is not available in your selected delivery area.");
+    if (requiresMenuPriceVerification(restaurant?.name) && getSelectedAreaId() && !branch) {
+      toast.error(`${restaurant?.name} is not available in your selected delivery area.`);
       return;
     }
     if (locationBlocked) {
@@ -593,7 +595,7 @@ const RestaurantMenu = () => {
           <div className="space-y-3">
             {filtered.map((item) => {
               const qty = getItemQty(item.id);
-              const pendingPrice = steersPricePending(restaurant.name, item);
+              const pendingPrice = menuPricePending(restaurant.name, item);
               const hasOptions = itemHasOptions(item);
               const fromPrice =
                 item.has_cuts && (item.cuts?.length ?? 0) > 0
@@ -616,6 +618,8 @@ const RestaurantMenu = () => {
                       <KfcProductImage src={item.image} name={item.name} />
                     ) : isSteers(restaurant.name) ? (
                       <SteersProductImage src={item.image} name={item.name} />
+                    ) : isBurgerKing(restaurant.name) ? (
+                      <BurgerKingProductImage src={item.image} name={item.name} />
                     ) : item.image ? (
                       <img
                         src={item.image}
@@ -635,7 +639,7 @@ const RestaurantMenu = () => {
                   <div className="flex flex-1 flex-col justify-between min-w-0">
                     <div>
                       <div className="flex items-center gap-1.5">
-                        <h4 className={`font-semibold text-sm text-foreground ${isSteers(restaurant.name) ? "break-words" : "truncate"}`}>
+                        <h4 className={`font-semibold text-sm text-foreground ${requiresMenuPriceVerification(restaurant.name) ? "break-words" : "truncate"}`}>
                           {item.name}
                         </h4>
                         {hasOptions && (
@@ -652,7 +656,7 @@ const RestaurantMenu = () => {
                     </div>
                     <div className="flex items-center justify-between mt-2">
                       <span className="font-bold text-sm text-primary">
-                        {pendingPrice ? "Price awaiting verification" : <>{item.has_cuts || item.has_sizes ? "From " : ""}R{fromPrice}</>}
+                        {pendingPrice ? (isBurgerKing(restaurant.name) && fromPrice > 0 ? `Reference R${fromPrice.toFixed(2)} · Pending confirmation` : "Price awaiting verification") : <>{item.has_cuts || item.has_sizes ? "From " : ""}R{fromPrice}</>}
                       </span>
                       {qty === 0 ? (
                         <Button
@@ -660,7 +664,7 @@ const RestaurantMenu = () => {
                             e.stopPropagation();
                             handleAddItem(item);
                           }}
-                          disabled={pendingPrice || !canOrder || cartLockedElsewhere || (isSteers(restaurant.name) && !!getSelectedAreaId() && !branch)}
+                          disabled={pendingPrice || !canOrder || cartLockedElsewhere || (requiresMenuPriceVerification(restaurant.name) && !!getSelectedAreaId() && !branch)}
                           data-testid="menu-add-button"
                           className="btn-glow flex items-center gap-1 rounded-xl gradient-maroon px-3 py-1.5 text-xs font-bold text-primary-foreground transition-transform hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
                         >
