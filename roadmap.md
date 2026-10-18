@@ -16,3 +16,7 @@
 - [x] Save 16 missing products and fill 4 existing zero prices with sourced reference prices; preserve existing positive prices and block unconfirmed prices.
 - [x] Verify all 20 King Value entries and prices on phones, disabled ordering, no overflow/runtime errors, 11 passing price/branch tests, and unchanged other-restaurant data digest.
 - [ ] Confirm Blue Downs delivery prices before enabling the 20 King Value products — blocked by missing branch confirmation.
+
+# App testing
+- [ ] Run existing automated tests and customer browsing/address/menu/cart checks without placing orders or changing payments.
+- [ ] Check signed-in navigation and available admin screens; report failures and unverified flows.
