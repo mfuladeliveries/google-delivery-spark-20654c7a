@@ -10,3 +10,8 @@
 - [x] Verify all 65 saved images load in the customer menu on phones/desktop; pending-price Add buttons disabled, no horizontal overflow, no runtime errors.
 - [ ] Confirm branch prices and run a real Steers cart/checkout flow — blocked by missing branch-confirmed prices (0 verified).
 - [ ] Activate a Mfuleni Steers branch — blocked by missing confirmed branch coordinates/assignment; existing Mfuleni branch remains inactive, not substituted with Delft.
+
+# Burger King South Africa
+- [ ] Check official menu and credible prices; reuse the existing Burger King restaurant and branch.
+- [ ] Save nonduplicate menu products with sourced prices and keep unconfirmed prices non-orderable.
+- [ ] Verify saved menu, price display, and existing restaurant preservation.
