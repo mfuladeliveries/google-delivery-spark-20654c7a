@@ -20,3 +20,8 @@
 # App testing
 - [ ] Run existing automated tests and customer browsing/address/menu/cart checks without placing orders or changing payments.
 - [ ] Check signed-in navigation and available admin screens; report failures and unverified flows.
+
+# Data API permission readiness
+- [ ] Inspect live public tables, grants, RLS, policies, exposure, and migration history.
+- [ ] Add least-privilege migration grants and preserve security controls.
+- [ ] Test role isolation and available automated tests; document build/reset/Git verification and blockers.
