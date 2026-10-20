@@ -15,6 +15,13 @@
       "when": 1792352468273,
       "tag": "0001_burger_king_price_verification",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1792515193114,
+      "tag": "0002_data_api_least_privilege_and_driver_privacy",
+      "breakpoints": true
     }
   ]
 }
