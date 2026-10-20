@@ -9,6 +9,10 @@ CREATE TABLE public.order_messages (
   created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
 );
 
+-- Explicit Data API privileges; row access remains governed by RLS.
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.order_messages TO authenticated;
+GRANT ALL ON public.order_messages TO service_role;
+
 CREATE INDEX idx_order_messages_order_id ON public.order_messages(order_id, created_at);
 CREATE INDEX idx_order_messages_unread ON public.order_messages(order_id, read_at) WHERE read_at IS NULL;
 

@@ -18,5 +18,13 @@
 - [ ] Confirm Blue Downs delivery prices before enabling the 20 King Value products — blocked by missing branch confirmation.
 
 # App testing
-- [ ] Run existing automated tests and customer browsing/address/menu/cart checks without placing orders or changing payments.
-- [ ] Check signed-in navigation and available admin screens; report failures and unverified flows.
+- [x] Run 88 automated tests and customer browsing/address/menu/cart checks without placing orders or changing payments; fix reproduced auth loading deadlock.
+- [x] Check signed-in customer navigation and document unavailable privileged-role checks in QA_PERMISSION_AUDIT.md.
+- [ ] Exercise driver/admin/restaurant signed-in screens — blocked by unavailable approved privileged-role sessions.
+
+# Data API permission readiness
+- [x] Inspect 43 live public tables, grants, RLS, policies and migration history; test reachable Data API endpoints.
+- [x] Apply two least-privilege permission migrations and preserve role/row controls.
+- [x] Pass three anonymous/customer read-isolation tests; document harness build/reset/Git limitations in QA_PERMISSION_AUDIT.md.
+- [ ] Verify driver/admin write isolation — blocked by unavailable approved privileged-role sessions.
+- [ ] Certify clean reset/preview branches and full exposure settings — blocked by an isolated reset environment and unavailable hosted settings read; pre-existing migration-history blockers documented.

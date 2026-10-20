@@ -12,6 +12,10 @@ CREATE TABLE public.driver_access_requests (
   CONSTRAINT driver_access_requests_status_check CHECK (status IN ('pending','approved','rejected','cancelled'))
 );
 
+-- Explicit Data API privileges; row access remains governed by RLS.
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.driver_access_requests TO authenticated;
+GRANT ALL ON public.driver_access_requests TO service_role;
+
 -- Only one pending request per user
 CREATE UNIQUE INDEX driver_access_requests_one_pending_per_user
   ON public.driver_access_requests (user_id)

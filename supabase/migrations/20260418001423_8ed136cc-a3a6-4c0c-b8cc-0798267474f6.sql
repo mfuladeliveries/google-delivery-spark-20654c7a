@@ -7,6 +7,10 @@ CREATE TABLE public.driver_rejected_orders (
   UNIQUE (driver_id, order_id)
 );
 
+-- Explicit Data API privileges; row access remains governed by RLS.
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.driver_rejected_orders TO authenticated;
+GRANT ALL ON public.driver_rejected_orders TO service_role;
+
 CREATE INDEX idx_driver_rejected_orders_driver ON public.driver_rejected_orders(driver_id);
 CREATE INDEX idx_driver_rejected_orders_order ON public.driver_rejected_orders(order_id);
 

@@ -17,6 +17,10 @@ CREATE TABLE IF NOT EXISTS public.driver_profiles (
   updated_at timestamptz NOT NULL DEFAULT now()
 );
 
+-- Explicit Data API privileges; row access remains governed by RLS.
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.driver_profiles TO authenticated;
+GRANT ALL ON public.driver_profiles TO service_role;
+
 ALTER TABLE public.driver_profiles ENABLE ROW LEVEL SECURITY;
 
 -- Drivers can view/update their own profile

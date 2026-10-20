@@ -10,6 +10,10 @@ CREATE TABLE public.profiles (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
+-- Explicit Data API privileges; row access remains governed by RLS.
+GRANT SELECT, INSERT, UPDATE ON public.profiles TO authenticated;
+GRANT ALL ON public.profiles TO service_role;
+
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "Users can view own profile" ON public.profiles
@@ -40,6 +44,10 @@ CREATE TABLE public.orders (
   status TEXT NOT NULL DEFAULT 'pending',
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
+-- Explicit Data API privileges; row access remains governed by RLS.
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.orders TO authenticated;
+GRANT ALL ON public.orders TO service_role;
 
 ALTER TABLE public.orders ENABLE ROW LEVEL SECURITY;
 

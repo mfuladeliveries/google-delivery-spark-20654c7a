@@ -9,6 +9,11 @@ CREATE TABLE public.delivery_areas (
   created_by uuid
 );
 
+-- Explicit Data API privileges; row access remains governed by RLS.
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.delivery_areas TO authenticated;
+GRANT ALL ON public.delivery_areas TO service_role;
+GRANT SELECT ON public.delivery_areas TO anon;
+
 CREATE UNIQUE INDEX delivery_areas_name_unique ON public.delivery_areas (lower(name));
 
 ALTER TABLE public.delivery_areas ENABLE ROW LEVEL SECURITY;

@@ -8,6 +8,10 @@ CREATE TABLE public.customer_credits (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
+-- Explicit Data API privileges; row access remains governed by RLS.
+GRANT SELECT ON public.customer_credits TO authenticated;
+GRANT ALL ON public.customer_credits TO service_role;
+
 ALTER TABLE public.customer_credits ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "Customers view own credits"
@@ -37,6 +41,10 @@ CREATE TABLE public.credit_transactions (
   note TEXT,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
+-- Explicit Data API privileges; row access remains governed by RLS.
+GRANT SELECT ON public.credit_transactions TO authenticated;
+GRANT ALL ON public.credit_transactions TO service_role;
 
 CREATE INDEX idx_credit_tx_user ON public.credit_transactions(user_id, created_at DESC);
 CREATE INDEX idx_credit_tx_order ON public.credit_transactions(order_id);

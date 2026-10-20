@@ -275,13 +275,6 @@ export type Database = {
             foreignKeyName: "delivery_pin_overrides_order_id_fkey"
             columns: ["order_id"]
             isOneToOne: false
-            referencedRelation: "driver_orders"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "delivery_pin_overrides_order_id_fkey"
-            columns: ["order_id"]
-            isOneToOne: false
             referencedRelation: "orders"
             referencedColumns: ["id"]
           },
@@ -771,13 +764,6 @@ export type Database = {
             foreignKeyName: "order_dispatch_log_order_id_fkey"
             columns: ["order_id"]
             isOneToOne: false
-            referencedRelation: "driver_orders"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "order_dispatch_log_order_id_fkey"
-            columns: ["order_id"]
-            isOneToOne: false
             referencedRelation: "orders"
             referencedColumns: ["id"]
           },
@@ -886,13 +872,6 @@ export type Database = {
             foreignKeyName: "order_policy_acceptances_order_id_fkey"
             columns: ["order_id"]
             isOneToOne: false
-            referencedRelation: "driver_orders"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "order_policy_acceptances_order_id_fkey"
-            columns: ["order_id"]
-            isOneToOne: false
             referencedRelation: "orders"
             referencedColumns: ["id"]
           },
@@ -968,13 +947,6 @@ export type Database = {
             columns: ["order_id"]
             isOneToOne: false
             referencedRelation: "driver_job_board"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "order_rejections_order_id_fkey"
-            columns: ["order_id"]
-            isOneToOne: false
-            referencedRelation: "driver_orders"
             referencedColumns: ["id"]
           },
           {
@@ -1269,13 +1241,6 @@ export type Database = {
             foreignKeyName: "payment_transactions_order_id_fkey"
             columns: ["order_id"]
             isOneToOne: false
-            referencedRelation: "driver_orders"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "payment_transactions_order_id_fkey"
-            columns: ["order_id"]
-            isOneToOne: false
             referencedRelation: "orders"
             referencedColumns: ["id"]
           },
@@ -1471,13 +1436,6 @@ export type Database = {
             foreignKeyName: "promo_redemptions_order_id_fkey"
             columns: ["order_id"]
             isOneToOne: true
-            referencedRelation: "driver_orders"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "promo_redemptions_order_id_fkey"
-            columns: ["order_id"]
-            isOneToOne: true
             referencedRelation: "orders"
             referencedColumns: ["id"]
           },
@@ -1629,13 +1587,6 @@ export type Database = {
             columns: ["referred_order_id"]
             isOneToOne: false
             referencedRelation: "driver_job_board"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "referrals_referred_order_id_fkey"
-            columns: ["referred_order_id"]
-            isOneToOne: false
-            referencedRelation: "driver_orders"
             referencedColumns: ["id"]
           },
           {
@@ -1914,13 +1865,6 @@ export type Database = {
             foreignKeyName: "whatsapp_notification_outbox_order_id_fkey"
             columns: ["order_id"]
             isOneToOne: false
-            referencedRelation: "driver_orders"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "whatsapp_notification_outbox_order_id_fkey"
-            columns: ["order_id"]
-            isOneToOne: false
             referencedRelation: "orders"
             referencedColumns: ["id"]
           },
@@ -2105,85 +2049,7 @@ export type Database = {
           status: string | null
           tip: number | null
         }
-        Insert: {
-          accepted_at?: string | null
-          address_tag?: string | null
-          arrived_at?: string | null
-          cancel_reason?: string | null
-          cancelled_at?: string | null
-          created_at?: string | null
-          customer_address?: string | null
-          customer_contact?: never
-          customer_lat?: number | null
-          customer_lng?: number | null
-          customer_name?: never
-          delivered_at?: string | null
-          delivery_fee?: number | null
-          dispatch_phase?: string | null
-          dispatch_round?: number | null
-          dispatch_started_at?: string | null
-          driver_id?: string | null
-          driver_lat?: number | null
-          driver_lng?: number | null
-          driver_location_updated_at?: string | null
-          id?: string | null
-          items?: Json | null
-          offer_expires_at?: string | null
-          offered_to_driver_id?: string | null
-          order_number?: number | null
-          picked_up_at?: string | null
-          picking_up_at?: string | null
-          pin_attempts?: number | null
-          restaurant?: string | null
-          restaurant_id?: string | null
-          special_notes?: string | null
-          status?: string | null
-          tip?: number | null
-        }
-        Update: {
-          accepted_at?: string | null
-          address_tag?: string | null
-          arrived_at?: string | null
-          cancel_reason?: string | null
-          cancelled_at?: string | null
-          created_at?: string | null
-          customer_address?: string | null
-          customer_contact?: never
-          customer_lat?: number | null
-          customer_lng?: number | null
-          customer_name?: never
-          delivered_at?: string | null
-          delivery_fee?: number | null
-          dispatch_phase?: string | null
-          dispatch_round?: number | null
-          dispatch_started_at?: string | null
-          driver_id?: string | null
-          driver_lat?: number | null
-          driver_lng?: number | null
-          driver_location_updated_at?: string | null
-          id?: string | null
-          items?: Json | null
-          offer_expires_at?: string | null
-          offered_to_driver_id?: string | null
-          order_number?: number | null
-          picked_up_at?: string | null
-          picking_up_at?: string | null
-          pin_attempts?: number | null
-          restaurant?: string | null
-          restaurant_id?: string | null
-          special_notes?: string | null
-          status?: string | null
-          tip?: number | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "orders_restaurant_id_fkey"
-            columns: ["restaurant_id"]
-            isOneToOne: false
-            referencedRelation: "restaurants"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
     }
     Functions: {
@@ -2460,6 +2326,50 @@ export type Database = {
       order_sender_role_valid: {
         Args: { _order_id: string; _role: string; _user_id: string }
         Returns: boolean
+      }
+      read_authorized_driver_orders: {
+        Args: never
+        Returns: {
+          accepted_at: string | null
+          address_tag: string | null
+          arrived_at: string | null
+          cancel_reason: string | null
+          cancelled_at: string | null
+          created_at: string | null
+          customer_address: string | null
+          customer_contact: string | null
+          customer_lat: number | null
+          customer_lng: number | null
+          customer_name: string | null
+          delivered_at: string | null
+          delivery_fee: number | null
+          dispatch_phase: string | null
+          dispatch_round: number | null
+          dispatch_started_at: string | null
+          driver_id: string | null
+          driver_lat: number | null
+          driver_lng: number | null
+          driver_location_updated_at: string | null
+          id: string | null
+          items: Json | null
+          offer_expires_at: string | null
+          offered_to_driver_id: string | null
+          order_number: number | null
+          picked_up_at: string | null
+          picking_up_at: string | null
+          pin_attempts: number | null
+          restaurant: string | null
+          restaurant_id: string | null
+          special_notes: string | null
+          status: string | null
+          tip: number | null
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "driver_orders"
+          isOneToOne: false
+          isSetofReturn: true
+        }
       }
       read_email_batch: {
         Args: { batch_size: number; queue_name: string; vt: number }

@@ -9,6 +9,10 @@ CREATE TABLE IF NOT EXISTS public.push_subscriptions (
   created_at timestamptz NOT NULL DEFAULT now()
 );
 
+-- Explicit Data API privileges; row access remains governed by RLS.
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.push_subscriptions TO authenticated;
+GRANT ALL ON public.push_subscriptions TO service_role;
+
 ALTER TABLE public.push_subscriptions ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "Users can manage own push subscriptions"
@@ -22,6 +26,11 @@ CREATE TABLE IF NOT EXISTS public.push_config (
   value text NOT NULL,
   created_at timestamptz NOT NULL DEFAULT now()
 );
+
+-- Explicit Data API privileges; row access remains governed by RLS.
+GRANT SELECT ON public.push_config TO authenticated;
+GRANT ALL ON public.push_config TO service_role;
+GRANT SELECT ON public.push_config TO anon;
 
 ALTER TABLE public.push_config ENABLE ROW LEVEL SECURITY;
 

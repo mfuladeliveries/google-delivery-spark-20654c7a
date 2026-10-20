@@ -27,6 +27,10 @@ CREATE TABLE IF NOT EXISTS public.withdrawal_requests (
   created_at timestamptz NOT NULL DEFAULT now()
 );
 
+-- Explicit Data API privileges; row access remains governed by RLS.
+GRANT SELECT ON public.withdrawal_requests TO authenticated;
+GRANT ALL ON public.withdrawal_requests TO service_role;
+
 CREATE INDEX IF NOT EXISTS idx_withdrawals_driver ON public.withdrawal_requests(driver_id, requested_at DESC);
 CREATE INDEX IF NOT EXISTS idx_withdrawals_status ON public.withdrawal_requests(status, requested_at DESC);
 

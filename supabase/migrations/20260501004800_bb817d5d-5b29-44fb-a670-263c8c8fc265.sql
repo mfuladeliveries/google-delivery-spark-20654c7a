@@ -16,6 +16,10 @@ CREATE TABLE public.customer_addresses (
   CONSTRAINT customer_addresses_lng_check CHECK (lng BETWEEN -180 AND 180)
 );
 
+-- Explicit Data API privileges; row access remains governed by RLS.
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.customer_addresses TO authenticated;
+GRANT ALL ON public.customer_addresses TO service_role;
+
 CREATE INDEX idx_customer_addresses_user ON public.customer_addresses(user_id);
 CREATE UNIQUE INDEX idx_customer_addresses_one_default
   ON public.customer_addresses(user_id) WHERE is_default = true;

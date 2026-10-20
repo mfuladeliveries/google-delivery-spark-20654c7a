@@ -9,6 +9,10 @@ CREATE TABLE IF NOT EXISTS public.driver_earnings (
   created_at timestamptz NOT NULL DEFAULT now()
 );
 
+-- Explicit Data API privileges; row access remains governed by RLS.
+GRANT SELECT ON public.driver_earnings TO authenticated;
+GRANT ALL ON public.driver_earnings TO service_role;
+
 CREATE INDEX IF NOT EXISTS idx_driver_earnings_driver ON public.driver_earnings(driver_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_driver_earnings_created ON public.driver_earnings(created_at DESC);
 

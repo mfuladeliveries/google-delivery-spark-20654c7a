@@ -11,6 +11,10 @@ CREATE TABLE IF NOT EXISTS public.rate_limits (
   UNIQUE (identifier, action)
 );
 
+-- Explicit Data API privileges; row access remains governed by RLS.
+GRANT SELECT ON public.rate_limits TO authenticated;
+GRANT ALL ON public.rate_limits TO service_role;
+
 CREATE INDEX IF NOT EXISTS rate_limits_window_idx
   ON public.rate_limits (window_started_at);
 
