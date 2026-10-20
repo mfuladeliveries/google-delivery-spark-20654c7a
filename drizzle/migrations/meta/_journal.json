@@ -22,6 +22,13 @@
       "when": 1792515193114,
       "tag": "0002_data_api_least_privilege_and_driver_privacy",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1792515725210,
+      "tag": "0003_refine_client_write_permissions",
+      "breakpoints": true
     }
   ]
 }
