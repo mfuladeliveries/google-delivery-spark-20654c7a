@@ -1,4 +1,6 @@
 # Project rules
+- Define explicit, least-privilege grants immediately after public table creation and preserve RLS; verify live changes with role-isolation tests because grants alone do not protect rows.
+- Apply live permission changes through an additive migration; historical grant edits support clean replay but do not update already-applied databases.
 - Keep KFC-only image presentation in KfcProductImage, with a neutral local fallback and contain fitting, so picture failures never substitute another product or change other restaurant displays.
 - Steers uses a separate price_verified flag and Steers-only order validation while is_available controls visibility; other menus default to verified to preserve their behavior. Admin confirmation applies to all configured branches because the existing menu is brand-level.
 - Keep Steers imagery isolated in SteersProductImage, label generated category pictures as illustrations, and never replace failed photos with another product.

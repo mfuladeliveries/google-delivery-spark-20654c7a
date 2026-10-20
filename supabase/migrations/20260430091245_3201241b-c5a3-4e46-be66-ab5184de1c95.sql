@@ -35,6 +35,10 @@ CREATE TABLE IF NOT EXISTS public.payment_transactions (
   created_at timestamptz NOT NULL DEFAULT now()
 );
 
+-- Explicit Data API privileges; row access remains governed by RLS.
+GRANT SELECT ON public.payment_transactions TO authenticated;
+GRANT ALL ON public.payment_transactions TO service_role;
+
 CREATE INDEX IF NOT EXISTS idx_payment_txn_order ON public.payment_transactions(order_id);
 CREATE INDEX IF NOT EXISTS idx_payment_txn_provider_id ON public.payment_transactions(provider, provider_txn_id);
 

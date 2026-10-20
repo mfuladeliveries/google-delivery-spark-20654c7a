@@ -20,6 +20,10 @@ CREATE TABLE IF NOT EXISTS public.promo_codes (
   created_by uuid,
   created_at timestamptz NOT NULL DEFAULT now()
 );
+
+-- Explicit Data API privileges; row access remains governed by RLS.
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.promo_codes TO authenticated;
+GRANT ALL ON public.promo_codes TO service_role;
 ALTER TABLE public.promo_codes ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Admins manage promo codes" ON public.promo_codes;
 CREATE POLICY "Admins manage promo codes" ON public.promo_codes FOR ALL TO authenticated
@@ -37,6 +41,10 @@ CREATE TABLE IF NOT EXISTS public.promo_redemptions (
   created_at timestamptz NOT NULL DEFAULT now(),
   UNIQUE (promo_id, user_id)
 );
+
+-- Explicit Data API privileges; row access remains governed by RLS.
+GRANT SELECT ON public.promo_redemptions TO authenticated;
+GRANT ALL ON public.promo_redemptions TO service_role;
 ALTER TABLE public.promo_redemptions ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Customers view own promo redemptions" ON public.promo_redemptions;
 CREATE POLICY "Customers view own promo redemptions" ON public.promo_redemptions FOR SELECT TO authenticated USING (user_id=auth.uid());
@@ -49,6 +57,10 @@ CREATE TABLE IF NOT EXISTS public.referral_codes (
   code text NOT NULL UNIQUE,
   created_at timestamptz NOT NULL DEFAULT now()
 );
+
+-- Explicit Data API privileges; row access remains governed by RLS.
+GRANT SELECT ON public.referral_codes TO authenticated;
+GRANT ALL ON public.referral_codes TO service_role;
 ALTER TABLE public.referral_codes ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Users view referral codes" ON public.referral_codes;
 CREATE POLICY "Users view referral codes" ON public.referral_codes FOR SELECT TO authenticated USING (true);
@@ -66,6 +78,10 @@ CREATE TABLE IF NOT EXISTS public.referrals (
   created_at timestamptz NOT NULL DEFAULT now(),
   CHECK (referrer_user_id <> referred_user_id)
 );
+
+-- Explicit Data API privileges; row access remains governed by RLS.
+GRANT SELECT ON public.referrals TO authenticated;
+GRANT ALL ON public.referrals TO service_role;
 ALTER TABLE public.referrals ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Users view own referrals" ON public.referrals;
 CREATE POLICY "Users view own referrals" ON public.referrals FOR SELECT TO authenticated
@@ -168,6 +184,10 @@ CREATE TABLE IF NOT EXISTS public.whatsapp_notification_outbox (
   created_at timestamptz NOT NULL DEFAULT now(),
   UNIQUE(order_id,event_key)
 );
+
+-- Explicit Data API privileges; row access remains governed by RLS.
+GRANT SELECT ON public.whatsapp_notification_outbox TO authenticated;
+GRANT ALL ON public.whatsapp_notification_outbox TO service_role;
 ALTER TABLE public.whatsapp_notification_outbox ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Admins view WhatsApp queue" ON public.whatsapp_notification_outbox;
 CREATE POLICY "Admins view WhatsApp queue" ON public.whatsapp_notification_outbox FOR SELECT TO authenticated USING(has_role(auth.uid(),'admin'::app_role));

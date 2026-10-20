@@ -10,6 +10,10 @@ CREATE TABLE public.user_roles (
   UNIQUE (user_id, role)
 );
 
+-- Explicit Data API privileges; row access remains governed by RLS.
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.user_roles TO authenticated;
+GRANT ALL ON public.user_roles TO service_role;
+
 ALTER TABLE public.user_roles ENABLE ROW LEVEL SECURITY;
 
 -- Security definer function to check roles (prevents RLS recursion)
@@ -51,6 +55,10 @@ CREATE TABLE public.restaurants (
   created_at timestamptz NOT NULL DEFAULT now()
 );
 
+-- Explicit Data API privileges; row access remains governed by RLS.
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.restaurants TO authenticated;
+GRANT ALL ON public.restaurants TO service_role;
+
 ALTER TABLE public.restaurants ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "Anyone can view active restaurants"
@@ -77,6 +85,11 @@ CREATE TABLE public.menu_items (
   is_available boolean NOT NULL DEFAULT true,
   created_at timestamptz NOT NULL DEFAULT now()
 );
+
+-- Explicit Data API privileges; row access remains governed by RLS.
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.menu_items TO authenticated;
+GRANT ALL ON public.menu_items TO service_role;
+GRANT SELECT ON public.menu_items TO anon;
 
 ALTER TABLE public.menu_items ENABLE ROW LEVEL SECURITY;
 

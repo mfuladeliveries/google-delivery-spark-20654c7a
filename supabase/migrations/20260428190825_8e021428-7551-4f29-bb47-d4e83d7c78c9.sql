@@ -12,6 +12,10 @@ CREATE TABLE IF NOT EXISTS public.invalid_order_attempts (
   created_at timestamptz NOT NULL DEFAULT now()
 );
 
+-- Explicit Data API privileges; row access remains governed by RLS.
+GRANT SELECT ON public.invalid_order_attempts TO authenticated;
+GRANT ALL ON public.invalid_order_attempts TO service_role;
+
 ALTER TABLE public.invalid_order_attempts ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "Admins view invalid attempts" ON public.invalid_order_attempts;

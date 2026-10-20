@@ -7,6 +7,10 @@ CREATE TABLE IF NOT EXISTS public.order_notification_log (
   UNIQUE (order_id, user_id, notification_kind)
 );
 
+-- Explicit Data API privileges; row access remains governed by RLS.
+GRANT SELECT ON public.order_notification_log TO authenticated;
+GRANT ALL ON public.order_notification_log TO service_role;
+
 CREATE INDEX IF NOT EXISTS idx_order_notification_log_lookup
   ON public.order_notification_log (order_id, user_id, notification_kind);
 

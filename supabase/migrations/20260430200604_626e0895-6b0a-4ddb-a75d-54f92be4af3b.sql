@@ -35,6 +35,10 @@ CREATE TABLE IF NOT EXISTS public.driver_service_areas (
   UNIQUE (driver_id, area_id)
 );
 
+-- Explicit Data API privileges; row access remains governed by RLS.
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.driver_service_areas TO authenticated;
+GRANT ALL ON public.driver_service_areas TO service_role;
+
 CREATE INDEX IF NOT EXISTS idx_driver_service_areas_driver ON public.driver_service_areas(driver_id);
 CREATE INDEX IF NOT EXISTS idx_driver_service_areas_area   ON public.driver_service_areas(area_id);
 
