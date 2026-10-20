@@ -1,4 +1,5 @@
-import { act, render, screen, waitFor } from "@testing-library/react";
+import { act } from "react";
+import { createRoot } from "react-dom/client";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
 
@@ -30,8 +31,12 @@ function State() {
 describe("signed-in session loading", () => {
   beforeEach(() => { mock.locked = false; mock.queriedWhileLocked = false; });
   it("loads customer roles without querying under the auth callback lock", async () => {
-    await act(async () => { render(<AuthProvider><State /></AuthProvider>); });
-    await waitFor(() => expect(screen.getByText("customer")).toBeInTheDocument());
+    const container = document.createElement("div");
+    const root = createRoot(container);
+    await act(async () => { root.render(<AuthProvider><State /></AuthProvider>); });
+    await act(async () => { await new Promise(resolve => window.setTimeout(resolve, 10)); });
+    expect(container.textContent).toBe("customer");
     expect(mock.queriedWhileLocked).toBe(false);
+    await act(async () => root.unmount());
   });
 });

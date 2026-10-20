@@ -60,7 +60,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     let mounted = true;
-    let roleTimer: ReturnType<typeof window.setTimeout> | undefined;
+    let roleTimer: number | undefined;
 
     // Watchdog: on a flaky mobile connection the session/role lookup can hang
     // indefinitely, which used to leave the app stuck on the loading screen.
