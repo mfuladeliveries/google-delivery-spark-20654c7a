@@ -60,6 +60,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     let mounted = true;
+    let roleTimer: ReturnType<typeof window.setTimeout> | undefined;
 
     // Watchdog: on a flaky mobile connection the session/role lookup can hang
     // indefinitely, which used to leave the app stuck on the loading screen.
@@ -93,25 +94,31 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (_event, session) => {
+    } = supabase.auth.onAuthStateChange((_event, session) => {
       if (!mounted) return;
 
       setSession(session);
       setUser(session?.user ?? null);
 
-      if (session?.user) {
-        await fetchRole(session.user.id);
-      } else {
-        setRole(null);
-        setRoles([]);
-      }
-
-      if (mounted) setLoading(false);
+      // Auth callbacks hold the client's auth lock. Defer database work until
+      // the callback returns so role/profile requests can obtain the session.
+      window.clearTimeout(roleTimer);
+      roleTimer = window.setTimeout(async () => {
+        if (!mounted) return;
+        if (session?.user) {
+          await fetchRole(session.user.id);
+        } else {
+          setRole(null);
+          setRoles([]);
+        }
+        if (mounted) setLoading(false);
+      }, 0);
     });
 
     return () => {
       mounted = false;
       window.clearTimeout(watchdog);
+      window.clearTimeout(roleTimer);
       subscription.unsubscribe();
     };
   }, []);
