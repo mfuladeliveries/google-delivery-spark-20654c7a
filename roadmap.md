@@ -30,6 +30,6 @@
 - [ ] Certify clean reset/preview branches and full exposure settings — blocked by an isolated reset environment and unavailable hosted settings read; pre-existing migration-history blockers documented.
 
 # Daily running-credit dashboard
-- [ ] Collect a dated seven-day recorded snapshot for backend, functions, storage and traffic.
-- [ ] Store the snapshot behind admin-only access and add daily charts, totals and date filters.
-- [ ] Verify credit aggregation, access isolation and the signed-in dashboard without changing orders or payments.
+- [x] Collect Oct 15–21 UTC recorded snapshots for backend, functions, storage and traffic; Oct 21 labelled partial.
+- [x] Store the snapshot behind admin-only access and add daily charts, totals, date filters and CSV download.
+- [x] Verify aggregation and live anonymous/customer/admin read isolation (7 focused tests); real admin dashboard, date filters, download and phone layout passed with no overflow or runtime errors. No orders or payments changed.
