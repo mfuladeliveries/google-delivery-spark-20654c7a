@@ -7,3 +7,4 @@
 - Keep Steers imagery isolated in SteersProductImage, label generated category pictures as illustrations, and never replace failed photos with another product.
 - Burger King reuses the existing brand menu and branches; menuPriceVerification and a dedicated order guard block unconfirmed new prices while preserving existing positive prices. Admin confirmation is brand-wide because menus are shared by configured branches.
 - Keep Burger King image failures neutral in BurgerKingProductImage so missing photos never display an unrelated product.
+- Keep daily running-credit snapshots in an admin-read-only RLS table, never the browser bundle; retain UTC recording boundaries, precision and partial-day labels, and update only from authorized recorded-usage lookups because no documented automatic billing API is available.

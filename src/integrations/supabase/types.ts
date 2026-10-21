@@ -157,6 +157,45 @@ export type Database = {
           },
         ]
       }
+      daily_credit_usage: {
+        Row: {
+          backend_credits: number
+          function_credits: number
+          is_partial_day: boolean
+          recorded_date: string
+          recorded_to_exclusive: string
+          result_partial: boolean
+          retrieved_at: string
+          source: string
+          storage_credits: number
+          traffic_credits: number
+        }
+        Insert: {
+          backend_credits?: number
+          function_credits?: number
+          is_partial_day?: boolean
+          recorded_date: string
+          recorded_to_exclusive: string
+          result_partial?: boolean
+          retrieved_at: string
+          source?: string
+          storage_credits?: number
+          traffic_credits?: number
+        }
+        Update: {
+          backend_credits?: number
+          function_credits?: number
+          is_partial_day?: boolean
+          recorded_date?: string
+          recorded_to_exclusive?: string
+          result_partial?: boolean
+          retrieved_at?: string
+          source?: string
+          storage_credits?: number
+          traffic_credits?: number
+        }
+        Relationships: []
+      }
       delivery_areas: {
         Row: {
           base_fee: number
