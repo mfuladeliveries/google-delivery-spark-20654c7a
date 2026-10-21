@@ -38,6 +38,7 @@ import AdminAboutEditor from "@/components/admin/AdminAboutEditor";
 import AdminDeliveryAreas from "@/components/admin/AdminDeliveryAreas";
 import AdminFeeManagement from "@/components/admin/AdminFeeManagement";
 import AdminPaymentMode from "@/components/admin/AdminPaymentMode";
+import AdminCreditUsage from "@/components/admin/AdminCreditUsage";
 import OrderDispatchLog from "@/components/admin/OrderDispatchLog";
 import AdminMenuManager from "@/components/admin/AdminMenuManager";
 import AdminPromotions from "@/components/admin/AdminPromotions";
@@ -212,6 +213,7 @@ const AdminDashboard = () => {
     | "areas"
     | "fees"
     | "payments"
+    | "credits"
     | "promos"
     | "about"
   >("overview");
@@ -601,6 +603,7 @@ const AdminDashboard = () => {
     "areas",
     "fees",
     "payments",
+    "credits",
     "promos",
     "about",
   ] as const;
@@ -891,6 +894,7 @@ const AdminDashboard = () => {
         {tab === "fees" && <AdminFeeManagement />}
 
         {tab === "payments" && <AdminPaymentMode />}
+        {tab === "credits" && <AdminCreditUsage />}
 
         {tab === "promos" && <AdminPromotions />}
 
