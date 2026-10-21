@@ -29,6 +29,13 @@
       "when": 1792515725210,
       "tag": "0003_refine_client_write_permissions",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1792623880391,
+      "tag": "0004_admin_daily_credit_snapshots",
+      "breakpoints": true
     }
   ]
 }
