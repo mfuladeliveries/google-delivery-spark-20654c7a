@@ -28,3 +28,8 @@
 - [x] Pass three anonymous/customer read-isolation tests; document harness build/reset/Git limitations in QA_PERMISSION_AUDIT.md.
 - [ ] Verify driver/admin write isolation — blocked by unavailable approved privileged-role sessions.
 - [ ] Certify clean reset/preview branches and full exposure settings — blocked by an isolated reset environment and unavailable hosted settings read; pre-existing migration-history blockers documented.
+
+# Daily running-credit dashboard
+- [ ] Collect a dated seven-day recorded snapshot for backend, functions, storage and traffic.
+- [ ] Store the snapshot behind admin-only access and add daily charts, totals and date filters.
+- [ ] Verify credit aggregation, access isolation and the signed-in dashboard without changing orders or payments.
