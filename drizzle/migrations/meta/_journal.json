@@ -43,6 +43,13 @@
       "when": 1792632914327,
       "tag": "0005_branch_selection_one_per_brand",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1792632953484,
+      "tag": "0006_driver_pickup_location",
+      "breakpoints": true
     }
   ]
 }
