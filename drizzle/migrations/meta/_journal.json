@@ -36,6 +36,13 @@
       "when": 1792623880391,
       "tag": "0004_admin_daily_credit_snapshots",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1792632914327,
+      "tag": "0005_branch_selection_one_per_brand",
+      "breakpoints": true
     }
   ]
 }
