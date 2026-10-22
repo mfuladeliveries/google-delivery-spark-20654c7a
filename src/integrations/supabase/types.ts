@@ -2253,6 +2253,15 @@ export type Database = {
         Returns: boolean
       }
       driver_decline_offer: { Args: { p_order_id: string }; Returns: undefined }
+      driver_pickup_location: {
+        Args: { p_order_id: string }
+        Returns: {
+          address: string
+          branch_name: string
+          lat: number
+          lng: number
+        }[]
+      }
       driver_pin_override_status: {
         Args: { p_order_id: string }
         Returns: string

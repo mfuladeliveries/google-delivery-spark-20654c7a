@@ -47,19 +47,32 @@ export const setSelectedAreaId = (areaId: string | null): void => {
   }
 };
 
-const orderable = (l: RestaurantLocation) =>
-  l.active && l.delivery_enabled && l.is_open !== false;
+/** A branch customers can order from: switched on, open, and with a real map location. */
+export const orderable = (l: RestaurantLocation) =>
+  l.active && l.delivery_enabled && l.is_open !== false && l.lat != null && l.lng != null;
 
-/** The branch of `restaurantId` that serves `areaId` (null when none does). */
+const sq = (n: number) => n * n;
+
+/**
+ * The branch of `restaurantId` that serves `areaId` (null when none does).
+ * With several branches in one area, the one nearest the customer wins.
+ */
 export const branchForArea = (
   locations: RestaurantLocation[],
   restaurantId: string,
   areaId: string | null,
+  customer?: { lat: number; lng: number } | null,
 ): RestaurantLocation | null => {
   if (!areaId) return null;
-  return (
-    locations.find((l) => l.restaurant_id === restaurantId && l.area_id === areaId && orderable(l)) ??
-    null
+  const matches = locations.filter(
+    (l) => l.restaurant_id === restaurantId && l.area_id === areaId && orderable(l),
+  );
+  if (matches.length <= 1 || !customer) return matches[0] ?? null;
+  return matches.reduce((best, l) =>
+    sq(l.lat! - customer.lat) + sq(l.lng! - customer.lng) <
+    sq(best.lat! - customer.lat) + sq(best.lng! - customer.lng)
+      ? l
+      : best,
   );
 };
 

@@ -81,6 +81,17 @@ const openGoogleMaps = (address: string, lat?: number | null, lng?: number | nul
   );
 };
 
+/** Opens directions to the exact branch chosen for this order. */
+const openPickupDirections = async (orderId: string, fallbackName: string) => {
+  const { data } = await supabase.rpc("driver_pickup_location", { p_order_id: orderId });
+  const loc = Array.isArray(data) ? data[0] : null;
+  if (!loc) {
+    toast.error("Pickup location not available");
+    return;
+  }
+  openGoogleMaps(loc.address || fallbackName, loc.lat, loc.lng);
+};
+
 // Progress steps based on status
 const STEPS = [
   { key: "driver_assigned", label: "Assigned", icon: Package },
@@ -356,6 +367,18 @@ const DriverActiveDelivery = ({
                 >
                   <XCircle className="h-4 w-4" />
                   Cancel — Item Not Available
+                </button>
+              )}
+
+              {/* Pickup directions — the order's branch, not the brand's main address */}
+              {(order.status === "driver_assigned" || order.status === "picking_up") && (
+                <button
+                  onClick={() => openPickupDirections(order.id, order.restaurant)}
+                  className="flex w-full items-center gap-3 rounded-2xl bg-[hsl(var(--driver-warning)/0.08)] border border-[hsl(var(--driver-warning)/0.2)] px-4 py-3.5 text-sm font-semibold text-[hsl(var(--driver-warning))] transition-colors"
+                >
+                  <Store className="h-5 w-5" />
+                  <span className="flex-1 text-left truncate">Directions to restaurant</span>
+                  <ExternalLink className="h-4 w-4 shrink-0" />
                 </button>
               )}
 

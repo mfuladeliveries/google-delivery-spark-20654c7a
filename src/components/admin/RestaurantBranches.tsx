@@ -208,6 +208,11 @@ const RestaurantBranches = ({
                       {b.branch_name || "Unnamed branch"}
                     </p>
                     <p className="text-[11px] text-primary font-semibold">🗺️ {areaName(b.area_id)}</p>
+                    {(b.lat == null || b.lng == null) && (
+                      <p className="text-[11px] font-semibold text-destructive">
+                        ⚠️ No map location — customers can't see this branch until you add it
+                      </p>
+                    )}
                     {b.address && (
                       <p className="truncate text-[11px] text-muted-foreground">{b.address}</p>
                     )}
