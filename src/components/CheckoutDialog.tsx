@@ -510,22 +510,19 @@ const CheckoutDialog = ({
     const trimmedStreet = address.trim();
     const fullAddress = trimmedUnit ? `${trimmedUnit} ${trimmedStreet}` : trimmedStreet;
 
+    // House/unit number is required and must be valid (e.g. "12A", "Unit 3", "B-4").
+    const unitError = houseUnitValidationError(trimmedUnit);
+    if (unitError) {
+      toast.error(unitError);
+      setValidationErrors((prev) => ({ ...prev, address: unitError }));
+      return;
+    }
+
     if (!fullAddress) {
       toast.error("Please enter your delivery address.");
       setValidationErrors((prev) => ({
         ...prev,
         address: 'Delivery address is required, e.g. "12 Oak Street, Khayelitsha".',
-      }));
-      return;
-    }
-
-    // House/unit number must be alphanumeric (allows things like "12A", "Unit 3", "B-4").
-    if (trimmedUnit && !/^[A-Za-z0-9\s\-/#]{1,20}$/.test(trimmedUnit)) {
-      toast.error("House/unit number contains invalid characters.");
-      setValidationErrors((prev) => ({
-        ...prev,
-        address:
-          'House/unit number can only contain letters, numbers, spaces, and - / # (e.g. "12A", "Unit 3", "B-4").',
       }));
       return;
     }
@@ -1005,7 +1002,7 @@ const CheckoutDialog = ({
               inputMode="text"
               value={houseNumber}
               onChange={(e) => setHouseNumber(e.target.value.slice(0, 20))}
-              placeholder='House / unit number (optional) — e.g. "12A" or "Unit 3"'
+              placeholder='House / unit number (required) — e.g. "12A" or "Unit 3"'
               aria-label="House or unit number"
               className="mb-2 w-full rounded-xl border border-border bg-card px-4 py-2.5 text-sm text-card-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
             />

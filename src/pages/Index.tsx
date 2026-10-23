@@ -676,7 +676,7 @@ const Index = () => {
                     inputMode="text"
                     value={houseNumber}
                     onChange={(e) => setHouseNumber(e.target.value.slice(0, 20))}
-                    placeholder="House / unit number (optional)"
+                    placeholder="House / unit number (required)"
                     aria-label="House or unit number"
                     className="mb-2 w-full rounded-xl border border-border bg-card px-3 py-2.5 text-sm text-card-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
                   />
