@@ -19,6 +19,7 @@ import {
   Clock as ClockIcon,
 } from "lucide-react";
 import { isRestaurantOpen } from "@/lib/restaurantHours";
+import { houseUnitValidationError, HOUSE_UNIT_REQUIRED_MESSAGE } from "@/lib/addressValidation";
 import { supabase } from "@/integrations/supabase/client";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";

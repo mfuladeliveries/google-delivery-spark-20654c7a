@@ -21,6 +21,7 @@ import {
 import { CartItem, isCompanionStore } from "@/hooks/useCart";
 import { storeInfo } from "@/data/menu";
 import { generateDeliveryPin } from "@/lib/deliveryPin";
+import { houseUnitValidationError } from "@/lib/addressValidation";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useCustomerCredits } from "@/hooks/useCustomerCredits";
