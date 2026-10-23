@@ -19,7 +19,7 @@ import {
   Clock as ClockIcon,
 } from "lucide-react";
 import { isRestaurantOpen } from "@/lib/restaurantHours";
-import { houseUnitValidationError, HOUSE_UNIT_REQUIRED_MESSAGE } from "@/lib/addressValidation";
+import { houseUnitValidationError } from "@/lib/addressValidation";
 import { supabase } from "@/integrations/supabase/client";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -688,8 +688,13 @@ const Index = () => {
                       if (confirmingCancel) setConfirmingCancel(false);
                     }}
                     onSelect={(addr) => {
+                      const unitError = houseUnitValidationError(houseNumber);
+                      if (unitError) {
+                        toast.error(unitError);
+                        return;
+                      }
                       const unit = houseNumber.trim();
-                      const finalAddress = unit ? `${unit} ${addr.address}` : addr.address;
+                      const finalAddress = `${unit} ${addr.address}`;
                       const merged = { ...addr, address: finalAddress };
                       setManualAddress(merged);
                       persistManual(merged);
@@ -746,7 +751,7 @@ const Index = () => {
                     );
                   })()}
                   <p className="mt-2 text-[11px] text-muted-foreground">
-                    Add your house number above, then pick a street suggestion to{" "}
+                    Enter your house number above, then pick a street suggestion to{" "}
                     {manualAddress ? "replace your saved address" : "see restaurants"} within {DELIVERY_RADIUS_KM} km.
                   </p>
                   {confirmingCancel ? (
