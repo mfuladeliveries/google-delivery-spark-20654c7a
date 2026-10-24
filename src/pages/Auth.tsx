@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable/index";
-import { useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { storeInfo } from "@/data/menu";
 import { getHomeRouteForRoles } from "@/lib/homeRoute";
@@ -18,6 +19,8 @@ const safeNextPath = (): string | null => {
 };
 
 const Auth = () => {
+  const location = useLocation();
+  const restaurantLogin = location.pathname === "/restaurant/login";
   const [isLogin, setIsLogin] = useState(true);
   const [showOtp, setShowOtp] = useState(false);
   const [email, setEmail] = useState("");
@@ -195,7 +198,7 @@ const Auth = () => {
             {storeInfo.name}
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            {isLogin ? "Sign in to place your order" : "Create an account to get started"}
+            {restaurantLogin ? "Restaurant sign in" : isLogin ? "Sign in to place your order" : "Create an account to get started"}
           </p>
         </div>
 
@@ -366,7 +369,11 @@ const Auth = () => {
                 Continue with Google
               </button>
 
-              <p className="mt-6 text-center text-sm text-muted-foreground">
+              {restaurantLogin ? (
+                <p className="mt-6 text-center text-sm text-muted-foreground">
+                  Restaurant accounts are set up by Mfula Deliveries admin.
+                </p>
+              ) : <p className="mt-6 text-center text-sm text-muted-foreground">
                 {isLogin ? "Don't have an account?" : "Already have an account?"}{" "}
                 <button
                   onClick={() => {
@@ -378,7 +385,12 @@ const Auth = () => {
                 >
                   {isLogin ? "Sign Up" : "Sign In"}
                 </button>
-              </p>
+              </p>}
+              <Button asChild variant="link" className="mt-2 w-full">
+                <Link to={restaurantLogin ? "/auth" : "/restaurant/login"}>
+                  {restaurantLogin ? "Customer sign in" : "Restaurant sign in"}
+                </Link>
+              </Button>
             </>
           )}
         </div>

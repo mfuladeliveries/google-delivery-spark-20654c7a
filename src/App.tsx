@@ -85,6 +85,7 @@ const App = () => (
                 }
               />
               <Route path="/auth" element={<Auth />} />
+              <Route path="/restaurant/login" element={<Auth />} />
               <Route path="/forgot-password" element={<ForgotPassword />} />
               <Route path="/reset-password" element={<ResetPassword />} />
               <Route
@@ -127,7 +128,7 @@ const App = () => (
                   <RoleGuard
                     allow={["restaurant", "admin"]}
                     requireAuth
-                    redirectUnauthedTo="/auth"
+                    redirectUnauthedTo="/restaurant/login"
                     loadingLabel="Loading restaurant dashboard…"
                   >
                     <RestaurantDashboard />
@@ -148,7 +149,7 @@ const App = () => (
                   <RoleGuard
                     allow={["restaurant", "admin"]}
                     requireAuth
-                    redirectUnauthedTo="/auth"
+                    redirectUnauthedTo="/restaurant/login"
                     loadingLabel="Loading restaurant dashboard…"
                   >
                     <RestaurantDashboard />
@@ -161,7 +162,7 @@ const App = () => (
                   <RoleGuard
                     allow={["restaurant", "admin"]}
                     requireAuth
-                    redirectUnauthedTo="/auth"
+                    redirectUnauthedTo="/restaurant/login"
                     loadingLabel="Loading restaurant dashboard…"
                   >
                     <RestaurantDashboard />
