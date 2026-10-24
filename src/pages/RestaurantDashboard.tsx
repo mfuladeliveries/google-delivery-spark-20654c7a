@@ -228,7 +228,7 @@ const RestaurantDashboard = () => {
           });
         }
         if (restaurant?.id) {
-          fetchOrdersFor(restaurant.id);
+          void fetchOrdersFor(restaurant.id).catch(() => {});
         } else if (role === "admin") {
           fetchOrders();
         }

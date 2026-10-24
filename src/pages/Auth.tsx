@@ -36,6 +36,15 @@ const Auth = () => {
   const { user, roles, loading: authLoading } = useAuth();
 
   useEffect(() => {
+    if (restaurantLogin) {
+      setIsLogin(true);
+      setShowOtp(false);
+      setError("");
+      setMessage("");
+    }
+  }, [restaurantLogin]);
+
+  useEffect(() => {
     if (resendCooldown <= 0) return;
     const t = setInterval(() => setResendCooldown((s) => (s > 0 ? s - 1 : 0)), 1000);
     return () => clearInterval(t);
