@@ -1,3 +1,9 @@
+# Restaurant login and orders
+- [x] Add a clear restaurant login within the same app, retaining admin-led account setup.
+- [x] Improve restaurant order decisions, loading feedback, navigation, refresh and sign-out without changing payments.
+- [x] Pass four focused tests and browser checks for restaurant login and protected-route redirects; preview build passes.
+- [ ] Verify real restaurant sign-in, assigned restaurant visibility and order accept/preparing/ready readback — blocked by unreachable Cloud database and failed authorized session mint; no orders or payments changed.
+
 # KFC menu pictures
 - [x] Match existing KFC products to permitted official pictures or neutral placeholders (official reuse permission unavailable).
 - [x] Update only KFC image fields using existing storage.

@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, useLocation, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import {
@@ -21,6 +21,8 @@ import {
   Pencil,
   Save,
   X,
+  LogOut,
+  RefreshCw,
 } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
 import { toast } from "sonner";
@@ -33,6 +35,7 @@ import FoodImageUpload from "@/components/FoodImageUpload";
 import InstallAppButton from "@/components/InstallAppButton";
 import RestaurantEarnings from "@/components/restaurant/RestaurantEarnings";
 import RestaurantPerformance from "@/components/restaurant/RestaurantPerformance";
+import { restaurantNeedsDecision, nextRestaurantStatus, canRestaurantTransition } from "@/lib/restaurantOrderActions";
 
 interface Order {
   id: string;
@@ -75,6 +78,8 @@ interface RestaurantOption {
 }
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string; icon: string }> = {
+  awaiting_restaurant: { label: "Awaiting acceptance", color: "text-primary", bg: "bg-primary/10 border-primary/20", icon: "🕐" },
+  pending_payment: { label: "Awaiting payment", color: "text-muted-foreground", bg: "bg-muted border-border", icon: "🕐" },
   pending: { label: "Pending", color: "text-muted-foreground", bg: "bg-muted", icon: "🕐" },
   confirmed: {
     label: "Accepted",
@@ -126,10 +131,11 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string; 
   },
 };
 
-const statusFlow = ["confirmed", "preparing", "ready"];
+
 
 const RestaurantDashboard = () => {
-  const { user, role, loading: authLoading } = useAuth();
+  const { user, role, loading: authLoading, signOut } = useAuth();
+  const location = useLocation();
   const navigate = useNavigate();
   const [tab, setTab] = useState<"orders" | "menu" | "earnings" | "performance">("orders");
   const [orders, setOrders] = useState<Order[]>([]);
@@ -155,6 +161,9 @@ const RestaurantDashboard = () => {
   });
   const [savingEdit, setSavingEdit] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [loadError, setLoadError] = useState("");
+  const [updatingOrders, setUpdatingOrders] = useState<Set<string>>(new Set());
+  const orderLocks = useRef(new Set<string>());
   const prevOrderCountRef = useRef(0);
 
   // Filters
@@ -197,17 +206,21 @@ const RestaurantDashboard = () => {
   }, []);
 
   useEffect(() => {
-    if (!user) return;
-    fetchAll();
-  }, [user]);
+    if (authLoading || !user || !["restaurant", "admin"].includes(role ?? "")) return;
+    void fetchAll();
+  }, [user?.id, role, authLoading]);
+
+  useEffect(() => {
+    setTab(location.pathname.endsWith("/menu") ? "menu" : "orders");
+  }, [location.pathname]);
 
   // Realtime subscription - updates when restaurant changes
   useEffect(() => {
-    if (!user) return;
+    if (!user || !restaurant?.id) return;
 
     const channel = supabase
-      .channel("restaurant-orders")
-      .on("postgres_changes", { event: "*", schema: "public", table: "orders" }, (payload) => {
+      .channel(`restaurant-orders-${restaurant?.id}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "orders", filter: `restaurant_id=eq.${restaurant.id}` }, (payload) => {
         if (payload.eventType === "INSERT") {
           playNotificationSound();
           toast.info("🔔 New Order!", {
@@ -215,7 +228,7 @@ const RestaurantDashboard = () => {
           });
         }
         if (restaurant?.id) {
-          fetchOrdersFor(restaurant.id);
+          void fetchOrdersFor(restaurant.id).catch(() => {});
         } else if (role === "admin") {
           fetchOrders();
         }
@@ -228,29 +241,24 @@ const RestaurantDashboard = () => {
   }, [user, restaurant?.id]);
 
   const fetchAll = async () => {
-    const { data: restList } = await supabase
-      .from("restaurants")
-      .select("id, name")
-      .eq("owner_user_id", user!.id)
-      .order("name");
-
-    if (restList && restList.length > 0) {
-      setAllRestaurants(restList);
-      const first = restList[0];
-      setRestaurant(first as Restaurant);
-      await Promise.all([fetchOrdersFor(first.id), fetchMenuFor(first.id)]);
-    } else if (role === "admin") {
-      // Admin without restaurant ownership - fetch all
-      const { data: allRest } = await supabase.from("restaurants").select("id, name").order("name");
-      if (allRest && allRest.length > 0) {
-        setAllRestaurants(allRest);
-        setRestaurant(allRest[0] as Restaurant);
-        await Promise.all([fetchOrdersFor(allRest[0].id), fetchMenuFor(allRest[0].id)]);
-      } else {
-        await fetchOrders();
-      }
+    if (!user) return;
+    setLoading(true);
+    setLoadError("");
+    try {
+      let query = supabase.from("restaurants").select("id, name").eq("is_active", true).order("name");
+      if (role !== "admin") query = query.eq("owner_user_id", user.id);
+      const { data, error } = await query;
+      if (error) throw error;
+      setAllRestaurants(data ?? []);
+      const selected = data?.find((r) => r.id === restaurant?.id) ?? data?.[0];
+      setRestaurant(selected ?? null);
+      if (selected) await Promise.all([fetchOrdersFor(selected.id), fetchMenuFor(selected.id)]);
+      else { setOrders([]); setMenuItems([]); }
+    } catch {
+      setLoadError("Couldn't load your restaurant. Please try again.");
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   const switchRestaurant = async (restId: string) => {
@@ -258,8 +266,11 @@ const RestaurantDashboard = () => {
     if (!selected) return;
     setRestaurant(selected as Restaurant);
     setLoading(true);
-    await Promise.all([fetchOrdersFor(selected.id), fetchMenuFor(selected.id)]);
-    setLoading(false);
+    try {
+      setLoadError("");
+      await Promise.all([fetchOrdersFor(selected.id), fetchMenuFor(selected.id)]);
+    } catch { setLoadError("Couldn’t load this restaurant. Please try again."); }
+    finally { setLoading(false); }
   };
 
   const fetchOrders = async () => {
@@ -271,11 +282,12 @@ const RestaurantDashboard = () => {
   };
 
   const fetchOrdersFor = async (restaurantId: string) => {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from("orders")
       .select("*")
       .eq("restaurant_id", restaurantId)
       .order("created_at", { ascending: false });
+    if (error) { setLoadError("Couldn’t load orders. Please refresh."); throw error; }
     if (data) setOrders(data.map((o) => ({ ...o, items: (o.items as any[]) || [] })));
   };
 
@@ -291,6 +303,10 @@ const RestaurantDashboard = () => {
   const updateOrderStatus = async (orderId: string, status: string) => {
     const order = orders.find((o) => o.id === orderId);
     const oldStatus = order?.status;
+    if (!oldStatus || !canRestaurantTransition(oldStatus, status)) {
+      toast.error("This action is no longer available. Refresh the order.");
+      return false;
+    }
 
     // Don't touch orders that have already reached a terminal state — an
     // update here is either a stale click from a second tab/device or a
@@ -298,7 +314,7 @@ const RestaurantDashboard = () => {
     // silently revert an order that's already delivered/cancelled/rejected.
     if (oldStatus && ["delivered", "cancelled", "rejected"].includes(oldStatus)) {
       toast.error(`Order #${order?.order_number ?? ""} is already ${oldStatus} and can't be changed.`);
-      return;
+      return false;
     }
 
     // Optimistic-lock the write with the status we last saw, and read back
@@ -311,15 +327,15 @@ const RestaurantDashboard = () => {
     if (updateError) {
       console.error("Failed to update order status:", updateError);
       toast.error(`Couldn't update order #${order?.order_number ?? ""}: ${updateError.message}`);
-      return;
+      return false;
     }
     if (!updatedRows || updatedRows.length === 0) {
       // Someone else already changed this order's status since we last loaded it.
       toast.error(
         `Order #${order?.order_number ?? ""} was already updated elsewhere. Refreshing…`,
       );
-      if (restaurant?.id) fetchOrdersFor(restaurant.id);
-      return;
+      if (restaurant?.id) void fetchOrdersFor(restaurant.id).catch(() => {});
+      return false;
     }
 
     setOrders((prev) => prev.map((o) => (o.id === orderId ? { ...o, status } : o)));
@@ -349,6 +365,16 @@ const RestaurantDashboard = () => {
         old_status: oldStatus || null,
       });
     }
+    return true;
+  };
+
+  const runOrderAction = async (orderId: string, action: () => Promise<unknown>) => {
+    if (orderLocks.current.has(orderId)) return;
+    orderLocks.current.add(orderId);
+    setUpdatingOrders(new Set(orderLocks.current));
+    try { await action(); }
+    catch { toast.error("Couldn’t update this order. Please refresh and try again."); }
+    finally { orderLocks.current.delete(orderId); setUpdatingOrders(new Set(orderLocks.current)); }
   };
 
   const acceptOrder = async (orderId: string) => {
@@ -379,8 +405,7 @@ const RestaurantDashboard = () => {
       });
       return;
     }
-    await updateOrderStatus(orderId, "confirmed");
-    toast.success("✅ Order accepted!");
+    if (await updateOrderStatus(orderId, "confirmed")) toast.success("Order accepted!");
   };
 
   const rejectOrder = async (orderId: string) => {
@@ -408,14 +433,7 @@ const RestaurantDashboard = () => {
       });
       return;
     }
-    await updateOrderStatus(orderId, "rejected");
-    toast.error("Order rejected");
-  };
-
-  const getNextStatus = (current: string) => {
-    const idx = statusFlow.indexOf(current);
-    if (idx >= 0 && idx < statusFlow.length - 1) return statusFlow[idx + 1];
-    return null;
+    if (await updateOrderStatus(orderId, "rejected")) toast.success("Order rejected");
   };
 
   const addMenuItem = async () => {
@@ -500,7 +518,7 @@ const RestaurantDashboard = () => {
   // never actually set by the order-creation/payment flow, so it's kept here
   // only for backward compatibility with any very old rows).
   const pendingOrders = useMemo(
-    () => orders.filter((o) => o.status === "pending" || o.status === "confirmed"),
+    () => orders.filter((o) => restaurantNeedsDecision(o.status)),
     [orders],
   );
   const inProgressOrders = useMemo(
@@ -621,7 +639,7 @@ const RestaurantDashboard = () => {
     <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="sticky top-0 z-50 border-b border-border bg-card/95 backdrop-blur-xl shadow-card">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
+        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-3">
           <div className="flex items-center gap-2">
             <div className="flex items-center gap-2">
               <div className="flex h-9 w-9 items-center justify-center rounded-xl gradient-orange shadow-orange">
@@ -649,10 +667,14 @@ const RestaurantDashboard = () => {
               </div>
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <Button variant="ghost" size="icon" aria-label="Refresh orders" onClick={() => void fetchAll()}><RefreshCw className="h-4 w-4" /></Button>
+            <Button variant="ghost" size="icon" aria-label="Sign out" onClick={async () => { await signOut(); navigate("/restaurant/login"); }}><LogOut className="h-4 w-4" /></Button>
             <InstallAppButton variant="restaurant" compact />
             {(["orders", "menu", "earnings", "performance"] as const).map((t) => (
-              <button
+              <Button
+                variant={tab === t ? "default" : "ghost"}
+                size="sm"
                 key={t}
                 onClick={() => setTab(t)}
                 className={`rounded-lg px-3 py-1.5 text-xs font-semibold capitalize transition-colors ${
@@ -662,13 +684,15 @@ const RestaurantDashboard = () => {
                 }`}
               >
                 {t === "orders" ? "Orders" : t === "menu" ? "Menu" : t === "earnings" ? "Earnings" : "Performance"}
-              </button>
+              </Button>
             ))}
           </div>
         </div>
       </header>
 
       <main className="mx-auto max-w-6xl px-4 py-4 pb-nav md:pb-8">
+        {loadError && <div role="alert" className="mb-4 flex items-center justify-between gap-2 border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive"><p>{loadError}</p><Button variant="outline" size="sm" onClick={() => void fetchAll()}>Retry</Button></div>}
+        {!restaurant && !loadError && <p className="py-6 text-center text-muted-foreground">No restaurant linked to your login. Ask Mfula Deliveries admin to link your restaurant.</p>}
         {tab === "orders" && (
           <div className="space-y-4">
             {/* Metrics Grid */}
@@ -809,7 +833,9 @@ const RestaurantDashboard = () => {
                   // "confirmed" is where a freshly-paid order actually lands
                   // (see pendingOrders above) — it needs the same "NEW" call
                   // to action as the legacy "pending" status.
-                  const isPending = order.status === "pending" || order.status === "confirmed";
+                  const isPending = restaurantNeedsDecision(order.status);
+                  const nextStatus = nextRestaurantStatus(order.status);
+                  const busy = updatingOrders.has(order.id);
 
                   return (
                     <Card
@@ -943,8 +969,7 @@ const RestaurantDashboard = () => {
 
                         {/* Action Buttons */}
                         <div className="p-4">
-                          {(order.status === "pending" ||
-                            order.status === "awaiting_restaurant") && (
+                          {restaurantNeedsDecision(order.status) && (
                             <>
                               {order.status === "awaiting_restaurant" && (
                                 <div className="mb-2 flex items-center gap-2 rounded-lg bg-amber-50 border border-amber-200 px-3 py-2">
@@ -955,7 +980,8 @@ const RestaurantDashboard = () => {
                               )}
                               <div className="flex gap-2">
                                 <Button
-                                  onClick={() => acceptOrder(order.id)}
+                                  disabled={busy}
+                                  onClick={() => void runOrderAction(order.id, () => acceptOrder(order.id))}
                                   className="flex-1 gradient-orange text-primary-foreground shadow-orange h-12 text-sm font-display"
                                 >
                                   <CheckCircle className="h-5 w-5 mr-1.5" />{" "}
@@ -965,7 +991,8 @@ const RestaurantDashboard = () => {
                                 </Button>
                                 <Button
                                   variant="outline"
-                                  onClick={() => rejectOrder(order.id)}
+                                  disabled={busy}
+                                  onClick={() => void runOrderAction(order.id, () => rejectOrder(order.id))}
                                   className="flex-1 border-destructive/30 text-destructive hover:bg-destructive/10 h-12 text-sm font-display"
                                 >
                                   <XCircle className="h-5 w-5 mr-1.5" /> Reject
@@ -976,11 +1003,10 @@ const RestaurantDashboard = () => {
 
                           {["confirmed", "preparing"].includes(order.status) && (
                             <div className="flex gap-2">
-                              {getNextStatus(order.status) && (
+                              {nextStatus && (
                                 <Button
-                                  onClick={() =>
-                                    updateOrderStatus(order.id, getNextStatus(order.status)!)
-                                  }
+                                  disabled={busy}
+                                  onClick={() => void runOrderAction(order.id, () => updateOrderStatus(order.id, nextStatus))}
                                   className="flex-1 gradient-orange text-primary-foreground shadow-orange h-12 text-sm font-display"
                                 >
                                   {order.status === "confirmed"
@@ -988,13 +1014,7 @@ const RestaurantDashboard = () => {
                                     : "📦 Ready for Pickup"}
                                 </Button>
                               )}
-                              <Button
-                                variant="outline"
-                                onClick={() => updateOrderStatus(order.id, "cancelled")}
-                                className="border-destructive/30 text-destructive hover:bg-destructive/10 h-12 px-4"
-                              >
-                                <XCircle className="h-4 w-4" />
-                              </Button>
+
                             </div>
                           )}
 
