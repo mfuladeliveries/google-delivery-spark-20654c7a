@@ -79,6 +79,10 @@ interface MenuItem {
 interface Restaurant {
   id: string;
   name: string;
+  is_open?: boolean;
+  opens_at?: string | null;
+  closes_at?: string | null;
+  operating_days?: unknown;
 }
 
 interface RestaurantOption {
@@ -146,7 +150,7 @@ const RestaurantDashboard = () => {
   const { user, role, loading: authLoading, signOut } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
-  const [tab, setTab] = useState<"orders" | "menu" | "earnings" | "performance">("orders");
+  const [tab, setTab] = useState<"orders" | "menu" | "earnings" | "performance" | "kitchen">("orders");
   const [orders, setOrders] = useState<Order[]>([]);
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [restaurant, setRestaurant] = useState<Restaurant | null>(null);
