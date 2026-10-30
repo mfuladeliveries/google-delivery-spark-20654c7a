@@ -179,6 +179,18 @@ const RestaurantDashboard = () => {
   const orderLocks = useRef(new Set<string>());
   const prevOrderCountRef = useRef(0);
 
+  // Reject-with-reason dialog
+  const [rejectingOrderId, setRejectingOrderId] = useState<string | null>(null);
+  const [rejectReason, setRejectReason] = useState<string>("");
+  const [rejectCustom, setRejectCustom] = useState("");
+
+  // Kitchen status settings
+  const [kitchenOpen, setKitchenOpen] = useState(true);
+  const [opensAt, setOpensAt] = useState("");
+  const [closesAt, setClosesAt] = useState("");
+  const [operatingDays, setOperatingDays] = useState<string[]>([]);
+  const [savingKitchen, setSavingKitchen] = useState(false);
+
   // Filters
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
@@ -258,14 +270,17 @@ const RestaurantDashboard = () => {
     setLoading(true);
     setLoadError("");
     try {
-      let query = supabase.from("restaurants").select("id, name").eq("is_active", true).order("name");
+      let query = supabase.from("restaurants").select("id, name, is_open, opens_at, closes_at, operating_days").eq("is_active", true).order("name");
       if (role !== "admin") query = query.eq("owner_user_id", user.id);
       const { data, error } = await query;
       if (error) throw error;
       setAllRestaurants(data ?? []);
       const selected = data?.find((r) => r.id === restaurant?.id) ?? data?.[0];
       setRestaurant(selected ?? null);
-      if (selected) await Promise.all([fetchOrdersFor(selected.id), fetchMenuFor(selected.id)]);
+      if (selected) {
+        applyKitchenSettings(selected);
+        await Promise.all([fetchOrdersFor(selected.id), fetchMenuFor(selected.id)]);
+      }
       else { setOrders([]); setMenuItems([]); }
     } catch {
       setLoadError("Couldn't load your restaurant. Please try again.");
