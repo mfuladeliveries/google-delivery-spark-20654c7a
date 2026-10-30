@@ -2171,6 +2171,42 @@ const RestaurantCard = ({
   const [opensAt, setOpensAt] = useState("");
   const [closesAt, setClosesAt] = useState("");
   const [savingHours, setSavingHours] = useState(false);
+  const [newLoginEmail, setNewLoginEmail] = useState("");
+  const [newLoginPassword, setNewLoginPassword] = useState("");
+  const [newLoginName, setNewLoginName] = useState("");
+  const [newLoginContact, setNewLoginContact] = useState("");
+  const [creatingLogin, setCreatingLogin] = useState(false);
+
+  const handleCreateLogin = async () => {
+    if (!newLoginEmail.trim()) {
+      toast.error("Email is required for the restaurant login");
+      return;
+    }
+    if (newLoginPassword.trim().length < 6) {
+      toast.error("Password must be at least 6 characters");
+      return;
+    }
+    setCreatingLogin(true);
+    try {
+      await adminCreateUser({
+        email: newLoginEmail.trim(),
+        password: newLoginPassword.trim(),
+        full_name: newLoginName.trim() || r.name,
+        contact_number: newLoginContact.trim(),
+        role: "restaurant",
+        restaurant_id: r.id,
+      });
+      toast.success(`🔐 Login created for ${r.name}: ${newLoginEmail.trim()}`);
+      setNewLoginEmail("");
+      setNewLoginPassword("");
+      setNewLoginName("");
+      setNewLoginContact("");
+      onRestaurantChanged();
+    } catch (err: any) {
+      toast.error(err.message || "Failed to create login");
+    }
+    setCreatingLogin(false);
+  };
 
   const handleSaveHours = async () => {
     // Allow clearing both fields to remove hours
