@@ -289,10 +289,18 @@ const RestaurantDashboard = () => {
     }
   };
 
+  const applyKitchenSettings = (r: Restaurant) => {
+    setKitchenOpen(r.is_open !== false);
+    setOpensAt(r.opens_at ?? "");
+    setClosesAt(r.closes_at ?? "");
+    setOperatingDays(Array.isArray(r.operating_days) ? (r.operating_days as string[]) : []);
+  };
+
   const switchRestaurant = async (restId: string) => {
     const selected = allRestaurants.find((r) => r.id === restId);
     if (!selected) return;
     setRestaurant(selected as Restaurant);
+    applyKitchenSettings(selected as Restaurant);
     setLoading(true);
     try {
       setLoadError("");
@@ -436,13 +444,31 @@ const RestaurantDashboard = () => {
     if (await updateOrderStatus(orderId, "confirmed")) toast.success("Order accepted!");
   };
 
-  const rejectOrder = async (orderId: string) => {
+  const openRejectDialog = (orderId: string) => {
+    setRejectingOrderId(orderId);
+    setRejectReason("");
+    setRejectCustom("");
+  };
+
+  const confirmReject = async () => {
+    if (!rejectingOrderId) return;
+    const reason = resolveRejectionReason(rejectReason, rejectCustom);
+    if (!reason) {
+      toast.error("Please choose or type a reason for rejecting this order.");
+      return;
+    }
+    const orderId = rejectingOrderId;
+    setRejectingOrderId(null);
+    await runOrderAction(orderId, () => rejectOrder(orderId, reason));
+  };
+
+  const rejectOrder = async (orderId: string, reason: string) => {
     const order = orders.find((o) => o.id === orderId);
     if (order?.status === "awaiting_restaurant") {
       const { error } = await supabase.rpc("restaurant_decide_availability", {
         p_order_id: orderId,
         p_accept: false,
-        p_reason: "Restaurant unable to fulfil order",
+        p_reason: reason,
       });
       if (error) {
         toast.error("Couldn't reject: " + error.message);
