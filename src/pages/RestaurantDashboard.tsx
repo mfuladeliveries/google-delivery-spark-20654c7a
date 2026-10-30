@@ -35,7 +35,16 @@ import FoodImageUpload from "@/components/FoodImageUpload";
 import InstallAppButton from "@/components/InstallAppButton";
 import RestaurantEarnings from "@/components/restaurant/RestaurantEarnings";
 import RestaurantPerformance from "@/components/restaurant/RestaurantPerformance";
-import { restaurantNeedsDecision, nextRestaurantStatus, canRestaurantTransition } from "@/lib/restaurantOrderActions";
+import { restaurantNeedsDecision, nextRestaurantStatus, canRestaurantTransition, REJECTION_REASONS, resolveRejectionReason } from "@/lib/restaurantOrderActions";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Switch } from "@/components/ui/switch";
 
 interface Order {
   id: string;
@@ -70,6 +79,10 @@ interface MenuItem {
 interface Restaurant {
   id: string;
   name: string;
+  is_open?: boolean;
+  opens_at?: string | null;
+  closes_at?: string | null;
+  operating_days?: unknown;
 }
 
 interface RestaurantOption {
@@ -137,7 +150,7 @@ const RestaurantDashboard = () => {
   const { user, role, loading: authLoading, signOut } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
-  const [tab, setTab] = useState<"orders" | "menu" | "earnings" | "performance">("orders");
+  const [tab, setTab] = useState<"orders" | "menu" | "earnings" | "performance" | "kitchen">("orders");
   const [orders, setOrders] = useState<Order[]>([]);
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [restaurant, setRestaurant] = useState<Restaurant | null>(null);
@@ -165,6 +178,18 @@ const RestaurantDashboard = () => {
   const [updatingOrders, setUpdatingOrders] = useState<Set<string>>(new Set());
   const orderLocks = useRef(new Set<string>());
   const prevOrderCountRef = useRef(0);
+
+  // Reject-with-reason dialog
+  const [rejectingOrderId, setRejectingOrderId] = useState<string | null>(null);
+  const [rejectReason, setRejectReason] = useState<string>("");
+  const [rejectCustom, setRejectCustom] = useState("");
+
+  // Kitchen status settings
+  const [kitchenOpen, setKitchenOpen] = useState(true);
+  const [opensAt, setOpensAt] = useState("");
+  const [closesAt, setClosesAt] = useState("");
+  const [operatingDays, setOperatingDays] = useState<string[]>([]);
+  const [savingKitchen, setSavingKitchen] = useState(false);
 
   // Filters
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -245,14 +270,17 @@ const RestaurantDashboard = () => {
     setLoading(true);
     setLoadError("");
     try {
-      let query = supabase.from("restaurants").select("id, name").eq("is_active", true).order("name");
+      let query = supabase.from("restaurants").select("id, name, is_open, opens_at, closes_at, operating_days").eq("is_active", true).order("name");
       if (role !== "admin") query = query.eq("owner_user_id", user.id);
       const { data, error } = await query;
       if (error) throw error;
       setAllRestaurants(data ?? []);
       const selected = data?.find((r) => r.id === restaurant?.id) ?? data?.[0];
       setRestaurant(selected ?? null);
-      if (selected) await Promise.all([fetchOrdersFor(selected.id), fetchMenuFor(selected.id)]);
+      if (selected) {
+        applyKitchenSettings(selected);
+        await Promise.all([fetchOrdersFor(selected.id), fetchMenuFor(selected.id)]);
+      }
       else { setOrders([]); setMenuItems([]); }
     } catch {
       setLoadError("Couldn't load your restaurant. Please try again.");
@@ -261,10 +289,18 @@ const RestaurantDashboard = () => {
     }
   };
 
+  const applyKitchenSettings = (r: Restaurant) => {
+    setKitchenOpen(r.is_open !== false);
+    setOpensAt(r.opens_at ?? "");
+    setClosesAt(r.closes_at ?? "");
+    setOperatingDays(Array.isArray(r.operating_days) ? (r.operating_days as string[]) : []);
+  };
+
   const switchRestaurant = async (restId: string) => {
     const selected = allRestaurants.find((r) => r.id === restId);
     if (!selected) return;
     setRestaurant(selected as Restaurant);
+    applyKitchenSettings(selected as Restaurant);
     setLoading(true);
     try {
       setLoadError("");
@@ -408,13 +444,31 @@ const RestaurantDashboard = () => {
     if (await updateOrderStatus(orderId, "confirmed")) toast.success("Order accepted!");
   };
 
-  const rejectOrder = async (orderId: string) => {
+  const openRejectDialog = (orderId: string) => {
+    setRejectingOrderId(orderId);
+    setRejectReason("");
+    setRejectCustom("");
+  };
+
+  const confirmReject = async () => {
+    if (!rejectingOrderId) return;
+    const reason = resolveRejectionReason(rejectReason, rejectCustom);
+    if (!reason) {
+      toast.error("Please choose or type a reason for rejecting this order.");
+      return;
+    }
+    const orderId = rejectingOrderId;
+    setRejectingOrderId(null);
+    await runOrderAction(orderId, () => rejectOrder(orderId, reason));
+  };
+
+  const rejectOrder = async (orderId: string, reason: string) => {
     const order = orders.find((o) => o.id === orderId);
     if (order?.status === "awaiting_restaurant") {
       const { error } = await supabase.rpc("restaurant_decide_availability", {
         p_order_id: orderId,
         p_accept: false,
-        p_reason: "Restaurant unable to fulfil order",
+        p_reason: reason,
       });
       if (error) {
         toast.error("Couldn't reject: " + error.message);
@@ -496,6 +550,28 @@ const RestaurantDashboard = () => {
       toast.success("Menu item updated!");
     }
     setSavingEdit(false);
+  };
+
+  const DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+
+  const saveKitchen = async () => {
+    if (!restaurant) return;
+    setSavingKitchen(true);
+    const updates = {
+      is_open: kitchenOpen,
+      opens_at: opensAt || null,
+      closes_at: closesAt || null,
+      operating_days: operatingDays,
+    };
+    const { error } = await supabase.from("restaurants").update(updates).eq("id", restaurant.id);
+    if (error) {
+      toast.error("Couldn't save kitchen settings: " + error.message);
+    } else {
+      setRestaurant((prev) => (prev ? { ...prev, ...updates } : prev));
+      setAllRestaurants((prev) => prev.map((r) => (r.id === restaurant.id ? { ...r, ...updates } : r)));
+      toast.success(kitchenOpen ? "Kitchen is open — customers can order." : "Kitchen closed — new orders are paused.");
+    }
+    setSavingKitchen(false);
   };
 
   const toggleAvailability = async (item: MenuItem) => {
@@ -664,6 +740,19 @@ const RestaurantDashboard = () => {
                   </h1>
                 )}
                 <p className="text-[10px] text-muted-foreground">Management Dashboard</p>
+                {restaurant && (
+                  <button
+                    onClick={() => setTab("kitchen")}
+                    className={`mt-0.5 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold ${
+                      kitchenOpen
+                        ? "bg-emerald-100 text-emerald-700"
+                        : "bg-destructive/10 text-destructive"
+                    }`}
+                  >
+                    <span className={`h-1.5 w-1.5 rounded-full ${kitchenOpen ? "bg-emerald-500" : "bg-destructive"}`} />
+                    {kitchenOpen ? "Open" : "Closed"}
+                  </button>
+                )}
               </div>
             </div>
           </div>
@@ -671,7 +760,7 @@ const RestaurantDashboard = () => {
             <Button variant="ghost" size="icon" aria-label="Refresh orders" onClick={() => void fetchAll()}><RefreshCw className="h-4 w-4" /></Button>
             <Button variant="ghost" size="icon" aria-label="Sign out" onClick={async () => { await signOut(); navigate("/restaurant/login"); }}><LogOut className="h-4 w-4" /></Button>
             <InstallAppButton variant="restaurant" compact />
-            {(["orders", "menu", "earnings", "performance"] as const).map((t) => (
+            {(["orders", "menu", "kitchen", "earnings", "performance"] as const).map((t) => (
               <Button
                 variant={tab === t ? "default" : "ghost"}
                 size="sm"
@@ -683,7 +772,7 @@ const RestaurantDashboard = () => {
                     : "text-muted-foreground hover:bg-secondary"
                 }`}
               >
-                {t === "orders" ? "Orders" : t === "menu" ? "Menu" : t === "earnings" ? "Earnings" : "Performance"}
+                {t === "orders" ? "Orders" : t === "menu" ? "Menu" : t === "kitchen" ? "Kitchen" : t === "earnings" ? "Earnings" : "Performance"}
               </Button>
             ))}
           </div>
@@ -992,7 +1081,7 @@ const RestaurantDashboard = () => {
                                 <Button
                                   variant="outline"
                                   disabled={busy}
-                                  onClick={() => void runOrderAction(order.id, () => rejectOrder(order.id))}
+                                  onClick={() => openRejectDialog(order.id)}
                                   className="flex-1 border-destructive/30 text-destructive hover:bg-destructive/10 h-12 text-sm font-display"
                                 >
                                   <XCircle className="h-5 w-5 mr-1.5" /> Reject
@@ -1291,6 +1380,94 @@ const RestaurantDashboard = () => {
           </>
         )}
 
+        {tab === "kitchen" && restaurant && (
+          <div className="space-y-4 max-w-xl">
+            <Card className="border-none shadow-card">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm">Kitchen status</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <p className="text-sm font-semibold text-foreground">
+                      {kitchenOpen ? "Kitchen is open" : "Kitchen is closed"}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {kitchenOpen
+                        ? "Customers can place new orders."
+                        : "New orders are paused — customers see your restaurant as closed."}
+                    </p>
+                  </div>
+                  <Switch
+                    checked={kitchenOpen}
+                    onCheckedChange={setKitchenOpen}
+                    aria-label="Open or close kitchen"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-xs font-medium text-muted-foreground" htmlFor="opens-at">Opens at</label>
+                    <Input
+                      id="opens-at"
+                      type="time"
+                      value={opensAt}
+                      onChange={(e) => setOpensAt(e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs font-medium text-muted-foreground" htmlFor="closes-at">Closes at</label>
+                    <Input
+                      id="closes-at"
+                      type="time"
+                      value={closesAt}
+                      onChange={(e) => setClosesAt(e.target.value)}
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <p className="text-xs font-medium text-muted-foreground mb-2">Operating days</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {DAYS.map((day) => {
+                      const active = operatingDays.includes(day);
+                      return (
+                        <button
+                          key={day}
+                          type="button"
+                          onClick={() =>
+                            setOperatingDays((prev) =>
+                              active ? prev.filter((d) => d !== day) : [...prev, day],
+                            )
+                          }
+                          className={`rounded-full px-3 py-1.5 text-xs font-semibold transition-colors ${
+                            active
+                              ? "gradient-orange text-primary-foreground shadow-orange"
+                              : "bg-secondary text-muted-foreground hover:bg-muted"
+                          }`}
+                        >
+                          {day.slice(0, 3)}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <p className="mt-1.5 text-[11px] text-muted-foreground">
+                    Leave all days unselected if you operate every day.
+                  </p>
+                </div>
+
+                <Button
+                  onClick={() => void saveKitchen()}
+                  disabled={savingKitchen}
+                  className="w-full gradient-orange text-primary-foreground shadow-orange"
+                >
+                  {savingKitchen ? "Saving…" : "Save kitchen settings"}
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
         {tab === "earnings" && restaurant?.id && (
           <RestaurantEarnings restaurantId={restaurant.id} />
         )}
@@ -1300,6 +1477,54 @@ const RestaurantDashboard = () => {
         )}
       </main>
       <BottomNav />
+
+      {/* Reject order — reason required */}
+      <Dialog open={rejectingOrderId !== null} onOpenChange={(open) => !open && setRejectingOrderId(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Reject order #{orders.find((o) => o.id === rejectingOrderId)?.order_number ?? ""}</DialogTitle>
+            <DialogDescription>
+              Tell the customer why you can't fulfil this order. They won't be charged.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            {REJECTION_REASONS.map((reason) => (
+              <button
+                key={reason}
+                type="button"
+                onClick={() => setRejectReason(reason)}
+                className={`w-full rounded-lg border px-3 py-2.5 text-left text-sm font-medium transition-colors ${
+                  rejectReason === reason
+                    ? "border-primary bg-primary/10 text-foreground"
+                    : "border-border bg-background text-muted-foreground hover:bg-secondary"
+                }`}
+              >
+                {reason}
+              </button>
+            ))}
+            {rejectReason === "Other" && (
+              <Input
+                value={rejectCustom}
+                onChange={(e) => setRejectCustom(e.target.value)}
+                placeholder="Type the reason…"
+                autoFocus
+              />
+            )}
+          </div>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setRejectingOrderId(null)}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              disabled={!resolveRejectionReason(rejectReason, rejectCustom)}
+              onClick={() => void confirmReject()}
+            >
+              Reject order
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
