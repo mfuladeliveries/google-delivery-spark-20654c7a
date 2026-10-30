@@ -747,7 +747,7 @@ const RestaurantDashboard = () => {
             <Button variant="ghost" size="icon" aria-label="Refresh orders" onClick={() => void fetchAll()}><RefreshCw className="h-4 w-4" /></Button>
             <Button variant="ghost" size="icon" aria-label="Sign out" onClick={async () => { await signOut(); navigate("/restaurant/login"); }}><LogOut className="h-4 w-4" /></Button>
             <InstallAppButton variant="restaurant" compact />
-            {(["orders", "menu", "earnings", "performance"] as const).map((t) => (
+            {(["orders", "menu", "kitchen", "earnings", "performance"] as const).map((t) => (
               <Button
                 variant={tab === t ? "default" : "ghost"}
                 size="sm"
@@ -759,7 +759,7 @@ const RestaurantDashboard = () => {
                     : "text-muted-foreground hover:bg-secondary"
                 }`}
               >
-                {t === "orders" ? "Orders" : t === "menu" ? "Menu" : t === "earnings" ? "Earnings" : "Performance"}
+                {t === "orders" ? "Orders" : t === "menu" ? "Menu" : t === "kitchen" ? "Kitchen" : t === "earnings" ? "Earnings" : "Performance"}
               </Button>
             ))}
           </div>
