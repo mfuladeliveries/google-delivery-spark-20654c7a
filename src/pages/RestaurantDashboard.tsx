@@ -1477,6 +1477,54 @@ const RestaurantDashboard = () => {
         )}
       </main>
       <BottomNav />
+
+      {/* Reject order — reason required */}
+      <Dialog open={rejectingOrderId !== null} onOpenChange={(open) => !open && setRejectingOrderId(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Reject order #{orders.find((o) => o.id === rejectingOrderId)?.order_number ?? ""}</DialogTitle>
+            <DialogDescription>
+              Tell the customer why you can't fulfil this order. They won't be charged.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            {REJECTION_REASONS.map((reason) => (
+              <button
+                key={reason}
+                type="button"
+                onClick={() => setRejectReason(reason)}
+                className={`w-full rounded-lg border px-3 py-2.5 text-left text-sm font-medium transition-colors ${
+                  rejectReason === reason
+                    ? "border-primary bg-primary/10 text-foreground"
+                    : "border-border bg-background text-muted-foreground hover:bg-secondary"
+                }`}
+              >
+                {reason}
+              </button>
+            ))}
+            {rejectReason === "Other" && (
+              <Input
+                value={rejectCustom}
+                onChange={(e) => setRejectCustom(e.target.value)}
+                placeholder="Type the reason…"
+                autoFocus
+              />
+            )}
+          </div>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setRejectingOrderId(null)}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              disabled={!resolveRejectionReason(rejectReason, rejectCustom)}
+              onClick={() => void confirmReject()}
+            >
+              Reject order
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
