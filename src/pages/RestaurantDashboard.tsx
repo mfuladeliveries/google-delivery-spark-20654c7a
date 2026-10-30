@@ -552,6 +552,28 @@ const RestaurantDashboard = () => {
     setSavingEdit(false);
   };
 
+  const DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+
+  const saveKitchen = async () => {
+    if (!restaurant) return;
+    setSavingKitchen(true);
+    const updates = {
+      is_open: kitchenOpen,
+      opens_at: opensAt || null,
+      closes_at: closesAt || null,
+      operating_days: operatingDays,
+    };
+    const { error } = await supabase.from("restaurants").update(updates).eq("id", restaurant.id);
+    if (error) {
+      toast.error("Couldn't save kitchen settings: " + error.message);
+    } else {
+      setRestaurant((prev) => (prev ? { ...prev, ...updates } : prev));
+      setAllRestaurants((prev) => prev.map((r) => (r.id === restaurant.id ? { ...r, ...updates } : r)));
+      toast.success(kitchenOpen ? "Kitchen is open — customers can order." : "Kitchen closed — new orders are paused.");
+    }
+    setSavingKitchen(false);
+  };
+
   const toggleAvailability = async (item: MenuItem) => {
     const newVal = !item.is_available;
     await supabase.from("menu_items").update({ is_available: newVal }).eq("id", item.id);
@@ -1046,7 +1068,7 @@ const RestaurantDashboard = () => {
                                 <Button
                                   variant="outline"
                                   disabled={busy}
-                                  onClick={() => void runOrderAction(order.id, () => rejectOrder(order.id))}
+                                  onClick={() => openRejectDialog(order.id)}
                                   className="flex-1 border-destructive/30 text-destructive hover:bg-destructive/10 h-12 text-sm font-display"
                                 >
                                   <XCircle className="h-5 w-5 mr-1.5" /> Reject
