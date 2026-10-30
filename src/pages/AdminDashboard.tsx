@@ -2171,6 +2171,42 @@ const RestaurantCard = ({
   const [opensAt, setOpensAt] = useState("");
   const [closesAt, setClosesAt] = useState("");
   const [savingHours, setSavingHours] = useState(false);
+  const [newLoginEmail, setNewLoginEmail] = useState("");
+  const [newLoginPassword, setNewLoginPassword] = useState("");
+  const [newLoginName, setNewLoginName] = useState("");
+  const [newLoginContact, setNewLoginContact] = useState("");
+  const [creatingLogin, setCreatingLogin] = useState(false);
+
+  const handleCreateLogin = async () => {
+    if (!newLoginEmail.trim()) {
+      toast.error("Email is required for the restaurant login");
+      return;
+    }
+    if (newLoginPassword.trim().length < 6) {
+      toast.error("Password must be at least 6 characters");
+      return;
+    }
+    setCreatingLogin(true);
+    try {
+      await adminCreateUser({
+        email: newLoginEmail.trim(),
+        password: newLoginPassword.trim(),
+        full_name: newLoginName.trim() || r.name,
+        contact_number: newLoginContact.trim(),
+        role: "restaurant",
+        restaurant_id: r.id,
+      });
+      toast.success(`🔐 Login created for ${r.name}: ${newLoginEmail.trim()}`);
+      setNewLoginEmail("");
+      setNewLoginPassword("");
+      setNewLoginName("");
+      setNewLoginContact("");
+      onRestaurantChanged();
+    } catch (err: any) {
+      toast.error(err.message || "Failed to create login");
+    }
+    setCreatingLogin(false);
+  };
 
   const handleSaveHours = async () => {
     // Allow clearing both fields to remove hours
@@ -2658,10 +2694,74 @@ const RestaurantCard = ({
                 <div className="h-5 w-5 animate-spin rounded-full border-2 border-primary border-t-transparent" />
               </div>
             ) : !r.owner_user_id ? (
-              <p className="text-xs text-muted-foreground text-center py-2">
-                No login account linked. Add one when creating the restaurant or assign an owner
-                first.
-              </p>
+              <div className="space-y-3">
+                <h4 className="font-bold text-xs text-foreground">🔐 Create Restaurant Login</h4>
+                <p className="text-[10px] text-muted-foreground">
+                  No login account linked yet. Create one here — the restaurant uses it to sign in
+                  and manage orders.
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-semibold text-muted-foreground mb-1">
+                      Owner Name
+                    </label>
+                    <input
+                      value={newLoginName}
+                      onChange={(e) => setNewLoginName(e.target.value)}
+                      placeholder={r.name}
+                      className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-muted-foreground mb-1">
+                      Contact Number
+                    </label>
+                    <input
+                      value={newLoginContact}
+                      onChange={(e) => setNewLoginContact(e.target.value)}
+                      placeholder="e.g. 071 234 5678"
+                      className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-muted-foreground mb-1">
+                      Email *
+                    </label>
+                    <input
+                      type="email"
+                      value={newLoginEmail}
+                      onChange={(e) => setNewLoginEmail(e.target.value)}
+                      placeholder="restaurant@email.com"
+                      className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-muted-foreground mb-1">
+                      Password * (min 6 characters)
+                    </label>
+                    <input
+                      type="password"
+                      value={newLoginPassword}
+                      onChange={(e) => setNewLoginPassword(e.target.value)}
+                      placeholder="••••••"
+                      minLength={6}
+                      className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                    />
+                  </div>
+                </div>
+                <button
+                  onClick={handleCreateLogin}
+                  disabled={creatingLogin}
+                  className="btn-glow flex items-center justify-center gap-1.5 w-full rounded-xl gradient-maroon py-2.5 text-sm font-bold text-primary-foreground disabled:opacity-50 hover:opacity-90 transition-opacity"
+                >
+                  {creatingLogin ? (
+                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                  ) : (
+                    <Plus className="h-4 w-4" />
+                  )}
+                  {creatingLogin ? "Creating login..." : "Create Login"}
+                </button>
+              </div>
             ) : (
               <>
                 <h4 className="font-bold text-xs text-foreground mb-2">
