@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { canRestaurantTransition, nextRestaurantStatus, restaurantNeedsDecision } from "../restaurantOrderActions";
+import { canRestaurantTransition, nextRestaurantStatus, restaurantNeedsDecision, resolveRejectionReason } from "../restaurantOrderActions";
 
 describe("restaurant order decisions", () => {
   it("offers accept and reject for new orders and availability requests", () => {
@@ -19,5 +19,20 @@ describe("restaurant order decisions", () => {
       expect(canRestaurantTransition(status, "confirmed")).toBe(false);
       expect(nextRestaurantStatus(status)).toBe(null);
     }
+  });
+});
+
+describe("rejection reasons", () => {
+  it("requires a reason before an order can be rejected", () => {
+    expect(resolveRejectionReason("", "")).toBe(null);
+    expect(resolveRejectionReason("Other", "")).toBe(null);
+    expect(resolveRejectionReason("Other", "   ")).toBe(null);
+  });
+  it("uses the preset reason directly", () => {
+    expect(resolveRejectionReason("Ingredients unavailable", "")).toBe("Ingredients unavailable");
+    expect(resolveRejectionReason("Kitchen closed", "ignored")).toBe("Kitchen closed");
+  });
+  it("uses the typed detail for Other", () => {
+    expect(resolveRejectionReason("Other", "Load shedding")).toBe("Load shedding");
   });
 });
