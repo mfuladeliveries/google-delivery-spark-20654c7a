@@ -740,6 +740,19 @@ const RestaurantDashboard = () => {
                   </h1>
                 )}
                 <p className="text-[10px] text-muted-foreground">Management Dashboard</p>
+                {restaurant && (
+                  <button
+                    onClick={() => setTab("kitchen")}
+                    className={`mt-0.5 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold ${
+                      kitchenOpen
+                        ? "bg-emerald-100 text-emerald-700"
+                        : "bg-destructive/10 text-destructive"
+                    }`}
+                  >
+                    <span className={`h-1.5 w-1.5 rounded-full ${kitchenOpen ? "bg-emerald-500" : "bg-destructive"}`} />
+                    {kitchenOpen ? "Open" : "Closed"}
+                  </button>
+                )}
               </div>
             </div>
           </div>
@@ -1365,6 +1378,94 @@ const RestaurantDashboard = () => {
               </div>
             )}
           </>
+        )}
+
+        {tab === "kitchen" && restaurant && (
+          <div className="space-y-4 max-w-xl">
+            <Card className="border-none shadow-card">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm">Kitchen status</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <p className="text-sm font-semibold text-foreground">
+                      {kitchenOpen ? "Kitchen is open" : "Kitchen is closed"}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {kitchenOpen
+                        ? "Customers can place new orders."
+                        : "New orders are paused — customers see your restaurant as closed."}
+                    </p>
+                  </div>
+                  <Switch
+                    checked={kitchenOpen}
+                    onCheckedChange={setKitchenOpen}
+                    aria-label="Open or close kitchen"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-xs font-medium text-muted-foreground" htmlFor="opens-at">Opens at</label>
+                    <Input
+                      id="opens-at"
+                      type="time"
+                      value={opensAt}
+                      onChange={(e) => setOpensAt(e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs font-medium text-muted-foreground" htmlFor="closes-at">Closes at</label>
+                    <Input
+                      id="closes-at"
+                      type="time"
+                      value={closesAt}
+                      onChange={(e) => setClosesAt(e.target.value)}
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <p className="text-xs font-medium text-muted-foreground mb-2">Operating days</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {DAYS.map((day) => {
+                      const active = operatingDays.includes(day);
+                      return (
+                        <button
+                          key={day}
+                          type="button"
+                          onClick={() =>
+                            setOperatingDays((prev) =>
+                              active ? prev.filter((d) => d !== day) : [...prev, day],
+                            )
+                          }
+                          className={`rounded-full px-3 py-1.5 text-xs font-semibold transition-colors ${
+                            active
+                              ? "gradient-orange text-primary-foreground shadow-orange"
+                              : "bg-secondary text-muted-foreground hover:bg-muted"
+                          }`}
+                        >
+                          {day.slice(0, 3)}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <p className="mt-1.5 text-[11px] text-muted-foreground">
+                    Leave all days unselected if you operate every day.
+                  </p>
+                </div>
+
+                <Button
+                  onClick={() => void saveKitchen()}
+                  disabled={savingKitchen}
+                  className="w-full gradient-orange text-primary-foreground shadow-orange"
+                >
+                  {savingKitchen ? "Saving…" : "Save kitchen settings"}
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
         )}
 
         {tab === "earnings" && restaurant?.id && (
