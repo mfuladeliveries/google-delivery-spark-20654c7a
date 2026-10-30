@@ -35,7 +35,16 @@ import FoodImageUpload from "@/components/FoodImageUpload";
 import InstallAppButton from "@/components/InstallAppButton";
 import RestaurantEarnings from "@/components/restaurant/RestaurantEarnings";
 import RestaurantPerformance from "@/components/restaurant/RestaurantPerformance";
-import { restaurantNeedsDecision, nextRestaurantStatus, canRestaurantTransition } from "@/lib/restaurantOrderActions";
+import { restaurantNeedsDecision, nextRestaurantStatus, canRestaurantTransition, REJECTION_REASONS, resolveRejectionReason } from "@/lib/restaurantOrderActions";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Switch } from "@/components/ui/switch";
 
 interface Order {
   id: string;
