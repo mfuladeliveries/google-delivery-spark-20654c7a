@@ -1222,6 +1222,54 @@ export type Database = {
           },
         ]
       }
+      payment_notification_outbox: {
+        Row: {
+          attempts: number
+          available_at: string
+          created_at: string
+          last_error: string | null
+          lease_token: string | null
+          lease_until: string | null
+          order_id: string
+          sent_at: string | null
+        }
+        Insert: {
+          attempts?: number
+          available_at?: string
+          created_at?: string
+          last_error?: string | null
+          lease_token?: string | null
+          lease_until?: string | null
+          order_id: string
+          sent_at?: string | null
+        }
+        Update: {
+          attempts?: number
+          available_at?: string
+          created_at?: string
+          last_error?: string | null
+          lease_token?: string | null
+          lease_until?: string | null
+          order_id?: string
+          sent_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_notification_outbox_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: true
+            referencedRelation: "driver_job_board"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_notification_outbox_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: true
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       payment_transactions: {
         Row: {
           amount_fee: number | null
@@ -1966,6 +2014,45 @@ export type Database = {
         }
         Relationships: []
       }
+      yoco_checkout_attempts: {
+        Row: {
+          idempotency_key: string
+          lease_token: string | null
+          lease_until: string | null
+          order_id: string
+          updated_at: string
+        }
+        Insert: {
+          idempotency_key?: string
+          lease_token?: string | null
+          lease_until?: string | null
+          order_id: string
+          updated_at?: string
+        }
+        Update: {
+          idempotency_key?: string
+          lease_token?: string | null
+          lease_until?: string | null
+          order_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "yoco_checkout_attempts_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: true
+            referencedRelation: "driver_job_board"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "yoco_checkout_attempts_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: true
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       yoco_webhook_failures: {
         Row: {
           created_at: string
@@ -2180,6 +2267,26 @@ export type Database = {
         Returns: Json
       }
       claim_order: { Args: { p_order_id: string }; Returns: boolean }
+      claim_payment_notifications: {
+        Args: { p_order_id?: string }
+        Returns: {
+          attempts: number
+          available_at: string
+          created_at: string
+          last_error: string | null
+          lease_token: string | null
+          lease_until: string | null
+          order_id: string
+          sent_at: string | null
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "payment_notification_outbox"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      claim_yoco_checkout: { Args: { p_order_id: string }; Returns: Json }
       confirm_online_payment: {
         Args: {
           p_amount_fee: number
@@ -2298,6 +2405,17 @@ export type Database = {
           p_restaurant_lng?: number
         }
         Returns: Json
+      }
+      finish_yoco_checkout: {
+        Args: {
+          p_amount: number
+          p_checkout_id: string
+          p_mode: string
+          p_order_id: string
+          p_reference: string
+          p_token: string
+        }
+        Returns: undefined
       }
       get_active_delivery_pin: { Args: { p_order_id: string }; Returns: string }
       get_customer_balance: { Args: { p_user_id?: string }; Returns: number }
@@ -2432,6 +2550,14 @@ export type Database = {
       restaurant_decide_availability: {
         Args: { p_accept: boolean; p_order_id: string; p_reason?: string }
         Returns: Json
+      }
+      rotate_yoco_checkout_attempt: {
+        Args: {
+          p_order_id: string
+          p_previous_checkout: string
+          p_token: string
+        }
+        Returns: string
       }
       spend_customer_credits: {
         Args: { p_amount: number; p_note?: string; p_order_id: string }

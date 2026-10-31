@@ -9,6 +9,8 @@
 // The mode is chosen per order and never mixes credentials: test mode refuses
 // to run unless a real sk_test key is configured.
 
+import { deliverPaymentNotifications } from "./paymentNotifications.ts";
+
 export const YOCO_API_BASE = "https://payments.yoco.com/api";
 
 export type PaymentMode = "live" | "test";
@@ -302,34 +304,12 @@ export async function runPostPaymentSideEffects(supabase: any, result: ConfirmRe
   if (!result?.newly_paid) return;
 
   try {
-    await supabase.functions.invoke("push-notify", {
-      body: {
-        order_id: result.order_id,
-        order_number: result.order_number,
-        status: "payment_received",
-        restaurant: result.restaurant,
-        total: result.total,
-        target_user_id: result.user_id,
-      },
-    });
+    await deliverPaymentNotifications(supabase, result.order_id);
   } catch (e) {
     console.warn("yoco: customer push failed", e);
   }
 
   if (result.requires_confirmation || result.new_status !== "ready") {
-    try {
-      await supabase.functions.invoke("push-notify", {
-        body: {
-          order_id: result.order_id,
-          order_number: result.order_number,
-          status: "pending",
-          restaurant: result.restaurant,
-          total: result.total,
-        },
-      });
-    } catch (e) {
-      console.warn("yoco: restaurant push failed", e);
-    }
     return;
   }
 

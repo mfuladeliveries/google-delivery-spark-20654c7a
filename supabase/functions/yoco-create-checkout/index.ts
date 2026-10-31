@@ -6,18 +6,15 @@ import {
   getPaymentMode,
   getYocoCheckout,
   isTestMode,
+  normalizeMode,
   testKeyConfigured,
 } from "../_shared/yoco.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-};
-
-const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
-const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
+import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+import { z } from "npm:zod@3";
+const SUPABASE_URL = Deno.env.get("SUPABASE_URL") ?? "";
+const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
 
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), {
@@ -29,6 +26,8 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "POST") return json({ error: "Method not allowed" }, 405);
 
+  let lease: { orderId: string; token: string } | null = null;
+  const admin = createClient(SUPABASE_URL, SERVICE_KEY, { auth: { persistSession: false } });
   try {
     const authHeader = req.headers.get("Authorization") ?? "";
     if (!authHeader.startsWith("Bearer ")) return json({ error: "Not authenticated" }, 401);
@@ -41,12 +40,10 @@ Deno.serve(async (req) => {
     const user = userData?.user;
     if (userErr || !user) return json({ error: "Not authenticated" }, 401);
 
-    const body = (await req.json().catch(() => ({}))) as {
-      order_id?: string;
-      return_origin?: string;
-    };
-    const orderId = (body.order_id ?? "").trim();
-    if (!/^[0-9a-f-]{36}$/i.test(orderId)) return json({ error: "Invalid order_id" }, 400);
+    const parsed = z.object({ order_id: z.string().uuid(), return_origin: z.string().url().max(2048) }).safeParse(await req.json().catch(() => ({})));
+    if (!parsed.success) return json({ error: "Invalid order or return address" }, 400);
+    const body = parsed.data;
+    const orderId = body.order_id;
 
     const origin = (() => {
       try {
@@ -59,12 +56,10 @@ Deno.serve(async (req) => {
     })();
     if (!origin) return json({ error: "Invalid return_origin" }, 400);
 
-    const admin = createClient(SUPABASE_URL, SERVICE_KEY, { auth: { persistSession: false } });
-
     const { data: order, error: orderErr } = await admin
       .from("orders")
       .select(
-        "id, user_id, order_number, total, status, payment_status, restaurant, payment_checkout_id",
+        "id, user_id, order_number, total, status, payment_status, restaurant, payment_checkout_id, payment_environment",
       )
       .eq("id", orderId)
       .maybeSingle();
@@ -79,7 +74,7 @@ Deno.serve(async (req) => {
     }
 
     // Admin-selected environment. Test mode must never touch live credentials.
-    const mode = await getPaymentMode(admin);
+    const mode = order.payment_checkout_id ? normalizeMode(order.payment_environment) : await getPaymentMode(admin);
     if (mode === "test" && !testKeyConfigured()) {
       return json({
         error:
@@ -89,6 +84,13 @@ Deno.serve(async (req) => {
 
     const total = Number(order.total);
     if (!Number.isFinite(total) || total <= 0) return json({ error: "Invalid order total" }, 400);
+
+    const { data: claim, error: claimError } = await admin.rpc("claim_yoco_checkout", { p_order_id: order.id });
+    if (claimError) return json({ error: claimError.message }, 409);
+    if (claim?.already_paid) return json({ already_paid: true });
+    if (claim?.busy || !claim?.lease_token) return json({ error: "Payment is already being opened. Please wait and retry." }, 409);
+    lease = { orderId: order.id, token: claim.lease_token };
+    let idempotencyKey = String(claim.idempotency_key);
 
     // Reuse an existing checkout when it is still usable (browser back / retry).
     if (order.payment_checkout_id) {
@@ -105,6 +107,14 @@ Deno.serve(async (req) => {
           reused: true,
         });
       }
+      if (!existing) return json({ error: "Could not verify your existing payment. Please refresh its status before retrying." }, 409);
+      if (["completed", "succeeded"].includes(status)) return json({ error: "Payment was received. Please refresh payment status; do not pay again." }, 409);
+      if (!["failed", "cancelled", "expired"].includes(status)) return json({ error: "Your payment is still processing. Please refresh payment status before retrying." }, 409);
+      const { data: nextKey, error: rotateError } = await admin.rpc("rotate_yoco_checkout_attempt", {
+        p_order_id: order.id, p_token: lease.token, p_previous_checkout: order.payment_checkout_id,
+      });
+      if (rotateError || !nextKey) throw new Error(rotateError?.message || "Could not reserve payment retry");
+      idempotencyKey = String(nextKey);
     }
 
     const reference = `MFULA-${order.order_number}`;
@@ -122,7 +132,7 @@ Deno.serve(async (req) => {
         reference,
         user_id: user.id,
       },
-      idempotencyKey: `order-${mode}-${order.id}-${Math.round(total * 100)}`,
+      idempotencyKey: `order-${mode}-${order.id}-${idempotencyKey}`,
       mode,
     });
 
@@ -130,19 +140,11 @@ Deno.serve(async (req) => {
       return json({ error: "Yoco did not return a checkout URL. Please try again." }, 502);
     }
 
-    await admin
-      .from("orders")
-      .update({
-        payment_provider: "yoco",
-        payment_checkout_id: checkout.id,
-        payment_reference: reference,
-        payment_amount: total,
-        payment_currency: "ZAR",
-        payment_status: "pending",
-        payment_environment: mode,
-        payment_initiated_at: new Date().toISOString(),
-      })
-      .eq("id", order.id);
+    const { error: saveError } = await admin.rpc("finish_yoco_checkout", {
+      p_order_id: order.id, p_token: lease.token, p_checkout_id: checkout.id,
+      p_reference: reference, p_mode: mode, p_amount: total,
+    });
+    if (saveError) throw new Error(saveError.message);
 
     return json({
       checkout_id: checkout.id,
@@ -159,5 +161,8 @@ Deno.serve(async (req) => {
       { error: err instanceof Error ? err.message : "Could not start payment." },
       500,
     );
+  } finally {
+    if (lease) await admin.from("yoco_checkout_attempts").update({ lease_token: null, lease_until: null })
+      .eq("order_id", lease.orderId).eq("lease_token", lease.token);
   }
 });
