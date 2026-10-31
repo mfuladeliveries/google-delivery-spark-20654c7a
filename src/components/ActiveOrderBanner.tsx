@@ -32,6 +32,8 @@ const statusMeta: Record<string, { label: string; eta: string; Icon: any }> = {
 };
 
 const HIDDEN_ROUTES = [
+  "/pay/",
+  "/payment/",
   "/orders",
   "/auth",
   "/driver",

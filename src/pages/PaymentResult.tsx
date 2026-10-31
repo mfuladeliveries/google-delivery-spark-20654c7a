@@ -13,6 +13,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { clearPersistedCart } from "@/hooks/useCart";
 import { supabase } from "@/integrations/supabase/client";
 import { clearPendingPaymentOrder, loadPendingPaymentOrder } from "@/lib/pendingPaymentOrder";
+import { canPayOrder, isConfirmedPaid } from "@/lib/approvalPayment";
+import { Button } from "@/components/ui/button";
 
 type ResultPhase = "loading" | "processing" | "success" | "failed";
 
@@ -27,6 +29,7 @@ const PaymentResult = () => {
   const [resolvedTotal, setResolvedTotal] = useState<number | null>(null);
   const [deliveryPin, setDeliveryPin] = useState<string>("");
   const [isTestPayment, setIsTestPayment] = useState(false);
+  const [retryOrderId, setRetryOrderId] = useState<string | null>(null);
 
   // Yoco appends nothing to our return URLs — we control the query string
   // ourselves when creating the checkout. The status hint below is only used
@@ -72,6 +75,25 @@ const PaymentResult = () => {
     const body = orderId ? { order_id: orderId } : { order_number: orderNumber };
     const { data, error } = await supabase.functions.invoke("yoco-verify-payment", { body });
 
+    // Verify the persisted payment flag as well: fulfilment, cancellation and
+    // rejection statuses are never evidence that money was received.
+    let query = supabase.from("orders").select("id,order_number,total,status,payment_status,payment_method,payment_environment")
+      .eq("user_id", user.id);
+    query = orderId ? query.eq("id", orderId) : query.eq("order_number", Number(orderNumber));
+    const { data: saved, error: savedError } = await query.maybeSingle();
+    if (savedError || !saved) { setPhase("processing"); return false; }
+    setRetryOrderId(canPayOrder(saved) ? saved.id : null);
+    setResolvedOrderNumber(String(saved.order_number));
+    setResolvedTotal(Number(saved.total));
+    setIsTestPayment(saved.payment_environment === "test");
+    if (isConfirmedPaid(saved)) {
+      clearPersistedCart();
+      clearPendingPaymentOrder(saved.order_number);
+      setPhase("success");
+      return true;
+    }
+    if (!canPayOrder(saved)) { setPhase("failed"); return true; }
+
     if (error || !data || (data as { error?: string }).error) {
       setPhase(requestedStatus === "COMPLETE" ? "processing" : "failed");
       return false;
@@ -95,13 +117,6 @@ const PaymentResult = () => {
         : Number(payload.total ?? cachedOrder?.total ?? 0),
     );
     if (payload.delivery_code) setDeliveryPin(payload.delivery_code);
-
-    if (payload.payment_status === "paid" || payload.status !== "pending_payment") {
-      clearPersistedCart();
-      clearPendingPaymentOrder(payload.order_number ?? orderNumber);
-      setPhase("success");
-      return true;
-    }
 
     if (
       payload.payment_status === "failed" ||
@@ -159,7 +174,7 @@ const PaymentResult = () => {
     phase === "success"
       ? `Your payment for ${itemName} has been confirmed.`
       : phase === "failed"
-        ? "We couldn't confirm this payment. Nothing has been charged for an unconfirmed order — you can retry from your orders."
+        ? "Payment has not been confirmed. If your bank shows a charge, refresh the status before retrying."
         : "We're confirming your payment with Yoco. This usually takes a few seconds.";
 
   return (
@@ -223,6 +238,13 @@ const PaymentResult = () => {
             <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
             {refreshing ? "Refreshing…" : "Refresh status"}
           </button>
+
+          {phase === "failed" && retryOrderId && (
+            <Button className="mt-3 w-full" onClick={() => {
+              sessionStorage.removeItem(`yoco_handoff_${retryOrderId}`);
+              navigate(`/pay/yoco?order_id=${retryOrderId}`, { replace: true });
+            }}><RefreshCw /> Retry payment</Button>
+          )}
 
           <div className="mt-3 grid grid-cols-2 gap-3">
             <Link

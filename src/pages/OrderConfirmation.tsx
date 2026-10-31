@@ -17,6 +17,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { RestaurantName } from "@/components/RestaurantName";
 import { clearPendingPaymentOrder, loadPendingPaymentOrder } from "@/lib/pendingPaymentOrder";
+import { canPayOrder } from "@/lib/approvalPayment";
 
 interface ConfirmationState {
   orderNumber: string | number;
@@ -139,6 +140,11 @@ const OrderConfirmation = () => {
         return false;
       }
 
+      if (canPayOrder(order)) {
+        navigate(`/pay/yoco?order_id=${order.id}`, { replace: true });
+        return true;
+      }
+
       const parsed = parseSpecialNotes(order.special_notes);
       setData({
         orderNumber: order.order_number,
@@ -199,15 +205,7 @@ const OrderConfirmation = () => {
       // Payment is still being confirmed by Yoco (webhook is async).
       // Show a friendly "confirming payment" state and poll until it flips.
       if (status === "pending_payment") {
-        const totalRaw = (statusData as any).total;
-        setData({
-          orderNumber: (statusData as any).order_number,
-          deliveryPin: (statusData as any).delivery_code || "------",
-          total: typeof totalRaw === "number" ? totalRaw : Number(totalRaw),
-          paymentMethod: ((statusData as any).payment_method as "cash" | "online") || undefined,
-          restaurant: (statusData as any).restaurant || undefined,
-          paymentPending: true,
-        });
+        await fetchFullOrder();
         setLoading(false);
         pollTimer = setTimeout(load, 3000);
         return;
@@ -348,7 +346,7 @@ const OrderConfirmation = () => {
               : awaitingRestaurant
                 ? "Waiting for restaurant…"
                 : paymentPending
-                  ? "Confirming payment…"
+                  ? "Awaiting payment"
                   : "Order Confirmed!"}
           </h1>
           {rejected ? (
@@ -382,8 +380,7 @@ const OrderConfirmation = () => {
           ) : paymentPending ? (
             <div className="mt-2 flex flex-col items-center gap-3">
               <p className="text-sm text-muted-foreground max-w-xs">
-                We're waiting for Yoco to confirm your payment. This usually takes a few seconds
-                — this page will update automatically.
+                Your order is accepted and reserved while you complete payment.
               </p>
               <button
                 onClick={handlePayNow}
@@ -498,7 +495,7 @@ const OrderConfirmation = () => {
                     : "bg-blue-100 text-blue-700"
                 }`}
               >
-                {paymentMethod === "cash" ? "💵 Cash on delivery" : "💳 Paid online (Yoco)"}
+                {paymentMethod === "cash" ? "💵 Cash on delivery" : paymentPending || awaitingRestaurant || rejected ? "💳 Online payment pending" : "💳 Online payment (Yoco)"}
               </span>
             )}
           </div>
