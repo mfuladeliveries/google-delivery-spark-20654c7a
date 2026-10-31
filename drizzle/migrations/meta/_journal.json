@@ -50,6 +50,13 @@
       "when": 1792632953484,
       "tag": "0006_driver_pickup_location",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1793406268933,
+      "tag": "0007_approval_payment_safety",
+      "breakpoints": true
     }
   ]
 }
