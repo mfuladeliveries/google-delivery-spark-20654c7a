@@ -70,8 +70,8 @@ const App = () => (
         <SplashScreen />
         <Toaster />
         <Sonner />
-        <OrderNotifications />
         <BrowserRouter>
+          <OrderNotifications />
           <RouteAwareInstallPrompt />
           <ActiveOrderBanner />
           <Suspense fallback={<AuthLoadingScreen />}>
