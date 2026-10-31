@@ -1,8 +1,9 @@
 # Approval-to-payment workflow
-- [ ] Check current approval, fee, timeout, Yoco duplicate/retry and notification compatibility without live mutations.
-- [ ] Automatically resume accepted customer orders and show authoritative payment breakdown; never redirect rejected orders.
-- [ ] Ensure paid-only success and retry handling; add focused tests and verify preview.
-- [ ] Complete any necessary server/database fixes and real role/payment checks only after compatibility review and user approval; no live payments during tests.
+- [x] Check live approval RPC and scheduled timeout: acceptance sets pending_payment; existing 30-minute payment expiry runs every five minutes. Audit Yoco confirmation/retry/notifications without live mutations.
+- [x] Add customer pending-payment recovery on acceptance/reopening and show saved prices, delivery/service fees, discounts/credits and total; rejected orders do not redirect.
+- [x] Require persisted paid confirmation for customer success; add retry navigation. Fourteen focused tests pass, preview builds, signed-in empty-orders/nonexistent-order checks pass, and simulated acceptance/reopening/rejection/retry browser flows pass without runtime errors.
+- [ ] Fix live verification falsely reporting cancelled/rejected orders as paid, strengthen server-side checkout/transaction idempotency and retry, and add restaurant/admin payment notifications — blocked by required user approval for live functions/database changes. Preserve current payment mode, credentials, existing timeout and role workflows.
+- [ ] Verify real approval-to-payment and role notifications end-to-end — blocked by no accepted orders in the authorized customer's account and approval for safe payment/privileged-role tests; simulated checks are not live payment verification.
 
 # Restaurant login and orders
 - [x] Add a clear restaurant login within the same app, retaining admin-led account setup.
