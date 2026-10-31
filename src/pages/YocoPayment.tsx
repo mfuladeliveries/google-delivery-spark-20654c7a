@@ -1,376 +1,159 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
-import { Loader2, CreditCard, AlertTriangle, RefreshCw, Bike, ShieldCheck } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
+import { AlertTriangle, ArrowLeft, CreditCard, Loader2, RefreshCw, ShieldCheck } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
+import { Button } from "@/components/ui/button";
 import { clearPendingPaymentOrder, loadPendingPaymentOrder } from "@/lib/pendingPaymentOrder";
+import { canPayOrder, paymentBreakdown, type OrderAmounts } from "@/lib/approvalPayment";
 import { getYocoReturnOrigin } from "@/lib/yoco";
-import { toast } from "sonner";
 
-interface PayState {
-  orderId: string;
-  orderNumber: number | string;
-  total: number;
-  restaurant?: string;
+interface PaymentOrder extends OrderAmounts {
+  id: string;
+  order_number: number;
+  restaurant: string;
+  items: { name: string; quantity: number; price: number; size?: string; cut?: string; add_ons?: unknown[] }[];
+  status: string;
+  payment_status: string;
+  payment_method: string;
+  customer_lat: number | null;
+  customer_lng: number | null;
+  customer_address: string;
 }
+
+const money = (amount: number) => `R${Number(amount).toFixed(2)}`;
 
 const YocoPayment = () => {
   const navigate = useNavigate();
   const location = useLocation();
-
-  const state = useMemo<PayState | null>(() => {
-    const nav = location.state as PayState | null;
-    if (nav?.orderId) return nav;
-    const stored = loadPendingPaymentOrder();
-    if (stored?.orderId)
-      return {
-        orderId: stored.orderId,
-        orderNumber: stored.orderNumber,
-        total: stored.total,
-        restaurant: stored.restaurant,
-      };
-    return null;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [location.key]);
-
+  const [params] = useSearchParams();
+  const { user, loading: authLoading } = useAuth();
+  const nav = location.state as { orderId?: string } | null;
+  const orderId = params.get("order_id") || nav?.orderId || loadPendingPaymentOrder()?.orderId;
+  const [order, setOrder] = useState<PaymentOrder | null>(null);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [retrying, setRetrying] = useState(false);
+  const [busy, setBusy] = useState(false);
   const [waitingForDriver, setWaitingForDriver] = useState(false);
-  const calledRef = useRef(false);
   const busyRef = useRef(false);
+  const handedOff = useRef(false);
 
-  // Remembers that we already handed this order over to Yoco. If the customer
-  // lands back on this page afterwards (failed payment, back button), we must
-  // NOT auto-launch a new checkout — route them to the result screen instead.
-  const handoffKey = state?.orderId ? `yoco_handoff_${state.orderId}` : null;
-  const wasHandedOff = () =>
-    !!handoffKey && sessionStorage.getItem(handoffKey) === "1";
-
-  const startCheckout = useCallback(async () => {
-    if (!state?.orderId || busyRef.current) return;
-    busyRef.current = true;
-    setError(null);
-    try {
-      const { data, error: fnErr } = await supabase.functions.invoke("yoco-create-checkout", {
-        body: {
-          order_id: state.orderId,
-          return_origin: getYocoReturnOrigin(),
-        },
-      });
-
-      let payload = (data ?? {}) as {
-        redirect_url?: string;
-        already_paid?: boolean;
-        error?: string;
-      };
-
-      // Non-2xx responses put the JSON body on the error's context.
-      if (fnErr && !payload.redirect_url) {
-        const ctx = (fnErr as unknown as { context?: Response }).context;
-        if (ctx && typeof ctx.json === "function") {
-          try {
-            payload = { ...payload, ...(await ctx.clone().json()) };
-          } catch {
-            /* ignore non-JSON bodies */
-          }
-        }
-      }
-
-      if (payload.already_paid) {
-        navigate(`/payment/result?order=${state.orderNumber}&order_id=${state.orderId}`, {
-          replace: true,
-        });
-        return;
-      }
-
-      // The order is no longer payable (cancelled, expired or already handled):
-      // drop the stale saved order so we don't loop on this screen.
-      const notPayable =
-        (payload.error ?? "").toLowerCase().includes("not awaiting payment") ||
-        (payload.error ?? "").toLowerCase().includes("order not found");
-      if (notPayable) {
-        clearPendingPaymentOrder(state.orderNumber);
-        toast.error("This order is no longer awaiting payment.");
-        navigate("/orders", { replace: true });
-        return;
-      }
-
-
-      if (fnErr || !payload.redirect_url) {
-        setError(
-          payload.error ||
-            (fnErr as Error)?.message ||
-            "Could not start the secure checkout. Please try again.",
-        );
-        return;
-      }
-
-
-      // Hand the customer over to Yoco's hosted checkout. Remember the handoff
-      // so a return visit to this page goes to the result screen instead of
-      // looping straight back into Yoco.
-      if (handoffKey) sessionStorage.setItem(handoffKey, "1");
-      window.location.href = payload.redirect_url;
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to start payment.");
-    } finally {
-      busyRef.current = false;
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [state, navigate]);
-
-  // Before launching the checkout, ensure a driver is online for this order's area.
-  // If none, hold on a "Waiting for driver…" screen and re-poll every 15s.
-  useEffect(() => {
-    if (!state?.orderId) {
-      navigate("/orders", { replace: true });
+  const loadOrder = useCallback(async () => {
+    if (!orderId || !user) return;
+    const { data, error: readError } = await supabase.from("orders")
+      .select("id,order_number,restaurant,items,status,payment_status,payment_method,subtotal,tax,delivery_fee,tip,total,discount_amount,credits_applied,customer_lat,customer_lng,customer_address")
+      .eq("id", orderId).eq("user_id", user.id).maybeSingle();
+    if (readError) { setError("Could not load your order. Check your connection and try again."); setLoading(false); return; }
+    if (!data) { navigate("/orders", { replace: true }); return; }
+    if (data.payment_status === "paid") {
+      clearPendingPaymentOrder(data.order_number);
+      navigate(`/payment/result?order=${data.order_number}&order_id=${data.id}`, { replace: true });
       return;
     }
-
-    // Returning from Yoco (failed/cancelled payment or the back button):
-    // don't start another checkout — let the result screen verify the
-    // payment server-side and show the right outcome.
-    if (wasHandedOff()) {
-      navigate(`/payment/result?order=${state.orderNumber}&order_id=${state.orderId}`, {
-        replace: true,
-      });
+    if (!canPayOrder(data)) {
+      clearPendingPaymentOrder(data.order_number);
+      navigate(`/order-confirmation?order=${data.order_number}`, { replace: true });
       return;
     }
+    setOrder(data as unknown as PaymentOrder);
+    setLoading(false);
+    return data as unknown as PaymentOrder;
+  }, [orderId, user?.id, navigate]);
 
-    if (calledRef.current) return;
-    calledRef.current = true;
-
-    let cancelled = false;
-    let timer: ReturnType<typeof setTimeout> | null = null;
-
-    const run = async () => {
-      const { data: order } = await supabase
-        .from("orders")
-        .select("customer_lat, customer_lng, customer_address, status, payment_status")
-        .eq("id", state.orderId)
-        .maybeSingle();
-
-      if (cancelled) return;
-
-      // Stop early when this order can no longer be paid for, so we never hit
-      // the edge function with an un-payable order (409 / blank screen).
-      if (order && order.payment_status === "paid") {
-        clearPendingPaymentOrder(state.orderNumber);
-        navigate(`/payment/result?order=${state.orderNumber}&order_id=${state.orderId}`, {
-          replace: true,
-        });
-        return;
-      }
-      if (order && order.status !== "pending_payment") {
-        clearPendingPaymentOrder(state.orderNumber);
-        toast.error("This order is no longer awaiting payment.");
-        navigate("/orders", { replace: true });
-        return;
-      }
-
-      const lat = order?.customer_lat as number | null | undefined;
-      const lng = order?.customer_lng as number | null | undefined;
-      const addr = (order?.customer_address as string | null | undefined) ?? "";
-
-      const poll = async () => {
-        if (cancelled) return;
-
-        if (typeof lat !== "number" || typeof lng !== "number") {
-          setWaitingForDriver(false);
-          startCheckout();
-          return;
-        }
-        const { data: cov } = await supabase.rpc("check_area_coverage", {
-          p_lat: lat,
-          p_lng: lng,
-          p_address: addr,
-        });
-        if (cancelled) return;
-        const row = (Array.isArray(cov) ? cov[0] : cov) as { covered: boolean } | null;
-        if (row && !row.covered) {
-          setWaitingForDriver(true);
-          timer = setTimeout(poll, 15000);
-          return;
-        }
-        setWaitingForDriver(false);
-        startCheckout();
-      };
-
-      poll();
-    };
-
-    run();
-
-    return () => {
-      cancelled = true;
-      if (timer) clearTimeout(timer);
-    };
-  }, [state, navigate, startCheckout]);
-
-  const handleRetry = async () => {
-    if (busyRef.current) return;
-    setRetrying(true);
-    await startCheckout();
-    setRetrying(false);
-  };
-
-  // Fail-safe: if we're still sitting on the spinner 45s after starting a
-  // checkout, the redirect to Yoco failed silently — drop the spinner and
-  // show the retry screen instead of trapping the customer here.
   useEffect(() => {
-    if (error || waitingForDriver) return;
-    const timer = window.setTimeout(() => {
-      if (handoffKey) sessionStorage.removeItem(handoffKey);
-      setError(
-        "We couldn't reach Yoco's secure checkout. Check your internet connection and try again.",
-      );
-    }, 45000);
-    return () => window.clearTimeout(timer);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [error, waitingForDriver, handoffKey]);
-
-  // Cancelled/back-button return: mobile browsers restore this page from a
-  // frozen snapshot (bfcache), so mount effects never re-run and the spinner
-  // would spin forever. Re-check the handoff flag whenever the page
-  // reappears (pageshow/visibilitychange/focus) and send the customer to the
-  // result screen, which verifies the payment server-side.
-  useEffect(() => {
-    const goToResult = () => {
-      if (!state?.orderId || !wasHandedOff()) return;
-      navigate(`/payment/result?order=${state.orderNumber}&order_id=${state.orderId}`, {
-        replace: true,
-      });
-    };
-    const onPageShow = (e: PageTransitionEvent) => {
-      if (e.persisted) goToResult();
-    };
+    if (authLoading) return;
+    if (!orderId) { navigate("/orders", { replace: true }); return; }
+    void loadOrder();
+    const timer = window.setInterval(() => { if (!document.hidden && !busyRef.current) void loadOrder(); }, 10000);
     const onVisible = () => {
-      if (document.visibilityState === "visible") goToResult();
+      if (document.hidden) return;
+      if (handedOff.current && orderId) {
+        navigate(`/payment/result?order_id=${orderId}`, { replace: true });
+      } else void loadOrder();
     };
+    const onPageShow = (event: PageTransitionEvent) => { if (event.persisted) onVisible(); };
+    window.addEventListener("online", onVisible);
     window.addEventListener("pageshow", onPageShow);
-    window.addEventListener("focus", goToResult);
     document.addEventListener("visibilitychange", onVisible);
     return () => {
+      window.clearInterval(timer);
+      window.removeEventListener("online", onVisible);
       window.removeEventListener("pageshow", onPageShow);
-      window.removeEventListener("focus", goToResult);
       document.removeEventListener("visibilitychange", onVisible);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [state, navigate, handoffKey]);
+  }, [authLoading, loadOrder, orderId, navigate]);
 
-  if (error) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center px-4">
-        <div className="max-w-sm w-full rounded-3xl border border-destructive/40 bg-card p-6 text-center shadow-card">
-          <AlertTriangle className="mx-auto h-10 w-10 text-destructive" />
-          <h1 className="mt-3 font-display text-lg font-bold text-foreground">
-            Payment couldn't start
-          </h1>
-          <p className="mt-2 text-sm text-muted-foreground">{error}</p>
-          <button
-            onClick={handleRetry}
-            disabled={retrying}
-            className="btn-glow mt-5 w-full rounded-xl gradient-maroon py-3 text-sm font-bold text-primary-foreground inline-flex items-center justify-center gap-2 disabled:opacity-60"
-          >
-            <RefreshCw className={`h-4 w-4 ${retrying ? "animate-spin" : ""}`} />
-            {retrying ? "Retrying…" : "Retry payment"}
-          </button>
-          <button
-            onClick={() => navigate("/orders", { replace: true })}
-            className="mt-3 w-full rounded-xl border border-border bg-background py-3 text-sm font-bold text-foreground"
-          >
-            Back to orders
-          </button>
-        </div>
-      </div>
-    );
-  }
+  const startCheckout = async () => {
+    if (busyRef.current || !order) return;
+    busyRef.current = true;
+    setBusy(true);
+    setError(null);
+    try {
+      const fresh = await loadOrder();
+      if (!fresh) return;
+      if (!paymentBreakdown(fresh).matches) throw new Error("Your order total needs to be checked before payment. Please contact Mfula Deliveries.");
+      // Preserve the existing coverage requirement, without hiding the order summary.
+      if (fresh.customer_lat != null && fresh.customer_lng != null) {
+        const { data: coverage, error: coverageError } = await supabase.rpc("check_area_coverage", {
+          p_lat: fresh.customer_lat, p_lng: fresh.customer_lng, p_address: fresh.customer_address,
+        });
+        if (coverageError) throw new Error("Could not check driver availability. Please try again.");
+        const result = (Array.isArray(coverage) ? coverage[0] : coverage) as { covered?: boolean } | null;
+        if (result?.covered === false) { setWaitingForDriver(true); return; }
+      }
+      setWaitingForDriver(false);
+      const { data, error: checkoutError } = await supabase.functions.invoke("yoco-create-checkout", {
+        body: { order_id: fresh.id, return_origin: getYocoReturnOrigin() },
+      });
+      let payload = (data ?? {}) as { redirect_url?: string; already_paid?: boolean; error?: string };
+      if (checkoutError) {
+        const context = (checkoutError as unknown as { context?: Response }).context;
+        if (context) { try { payload = { ...payload, ...await context.clone().json() }; } catch { /* Non-JSON error */ } }
+      }
+      if (payload.already_paid) { navigate(`/payment/result?order_id=${fresh.id}`, { replace: true }); return; }
+      if (checkoutError || !payload.redirect_url) throw new Error(payload.error || "Could not start payment. Please try again.");
+      handedOff.current = true;
+      sessionStorage.setItem(`yoco_handoff_${fresh.id}`, "1");
+      window.location.assign(payload.redirect_url);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Could not start payment.");
+    } finally {
+      busyRef.current = false;
+      setBusy(false);
+    }
+  };
 
-  if (waitingForDriver) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center px-4">
-        <div className="max-w-sm w-full rounded-3xl border border-amber-500/40 bg-card p-6 text-center shadow-card">
-          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-amber-500/15">
-            <Bike className="h-7 w-7 text-amber-600" />
-          </div>
-          <h1 className="mt-3 font-display text-lg font-bold text-foreground">
-            Waiting for driver…
-          </h1>
-          <p className="mt-2 text-sm text-muted-foreground">
-            No drivers are online in your area right now. We'll start your payment as soon as one
-            comes online — please keep this screen open.
-          </p>
-          {typeof state?.total === "number" && (
-            <p className="mt-3 font-display text-2xl font-bold text-primary">
-              R{state.total.toFixed(2)}
-            </p>
-          )}
-          <p className="mt-1 text-[11px] text-muted-foreground">Order #{state?.orderNumber}</p>
-          <div className="mt-5 flex items-center justify-center gap-2 text-xs text-muted-foreground">
-            <Loader2 className="h-4 w-4 animate-spin" /> Checking again every 15 seconds…
-          </div>
-          <button
-            onClick={async () => {
-              if (!state?.orderId) return;
-              if (!confirm("Cancel this order? Your payment won't be charged.")) return;
-              const { error } = await supabase.rpc("customer_cancel_pending_order", {
-                p_order_id: state.orderId,
-              });
-              if (error) {
-                toast.error(error.message || "Could not cancel the order.");
-                return;
-              }
-              clearPendingPaymentOrder(state.orderNumber);
-              toast.success("Order cancelled.");
-              navigate("/orders", { replace: true });
-            }}
-            className="mt-5 w-full rounded-xl border-2 border-destructive/40 bg-destructive/5 py-3 text-sm font-bold text-destructive"
-          >
-            Cancel order
-          </button>
-          <button
-            onClick={() => navigate("/orders", { replace: true })}
-            className="mt-2 w-full rounded-xl border border-border bg-background py-3 text-sm font-bold text-foreground"
-          >
-            Back to orders
-          </button>
-        </div>
-      </div>
-    );
-  }
-
+  const breakdown = order ? paymentBreakdown(order) : null;
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center px-4">
-      <div className="max-w-sm w-full rounded-3xl border border-border bg-card p-6 text-center shadow-card">
-        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
-          <CreditCard className="h-7 w-7 text-primary" />
-        </div>
-        <h1 className="mt-3 font-display text-lg font-bold text-foreground">
-          Securing your payment
-        </h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Taking you to Yoco's secure checkout for order #{state?.orderNumber}…
-        </p>
-        {typeof state?.total === "number" && (
-          <p className="mt-2 font-display text-2xl font-bold text-primary">
-            R{state.total.toFixed(2)}
-          </p>
+    <div className="min-h-screen bg-background pb-12">
+      <main className="mx-auto max-w-lg px-4 pt-6">
+        <Button variant="ghost" onClick={() => navigate("/orders")}><ArrowLeft /> Orders</Button>
+        <h1 className="mt-6 font-display text-2xl font-bold text-foreground">Payment</h1>
+        {loading ? <div className="flex items-center gap-3 py-10 text-muted-foreground"><Loader2 className="animate-spin" /> Loading your accepted order…</div> : order && (
+          <>
+            <p className="mt-2 text-sm text-muted-foreground">Order #{order.order_number} · {order.restaurant}</p>
+            <p className="mt-3 flex items-center gap-2 text-sm font-semibold text-primary"><ShieldCheck className="h-4 w-4" /> Accepted — pending payment</p>
+            <ul className="mt-6 divide-y divide-border border-y border-border">
+              {order.items.map((item, index) => (
+                <li key={index} className="flex items-start justify-between gap-4 py-4">
+                  <div className="min-w-0"><p className="break-words font-semibold text-foreground">{item.quantity} × {item.name}</p><p className="mt-1 text-xs text-muted-foreground">{money(item.price)} each{item.size ? ` · ${item.size}` : ""}{item.cut ? ` · ${item.cut}` : ""}</p></div>
+                  <span className="shrink-0 text-sm font-semibold text-foreground">{money(item.price * item.quantity)}</span>
+                </li>
+              ))}
+            </ul>
+            <dl className="mt-6 space-y-3 text-sm text-foreground">
+              {[["Food subtotal", order.subtotal], ["Delivery fee", order.delivery_fee], ["Service fee", order.tax], ...(order.tip ? [["Driver tip", order.tip]] : []), ...(order.discount_amount ? [["Discount", -order.discount_amount]] : []), ...(order.credits_applied ? [["Wallet credits", -order.credits_applied]] : [])].map(([label, amount]) => <div key={String(label)} className="flex justify-between gap-4"><dt className="text-muted-foreground">{label}</dt><dd>{money(Number(amount))}</dd></div>)}
+              <div className="flex justify-between gap-4 border-t border-border pt-4 text-xl font-bold"><dt>Total</dt><dd>{money(order.total)}</dd></div>
+            </dl>
+            {!breakdown?.matches && <p role="alert" className="mt-4 text-sm text-destructive">The saved total does not match the fee breakdown. Please contact Mfula Deliveries before paying.</p>}
+            {waitingForDriver && <p role="status" className="mt-4 text-sm text-muted-foreground">No drivers are online in your area yet. Your order remains pending payment; try again shortly.</p>}
+            <Button size="lg" className="mt-6 w-full" disabled={busy || !breakdown?.matches} onClick={startCheckout}>{busy ? <Loader2 className="animate-spin" /> : error || waitingForDriver ? <RefreshCw /> : <CreditCard />}{busy ? "Opening secure checkout…" : error || waitingForDriver ? "Retry payment" : `Pay ${money(order.total)} with Yoco`}</Button>
+          </>
         )}
-        <div className="mt-5 flex items-center justify-center gap-2 text-xs text-muted-foreground">
-          <Loader2 className="h-4 w-4 animate-spin" /> Please don't close this window.
-        </div>
-        <p className="mt-4 inline-flex items-center justify-center gap-1.5 text-[11px] text-muted-foreground">
-          <ShieldCheck className="h-3.5 w-3.5 text-primary" />
-          Card details are entered on Yoco's secure page — never on our servers.
-        </p>
-        <button
-          onClick={() => navigate("/orders", { replace: true })}
-          className="mt-4 w-full rounded-xl border border-border bg-background py-3 text-sm font-bold text-foreground"
-        >
-          Back to orders
-        </button>
-      </div>
+        {error && <div role="alert" className="mt-4 flex gap-2 text-sm text-destructive"><AlertTriangle className="h-4 w-4 shrink-0" /><p>{error}</p></div>}
+        {!loading && !order && error && <Button className="mt-4" onClick={() => { setError(null); setLoading(true); void loadOrder(); }}><RefreshCw /> Retry</Button>}
+      </main>
     </div>
   );
 };
-
 export default YocoPayment;
