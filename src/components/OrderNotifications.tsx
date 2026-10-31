@@ -117,7 +117,7 @@ const OrderNotifications = () => {
             filter: `user_id=eq.${user.id}`,
           },
           (payload: any) => {
-            if (payload.old?.status === "awaiting_restaurant" && canPayOrder(payload.new)) void resumePayment();
+            if (canPayOrder(payload.new)) void resumePayment();
             const newStatus = payload.new?.status;
             const orderNumber = payload.new?.order_number;
             const orderId = payload.new?.id;
