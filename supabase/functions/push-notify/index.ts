@@ -1,11 +1,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import webpush from "npm:web-push@3.6.7";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
-};
+import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+import { z } from "npm:zod@3";
 
 const statusLabels: Record<string, string> = {
   pending: "Order Placed",
@@ -49,9 +45,9 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+    const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
+    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+    const anonKey = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
 
     // Authenticate caller — only signed-in users OR the service role (used by other edge functions) may trigger pushes
     const authHeader = req.headers.get("Authorization");
@@ -94,12 +90,52 @@ Deno.serve(async (req) => {
       });
     }
 
-    const publicKey = vapidData.find((d) => d.key === "vapid_public_key")!.value;
-    const privateKey = vapidData.find((d) => d.key === "vapid_private_key")!.value;
+    const publicKey = vapidData.find((d) => d.key === "vapid_public_key")?.value;
+    const privateKey = vapidData.find((d) => d.key === "vapid_private_key")?.value;
+    if (!publicKey || !privateKey) throw new Error("VAPID keys not configured");
 
     webpush.setVapidDetails("mailto:noreply@mfula.app", publicKey, privateKey);
 
     const event = await req.json();
+    if (event.status === "payment_received") {
+      if (!isServiceRole) return new Response(JSON.stringify({ error: "Only the payment service can announce payment" }), { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      const parsed = z.object({ order_id: z.string().uuid(), status: z.literal("payment_received") }).safeParse(event);
+      if (!parsed.success) return new Response(JSON.stringify({ error: "Invalid payment notification" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      const { data: paidOrder, error: orderError } = await supabase.from("orders").select("id,order_number,restaurant,restaurant_id,total,user_id,payment_status").eq("id", parsed.data.order_id).maybeSingle();
+      if (orderError || !paidOrder || paidOrder.payment_status !== "paid") throw new Error("Payment has not been confirmed");
+      const [{ data: restaurant }, { data: admins }] = await Promise.all([
+        supabase.from("restaurants").select("owner_user_id").eq("id", paidOrder.restaurant_id).maybeSingle(),
+        supabase.from("user_roles").select("user_id").eq("role", "admin"),
+      ]);
+      const recipients = new Map<string, string>();
+      recipients.set(paidOrder.user_id, "/orders");
+      if (restaurant?.owner_user_id) recipients.set(restaurant.owner_user_id, "/restaurant/dashboard");
+      for (const admin of admins ?? []) recipients.set(admin.user_id, "/admin");
+      const { data: subscriptions, error: subscriptionError } = await supabase.from("push_subscriptions").select("id,user_id,endpoint,p256dh,auth").in("user_id", [...recipients.keys()]);
+      if (subscriptionError) throw new Error(subscriptionError.message);
+      let sent = 0;
+      let failed = 0;
+      for (const sub of subscriptions ?? []) {
+        const kind = `payment_received:${sub.id}`;
+        const { data: logged } = await supabase.from("order_notification_log").select("id").eq("order_id", paidOrder.id).eq("user_id", sub.user_id).eq("notification_kind", kind).maybeSingle();
+        if (logged) continue;
+        try {
+          await webpush.sendNotification({ endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } }, JSON.stringify({
+            title: `Payment successful — Order #${paidOrder.order_number}`,
+            body: `R${Number(paidOrder.total).toFixed(2)} paid for ${paidOrder.restaurant}`,
+            icon: "/notification-logo.png", badge: "/favicon.ico", tag: `payment-${paidOrder.id}`,
+            data: { url: recipients.get(sub.user_id), order_number: paidOrder.order_number, kind: "payment_received" },
+          }));
+          const { error: logError } = await supabase.from("order_notification_log").insert({ order_id: paidOrder.id, user_id: sub.user_id, notification_kind: kind });
+          if (logError) failed++; else sent++;
+        } catch (error) {
+          const code = (error as { statusCode?: number }).statusCode;
+          if (code === 404 || code === 410) await supabase.from("push_subscriptions").delete().eq("id", sub.id);
+          else failed++;
+        }
+      }
+      return new Response(JSON.stringify({ sent, failed }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
     const {
       order_id,
       order_number,
@@ -342,7 +378,7 @@ Deno.serve(async (req) => {
       body: isBankRefundPaid
         ? `Your refund${refund_amount ? ` of R${Number(refund_amount).toFixed(2)}` : ""} has been sent. It may take 3–5 business days to reflect in your bank account.`
         : isRefundChoice
-          ? `Your order was cancelled.${reasonSuffix} Tap to choose: instant wallet credit (R${refundChoiceAmount!.toFixed(2)}) or bank refund in 3–5 days.`
+          ? `Your order was cancelled.${reasonSuffix} Tap to choose: instant wallet credit (R${Number(refundChoiceAmount).toFixed(2)}) or bank refund in 3–5 days.`
           : isDriverCancelUnavailable
             ? `Sorry, your order was cancelled because the item is not available at ${restaurant || "the restaurant"}. You won't be charged.`
             : isCancelWithReason
