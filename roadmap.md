@@ -1,3 +1,9 @@
+# Approval-to-payment workflow
+- [ ] Check current approval, fee, timeout, Yoco duplicate/retry and notification compatibility without live mutations.
+- [ ] Automatically resume accepted customer orders and show authoritative payment breakdown; never redirect rejected orders.
+- [ ] Ensure paid-only success and retry handling; add focused tests and verify preview.
+- [ ] Complete any necessary server/database fixes and real role/payment checks only after compatibility review and user approval; no live payments during tests.
+
 # Restaurant login and orders
 - [x] Add a clear restaurant login within the same app, retaining admin-led account setup.
 - [x] Improve restaurant order decisions, loading feedback, navigation, refresh and sign-out without changing payments.
