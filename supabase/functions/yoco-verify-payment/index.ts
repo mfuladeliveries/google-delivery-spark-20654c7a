@@ -2,6 +2,8 @@
 // from the hosted checkout. Never trusts redirect query params — it re-reads the
 // checkout from Yoco and applies the same confirmation logic as the webhook.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.95.0";
+import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+import { z } from "npm:zod@3";
 import {
   centsToRands,
   confirmPaidOrder,
@@ -10,15 +12,9 @@ import {
   runPostPaymentSideEffects,
 } from "../_shared/yoco.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-};
-
-const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
-const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
+const SUPABASE_URL = Deno.env.get("SUPABASE_URL") ?? "";
+const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
 
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), {
@@ -42,10 +38,10 @@ Deno.serve(async (req) => {
     const user = userData?.user;
     if (!user) return json({ error: "Not authenticated" }, 401);
 
-    const body = (await req.json().catch(() => ({}))) as {
-      order_id?: string;
-      order_number?: string | number;
-    };
+    const parsed = z.object({ order_id: z.string().uuid().optional(), order_number: z.coerce.number().int().positive().optional() })
+      .refine((body) => body.order_id || body.order_number).safeParse(await req.json().catch(() => ({})));
+    if (!parsed.success) return json({ error: "Valid order_id or order_number required" }, 400);
+    const body = parsed.data;
 
     const admin = createClient(SUPABASE_URL, SERVICE_KEY, { auth: { persistSession: false } });
 
@@ -77,9 +73,10 @@ Deno.serve(async (req) => {
         ...extra,
       });
 
-    if (order.payment_status === "paid" || order.status !== "pending_payment") {
+    if (order.payment_status === "paid") {
       return respond({ payment_status: "paid", delivery_code: order.delivery_code });
     }
+    if (order.status !== "pending_payment") return respond();
 
     if (!order.payment_checkout_id) {
       return respond({ checkout_status: "none" });
@@ -112,8 +109,8 @@ Deno.serve(async (req) => {
         order_id: order.id,
         order_number: order.order_number,
         total: Number(order.total),
-        status: fresh?.status ?? "ready",
-        payment_status: fresh?.payment_status ?? "paid",
+        status: fresh?.status ?? order.status,
+        payment_status: fresh?.payment_status ?? order.payment_status,
         delivery_code: fresh?.delivery_code ?? null,
         checkout_status: checkoutStatus,
         payment_mode: mode,

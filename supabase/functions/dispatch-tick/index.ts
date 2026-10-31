@@ -1,6 +1,7 @@
 // Dispatch tick: expires stale offers, advances chain, broadcasts after 5min,
 // and triggers push notifications for each transition.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { deliverPaymentNotifications } from "../_shared/paymentNotifications.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -61,6 +62,8 @@ Deno.serve(async (req) => {
     }
 
     const supabase = createClient(supabaseUrl, serviceRoleKey);
+    try { await deliverPaymentNotifications(supabase); }
+    catch (error) { console.warn("Payment notification retry failed", error); }
 
     // Snapshot before-state so we can compute who-was-offered for "missed" pushes
     const { data: beforeState } = await supabase
