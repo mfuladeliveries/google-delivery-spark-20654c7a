@@ -3,6 +3,8 @@
 // 2. De-duplicate by webhook event id (payment_webhook_events)
 // 3. Re-read the checkout from Yoco and apply the result via SECURITY DEFINER RPCs
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.95.0";
+import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+import { z } from "npm:zod@3";
 import {
   centsToRands,
   confirmPaidOrder,
@@ -12,14 +14,8 @@ import {
   verifyYocoWebhook,
 } from "../_shared/yoco.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "*",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-};
-
-const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
-const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+const SUPABASE_URL = Deno.env.get("SUPABASE_URL") ?? "";
+const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
 
 // Records a webhook failure so admins can see it in real time instead of it
 // dying in a console log. Never throws — logging must not break the handler.
@@ -55,7 +51,7 @@ async function logFailure(
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
-  if (req.method !== "POST") return new Response("Method not allowed", { status: 405 });
+  if (req.method !== "POST") return new Response("Method not allowed", { status: 405, headers: corsHeaders });
 
   const rawBody = await req.text();
   const supabase = createClient(SUPABASE_URL, SERVICE_KEY, { auth: { persistSession: false } });
@@ -85,12 +81,9 @@ Deno.serve(async (req) => {
     req.headers.get("cf-connecting-ip") || null;
 
   try {
-    const event = JSON.parse(rawBody) as {
-      id?: string;
-      type?: string;
-      createdDate?: string;
-      payload?: Record<string, unknown>;
-    };
+    const parsed = z.object({ id: z.string().max(255).optional(), type: z.string().min(1).max(255), payload: z.record(z.unknown()) }).passthrough().safeParse(JSON.parse(rawBody));
+    if (!parsed.success) return new Response(JSON.stringify({ error: "Invalid webhook payload" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    const event = parsed.data;
 
     const eventId = event.id ?? req.headers.get("webhook-id") ?? "";
     const eventType = String(event.type ?? "");
@@ -101,7 +94,7 @@ Deno.serve(async (req) => {
     const paymentId = String(payload.id ?? payload.paymentId ?? "") || null;
 
     // Resolve the order: metadata first, then checkout id, then payment id.
-    let orderId = metadata.order_id ?? null;
+    let orderId = z.string().uuid().safeParse(metadata.order_id).success ? metadata.order_id : null;
     if (!orderId && (checkoutId || paymentId)) {
       const { data: found } = await supabase
         .from("orders")
@@ -116,7 +109,8 @@ Deno.serve(async (req) => {
       orderId = found?.id ?? null;
     }
 
-    // Idempotency: a repeated delivery must never re-trigger dispatch/notifications.
+    // Receipt is not completion: a failed handler must remain retryable. The
+    // transactional confirmation RPC and notification queue deduplicate work.
     const { error: dupErr } = await supabase.from("payment_webhook_events").insert({
       provider: "yoco",
       event_id: eventId || `${eventType}-${paymentId ?? checkoutId ?? crypto.randomUUID()}`,
@@ -126,12 +120,8 @@ Deno.serve(async (req) => {
     });
     if (dupErr) {
       if (dupErr.code === "23505" || /duplicate key/i.test(dupErr.message ?? "")) {
-        console.log("yoco-webhook: duplicate event ignored", eventId);
-        return new Response(JSON.stringify({ received: true, duplicate: true }), {
-          status: 200,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
+        console.log("yoco-webhook: retrying event safely", eventId);
+      } else {
       console.error("yoco-webhook: ledger insert failed", dupErr);
       await logFailure(supabase, {
         stage: "ledger_insert_failed",
@@ -142,6 +132,8 @@ Deno.serve(async (req) => {
         payload: event as unknown as Record<string, unknown>,
         source_ip: sourceIp,
       });
+      throw new Error("Webhook receipt could not be recorded");
+      }
     }
 
     if (!orderId) {
@@ -154,10 +146,7 @@ Deno.serve(async (req) => {
         payload: event as unknown as Record<string, unknown>,
         source_ip: sourceIp,
       });
-      return new Response(JSON.stringify({ received: true }), {
-        status: 200,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      throw new Error("Order could not be resolved; retry webhook");
     }
 
     // Which environment signed this event; fall back to what the order stored.
@@ -168,7 +157,11 @@ Deno.serve(async (req) => {
         .select("payment_environment")
         .eq("id", orderId)
         .maybeSingle();
-      if (orderRow?.payment_environment) mode = normalizeMode(orderRow.payment_environment);
+      if (orderRow?.payment_environment) {
+        const storedMode = normalizeMode(orderRow.payment_environment);
+        if (verification.mode && verification.mode !== storedMode) throw new Error("Webhook payment environment does not match order");
+        mode = storedMode;
+      }
     }
 
     if (eventType === "payment.succeeded") {
