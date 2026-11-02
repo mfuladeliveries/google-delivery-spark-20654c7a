@@ -262,7 +262,10 @@ const AdminDashboard = () => {
     // Real-time subscription for live order updates
     const channel = supabase
       .channel("admin-orders-realtime")
-      .on("postgres_changes", { event: "*", schema: "public", table: "orders" }, () => {
+      .on("postgres_changes", { event: "*", schema: "public", table: "orders" }, (payload) => {
+        if (payload.eventType === "UPDATE" && payload.new.payment_status === "paid" && payload.old.payment_status !== "paid") {
+          toast.success(`Payment completed — Order #${payload.new.order_number}`);
+        }
         fetchStats();
       })
       .subscribe();
