@@ -87,6 +87,7 @@ const PaymentResult = () => {
     setResolvedTotal(Number(saved.total));
     setIsTestPayment(saved.payment_environment === "test");
     if (isConfirmedPaid(saved)) {
+      if (data?.delivery_code) setDeliveryPin(data.delivery_code);
       clearPersistedCart();
       clearPendingPaymentOrder(saved.order_number);
       setPhase("success");

@@ -8,11 +8,12 @@ export async function deliverPaymentNotifications(client: any, orderId?: string)
       body: { order_id: job.order_id, status: "payment_received" },
     });
     const failure = pushError?.message || data?.error || (data?.failed ? "Some payment notifications failed" : null);
-    await client.from("payment_notification_outbox").update({
+    const { error: updateError } = await client.from("payment_notification_outbox").update({
       sent_at: failure ? null : new Date().toISOString(),
       last_error: failure,
       available_at: new Date(Date.now() + 60000 * Math.min(30, job.attempts)).toISOString(),
       lease_token: null, lease_until: null,
     }).eq("order_id", job.order_id).eq("lease_token", job.lease_token);
+    if (updateError) throw new Error(updateError.message);
   }
 }

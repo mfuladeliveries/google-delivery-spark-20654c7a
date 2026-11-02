@@ -2020,6 +2020,7 @@ export type Database = {
           lease_token: string | null
           lease_until: string | null
           order_id: string
+          retry_of_checkout: string | null
           updated_at: string
         }
         Insert: {
@@ -2027,6 +2028,7 @@ export type Database = {
           lease_token?: string | null
           lease_until?: string | null
           order_id: string
+          retry_of_checkout?: string | null
           updated_at?: string
         }
         Update: {
@@ -2034,6 +2036,7 @@ export type Database = {
           lease_token?: string | null
           lease_until?: string | null
           order_id?: string
+          retry_of_checkout?: string | null
           updated_at?: string
         }
         Relationships: [

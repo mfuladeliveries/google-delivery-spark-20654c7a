@@ -246,6 +246,10 @@ const RestaurantDashboard = () => {
     const channel = supabase
       .channel(`restaurant-orders-${restaurant?.id}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "orders", filter: `restaurant_id=eq.${restaurant.id}` }, (payload) => {
+        if (payload.eventType === "UPDATE" && payload.new.payment_status === "paid" && payload.old.payment_status !== "paid") {
+          playNotificationSound();
+          toast.success(`Payment completed — Order #${payload.new.order_number}`);
+        }
         if (payload.eventType === "INSERT") {
           playNotificationSound();
           toast.info("🔔 New Order!", {

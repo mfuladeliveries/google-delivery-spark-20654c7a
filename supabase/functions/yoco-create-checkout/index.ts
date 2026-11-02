@@ -12,6 +12,7 @@ import {
 
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { z } from "npm:zod@3";
+import { checkoutAction } from "../_shared/paymentRules.ts";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") ?? "";
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
 const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
@@ -56,7 +57,7 @@ Deno.serve(async (req) => {
     })();
     if (!origin) return json({ error: "Invalid return_origin" }, 400);
 
-    const { data: order, error: orderErr } = await admin
+    const { data: initialOrder, error: orderErr } = await admin
       .from("orders")
       .select(
         "id, user_id, order_number, total, status, payment_status, restaurant, payment_checkout_id, payment_environment",
@@ -64,6 +65,7 @@ Deno.serve(async (req) => {
       .eq("id", orderId)
       .maybeSingle();
 
+    let order = initialOrder;
     if (orderErr || !order) return json({ error: "Order not found" }, 404);
     if (order.user_id !== user.id) return json({ error: "Not your order" }, 403);
     if (order.payment_status === "paid") {
@@ -74,7 +76,7 @@ Deno.serve(async (req) => {
     }
 
     // Admin-selected environment. Test mode must never touch live credentials.
-    const mode = order.payment_checkout_id ? normalizeMode(order.payment_environment) : await getPaymentMode(admin);
+    let mode = order.payment_checkout_id ? normalizeMode(order.payment_environment) : await getPaymentMode(admin);
     if (mode === "test" && !testKeyConfigured()) {
       return json({
         error:
@@ -91,12 +93,22 @@ Deno.serve(async (req) => {
     if (claim?.busy || !claim?.lease_token) return json({ error: "Payment is already being opened. Please wait and retry." }, 409);
     lease = { orderId: order.id, token: claim.lease_token };
     let idempotencyKey = String(claim.idempotency_key);
+    // Another request may have persisted a checkout between our first read and
+    // this lease. Re-read under our exclusive attempt before touching Yoco.
+    const { data: fresh, error: freshError } = await admin.from("orders")
+      .select("id,user_id,order_number,total,status,payment_status,restaurant,payment_checkout_id,payment_environment")
+      .eq("id", order.id).maybeSingle();
+    if (freshError || !fresh) throw new Error("Could not refresh the reserved order");
+    order = fresh;
+    if (order.payment_checkout_id) mode = normalizeMode(order.payment_environment);
+    if (Number(order.total) !== total) return json({ error: "Order prices changed. Please refresh before paying." }, 409);
 
     // Reuse an existing checkout when it is still usable (browser back / retry).
     if (order.payment_checkout_id) {
       const existing = await getYocoCheckout(order.payment_checkout_id, mode);
       const status = String(existing?.status ?? "").toLowerCase();
-      if (existing?.redirectUrl && (status === "created" || status === "started")) {
+      const action = checkoutAction(status, !!existing?.redirectUrl);
+      if (existing?.redirectUrl && action === "reuse") {
         return json({
           checkout_id: existing.id,
           redirect_url: existing.redirectUrl,
@@ -108,8 +120,8 @@ Deno.serve(async (req) => {
         });
       }
       if (!existing) return json({ error: "Could not verify your existing payment. Please refresh its status before retrying." }, 409);
-      if (["completed", "succeeded"].includes(status)) return json({ error: "Payment was received. Please refresh payment status; do not pay again." }, 409);
-      if (!["failed", "cancelled", "expired"].includes(status)) return json({ error: "Your payment is still processing. Please refresh payment status before retrying." }, 409);
+      if (action === "confirm") return json({ error: "Payment was received. Please refresh payment status; do not pay again." }, 409);
+      if (action !== "replace") return json({ error: "Your payment is still processing. Please refresh payment status before retrying." }, 409);
       const { data: nextKey, error: rotateError } = await admin.rpc("rotate_yoco_checkout_attempt", {
         p_order_id: order.id, p_token: lease.token, p_previous_checkout: order.payment_checkout_id,
       });
