@@ -57,6 +57,13 @@
       "when": 1793406268933,
       "tag": "0007_approval_payment_safety",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1793621542967,
+      "tag": "0008_payment_retry_recovery",
+      "breakpoints": true
     }
   ]
 }
