@@ -241,7 +241,7 @@ const CheckoutDialog = ({
         // its coordinates and address drive the fee, radius check and pickup.
         const locs = (cat.restaurant_locations ?? []) as RestaurantLocation[];
         const chosenBranch = data
-          ? (branchForArea(locs, data.id, getSelectedAreaId()) ?? anyBranch(locs, data.id))
+          ? (branchForArea(locs, data.id, selectedAreaId) ?? anyBranch(locs, data.id))
           : null;
         setBranchId(chosenBranch?.id ?? null);
 
