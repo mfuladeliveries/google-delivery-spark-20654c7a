@@ -1,3 +1,8 @@
+# Paid order cancellation
+- [ ] Add the exact warning immediately before payment and paid-order status; remove customer cancel after verified payment.
+- [ ] Apply approved live cancellation safeguards across customer RPC and direct writes; preserve administrator exceptions and payment workflows.
+- [ ] Run regression and live role-isolation checks; verify customer payment/cancellation screens without real charges.
+
 # Restaurant locations
 - [x] Fix reproduced cart distance/fee lookup using brand coordinates instead of the area's branch. Shared area-specific pickup lookup; 47 tests pass, preview build OK, signed-in KFC Delft bucket cart warning removed and checkout opens on mobile without placing an order or charging.
 - [x] Apply strict branch-area matching to all restaurant brands in home/search/menu/checkout, choose nearest branch with customer coordinates, and block incomplete/invalid admin GPS entries. Preserve companion shopping and payment logic. Signed-in Delft GPS detection/search verified; 54 focused tests passed.
