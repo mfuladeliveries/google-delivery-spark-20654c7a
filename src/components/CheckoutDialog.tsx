@@ -40,6 +40,7 @@ import {
   anyBranch,
   branchForArea,
   getSelectedAreaId,
+  useSelectedAreaId,
   type RestaurantLocation,
 } from "@/lib/restaurantAreas";
 import { Link } from "react-router-dom";
@@ -185,6 +186,9 @@ const CheckoutDialog = ({
   const checkoutRestaurantId = primaryRestaurantId ?? resolvedRestaurantId;
   // Branch of the restaurant that serves the customer's delivery area.
   const [branchId, setBranchId] = useState<string | null>(null);
+  // Reactive selected area: re-resolving the branch when the customer changes
+  // area keeps the fee, radius check and pickup coordinates in sync.
+  const selectedAreaId = useSelectedAreaId();
 
   // Sync incoming food note from cart
   useEffect(() => {
@@ -241,7 +245,7 @@ const CheckoutDialog = ({
         // its coordinates and address drive the fee, radius check and pickup.
         const locs = (cat.restaurant_locations ?? []) as RestaurantLocation[];
         const chosenBranch = data
-          ? (branchForArea(locs, data.id, getSelectedAreaId()) ?? anyBranch(locs, data.id))
+          ? (branchForArea(locs, data.id, selectedAreaId) ?? anyBranch(locs, data.id))
           : null;
         setBranchId(chosenBranch?.id ?? null);
 
@@ -273,7 +277,7 @@ const CheckoutDialog = ({
     return () => {
       alive = false;
     };
-  }, [open, primaryRestaurantName, primaryRestaurantId]);
+  }, [open, primaryRestaurantName, primaryRestaurantId, selectedAreaId]);
 
 
   // Match the customer's verified coords against the active delivery zones.

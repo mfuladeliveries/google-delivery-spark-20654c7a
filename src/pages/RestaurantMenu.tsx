@@ -40,6 +40,7 @@ import {
   effectiveCoords as branchCoords,
   effectiveDeliveryTime as branchEta,
   getSelectedAreaId,
+  useSelectedAreaId,
   type RestaurantLocation,
 } from "@/lib/restaurantAreas";
 import { toast } from "sonner";
@@ -177,17 +178,6 @@ const RestaurantMenu = () => {
       }
       setRestaurant(rest as Restaurant);
 
-      // Resolve which branch of this restaurant serves the customer's area.
-      try {
-        const { getCatalog } = await import("@/lib/catalog");
-        const catalog = await getCatalog();
-        const locs = (catalog.restaurant_locations ?? []) as RestaurantLocation[];
-        const areaId = getSelectedAreaId();
-        setBranch(branchForArea(locs, rest.id, areaId) ?? (requiresMenuPriceVerification(rest.name) && areaId ? null : anyBranch(locs, rest.id)));
-      } catch {
-        /* branch is optional — fall back to the restaurant's own location */
-      }
-
       // Try DB menu items first, fall back to static data
       let menuQuery = supabase
         .from("menu_items")
@@ -235,6 +225,34 @@ const RestaurantMenu = () => {
     };
     if (id) fetchData();
   }, [id, navigate]);
+
+  // Resolve which branch of this restaurant serves the customer's area.
+  // Re-runs whenever the selected area changes so coordinates, distance,
+  // fee and pickup point always match the area the customer is browsing.
+  const selectedAreaId = useSelectedAreaId();
+  useEffect(() => {
+    if (!restaurant) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const { getCatalog } = await import("@/lib/catalog");
+        const catalog = await getCatalog();
+        const locs = (catalog.restaurant_locations ?? []) as RestaurantLocation[];
+        if (cancelled) return;
+        setBranch(
+          branchForArea(locs, restaurant.id, selectedAreaId) ??
+            (requiresMenuPriceVerification(restaurant.name) && selectedAreaId
+              ? null
+              : anyBranch(locs, restaurant.id)),
+        );
+      } catch {
+        /* branch is optional — fall back to the restaurant's own location */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [restaurant, selectedAreaId]);
 
   // One-tap reorder: if a handoff was stashed from the Orders page,
   // pre-fill the cart once this restaurant's menu has loaded. Items not

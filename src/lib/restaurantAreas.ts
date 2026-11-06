@@ -6,6 +6,8 @@
 // address and hours used for distance, delivery fee, driver pickup and the
 // order itself.
 
+import { useSyncExternalStore } from "react";
+
 export interface RestaurantLocation {
   id: string;
   restaurant_id: string;
@@ -38,14 +40,32 @@ export const getSelectedAreaId = (): string | null => {
   }
 };
 
+const AREA_CHANGE_EVENT = "mfula-area-changed";
+
 export const setSelectedAreaId = (areaId: string | null): void => {
   try {
     if (areaId) localStorage.setItem(AREA_STORAGE_KEY, areaId);
     else localStorage.removeItem(AREA_STORAGE_KEY);
+    // Notify mounted screens (menu, checkout) so they re-resolve the branch
+    // for the new area instead of keeping the previous area's coordinates.
+    window.dispatchEvent(new Event(AREA_CHANGE_EVENT));
   } catch {
     /* ignore */
   }
 };
+
+const subscribeArea = (onChange: () => void) => {
+  window.addEventListener(AREA_CHANGE_EVENT, onChange);
+  window.addEventListener("storage", onChange);
+  return () => {
+    window.removeEventListener(AREA_CHANGE_EVENT, onChange);
+    window.removeEventListener("storage", onChange);
+  };
+};
+
+/** Reactive selected area id: re-renders when the customer changes area anywhere. */
+export const useSelectedAreaId = (): string | null =>
+  useSyncExternalStore(subscribeArea, getSelectedAreaId, () => null);
 
 /** A branch customers can order from: switched on, open, and with a real map location. */
 export const orderable = (l: RestaurantLocation) =>
