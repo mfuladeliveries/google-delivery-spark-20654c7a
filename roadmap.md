@@ -1,3 +1,7 @@
+# Restaurant locations
+- [x] Expose Locations & coordinates on each Admin restaurant; reuse existing per-area branch records and customer-location selection without database changes.
+- [ ] Verify live Admin location save and customer branch readback — blocked by currently inaccessible Cloud database.
+
 # Approval-to-payment workflow
 - [x] Check live approval RPC and scheduled timeout: acceptance sets pending_payment; existing 30-minute payment expiry runs every five minutes. Audit Yoco confirmation/retry/notifications without live mutations.
 - [x] Add customer pending-payment recovery on acceptance/reopening and show saved prices, delivery/service fees, discounts/credits and total; rejected orders do not redirect.
