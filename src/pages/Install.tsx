@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { setPwaVariant, type PwaVariant } from "@/lib/pwaVariant";
 import { toast } from "sonner";
+import { useAuth } from "@/hooks/useAuth";
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -77,11 +78,17 @@ const APPS: RoleApp[] = [
 
 const Install = () => {
   const { variant: variantParam } = useParams<{ variant?: string }>();
-  const focusedApp = useMemo(
-    () => APPS.find((a) => a.variant === variantParam) ?? null,
-    [variantParam],
+  const { roles, loading } = useAuth();
+  const showAdminApp = !loading && roles.includes("admin");
+  const availableApps = useMemo(
+    () => APPS.filter((app) => app.variant !== "admin" || showAdminApp),
+    [showAdminApp],
   );
-  const visibleApps = focusedApp ? [focusedApp] : APPS;
+  const focusedApp = useMemo(
+    () => availableApps.find((a) => a.variant === variantParam) ?? null,
+    [variantParam, availableApps],
+  );
+  const visibleApps = focusedApp ? [focusedApp] : availableApps;
 
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [isInstalled, setIsInstalled] = useState(false);
@@ -161,7 +168,7 @@ const Install = () => {
           <p className="mt-1 text-xs text-muted-foreground">
             {focusedApp
               ? `Install the ${focusedApp.name} app on your device.`
-              : "Mfula has four apps. Pick the one for your role — each installs separately."}
+              : "Pick the app for your role — each installs separately."}
           </p>
         </div>
 
@@ -540,8 +547,8 @@ const Install = () => {
 
         <p className="mt-6 text-center text-[10px] text-muted-foreground px-4">
           Each app installs as a separate icon with its own scope. Customer opens on the food menu,
-          Driver opens on the dashboard, Restaurant opens on the orders board, and Admin opens on
-          the admin console.
+          Driver opens on the dashboard, and Restaurant opens on the orders board.
+          {showAdminApp && " Admin opens on the admin console."}
         </p>
       </main>
     </div>
