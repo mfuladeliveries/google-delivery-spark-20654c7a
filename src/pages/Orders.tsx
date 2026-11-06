@@ -37,6 +37,8 @@ import { RatingDialog } from "@/components/RatingDialog";
 import { stashReorder } from "@/lib/reorder";
 import { OrderChat } from "@/components/OrderChat";
 import { distanceKm } from "@/lib/serviceArea";
+import { canCustomerCancelOrder, PAID_ORDER_STATUS } from "@/lib/orderCancellation";
+import { Button } from "@/components/ui/button";
 
 interface OrderItem {
   id?: string;
@@ -63,6 +65,7 @@ interface Order {
   created_at: string;
   delivery_code: string;
   customer_address: string;
+  payment_status: string;
   payment_method?: string;
   payment_environment?: string | null;
   cancel_reason?: string | null;
@@ -246,24 +249,21 @@ const Orders = () => {
   const [ratingTarget, setRatingTarget] = useState<RatingTarget | null>(null);
   const { prefs, update: updatePrefs } = useNotificationPrefs();
   const [cancellingId, setCancellingId] = useState<string | null>(null);
-  const [now, setNow] = useState(Date.now());
-
-  // Keep the "X min ago" cancel-window calculation fresh once a minute.
-  useEffect(() => {
-    const id = setInterval(() => setNow(Date.now()), 30_000);
-    return () => clearInterval(id);
-  }, []);
-
   const handleCustomerCancel = async (orderId: string, orderNumber: number) => {
     if (cancellingId) return;
+    const order = orders.find((entry) => entry.id === orderId);
+    if (!order || !canCustomerCancelOrder(order)) {
+      toast.error("Paid orders cannot be cancelled by customers. Contact Mfula administration for an exception.");
+      return;
+    }
     const confirmed = window.confirm(
-      `Cancel order #${orderNumber}? If you paid online, your refund will be processed automatically.`,
+      `Cancel unpaid order #${orderNumber}?`,
     );
     if (!confirmed) return;
     setCancellingId(orderId);
-    const { error } = await supabase.rpc("customer_cancel_recent_order" as never, {
+    const { error } = await supabase.rpc("customer_cancel_pending_order", {
       p_order_id: orderId,
-    } as never);
+    });
     setCancellingId(null);
     if (error) {
       toast.error(error.message || "Could not cancel order");
@@ -390,32 +390,6 @@ const Orders = () => {
       supabase.removeChannel(logChannel);
     };
   }, [user]);
-
-  const handleChooseRefund = async (
-    orderId: string,
-    orderNumber: number,
-    method: "credits" | "bank",
-  ) => {
-    const { data, error } = await supabase.rpc("customer_choose_refund", {
-      p_order_id: orderId,
-      p_method: method,
-    });
-    if (error) {
-      toast.error(error.message || "Failed to process refund choice");
-      return;
-    }
-    const result = data as { status?: string; amount?: number } | null;
-    if (method === "credits") {
-      toast.success(`R${Number(result?.amount || 0).toFixed(2)} added to your wallet 🎉`, {
-        description: "Use it on your next order.",
-      });
-    } else {
-      toast.success("Bank refund requested", {
-        description: `R${Number(result?.amount || 0).toFixed(2)} will be refunded to your bank account within 3–5 business days.`,
-        duration: 8000,
-      });
-    }
-  };
 
   const handleReorder = (order: Order) => {
     if (!order.restaurant_id) {
@@ -1036,48 +1010,11 @@ const Orders = () => {
                       </p>
                     )}
 
-                    {/* Refund choice card for online-paid cancelled orders */}
-                    {isCancelled &&
-                      order.payment_method === "online" &&
-                      order.refund_status === "pending" && (
-                        <div className="mt-3 rounded-xl border border-primary/30 bg-primary/5 p-3">
-                          <p className="text-sm font-bold text-foreground">
-                            💰 Choose how to get your refund
-                          </p>
-                          <p className="mt-0.5 text-xs text-muted-foreground">
-                            Refundable:{" "}
-                            <span className="font-bold text-primary">
-                              {storeInfo.currency}
-                              {Number(order.refund_amount || order.total).toFixed(2)}
-                            </span>
-                          </p>
-                          <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
-                            <button
-                              onClick={() =>
-                                handleChooseRefund(order.id, order.order_number, "credits")
-                              }
-                              className="btn-glow flex items-center justify-center gap-1.5 rounded-xl gradient-maroon px-3 py-2.5 text-xs font-bold text-primary-foreground hover:opacity-90"
-                            >
-                              <Wallet className="h-3.5 w-3.5" />
-                              Add to wallet (instant)
-                            </button>
-                            <button
-                              onClick={() =>
-                                handleChooseRefund(order.id, order.order_number, "bank")
-                              }
-                              className="flex items-center justify-center gap-1.5 rounded-xl border border-border bg-card px-3 py-2.5 text-xs font-bold text-foreground hover:bg-secondary"
-                            >
-                              <Banknote className="h-3.5 w-3.5" />
-                              Refund to bank
-                            </button>
-                          </div>
-                          <p className="mt-2 text-[10px] text-muted-foreground">
-                            ⚠️ Bank refunds take{" "}
-                            <span className="font-semibold">3–5 business days</span> to reflect.
-                            Wallet credits are instant.
-                          </p>
-                        </div>
-                      )}
+                    {isCancelled && order.refund_status === "pending" && (
+                      <p role="status" className="mt-3 border-l-4 border-primary bg-primary/10 p-3 text-sm text-foreground">
+                        Refund awaiting Mfula administrator approval.
+                      </p>
+                    )}
 
                     {/* Refund status indicator */}
                     {isCancelled && order.refund_status === "credited" && (
@@ -1106,46 +1043,23 @@ const Orders = () => {
                       </div>
                     )}
 
-                    {/* Self-serve cancel — eligible within 5 minutes, pre-driver only */}
-                    {(() => {
-                      const eligibleStatuses = [
-                        "pending_payment",
-                        "awaiting_restaurant",
-                        "pending",
-                        "confirmed",
-                        "preparing",
-                        "ready",
-                      ];
-                      const ageMs = now - new Date(order.created_at).getTime();
-                      const withinWindow = ageMs < 5 * 60 * 1000;
-                      const eligible =
-                        !isCancelled &&
-                        !order.driver_id &&
-                        eligibleStatuses.includes(order.status) &&
-                        withinWindow;
-                      if (!eligible) return null;
-                      const minsLeft = Math.max(0, Math.ceil((5 * 60 * 1000 - ageMs) / 60_000));
-                      const isCancelling = cancellingId === order.id;
-                      return (
-                        <button
-                          onClick={() => handleCustomerCancel(order.id, order.order_number)}
-                          disabled={isCancelling}
-                          className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-xl border-2 border-destructive/30 bg-destructive/5 px-3 py-2.5 text-xs font-bold text-destructive transition-colors hover:bg-destructive/10 disabled:opacity-60"
-                        >
-                          {isCancelling ? (
-                            <>
-                              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                              Cancelling…
-                            </>
-                          ) : (
-                            <>
-                              <X className="h-3.5 w-3.5" />
-                              Cancel order · {minsLeft} min left
-                            </>
-                          )}
-                        </button>
-                      );
-                    })()}
+                    {order.payment_status === "paid" && (
+                      <p role="status" className="mt-3 flex items-start gap-2 text-sm font-semibold text-primary">
+                        <ShieldCheck className="h-4 w-4 shrink-0 mt-0.5" />
+                        <span>{PAID_ORDER_STATUS}</span>
+                      </p>
+                    )}
+                    {canCustomerCancelOrder(order) && (
+                      <Button
+                        variant="outline"
+                        onClick={() => handleCustomerCancel(order.id, order.order_number)}
+                        disabled={cancellingId === order.id}
+                        className="mt-3 w-full border-destructive/30 text-destructive"
+                      >
+                        {cancellingId === order.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <X className="h-4 w-4" />}
+                        {cancellingId === order.id ? "Cancelling…" : "Cancel order"}
+                      </Button>
+                    )}
 
                     <div className="mt-3 flex justify-between border-t border-border pt-2 text-sm font-bold text-foreground">
                       <span>Total {order.tip > 0 && `(incl. R${order.tip} tip)`}</span>

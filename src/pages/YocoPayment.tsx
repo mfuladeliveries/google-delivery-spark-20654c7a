@@ -6,6 +6,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { clearPendingPaymentOrder, loadPendingPaymentOrder } from "@/lib/pendingPaymentOrder";
 import { canPayOrder, paymentBreakdown, type OrderAmounts } from "@/lib/approvalPayment";
+import PaymentCancellationWarning from "@/components/PaymentCancellationWarning";
 import { getYocoReturnOrigin } from "@/lib/yoco";
 
 interface PaymentOrder extends OrderAmounts {
@@ -147,6 +148,8 @@ const YocoPayment = () => {
             </dl>
             {!breakdown?.matches && <p role="alert" className="mt-4 text-sm text-destructive">The saved total does not match the fee breakdown. Please contact Mfula Deliveries before paying.</p>}
             {waitingForDriver && <p role="status" className="mt-4 text-sm text-muted-foreground">No drivers are online in your area yet. Your order remains pending payment; try again shortly.</p>}
+            <p className="mt-4 text-sm text-foreground"><span className="font-semibold">Delivery address:</span> {order.customer_address}</p>
+            <PaymentCancellationWarning />
             <Button size="lg" className="mt-6 w-full" disabled={busy || !breakdown?.matches} onClick={startCheckout}>{busy ? <Loader2 className="animate-spin" /> : error || waitingForDriver ? <RefreshCw /> : <CreditCard />}{busy ? "Opening secure checkout…" : error || waitingForDriver ? "Retry payment" : `Pay ${money(order.total)} with Yoco`}</Button>
           </>
         )}

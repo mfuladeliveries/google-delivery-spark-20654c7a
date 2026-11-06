@@ -13,7 +13,7 @@ export const POLICY_CONTACT = {
 export const POLICY_VERSIONS = {
   terms: "2026-08-07",
   delivery: "2026-08-07",
-  refund: "2026-08-07",
+  refund: "2026-11-06",
 } as const;
 
 export const POLICY_LINKS = [

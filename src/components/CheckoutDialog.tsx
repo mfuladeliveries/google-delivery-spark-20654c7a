@@ -34,6 +34,7 @@ import { useNavigate } from "react-router-dom";
 import { AddressAutocomplete, type ValidatedAddress } from "@/components/AddressAutocomplete";
 import { SavedAddressDialog } from "@/components/SavedAddressDialog";
 import { findNearestZone, OUT_OF_ZONE_MESSAGE, DEFAULT_ZONE_RADIUS_KM } from "@/lib/serviceArea";
+import PaymentCancellationWarning from "@/components/PaymentCancellationWarning";
 import { savePendingPaymentOrder } from "@/lib/pendingPaymentOrder";
 import { POLICY_VERSIONS } from "@/lib/policies";
 import {
@@ -1522,6 +1523,7 @@ const CheckoutDialog = ({
             </label>
           </div>
 
+          <PaymentCancellationWarning />
           <button
             onClick={handleCheckout}
             disabled={

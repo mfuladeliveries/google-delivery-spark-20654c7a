@@ -17,6 +17,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { RestaurantName } from "@/components/RestaurantName";
 import { clearPendingPaymentOrder, loadPendingPaymentOrder } from "@/lib/pendingPaymentOrder";
+import { PAID_ORDER_STATUS } from "@/lib/orderCancellation";
+import PaymentCancellationWarning from "@/components/PaymentCancellationWarning";
+import { Button } from "@/components/ui/button";
 import { canPayOrder } from "@/lib/approvalPayment";
 
 interface ConfirmationState {
@@ -29,6 +32,7 @@ interface ConfirmationState {
   paymentMethod?: "cash" | "online";
   restaurant?: string;
   paymentPending?: boolean;
+  paymentVerified?: boolean;
   awaitingRestaurant?: boolean;
   rejected?: boolean;
   rejectReason?: string;
@@ -156,6 +160,7 @@ const OrderConfirmation = () => {
         paymentMethod: (order.payment_method as "cash" | "online") || undefined,
         restaurant: order.restaurant || undefined,
         paymentPending: order.status === "pending_payment",
+        paymentVerified: order.payment_status === "paid",
         awaitingRestaurant: order.status === "awaiting_restaurant",
         rejected: order.status === "rejected",
         rejectReason: order.cancel_reason || undefined,
@@ -307,6 +312,7 @@ const OrderConfirmation = () => {
     paymentMethod,
     restaurant,
     paymentPending,
+    paymentVerified,
     awaitingRestaurant,
     rejected,
     rejectReason,
@@ -382,12 +388,8 @@ const OrderConfirmation = () => {
               <p className="text-sm text-muted-foreground max-w-xs">
                 Your order is accepted and reserved while you complete payment.
               </p>
-              <button
-                onClick={handlePayNow}
-                className="btn-glow inline-flex items-center gap-2 rounded-xl gradient-maroon px-5 py-2.5 text-sm font-bold text-primary-foreground transition-transform hover:scale-[1.02] active:scale-[0.98]"
-              >
-                💳 Pay Now
-              </button>
+              <PaymentCancellationWarning />
+              <Button onClick={handlePayNow}>💳 Pay Now</Button>
               <button
                 onClick={handleManualRefresh}
                 disabled={refreshing}
@@ -409,6 +411,8 @@ const OrderConfirmation = () => {
             </p>
           )}
         </div>
+
+        {paymentVerified && <p role="status" className="mt-4 text-center text-sm font-semibold text-primary">{PAID_ORDER_STATUS}</p>}
 
         {/* Order number */}
         <div className="mt-6 rounded-2xl border border-border bg-card p-4 text-center shadow-card">

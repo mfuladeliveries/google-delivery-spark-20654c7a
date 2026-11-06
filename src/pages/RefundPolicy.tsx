@@ -13,20 +13,20 @@ const RefundPolicy = () => {
       intro="This policy explains when a Mfula Deliveries order can be cancelled, when a refund may be issued, and how refunds are processed."
       version={POLICY_VERSIONS.refund}
     >
-      <PolicySection heading="1. Customer Cancellation Before Restaurant Acceptance">
+      <PolicySection heading="1. Customer Cancellation Before Payment">
         <p>
-          You may request to cancel an order before the restaurant or store has accepted it or started
-          preparing it. Where no preparation or delivery costs have been incurred, a full refund may be
-          issued.
+          You may cancel an active order while payment is pending or unsuccessful. Please check your
+          order and delivery details carefully before paying. This applies to every restaurant and
+          kitchen on Mfula Deliveries.
         </p>
       </PolicySection>
 
-      <PolicySection heading="2. Cancellation After Acceptance or Preparation">
+      <PolicySection heading="2. Cancellation After Successful Payment">
         <p>
-          Once the restaurant has accepted your order or started preparing it, a cancellation may not
-          qualify for a full refund, because food preparation and operational costs may already have
-          been incurred. In these cases a partial refund may be considered depending on the
-          circumstances.
+          Once payment has been successfully verified, customers cannot cancel their order.
+          Only a Mfula administrator can approve exceptional cancellations or refunds after payment.
+          Contact Mfula Deliveries with your order reference if an exception is needed.
+          Your statutory consumer rights remain unchanged.
         </p>
       </PolicySection>
 
@@ -41,7 +41,8 @@ const RefundPolicy = () => {
 
       <PolicySection heading="4. Restaurant or Platform Cancellation">
         <p>
-          Where an order is cancelled for reasons on our side, you should receive an appropriate
+          Paid-order cancellations and refunds require Mfula administrator approval. Where an order
+          is cancelled for reasons on our side, you should receive an appropriate
           refund. This includes where:
         </p>
         <PolicyList
