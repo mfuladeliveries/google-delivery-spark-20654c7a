@@ -1,4 +1,5 @@
 # Restaurant locations
+- [ ] Fix reproduced cart distance/fee lookup using brand coordinates instead of the area's branch; verify signed-in KFC Delft cart-to-checkout without placing an order.
 - [x] Apply strict branch-area matching to all restaurant brands in home/search/menu/checkout, choose nearest branch with customer coordinates, and block incomplete/invalid admin GPS entries. Preserve companion shopping and payment logic. Signed-in Delft GPS detection/search verified; 54 focused tests passed.
 - [ ] Populate missing branches/areas only from verified locations with approval for live data changes; never use area-centre placeholders.
 - [x] Expose Locations & coordinates on each Admin restaurant; reuse existing per-area branch records and customer-location selection without database changes.

@@ -4,6 +4,9 @@ import { MenuItem, SizeOption, AddOnOption, CutOption, storeInfo } from "@/data/
 import { useCustomerLocation } from "@/hooks/useCustomerLocation";
 import { supabase } from "@/integrations/supabase/client";
 import { calcZoneFee, distanceKm } from "@/lib/serviceArea";
+import { useGeoLocation } from "@/hooks/useGeoLocation";
+import { useCartPickup } from "@/hooks/useCartPickup";
+import { primaryCartRestaurant } from "@/lib/cartRestaurant";
 
 /** General store that may always be combined with one restaurant's order. */
 export const COMPANION_STORE = "Mfula Shop";
@@ -102,7 +105,9 @@ export function useCart() {
   // Lazy initializer rehydrates the cart from localStorage so the user's
   // selections survive minimize/relaunch and full app restarts.
   const [items, setItems] = useState<CartItem[]>(() => loadPersistedCart());
-  const { zone, lat, lng } = useCustomerLocation();
+  const { zones } = useCustomerLocation();
+  const { lat, lng } = useGeoLocation();
+  const zone = lat != null && lng != null ? findNearestZone(lat, lng, zones) : null;
 
   // Persist cart on every change. localStorage is synchronous but tiny here.
   useEffect(() => {
@@ -115,46 +120,8 @@ export function useCart() {
 
   // Look up the primary restaurant's coords so we can compute the dynamic
   // delivery fee = base + (km from restaurant × per-km), clamped by min/max.
-  const primaryRestaurantName = useMemo(() => {
-    const names = items
-      .map((ci) => ci.item.restaurantName || ci.item.category)
-      .filter(Boolean) as string[];
-    // Prefer the actual restaurant over the companion store for fee pricing.
-    return names.find((n) => !isCompanionStore(n)) || names[0] || "";
-
-  }, [items]);
-
-  const [restaurantCoords, setRestaurantCoords] = useState<{
-    lat: number;
-    lng: number;
-  } | null>(null);
-  useEffect(() => {
-    if (!primaryRestaurantName) {
-      setRestaurantCoords(null);
-      return;
-    }
-    let alive = true;
-    import("@/lib/catalog").then(({ getCatalog }) => {
-      getCatalog()
-        .then((cat) => {
-          if (!alive) return;
-          const r = cat.restaurants.find(
-            (x) => x.name === primaryRestaurantName && x.is_active,
-          );
-          if (r && typeof r.lat === "number" && typeof r.lng === "number") {
-            setRestaurantCoords({ lat: r.lat, lng: r.lng });
-          } else {
-            setRestaurantCoords(null);
-          }
-        })
-        .catch(() => {
-          if (alive) setRestaurantCoords(null);
-        });
-    });
-    return () => {
-      alive = false;
-    };
-  }, [primaryRestaurantName]);
+  const { name: primaryRestaurantName, id: primaryRestaurantId } = primaryCartRestaurant(items);
+  const { pickup: restaurantCoords } = useCartPickup(primaryRestaurantName, primaryRestaurantId, lat, lng);
 
 
   /**
