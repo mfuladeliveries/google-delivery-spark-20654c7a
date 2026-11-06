@@ -9,6 +9,7 @@ import { getHomeRouteForRoles } from "@/lib/homeRoute";
 import { RestaurantName } from "@/components/RestaurantName";
 import { branchForArea, useSelectedAreaId, isCompanionStore } from "@/lib/restaurantAreas";
 import { useGeoLocation } from "@/hooks/useGeoLocation";
+import { useRestaurantArea } from "@/hooks/useRestaurantArea";
 
 interface Restaurant {
   id: string;
@@ -40,8 +41,8 @@ const FALLBACK_IMG =
 const Search = () => {
   const navigate = useNavigate();
   const { roles } = useAuth();
-  const areaId = useSelectedAreaId();
   const geo = useGeoLocation();
+  const areaId = useRestaurantArea(geo.lat, geo.lng);
   const searchVersion = useRef(0);
   const homeRoute = getHomeRouteForRoles(roles);
   const [query, setQuery] = useState("");

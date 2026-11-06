@@ -42,6 +42,7 @@ import {
   type RestaurantLocation,
 } from "@/lib/restaurantAreas";
 import { toast } from "sonner";
+import { useRestaurantArea } from "@/hooks/useRestaurantArea";
 
 interface Restaurant {
   id: string;
@@ -227,7 +228,7 @@ const RestaurantMenu = () => {
   // Resolve which branch of this restaurant serves the customer's area.
   // Re-runs whenever the selected area changes so coordinates, distance,
   // fee and pickup point always match the area the customer is browsing.
-  const selectedAreaId = useSelectedAreaId();
+  const selectedAreaId = useRestaurantArea(geo.lat, geo.lng);
   useEffect(() => {
     if (!restaurant) return;
     setBranch(null);
