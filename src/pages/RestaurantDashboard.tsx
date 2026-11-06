@@ -35,7 +35,7 @@ import FoodImageUpload from "@/components/FoodImageUpload";
 import InstallAppButton from "@/components/InstallAppButton";
 import RestaurantEarnings from "@/components/restaurant/RestaurantEarnings";
 import RestaurantPerformance from "@/components/restaurant/RestaurantPerformance";
-import { restaurantNeedsDecision, nextRestaurantStatus, canRestaurantTransition, REJECTION_REASONS, resolveRejectionReason } from "@/lib/restaurantOrderActions";
+import { restaurantNeedsDecision, nextRestaurantStatus, canRestaurantTransition, REJECTION_REASONS, resolveRejectionReason, RESTAURANT_ORDER_REFRESH_MS } from "@/lib/restaurantOrderActions";
 import {
   Dialog,
   DialogContent,
@@ -330,6 +330,33 @@ const RestaurantDashboard = () => {
     if (error) { setLoadError("Couldn’t load orders. Please refresh."); throw error; }
     if (data) setOrders(data.map((o) => ({ ...o, items: (o.items as any[]) || [] })));
   };
+
+  // Refresh only orders; leave menu edits and kitchen settings untouched.
+  useEffect(() => {
+    if (authLoading || !user || !restaurant?.id || !["restaurant", "admin"].includes(role ?? "")) return;
+    const restaurantId = restaurant.id;
+    let inFlight = false;
+    const refresh = async () => {
+      if (inFlight || !navigator.onLine || document.visibilityState !== "visible") return;
+      inFlight = true;
+      try {
+        await fetchOrdersFor(restaurantId);
+      } catch {
+        // The order loader displays the error; the next tick retries.
+      } finally {
+        inFlight = false;
+      }
+    };
+    const timer = window.setInterval(() => void refresh(), RESTAURANT_ORDER_REFRESH_MS);
+    const resume = () => void refresh();
+    window.addEventListener("online", resume);
+    document.addEventListener("visibilitychange", resume);
+    return () => {
+      window.clearInterval(timer);
+      window.removeEventListener("online", resume);
+      document.removeEventListener("visibilitychange", resume);
+    };
+  }, [authLoading, user?.id, role, restaurant?.id]);
 
   const fetchMenuFor = async (restaurantId: string) => {
     const { data } = await supabase

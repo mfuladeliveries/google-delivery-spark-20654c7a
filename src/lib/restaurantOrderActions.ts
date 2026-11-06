@@ -1,3 +1,5 @@
+export const RESTAURANT_ORDER_REFRESH_MS = 10_000;
+
 export function restaurantNeedsDecision(status: string): boolean {
   return status === "pending" || status === "awaiting_restaurant";
 }

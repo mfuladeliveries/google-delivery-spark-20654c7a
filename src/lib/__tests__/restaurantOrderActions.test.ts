@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { canRestaurantTransition, nextRestaurantStatus, restaurantNeedsDecision, resolveRejectionReason } from "../restaurantOrderActions";
+import { canRestaurantTransition, nextRestaurantStatus, restaurantNeedsDecision, resolveRejectionReason, RESTAURANT_ORDER_REFRESH_MS } from "../restaurantOrderActions";
+
+it("refreshes restaurant orders every 10 seconds", () => {
+  expect(RESTAURANT_ORDER_REFRESH_MS).toBe(10_000);
+});
 
 describe("restaurant order decisions", () => {
   it("offers accept and reject for new orders and availability requests", () => {
