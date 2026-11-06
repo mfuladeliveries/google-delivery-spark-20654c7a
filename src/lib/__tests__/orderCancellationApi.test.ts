@@ -1,4 +1,3 @@
-// @vitest-environment node
 import { describe, expect, it } from "vitest";
 
 const url = process.env.CANCELLATION_TEST_URL;
