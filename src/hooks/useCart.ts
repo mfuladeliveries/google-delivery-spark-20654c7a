@@ -3,7 +3,7 @@ import { toast } from "sonner";
 import { MenuItem, SizeOption, AddOnOption, CutOption, storeInfo } from "@/data/menu";
 import { useCustomerLocation } from "@/hooks/useCustomerLocation";
 import { supabase } from "@/integrations/supabase/client";
-import { calcZoneFee, distanceKm } from "@/lib/serviceArea";
+import { calcZoneFee, distanceKm, findNearestZone } from "@/lib/serviceArea";
 import { useGeoLocation } from "@/hooks/useGeoLocation";
 import { useCartPickup } from "@/hooks/useCartPickup";
 import { primaryCartRestaurant } from "@/lib/cartRestaurant";

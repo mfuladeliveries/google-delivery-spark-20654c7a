@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import {
   X,
@@ -23,7 +23,6 @@ import {
 } from "@/hooks/useGeoLocation";
 import { useAuth } from "@/hooks/useAuth";
 import { RestaurantName } from "@/components/RestaurantName";
-import { supabase } from "@/integrations/supabase/client";
 
 interface CartProps {
   open: boolean;
