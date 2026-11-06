@@ -186,6 +186,9 @@ const CheckoutDialog = ({
   const checkoutRestaurantId = primaryRestaurantId ?? resolvedRestaurantId;
   // Branch of the restaurant that serves the customer's delivery area.
   const [branchId, setBranchId] = useState<string | null>(null);
+  // Reactive selected area: re-resolving the branch when the customer changes
+  // area keeps the fee, radius check and pickup coordinates in sync.
+  const selectedAreaId = useSelectedAreaId();
 
   // Sync incoming food note from cart
   useEffect(() => {
@@ -274,7 +277,7 @@ const CheckoutDialog = ({
     return () => {
       alive = false;
     };
-  }, [open, primaryRestaurantName, primaryRestaurantId]);
+  }, [open, primaryRestaurantName, primaryRestaurantId, selectedAreaId]);
 
 
   // Match the customer's verified coords against the active delivery zones.
