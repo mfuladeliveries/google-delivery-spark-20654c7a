@@ -177,17 +177,6 @@ const RestaurantMenu = () => {
       }
       setRestaurant(rest as Restaurant);
 
-      // Resolve which branch of this restaurant serves the customer's area.
-      try {
-        const { getCatalog } = await import("@/lib/catalog");
-        const catalog = await getCatalog();
-        const locs = (catalog.restaurant_locations ?? []) as RestaurantLocation[];
-        const areaId = getSelectedAreaId();
-        setBranch(branchForArea(locs, rest.id, areaId) ?? (requiresMenuPriceVerification(rest.name) && areaId ? null : anyBranch(locs, rest.id)));
-      } catch {
-        /* branch is optional — fall back to the restaurant's own location */
-      }
-
       // Try DB menu items first, fall back to static data
       let menuQuery = supabase
         .from("menu_items")
