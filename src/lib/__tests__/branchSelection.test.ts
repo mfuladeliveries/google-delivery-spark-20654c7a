@@ -22,6 +22,7 @@ describe("branch selection per delivery area", () => {
   });
   it.each(["Mfuleni", "Delft", "Blue Downs", "Malibu", "Blackheath", "Eerste River", "Summerville", "Bardale Village"])("never substitutes another area for %s", (area) => {
     expect(branchForArea([mk("other", "unrelated", -33.97, 18.64)], "kfc", area)).toBeNull();
+    expect(branchForArea([mk("serving", area, -33.97, 18.64)], "kfc", area)?.id).toBe("serving");
   });
   it("blocks branches without a known customer area", () => {
     expect(branchForArea([mk("delft", "Delft", -33.97, 18.64)], "kfc", null)).toBeNull();

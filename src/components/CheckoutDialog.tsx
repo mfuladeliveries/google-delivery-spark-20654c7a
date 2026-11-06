@@ -252,8 +252,8 @@ const CheckoutDialog = ({
           : null;
         setBranchId(chosenBranch?.id ?? null);
 
-        const lat = chosenBranch?.lat;
-        const lng = chosenBranch?.lng;
+        const lat = chosenBranch?.lat ?? (isCompanionStore(data?.name ?? "") ? data?.lat : null);
+        const lng = chosenBranch?.lng ?? (isCompanionStore(data?.name ?? "") ? data?.lng : null);
         if (typeof lat === "number" && typeof lng === "number") {
           setRestaurantCoords({ lat, lng });
         } else {
@@ -550,7 +550,7 @@ const CheckoutDialog = ({
       toast.error(OUT_OF_ZONE_MESSAGE);
       return;
     }
-    if (primaryRestaurantName && (!branchId || !restaurantCoords)) {
+    if (primaryRestaurantName && !isCompanionStore(primaryRestaurantName) && (!branchId || !restaurantCoords)) {
       toast.error("This restaurant has no available branch serving your delivery address.");
       return;
     }

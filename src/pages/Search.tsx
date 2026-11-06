@@ -7,7 +7,7 @@ import { storeInfo } from "@/data/menu";
 import { useAuth } from "@/hooks/useAuth";
 import { getHomeRouteForRoles } from "@/lib/homeRoute";
 import { RestaurantName } from "@/components/RestaurantName";
-import { branchForArea, useSelectedAreaId, isCompanionStore } from "@/lib/restaurantAreas";
+import { branchForArea, isCompanionStore } from "@/lib/restaurantAreas";
 import { useGeoLocation } from "@/hooks/useGeoLocation";
 import { useRestaurantArea } from "@/hooks/useRestaurantArea";
 

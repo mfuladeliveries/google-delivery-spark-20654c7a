@@ -38,7 +38,6 @@ import {
   branchForArea,
   effectiveCoords as branchCoords,
   effectiveDeliveryTime as branchEta,
-  useSelectedAreaId,
   type RestaurantLocation,
 } from "@/lib/restaurantAreas";
 import { toast } from "sonner";
@@ -111,7 +110,7 @@ const RestaurantMenu = () => {
   // The branch serving the customer's selected delivery area. Its coordinates
   // drive distance gating, the delivery fee and the driver's pickup point.
   const [branch, setBranch] = useState<RestaurantLocation | null>(null);
-  const pickupCoords = restaurant && branch
+  const pickupCoords = restaurant && (branch || isCompanionStore(restaurant.name))
     ? branchCoords(restaurant, branch)
     : { lat: null as number | null, lng: null as number | null };
 
@@ -343,7 +342,7 @@ const RestaurantMenu = () => {
       toast.info("Price awaiting branch verification");
       return;
     }
-    if (!branch) {
+    if (!branch && !isCompanionStore(restaurant?.name ?? "")) {
       toast.error(`${restaurant?.name} is not available in your selected delivery area.`);
       return;
     }
@@ -678,7 +677,7 @@ const RestaurantMenu = () => {
                             e.stopPropagation();
                             handleAddItem(item);
                           }}
-                          disabled={pendingPrice || !canOrder || cartLockedElsewhere || !branch}
+                          disabled={pendingPrice || !canOrder || cartLockedElsewhere || (!branch && !isCompanionStore(restaurant.name))}
                           data-testid="menu-add-button"
                           className="btn-glow flex items-center gap-1 rounded-xl gradient-maroon px-3 py-1.5 text-xs font-bold text-primary-foreground transition-transform hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
                         >

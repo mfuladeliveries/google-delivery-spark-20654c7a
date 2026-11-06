@@ -1,8 +1,8 @@
 # Restaurant locations
-- [ ] Apply consistent area matching and valid branch coordinates to all brands; verify automatic address/GPS selection and admin controls.
+- [x] Apply strict branch-area matching to all restaurant brands in home/search/menu/checkout, choose nearest branch with customer coordinates, and block incomplete/invalid admin GPS entries. Preserve companion shopping and payment logic. Signed-in Delft GPS detection/search verified; 54 focused tests passed.
 - [ ] Populate missing branches/areas only from verified locations with approval for live data changes; never use area-centre placeholders.
 - [x] Expose Locations & coordinates on each Admin restaurant; reuse existing per-area branch records and customer-location selection without database changes.
-- [ ] Verify live Admin location save and customer branch readback — blocked by currently inaccessible Cloud database.
+- [ ] Verify live Admin location save — requires authorized admin session and approved verified location data; customer Delft branch browsing verified without live mutations.
 
 # Approval-to-payment workflow
 - [x] Check live approval RPC and scheduled timeout: acceptance sets pending_payment; existing 30-minute payment expiry runs every five minutes. Audit Yoco confirmation/retry/notifications without live mutations.
