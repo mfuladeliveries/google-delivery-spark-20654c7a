@@ -40,6 +40,7 @@ import {
   anyBranch,
   branchForArea,
   getSelectedAreaId,
+  useSelectedAreaId,
   type RestaurantLocation,
 } from "@/lib/restaurantAreas";
 import { Link } from "react-router-dom";

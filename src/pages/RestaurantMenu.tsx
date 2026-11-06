@@ -40,6 +40,7 @@ import {
   effectiveCoords as branchCoords,
   effectiveDeliveryTime as branchEta,
   getSelectedAreaId,
+  useSelectedAreaId,
   type RestaurantLocation,
 } from "@/lib/restaurantAreas";
 import { toast } from "sonner";
