@@ -6,7 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { MapPin, Plus, Save, Trash2, X, Store } from "lucide-react";
 import { invalidateCatalog } from "@/lib/catalog";
-import type { RestaurantLocation } from "@/lib/restaurantAreas";
+import { validBranchCoordinates, type RestaurantLocation } from "@/lib/restaurantAreas";
 import { Button } from "@/components/ui/button";
 
 interface AreaOption {
@@ -97,8 +97,8 @@ const RestaurantBranches = ({
     }
     const lat = draft.lat.trim() === "" ? null : Number(draft.lat);
     const lng = draft.lng.trim() === "" ? null : Number(draft.lng);
-    if ((lat !== null && !Number.isFinite(lat)) || (lng !== null && !Number.isFinite(lng))) {
-      toast.error("Latitude and longitude must be numbers");
+    if ((lat !== null || lng !== null) && !validBranchCoordinates(lat, lng)) {
+      toast.error("Enter both valid GPS coordinates, or leave both empty for an unavailable branch");
       return;
     }
 
@@ -116,6 +116,8 @@ const RestaurantBranches = ({
       address: draft.address.trim(),
       lat,
       lng,
+      active: validBranchCoordinates(lat, lng),
+      delivery_enabled: validBranchCoordinates(lat, lng),
       delivery_fee: fee,
       estimated_delivery_time: draft.estimated_delivery_time.trim() || null,
       opens_at: draft.opens_at || null,
@@ -466,8 +468,8 @@ const BranchDetailEditor = ({
   const save = () => {
     const latNum = lat.trim() === "" ? null : Number(lat);
     const lngNum = lng.trim() === "" ? null : Number(lng);
-    if ((latNum !== null && !Number.isFinite(latNum)) || (lngNum !== null && !Number.isFinite(lngNum))) {
-      toast.error("Latitude and longitude must be numbers");
+    if ((latNum !== null || lngNum !== null) && !validBranchCoordinates(latNum, lngNum)) {
+      toast.error("Enter both valid GPS coordinates, or leave both empty for an unavailable branch");
       return;
     }
     const feeNum = fee.trim() === "" ? null : Number(fee);
@@ -480,6 +482,7 @@ const BranchDetailEditor = ({
       address: address.trim(),
       lat: latNum,
       lng: lngNum,
+      ...(!validBranchCoordinates(latNum, lngNum) ? { active: false, delivery_enabled: false } : {}),
       delivery_fee: feeNum,
       estimated_delivery_time: eta.trim() || null,
       opens_at: opens || null,

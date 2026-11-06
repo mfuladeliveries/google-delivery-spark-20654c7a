@@ -4,6 +4,7 @@ import {
   getSelectedAreaId,
   setSelectedAreaId,
   type RestaurantLocation,
+  validBranchCoordinates,
 } from "../restaurantAreas";
 
 const base = { restaurant_id: "kfc", active: true, delivery_enabled: true, is_open: true, opens_at: null, closes_at: null, operating_days: null, address: "" };
@@ -11,6 +12,33 @@ const mk = (id: string, area: string, lat: number | null, lng: number | null): R
   ({ ...base, id, area_id: area, branch_name: id, lat, lng }) as RestaurantLocation;
 
 describe("branch selection per delivery area", () => {
+  it.each(["KFC", "Debonairs", "Pedros", "Burger King", "Steers", "Mdala Tshisanyama", "Other restaurant"])("uses area-specific coordinates for %s", (restaurant_id) => {
+    const locations = [
+      { ...mk("mfuleni", "Mfuleni", -33.99, 18.68), restaurant_id },
+      { ...mk("delft", "Delft", -33.97, 18.64), restaurant_id },
+    ];
+    expect(branchForArea(locations, restaurant_id, "Delft")?.lat).toBe(-33.97);
+    expect(branchForArea(locations, restaurant_id, "Mfuleni")?.lng).toBe(18.68);
+  });
+  it.each(["Mfuleni", "Delft", "Blue Downs", "Malibu", "Blackheath", "Eerste River", "Summerville", "Bardale Village"])("never substitutes another area for %s", (area) => {
+    expect(branchForArea([mk("other", "unrelated", -33.97, 18.64)], "kfc", area)).toBeNull();
+  });
+  it("blocks branches without a known customer area", () => {
+    expect(branchForArea([mk("delft", "Delft", -33.97, 18.64)], "kfc", null)).toBeNull();
+  });
+  it("excludes closed, inactive and delivery-disabled branches", () => {
+    const b = mk("delft", "Delft", -33.97, 18.64);
+    for (const unavailable of [{ ...b, active: false }, { ...b, delivery_enabled: false }, { ...b, is_open: false }]) {
+      expect(branchForArea([unavailable], "kfc", "Delft")).toBeNull();
+    }
+  });
+  it("rejects incomplete and invalid GPS coordinates", () => {
+    expect(validBranchCoordinates(null, 18.64)).toBe(false);
+    expect(validBranchCoordinates(-91, 18.64)).toBe(false);
+    expect(validBranchCoordinates(-33.97, 181)).toBe(false);
+    expect(validBranchCoordinates(NaN, 18.64)).toBe(false);
+    expect(validBranchCoordinates(-33.97, 18.64)).toBe(true);
+  });
   it("hides a branch that has no map location", () => {
     expect(branchForArea([mk("mfuleni", "A", null, null)], "kfc", "A")).toBeNull();
   });

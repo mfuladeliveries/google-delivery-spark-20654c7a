@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { Search as SearchIcon, ArrowLeft, Star, Clock, UtensilsCrossed } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
