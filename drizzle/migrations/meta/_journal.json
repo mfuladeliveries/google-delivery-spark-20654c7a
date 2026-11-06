@@ -64,6 +64,13 @@
       "when": 1793621542967,
       "tag": "0008_payment_retry_recovery",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1793950556305,
+      "tag": "0009_strict_paid_order_cancellation",
+      "breakpoints": true
     }
   ]
 }

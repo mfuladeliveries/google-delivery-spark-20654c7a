@@ -13,6 +13,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { clearPersistedCart } from "@/hooks/useCart";
 import { supabase } from "@/integrations/supabase/client";
 import { clearPendingPaymentOrder, loadPendingPaymentOrder } from "@/lib/pendingPaymentOrder";
+import { PAID_ORDER_STATUS } from "@/lib/orderCancellation";
 import { canPayOrder, isConfirmedPaid } from "@/lib/approvalPayment";
 import { Button } from "@/components/ui/button";
 
@@ -164,7 +165,7 @@ const PaymentResult = () => {
 
   const title =
     phase === "success"
-      ? "Payment Successful"
+      ? PAID_ORDER_STATUS
       : phase === "failed"
         ? "Payment Failed or Cancelled"
         : requestedStatus === "COMPLETE"

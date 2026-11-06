@@ -1,3 +1,9 @@
+# Paid order cancellation
+- [x] Add the exact warning immediately before payment and paid-order status; remove customer cancel after verified payment. Align refund policy and remove customer-issued wallet/bank refund controls.
+- [x] Apply approved live cancellation safeguards across both customer RPCs and order writes; preserve administrator exceptions and service payment workflows. Disable customer refund execution and prevent 12-hour automatic cancellation of paid orders. Live function/trigger/grant readback confirmed.
+- [x] Pass 28 tests including live anonymous cancellation denial, customer refund denial and admin-only exception checks. Signed-in live account has no orders; controlled desktop/mobile warning, unpaid/paid UI checks pass without runtime errors or overflow. Latest preview build OK; no charges or existing order mutations.
+- [ ] Verify a real pending/failed cancellation, paid-order RPC/direct-write denial, administrator exception and full Yoco payment return end-to-end — requires appropriate test orders and authorized administrator session; no real payment was made.
+
 # Restaurant locations
 - [x] Fix reproduced cart distance/fee lookup using brand coordinates instead of the area's branch. Shared area-specific pickup lookup; 47 tests pass, preview build OK, signed-in KFC Delft bucket cart warning removed and checkout opens on mobile without placing an order or charging.
 - [x] Apply strict branch-area matching to all restaurant brands in home/search/menu/checkout, choose nearest branch with customer coordinates, and block incomplete/invalid admin GPS entries. Preserve companion shopping and payment logic. Signed-in Delft GPS detection/search verified; 54 focused tests passed.
