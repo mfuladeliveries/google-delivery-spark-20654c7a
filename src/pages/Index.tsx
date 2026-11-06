@@ -324,11 +324,11 @@ const Index = () => {
   // selected area to match it and remember it for refreshes/checkout.
   const detectedAreaId = currentZone?.zone.id ?? null;
   useEffect(() => {
-    if (detectedAreaId) {
+    if (effectiveCoords && zones.length > 0) {
       setChosenAreaId(detectedAreaId);
       setSelectedAreaId(detectedAreaId);
     }
-  }, [detectedAreaId]);
+  }, [detectedAreaId, effectiveCoords?.lat, effectiveCoords?.lng, zones.length]);
 
   const chooseArea = (areaId: string) => {
     setChosenAreaId(areaId);
@@ -340,7 +340,7 @@ const Index = () => {
   // distance + nearby flag measured from that branch.
   const annotated = useMemo(() => {
     return restaurants.map((r) => {
-      const branch = branchForArea(locations, r.id, activeAreaId);
+      const branch = branchForArea(locations, r.id, activeAreaId, effectiveCoords);
       const coords = branchCoords(r, branch);
       const hours = branchHours(r, branch);
       const d =

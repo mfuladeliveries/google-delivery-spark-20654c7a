@@ -35,15 +35,13 @@ import { Button } from "@/components/ui/button";
 import { RestaurantName } from "@/components/RestaurantName";
 import { popReorder } from "@/lib/reorder";
 import {
-  anyBranch,
   branchForArea,
   effectiveCoords as branchCoords,
   effectiveDeliveryTime as branchEta,
-  getSelectedAreaId,
-  useSelectedAreaId,
   type RestaurantLocation,
 } from "@/lib/restaurantAreas";
 import { toast } from "sonner";
+import { useRestaurantArea } from "@/hooks/useRestaurantArea";
 
 interface Restaurant {
   id: string;
@@ -112,7 +110,7 @@ const RestaurantMenu = () => {
   // The branch serving the customer's selected delivery area. Its coordinates
   // drive distance gating, the delivery fee and the driver's pickup point.
   const [branch, setBranch] = useState<RestaurantLocation | null>(null);
-  const pickupCoords = restaurant
+  const pickupCoords = restaurant && (branch || isCompanionStore(restaurant.name))
     ? branchCoords(restaurant, branch)
     : { lat: null as number | null, lng: null as number | null };
 
@@ -229,9 +227,10 @@ const RestaurantMenu = () => {
   // Resolve which branch of this restaurant serves the customer's area.
   // Re-runs whenever the selected area changes so coordinates, distance,
   // fee and pickup point always match the area the customer is browsing.
-  const selectedAreaId = useSelectedAreaId();
+  const selectedAreaId = useRestaurantArea(geo.lat, geo.lng);
   useEffect(() => {
     if (!restaurant) return;
+    setBranch(null);
     let cancelled = false;
     (async () => {
       try {
@@ -239,20 +238,16 @@ const RestaurantMenu = () => {
         const catalog = await getCatalog();
         const locs = (catalog.restaurant_locations ?? []) as RestaurantLocation[];
         if (cancelled) return;
-        setBranch(
-          branchForArea(locs, restaurant.id, selectedAreaId) ??
-            (requiresMenuPriceVerification(restaurant.name) && selectedAreaId
-              ? null
-              : anyBranch(locs, restaurant.id)),
-        );
+        setBranch(branchForArea(locs, restaurant.id, selectedAreaId,
+          geo.lat != null && geo.lng != null ? { lat: geo.lat, lng: geo.lng } : null));
       } catch {
-        /* branch is optional — fall back to the restaurant's own location */
+        if (!cancelled) setBranch(null);
       }
     })();
     return () => {
       cancelled = true;
     };
-  }, [restaurant, selectedAreaId]);
+  }, [restaurant, selectedAreaId, geo.lat, geo.lng]);
 
   // One-tap reorder: if a handoff was stashed from the Orders page,
   // pre-fill the cart once this restaurant's menu has loaded. Items not
@@ -347,7 +342,7 @@ const RestaurantMenu = () => {
       toast.info("Price awaiting branch verification");
       return;
     }
-    if (requiresMenuPriceVerification(restaurant?.name) && getSelectedAreaId() && !branch) {
+    if (!branch && !isCompanionStore(restaurant?.name ?? "")) {
       toast.error(`${restaurant?.name} is not available in your selected delivery area.`);
       return;
     }
@@ -682,7 +677,7 @@ const RestaurantMenu = () => {
                             e.stopPropagation();
                             handleAddItem(item);
                           }}
-                          disabled={pendingPrice || !canOrder || cartLockedElsewhere || (requiresMenuPriceVerification(restaurant.name) && !!getSelectedAreaId() && !branch)}
+                          disabled={pendingPrice || !canOrder || cartLockedElsewhere || (!branch && !isCompanionStore(restaurant.name))}
                           data-testid="menu-add-button"
                           className="btn-glow flex items-center gap-1 rounded-xl gradient-maroon px-3 py-1.5 text-xs font-bold text-primary-foreground transition-transform hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
                         >

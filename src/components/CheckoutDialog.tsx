@@ -37,9 +37,7 @@ import { findNearestZone, OUT_OF_ZONE_MESSAGE, DEFAULT_ZONE_RADIUS_KM } from "@/
 import { savePendingPaymentOrder } from "@/lib/pendingPaymentOrder";
 import { POLICY_VERSIONS } from "@/lib/policies";
 import {
-  anyBranch,
   branchForArea,
-  getSelectedAreaId,
   useSelectedAreaId,
   type RestaurantLocation,
 } from "@/lib/restaurantAreas";
@@ -225,6 +223,8 @@ const CheckoutDialog = ({
   useEffect(() => {
     if (!open) return;
     if (!primaryRestaurantId && !primaryRestaurantName) return;
+    setBranchId(null);
+    setRestaurantCoords(null);
     let alive = true;
     (async () => {
       const { getCatalog } = await import("@/lib/catalog");
@@ -244,13 +244,16 @@ const CheckoutDialog = ({
         // Use the branch that serves the customer's selected delivery area:
         // its coordinates and address drive the fee, radius check and pickup.
         const locs = (cat.restaurant_locations ?? []) as RestaurantLocation[];
+        const addressAreaId = coords
+          ? findNearestZone(coords.lat, coords.lng, cat.delivery_areas)?.zone.id ?? null
+          : selectedAreaId;
         const chosenBranch = data
-          ? (branchForArea(locs, data.id, selectedAreaId) ?? anyBranch(locs, data.id))
+          ? branchForArea(locs, data.id, addressAreaId, coords)
           : null;
         setBranchId(chosenBranch?.id ?? null);
 
-        const lat = chosenBranch?.lat ?? data?.lat;
-        const lng = chosenBranch?.lng ?? data?.lng;
+        const lat = chosenBranch?.lat ?? (isCompanionStore(data?.name ?? "") ? data?.lat : null);
+        const lng = chosenBranch?.lng ?? (isCompanionStore(data?.name ?? "") ? data?.lng : null);
         if (typeof lat === "number" && typeof lng === "number") {
           setRestaurantCoords({ lat, lng });
         } else {
@@ -269,6 +272,7 @@ const CheckoutDialog = ({
         }
       } catch {
         if (alive) {
+          setBranchId(null);
           setRestaurantCoords(null);
           setRestaurantInfo(null);
         }
@@ -277,7 +281,7 @@ const CheckoutDialog = ({
     return () => {
       alive = false;
     };
-  }, [open, primaryRestaurantName, primaryRestaurantId, selectedAreaId]);
+  }, [open, primaryRestaurantName, primaryRestaurantId, selectedAreaId, coords?.lat, coords?.lng]);
 
 
   // Match the customer's verified coords against the active delivery zones.
@@ -544,6 +548,10 @@ const CheckoutDialog = ({
 
     if (outOfRange) {
       toast.error(OUT_OF_ZONE_MESSAGE);
+      return;
+    }
+    if (primaryRestaurantName && !isCompanionStore(primaryRestaurantName) && (!branchId || !restaurantCoords)) {
+      toast.error("This restaurant has no available branch serving your delivery address.");
       return;
     }
 

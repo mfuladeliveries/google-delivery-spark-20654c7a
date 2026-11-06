@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { Search as SearchIcon, ArrowLeft, Star, Clock, UtensilsCrossed } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -7,6 +7,9 @@ import { storeInfo } from "@/data/menu";
 import { useAuth } from "@/hooks/useAuth";
 import { getHomeRouteForRoles } from "@/lib/homeRoute";
 import { RestaurantName } from "@/components/RestaurantName";
+import { branchForArea, isCompanionStore } from "@/lib/restaurantAreas";
+import { useGeoLocation } from "@/hooks/useGeoLocation";
+import { useRestaurantArea } from "@/hooks/useRestaurantArea";
 
 interface Restaurant {
   id: string;
@@ -38,6 +41,9 @@ const FALLBACK_IMG =
 const Search = () => {
   const navigate = useNavigate();
   const { roles } = useAuth();
+  const geo = useGeoLocation();
+  const areaId = useRestaurantArea(geo.lat, geo.lng);
+  const searchVersion = useRef(0);
   const homeRoute = getHomeRouteForRoles(roles);
   const [query, setQuery] = useState("");
   const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
@@ -46,6 +52,7 @@ const Search = () => {
   const [tab, setTab] = useState<"restaurants" | "items">("restaurants");
 
   useEffect(() => {
+    searchVersion.current += 1;
     const timer = setTimeout(() => {
       if (query.trim().length >= 2) {
         doSearch(query.trim());
@@ -55,9 +62,10 @@ const Search = () => {
       }
     }, 300);
     return () => clearTimeout(timer);
-  }, [query]);
+  }, [query, areaId, geo.lat, geo.lng]);
 
   const doSearch = async (q: string) => {
+    const version = searchVersion.current;
     setLoading(true);
     const { getCatalog } = await import("@/lib/catalog");
     const [cat, itemsRes] = await Promise.all([
@@ -70,20 +78,15 @@ const Search = () => {
         .limit(20),
     ]);
     const needle = q.toLowerCase();
+    if (version !== searchVersion.current) return;
     // Only restaurants an admin has switched on, that have a live branch in the
     // customer's selected delivery area, can be ordered from.
-    const { branchForArea, effectiveCoords, getSelectedAreaId, isCompanionStore } = await import(
-      "@/lib/restaurantAreas"
-    );
-    const areaId = getSelectedAreaId();
     const locations = cat?.restaurant_locations ?? [];
     const orderable = (cat?.restaurants ?? []).filter((r) => {
       if (!r.is_active) return false;
       if (isCompanionStore(r.name)) return true;
-      const branch = branchForArea(locations, r.id, areaId);
-      if (areaId && !branch) return false;
-      const coords = effectiveCoords(r, branch);
-      return coords.lat != null && coords.lng != null;
+      return branchForArea(locations, r.id, areaId,
+        geo.lat != null && geo.lng != null ? { lat: geo.lat, lng: geo.lng } : null) != null;
     });
     const rests = orderable
       .filter((r) => r.name.toLowerCase().includes(needle))

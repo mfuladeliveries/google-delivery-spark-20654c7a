@@ -1,5 +1,6 @@
 # Project rules
 - Manage per-area restaurant coordinates through the existing branch editor and customer branch selection; do not duplicate brand listings for separate locations.
+- Apply strict branch-area matching to every restaurant; never fall back to another area's branch during menu or checkout, and resolve checkout from the actual delivery-address coordinates so browsing state cannot select the wrong pickup.
 - Reuse the shared Auth screen for restaurant login and existing owner-scoped dashboard; keep availability approval separate from paid-order preparation so payment flow remains unchanged.
 - Defer database requests outside auth-state callbacks so the auth lock cannot stall signed-in pages; retain role loading before access decisions.
 - Define explicit, least-privilege grants immediately after public table creation and preserve RLS; verify live changes with role-isolation tests because grants alone do not protect rows.
