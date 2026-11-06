@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import {
   X,
@@ -11,7 +11,9 @@ import {
   Truck,
   MapPinOff,
 } from "lucide-react";
-import { CartItem } from "@/hooks/useCart";
+import { CartItem, isCompanionStore } from "@/hooks/useCart";
+import { primaryCartRestaurant } from "@/lib/cartRestaurant";
+import { useCartPickup } from "@/hooks/useCartPickup";
 import { storeInfo } from "@/data/menu";
 import { useCustomerLocation } from "@/hooks/useCustomerLocation";
 import {
@@ -21,7 +23,6 @@ import {
 } from "@/hooks/useGeoLocation";
 import { useAuth } from "@/hooks/useAuth";
 import { RestaurantName } from "@/components/RestaurantName";
-import { supabase } from "@/integrations/supabase/client";
 
 interface CartProps {
   open: boolean;
@@ -56,39 +57,11 @@ const Cart = ({
   const geo = useGeoLocation();
   const geoBlocked = geo.ready && !geo.hasCoords;
 
-  const restaurantName = items[0]?.item.restaurantName || items[0]?.item.category || "";
-
-  // Per-restaurant 8 km gate: look up the cart restaurant's coords and compare
-  // to the customer's live GPS. This matches the rule used on home / menu /
-  // checkout / server RPC, replacing the legacy global service-area check.
-  const [restaurantCoords, setRestaurantCoords] = useState<{ lat: number; lng: number } | null>(
-    null,
+  const { name: restaurantName, id: restaurantId } = primaryCartRestaurant(items);
+  const { pickup: restaurantCoords, loading: pickupLoading } = useCartPickup(
+    restaurantName, restaurantId, geo.lat, geo.lng,
   );
-  useEffect(() => {
-    let cancelled = false;
-    if (!restaurantName) {
-      setRestaurantCoords(null);
-      return;
-    }
-    (async () => {
-      const { getCatalog } = await import("@/lib/catalog");
-      try {
-        const cat = await getCatalog();
-        if (cancelled) return;
-        const r = cat.restaurants.find((x) => x.name === restaurantName);
-        if (r && typeof r.lat === "number" && typeof r.lng === "number") {
-          setRestaurantCoords({ lat: r.lat, lng: r.lng });
-        } else {
-          setRestaurantCoords(null);
-        }
-      } catch {
-        if (!cancelled) setRestaurantCoords(null);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [restaurantName]);
+  const branchUnavailable = !pickupLoading && !restaurantCoords && !isCompanionStore(restaurantName);
 
 
   const distanceToRestaurant = restaurantCoords
@@ -97,7 +70,7 @@ const Cart = ({
   const tooFarFromRestaurant =
     distanceToRestaurant != null && distanceToRestaurant > DELIVERY_RADIUS_KM;
 
-  const canCheckout = !!user && !tooFarFromRestaurant && !geoBlocked;
+  const canCheckout = !!user && !tooFarFromRestaurant && !geoBlocked && !pickupLoading && !branchUnavailable;
   const needsDetails = !!user && (needsAddress || needsCoords);
   if (!open) return null;
 
@@ -282,10 +255,15 @@ const Cart = ({
                 <div>
                   <p className="font-bold">Too far from this restaurant</p>
                   <p className="mt-0.5 text-muted-foreground">
-                    You're {distanceToRestaurant!.toFixed(1)} km from {restaurantName}. We only
+                    You're {distanceToRestaurant?.toFixed(1)} km from {restaurantName}. We only
                     deliver within {DELIVERY_RADIUS_LABEL_KM} km of the restaurant.
                   </p>
                 </div>
+              </div>
+            )}
+            {user && branchUnavailable && (
+              <div className="mt-3 border border-destructive/40 bg-destructive/5 p-3 text-xs text-foreground">
+                No available {restaurantName} branch serves your selected area.
               </div>
             )}
             {user && geoBlocked && (
