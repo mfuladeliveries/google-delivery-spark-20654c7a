@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { branchForArea, type RestaurantLocation } from "../restaurantAreas";
+import {
+  branchForArea,
+  getSelectedAreaId,
+  setSelectedAreaId,
+  type RestaurantLocation,
+} from "../restaurantAreas";
 
 const base = { restaurant_id: "kfc", active: true, delivery_enabled: true, is_open: true, opens_at: null, closes_at: null, operating_days: null, address: "" };
 const mk = (id: string, area: string, lat: number | null, lng: number | null): RestaurantLocation =>
@@ -15,5 +20,26 @@ describe("branch selection per delivery area", () => {
   });
   it("never offers another area's branch", () => {
     expect(branchForArea([mk("delft", "B", -33.97, 18.64)], "kfc", "A")).toBeNull();
+  });
+});
+
+describe("selected area changes", () => {
+  it("notifies listeners so open screens re-resolve branch coordinates", () => {
+    let notified = 0;
+    const listener = () => {
+      notified += 1;
+    };
+    window.addEventListener("mfula-area-changed", listener);
+    try {
+      setSelectedAreaId("area-b");
+      expect(notified).toBe(1);
+      expect(getSelectedAreaId()).toBe("area-b");
+      setSelectedAreaId(null);
+      expect(notified).toBe(2);
+      expect(getSelectedAreaId()).toBeNull();
+    } finally {
+      window.removeEventListener("mfula-area-changed", listener);
+      setSelectedAreaId(null);
+    }
   });
 });
