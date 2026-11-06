@@ -1,4 +1,6 @@
 # Restaurant locations
+- [ ] Apply consistent area matching and valid branch coordinates to all brands; verify automatic address/GPS selection and admin controls.
+- [ ] Populate missing branches/areas only from verified locations with approval for live data changes; never use area-centre placeholders.
 - [x] Expose Locations & coordinates on each Admin restaurant; reuse existing per-area branch records and customer-location selection without database changes.
 - [ ] Verify live Admin location save and customer branch readback — blocked by currently inaccessible Cloud database.
 
