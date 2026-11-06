@@ -2518,6 +2518,12 @@ const RestaurantCard = ({
         </div>
       </div>
 
+      <div className="border-t border-border px-4 py-2">
+        <Button variant="outline" size="sm" onClick={() => setBranchesOpen(true)}>
+          <MapPin className="mr-2 h-4 w-4" /> Locations &amp; coordinates
+        </Button>
+      </div>
+
       {editing && (
         <div className="border-t border-border bg-secondary/30 p-4 space-y-4">
           {/* Order Approval Mode */}

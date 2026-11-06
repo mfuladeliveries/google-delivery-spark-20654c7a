@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { MapPin, Plus, Save, Trash2, X, Store } from "lucide-react";
 import { invalidateCatalog } from "@/lib/catalog";
 import type { RestaurantLocation } from "@/lib/restaurantAreas";
+import { Button } from "@/components/ui/button";
 
 interface AreaOption {
   id: string;
@@ -176,7 +177,7 @@ const RestaurantBranches = ({
         <div className="mb-3 flex items-start justify-between gap-3">
           <div>
             <h2 className="flex items-center gap-2 font-bold text-foreground">
-              <Store className="h-4 w-4 text-primary" /> Branches — {restaurantName}
+              <Store className="h-4 w-4 text-primary" /> Locations — {restaurantName}
             </h2>
             <p className="text-xs text-muted-foreground">
               Each branch serves one delivery area. Customers see one card per restaurant and
@@ -322,7 +323,7 @@ const RestaurantBranches = ({
         {/* Add branch */}
         {adding ? (
           <div className="mt-3 space-y-2 rounded-xl border border-primary/30 bg-primary/5 p-3">
-            <p className="text-xs font-bold text-foreground">New branch</p>
+            <p className="text-xs font-bold text-foreground">New {restaurantName} location</p>
             <input
               value={draft.branch_name}
               onChange={(e) => setDraft({ ...draft, branch_name: e.target.value })}
@@ -351,12 +352,14 @@ const RestaurantBranches = ({
             <div className="grid grid-cols-2 gap-2">
               <input
                 value={draft.lat}
+                aria-label="New location latitude"
                 onChange={(e) => setDraft({ ...draft, lat: e.target.value })}
                 placeholder="Latitude"
                 className="rounded-xl border border-border bg-card px-3 py-2 text-sm focus:border-primary focus:outline-none"
               />
               <input
                 value={draft.lng}
+                aria-label="New location longitude"
                 onChange={(e) => setDraft({ ...draft, lng: e.target.value })}
                 placeholder="Longitude"
                 className="rounded-xl border border-border bg-card px-3 py-2 text-sm focus:border-primary focus:outline-none"
@@ -414,12 +417,13 @@ const RestaurantBranches = ({
             </div>
           </div>
         ) : (
-          <button
+          <Button
+            variant="outline"
             onClick={() => setAdding(true)}
             className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-xl border border-dashed border-primary/40 py-2.5 text-xs font-bold text-primary hover:bg-primary/5"
           >
-            <Plus className="h-3.5 w-3.5" /> Add branch
-          </button>
+            <Plus className="h-3.5 w-3.5" /> Add location
+          </Button>
         )}
       </div>
     </div>
@@ -448,12 +452,14 @@ const BranchDetailEditor = ({
 
   if (!openEditor) {
     return (
-      <button
+      <Button
+        variant="ghost"
+        size="sm"
         onClick={() => setOpenEditor(true)}
         className="mt-2 text-[11px] font-semibold text-primary hover:underline"
       >
-        Edit address, coordinates &amp; hours
-      </button>
+        <MapPin className="mr-1 h-3.5 w-3.5" /> Edit location &amp; coordinates
+      </Button>
     );
   }
 
@@ -513,12 +519,14 @@ const BranchDetailEditor = ({
       <div className="grid grid-cols-2 gap-2">
         <input
           value={lat}
+          aria-label={`${branch.branch_name} latitude`}
           onChange={(e) => setLat(e.target.value)}
           placeholder="Latitude"
           className="rounded-lg border border-border bg-background px-2.5 py-1.5 text-xs focus:border-primary focus:outline-none"
         />
         <input
           value={lng}
+          aria-label={`${branch.branch_name} longitude`}
           onChange={(e) => setLng(e.target.value)}
           placeholder="Longitude"
           className="rounded-lg border border-border bg-background px-2.5 py-1.5 text-xs focus:border-primary focus:outline-none"
