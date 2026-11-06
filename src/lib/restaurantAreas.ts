@@ -7,6 +7,7 @@
 // order itself.
 
 import { useSyncExternalStore } from "react";
+import { distanceKm } from "@/lib/serviceArea";
 
 export interface RestaurantLocation {
   id: string;
@@ -68,10 +69,12 @@ export const useSelectedAreaId = (): string | null =>
   useSyncExternalStore(subscribeArea, getSelectedAreaId, () => null);
 
 /** A branch customers can order from: switched on, open, and with a real map location. */
-export const orderable = (l: RestaurantLocation) =>
-  l.active && l.delivery_enabled && l.is_open !== false && l.lat != null && l.lng != null;
+export const validBranchCoordinates = (lat: number | null, lng: number | null): boolean =>
+  lat != null && lng != null && Number.isFinite(lat) && Number.isFinite(lng) &&
+  lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180;
 
-const sq = (n: number) => n * n;
+export const orderable = (l: RestaurantLocation) =>
+  l.active && l.delivery_enabled && l.is_open !== false && validBranchCoordinates(l.lat, l.lng);
 
 /**
  * The branch of `restaurantId` that serves `areaId` (null when none does).
@@ -88,12 +91,11 @@ export const branchForArea = (
     (l) => l.restaurant_id === restaurantId && l.area_id === areaId && orderable(l),
   );
   if (matches.length <= 1 || !customer) return matches[0] ?? null;
-  return matches.reduce((best, l) =>
-    sq(l.lat! - customer.lat) + sq(l.lng! - customer.lng) <
-    sq(best.lat! - customer.lat) + sq(best.lng! - customer.lng)
-      ? l
-      : best,
-  );
+  return matches.reduce((best, l) => {
+    if (l.lat == null || l.lng == null || best.lat == null || best.lng == null) return best;
+    return distanceKm(customer.lat, customer.lng, l.lat, l.lng) <
+      distanceKm(customer.lat, customer.lng, best.lat, best.lng) ? l : best;
+  });
 };
 
 /** Any orderable branch, used as a fallback when no area is known yet. */
