@@ -216,7 +216,9 @@ Deno.serve(async (req) => {
         p_payment_id: paymentId,
         p_status: eventType.endsWith("cancelled") ? "cancelled" : "failed",
         p_reason: String(payload.failureReason ?? payload.reason ?? eventType),
-        p_raw_payload: event as unknown as Record<string, unknown>,
+        // Failure guard compares this id to the current checkout, not the
+        // webhook event id, so stale failures cannot overwrite a retry.
+        p_raw_payload: { ...event, webhook_event_id: eventId, id: checkoutId },
         p_source_ip: sourceIp,
       });
       if (error) {

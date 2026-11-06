@@ -5,7 +5,7 @@ export async function deliverPaymentNotifications(client: any, orderId?: string)
   if (error) throw new Error(error.message);
   for (const job of jobs ?? []) {
     const { data, error: pushError } = await client.functions.invoke("push-notify", {
-      body: { order_id: job.order_id, status: "payment_received" },
+      body: { order_id: job.order_id, status: "payment_received", payment_lease: job.lease_token },
     });
     const failure = pushError?.message || data?.error || (data?.failed ? "Some payment notifications failed" : null);
     const { error: updateError } = await client.from("payment_notification_outbox").update({

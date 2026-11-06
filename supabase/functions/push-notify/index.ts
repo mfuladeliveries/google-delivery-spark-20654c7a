@@ -99,8 +99,10 @@ Deno.serve(async (req) => {
     const event = await req.json();
     if (event.status === "payment_received") {
       if (!isServiceRole) return new Response(JSON.stringify({ error: "Only the payment service can announce payment" }), { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-      const parsed = z.object({ order_id: z.string().uuid(), status: z.literal("payment_received") }).safeParse(event);
+      const parsed = z.object({ order_id: z.string().uuid(), status: z.literal("payment_received"), payment_lease: z.string().uuid() }).safeParse(event);
       if (!parsed.success) return new Response(JSON.stringify({ error: "Invalid payment notification" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      const { data: claimedJob } = await supabase.from("payment_notification_outbox").select("order_id").eq("order_id", parsed.data.order_id).eq("lease_token", parsed.data.payment_lease).gt("lease_until", new Date().toISOString()).is("sent_at", null).maybeSingle();
+      if (!claimedJob) throw new Error("Payment notification lease is no longer active");
       const { data: paidOrder, error: orderError } = await supabase.from("orders").select("id,order_number,restaurant,restaurant_id,total,user_id,payment_status").eq("id", parsed.data.order_id).maybeSingle();
       if (orderError || !paidOrder || paidOrder.payment_status !== "paid") throw new Error("Payment has not been confirmed");
       const [{ data: restaurant }, { data: admins }] = await Promise.all([
@@ -117,7 +119,8 @@ Deno.serve(async (req) => {
       let failed = 0;
       for (const sub of subscriptions ?? []) {
         const kind = `payment_received:${sub.id}`;
-        const { data: logged } = await supabase.from("order_notification_log").select("id").eq("order_id", paidOrder.id).eq("user_id", sub.user_id).eq("notification_kind", kind).maybeSingle();
+        const { data: logged, error: readLogError } = await supabase.from("order_notification_log").select("id").eq("order_id", paidOrder.id).eq("user_id", sub.user_id).eq("notification_kind", kind).maybeSingle();
+        if (readLogError) { failed++; continue; }
         if (logged) continue;
         try {
           await webpush.sendNotification({ endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } }, JSON.stringify({
@@ -125,7 +128,7 @@ Deno.serve(async (req) => {
             body: `R${Number(paidOrder.total).toFixed(2)} paid for ${paidOrder.restaurant}`,
             icon: "/notification-logo.png", badge: "/favicon.ico", tag: `payment-${paidOrder.id}`,
             data: { url: recipients.get(sub.user_id), order_number: paidOrder.order_number, kind: "payment_received" },
-          }));
+          }), { timeout: 10000 });
           const { error: logError } = await supabase.from("order_notification_log").insert({ order_id: paidOrder.id, user_id: sub.user_id, notification_kind: kind });
           if (logError) failed++; else sent++;
         } catch (error) {
