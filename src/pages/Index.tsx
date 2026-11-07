@@ -19,7 +19,7 @@ import {
   Clock as ClockIcon,
 } from "lucide-react";
 import { isRestaurantOpen } from "@/lib/restaurantHours";
-import { houseUnitValidationError } from "@/lib/addressValidation";
+import { addressHouseNumberError, mergeHouseNumber } from "@/lib/addressValidation";
 import { supabase } from "@/integrations/supabase/client";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -125,7 +125,6 @@ const Index = () => {
   });
   const [manualOpen, setManualOpen] = useState(false);
   const [manualText, setManualText] = useState("");
-  const [houseNumber, setHouseNumber] = useState("");
   const [manualUpdatedAt, setManualUpdatedAt] = useState<number | null>(null);
   const [confirmingCancel, setConfirmingCancel] = useState(false);
   // Guards the auto-confirm-on-blur toast so it fires at most once per
@@ -671,15 +670,6 @@ const Index = () => {
                       Current: <span className="font-medium text-foreground">{manualAddress.address}</span>
                     </p>
                   )}
-                  <input
-                    type="text"
-                    inputMode="text"
-                    value={houseNumber}
-                    onChange={(e) => setHouseNumber(e.target.value.slice(0, 20))}
-                    placeholder="House / unit number (required)"
-                    aria-label="House or unit number"
-                    className="mb-2 w-full rounded-xl border border-border bg-card px-3 py-2.5 text-sm text-card-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
-                  />
                   <AddressAutocomplete
                     value={manualText}
                     hasValidSelection={false}
@@ -688,13 +678,13 @@ const Index = () => {
                       if (confirmingCancel) setConfirmingCancel(false);
                     }}
                     onSelect={(addr) => {
-                      const unitError = houseUnitValidationError(houseNumber);
+                      // Keep any house number typed before picking a suggestion.
+                      const finalAddress = mergeHouseNumber(manualText, addr.address);
+                      const unitError = addressHouseNumberError(finalAddress);
                       if (unitError) {
                         toast.error(unitError);
                         return;
                       }
-                      const unit = houseNumber.trim();
-                      const finalAddress = `${unit} ${addr.address}`;
                       const merged = { ...addr, address: finalAddress };
                       setManualAddress(merged);
                       persistManual(merged);
