@@ -133,7 +133,6 @@ const Index = () => {
   useEffect(() => {
     if (manualOpen) {
       blurConfirmedRef.current = false;
-      setHouseNumber("");
     }
   }, [manualOpen]);
 
