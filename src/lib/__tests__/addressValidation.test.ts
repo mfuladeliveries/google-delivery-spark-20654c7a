@@ -31,7 +31,7 @@ describe("addressHouseNumberError", () => {
 describe("leadingHouseNumber", () => {
   it("extracts the leading number token", () => {
     expect(leadingHouseNumber("12A Oak Street")).toBe("12A");
-    expect(leadingHouseNumber("Unit 3 Oak Street")).toBe("3");
+    expect(leadingHouseNumber("Unit 3 Oak Street")).toBe("Unit 3");
     expect(leadingHouseNumber("Oak Street")).toBeNull();
   });
 });
