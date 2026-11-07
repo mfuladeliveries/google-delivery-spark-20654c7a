@@ -1,27 +1,51 @@
 import { describe, it, expect } from "vitest";
 import {
-  houseUnitValidationError,
-  HOUSE_UNIT_REQUIRED_MESSAGE,
-  HOUSE_UNIT_FORMAT_MESSAGE,
+  addressHouseNumberError,
+  leadingHouseNumber,
+  mergeHouseNumber,
+  ADDRESS_REQUIRED_MESSAGE,
+  ADDRESS_HOUSE_NUMBER_MESSAGE,
 } from "@/lib/addressValidation";
 
-describe("houseUnitValidationError", () => {
-  it("requires a house/unit number (not optional)", () => {
-    expect(houseUnitValidationError("")).toBe(HOUSE_UNIT_REQUIRED_MESSAGE);
-    expect(houseUnitValidationError("   ")).toBe(HOUSE_UNIT_REQUIRED_MESSAGE);
-    expect(houseUnitValidationError(null)).toBe(HOUSE_UNIT_REQUIRED_MESSAGE);
-    expect(houseUnitValidationError(undefined)).toBe(HOUSE_UNIT_REQUIRED_MESSAGE);
+describe("addressHouseNumberError", () => {
+  it("requires an address", () => {
+    expect(addressHouseNumberError("")).toBe(ADDRESS_REQUIRED_MESSAGE);
+    expect(addressHouseNumberError("   ")).toBe(ADDRESS_REQUIRED_MESSAGE);
+    expect(addressHouseNumberError(null)).toBe(ADDRESS_REQUIRED_MESSAGE);
+    expect(addressHouseNumberError(undefined)).toBe(ADDRESS_REQUIRED_MESSAGE);
   });
 
-  it("accepts normal SA house/unit numbers", () => {
-    expect(houseUnitValidationError("12A")).toBeNull();
-    expect(houseUnitValidationError("Unit 3")).toBeNull();
-    expect(houseUnitValidationError("B-4")).toBeNull();
-    expect(houseUnitValidationError("#7 Flat")).toBeNull();
+  it("accepts addresses that start with a house/unit number", () => {
+    expect(addressHouseNumberError("12A Oak Street, Mfuleni")).toBeNull();
+    expect(addressHouseNumberError("Unit 3 Oak Street, Mfuleni")).toBeNull();
+    expect(addressHouseNumberError("B-4 is not leading digits")).toBe(ADDRESS_HOUSE_NUMBER_MESSAGE);
+    expect(addressHouseNumberError("#7 Flat, Delft")).toBeNull();
   });
 
-  it("rejects invalid characters", () => {
-    expect(houseUnitValidationError("12, Oak Street")).toBe(HOUSE_UNIT_FORMAT_MESSAGE);
-    expect(houseUnitValidationError("Unit <3>")).toBe(HOUSE_UNIT_FORMAT_MESSAGE);
+  it("rejects addresses without a leading house number", () => {
+    expect(addressHouseNumberError("Oak Street, Mfuleni")).toBe(ADDRESS_HOUSE_NUMBER_MESSAGE);
+    expect(addressHouseNumberError("Mfuleni")).toBe(ADDRESS_HOUSE_NUMBER_MESSAGE);
+  });
+});
+
+describe("leadingHouseNumber", () => {
+  it("extracts the leading number token", () => {
+    expect(leadingHouseNumber("12A Oak Street")).toBe("12A");
+    expect(leadingHouseNumber("Unit 3 Oak Street")).toBe("Unit 3");
+    expect(leadingHouseNumber("Oak Street")).toBeNull();
+  });
+});
+
+describe("mergeHouseNumber", () => {
+  it("prepends the typed house number to a suggestion without one", () => {
+    expect(mergeHouseNumber("12A Oak", "Oak Street, Mfuleni")).toBe("12A Oak Street, Mfuleni");
+  });
+
+  it("keeps the suggestion when it already starts with a number", () => {
+    expect(mergeHouseNumber("12A Oak", "5 Oak Street, Mfuleni")).toBe("5 Oak Street, Mfuleni");
+  });
+
+  it("returns the suggestion unchanged when nothing was typed", () => {
+    expect(mergeHouseNumber("", "Oak Street, Mfuleni")).toBe("Oak Street, Mfuleni");
   });
 });

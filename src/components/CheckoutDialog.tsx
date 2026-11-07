@@ -21,7 +21,7 @@ import {
 import { CartItem, isCompanionStore } from "@/hooks/useCart";
 import { storeInfo } from "@/data/menu";
 import { generateDeliveryPin } from "@/lib/deliveryPin";
-import { houseUnitValidationError } from "@/lib/addressValidation";
+import { addressHouseNumberError, mergeHouseNumber } from "@/lib/addressValidation";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useCustomerCredits } from "@/hooks/useCustomerCredits";
@@ -128,8 +128,6 @@ const CheckoutDialog = ({
   const [name, setName] = useState("");
   const [contact, setContact] = useState("");
   const [address, setAddress] = useState("");
-  /** Optional house/unit number prepended to the geocoded street/suburb. */
-  const [houseNumber, setHouseNumber] = useState("");
   const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
   /** True only when address came from autocomplete suggestion OR map confirmation. */
   const [addressVerified, setAddressVerified] = useState(false);
@@ -212,7 +210,6 @@ const CheckoutDialog = ({
     setAddress(a.address);
     setCoords({ lat: a.lat, lng: a.lng });
     setAddressVerified(true);
-    setHouseNumber("");
     setSaveForNextTime(false);
     setValidationErrors((prev) => {
       const { address: _a, ...rest } = prev;
@@ -374,7 +371,8 @@ const CheckoutDialog = ({
   }, [coords, address]);
 
   const handleAddressSelect = (result: ValidatedAddress) => {
-    setAddress(result.address);
+    // Keep any house number the customer typed before picking a suggestion.
+    setAddress(mergeHouseNumber(address, result.address));
     setCoords({ lat: result.lat, lng: result.lng });
     setAddressVerified(true);
     setSelectedSavedId(null);
@@ -395,7 +393,7 @@ const CheckoutDialog = ({
   };
 
   const handleMapConfirm = (result: { address: string; lat: number; lng: number }) => {
-    setAddress(result.address);
+    setAddress(mergeHouseNumber(address, result.address));
     setCoords({ lat: result.lat, lng: result.lng });
     setAddressVerified(true);
     setSelectedSavedId(null);
@@ -515,12 +513,10 @@ const CheckoutDialog = ({
       return;
     }
 
-    const trimmedUnit = houseNumber.trim();
-    const trimmedStreet = address.trim();
-    const fullAddress = trimmedUnit ? `${trimmedUnit} ${trimmedStreet}` : trimmedStreet;
+    const fullAddress = address.trim();
 
-    // House/unit number is required and must be valid (e.g. "12A", "Unit 3", "B-4").
-    const unitError = houseUnitValidationError(trimmedUnit);
+    // The single address field must start with the house/unit number.
+    const unitError = addressHouseNumberError(fullAddress);
     if (unitError) {
       toast.error(unitError);
       setValidationErrors((prev) => ({ ...prev, address: unitError }));
@@ -1010,43 +1006,21 @@ const CheckoutDialog = ({
               </button>
             )}
 
-            <input
-              type="text"
-              inputMode="text"
-              value={houseNumber}
-              onChange={(e) => setHouseNumber(e.target.value.slice(0, 20))}
-              placeholder='House / unit number (required) — e.g. "12A" or "Unit 3"'
-              aria-label="House or unit number"
-              className="mb-2 w-full rounded-xl border border-border bg-card px-4 py-2.5 text-sm text-card-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
-            />
             <AddressAutocomplete
               value={address}
               hasValidSelection={addressVerified}
               onSelect={handleAddressSelect}
               onTextChange={handleAddressTextChange}
-              placeholder='e.g. "Oak Street, Khayelitsha"'
+              placeholder='Start with your house number, e.g. "12A Oak Street, Mfuleni"'
             />
-            {(houseNumber.trim() || address.trim()) && (
+            {address.trim() && (
               <div className="mt-2 rounded-xl border border-primary/30 bg-primary/5 px-3 py-2">
                 <p className="text-[10px] font-semibold uppercase tracking-wide text-primary">
                   Delivering to {addressVerified ? "(verified)" : "(not yet verified)"}
                 </p>
                 <p className="mt-0.5 break-words text-sm font-semibold text-foreground">
-                  {houseNumber.trim() ? `${houseNumber.trim()} ` : ""}
-                  {address.trim() || "—"}
+                  {address.trim()}
                 </p>
-                <div className="mt-1.5 flex flex-wrap gap-1">
-                  <span className="rounded-full bg-card px-1.5 py-0.5 text-[10px] text-muted-foreground">
-                    House #:{" "}
-                    <span className="font-semibold text-foreground">
-                      {houseNumber.trim() || "—"}
-                    </span>
-                  </span>
-                  <span className="rounded-full bg-card px-1.5 py-0.5 text-[10px] text-muted-foreground">
-                    Street &amp; suburb:{" "}
-                    <span className="font-semibold text-foreground">{address.trim() || "—"}</span>
-                  </span>
-                </div>
               </div>
             )}
             <button

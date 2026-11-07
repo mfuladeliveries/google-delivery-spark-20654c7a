@@ -19,7 +19,7 @@ import {
   Clock as ClockIcon,
 } from "lucide-react";
 import { isRestaurantOpen } from "@/lib/restaurantHours";
-import { houseUnitValidationError } from "@/lib/addressValidation";
+import { addressHouseNumberError, mergeHouseNumber } from "@/lib/addressValidation";
 import { supabase } from "@/integrations/supabase/client";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -125,7 +125,6 @@ const Index = () => {
   });
   const [manualOpen, setManualOpen] = useState(false);
   const [manualText, setManualText] = useState("");
-  const [houseNumber, setHouseNumber] = useState("");
   const [manualUpdatedAt, setManualUpdatedAt] = useState<number | null>(null);
   const [confirmingCancel, setConfirmingCancel] = useState(false);
   // Guards the auto-confirm-on-blur toast so it fires at most once per
@@ -134,7 +133,6 @@ const Index = () => {
   useEffect(() => {
     if (manualOpen) {
       blurConfirmedRef.current = false;
-      setHouseNumber("");
     }
   }, [manualOpen]);
 
@@ -671,15 +669,6 @@ const Index = () => {
                       Current: <span className="font-medium text-foreground">{manualAddress.address}</span>
                     </p>
                   )}
-                  <input
-                    type="text"
-                    inputMode="text"
-                    value={houseNumber}
-                    onChange={(e) => setHouseNumber(e.target.value.slice(0, 20))}
-                    placeholder="House / unit number (required)"
-                    aria-label="House or unit number"
-                    className="mb-2 w-full rounded-xl border border-border bg-card px-3 py-2.5 text-sm text-card-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
-                  />
                   <AddressAutocomplete
                     value={manualText}
                     hasValidSelection={false}
@@ -688,13 +677,13 @@ const Index = () => {
                       if (confirmingCancel) setConfirmingCancel(false);
                     }}
                     onSelect={(addr) => {
-                      const unitError = houseUnitValidationError(houseNumber);
+                      // Keep any house number typed before picking a suggestion.
+                      const finalAddress = mergeHouseNumber(manualText, addr.address);
+                      const unitError = addressHouseNumberError(finalAddress);
                       if (unitError) {
                         toast.error(unitError);
                         return;
                       }
-                      const unit = houseNumber.trim();
-                      const finalAddress = `${unit} ${addr.address}`;
                       const merged = { ...addr, address: finalAddress };
                       setManualAddress(merged);
                       persistManual(merged);
@@ -703,12 +692,11 @@ const Index = () => {
                       setManualUpdatedAt(Date.now());
                       setConfirmingCancel(false);
                     }}
-                    placeholder={manualAddress ? "Search a new street or suburb…" : "Start typing a suburb or street…"}
+                    placeholder={manualAddress ? "Search a new address, starting with your house number…" : "Start with your house number, e.g. 12A Oak Street…"}
                   />
                   {(() => {
-                    const unit = houseNumber.trim();
                     const street = manualText.trim();
-                    if (!unit && !street) return null;
+                    if (!street) return null;
                     // ZA postcodes are 4 digits — pull the first match from the
                     // selected suggestion text so we can surface it on its own.
                     const postcodeMatch = street.match(/\b\d{4}\b/);
@@ -716,42 +704,24 @@ const Index = () => {
                     const streetSansPostcode = postcode
                       ? street.replace(postcode, "").replace(/,\s*,/g, ",").replace(/,\s*$/, "").trim()
                       : street;
-                    const parts = [unit, streetSansPostcode, postcode].filter(Boolean);
-                    const preview =
-                      unit && streetSansPostcode
-                        ? `${unit} ${streetSansPostcode}${postcode ? `, ${postcode}` : ""}`
-                        : parts.join(", ");
                     return (
                       <div className="mt-2 rounded-xl border border-primary/30 bg-primary/5 px-3 py-2">
                         <p className="text-[10px] font-semibold uppercase tracking-wide text-primary">Preview</p>
-                        <p className="mt-0.5 break-words text-xs text-foreground" title={preview}>
-                          {preview}
+                        <p className="mt-0.5 break-words text-xs text-foreground" title={streetSansPostcode}>
+                          {streetSansPostcode}
                         </p>
-                        <div className="mt-1.5 flex flex-wrap gap-1">
-                          {unit && (
+                        {postcode && (
+                          <div className="mt-1.5 flex flex-wrap gap-1">
                             <span className="rounded-full bg-card px-1.5 py-0.5 text-[10px] text-muted-foreground">
-                              House #: <span className="font-semibold text-foreground">{unit}</span>
+                              Postcode: <span className="font-semibold text-foreground">{postcode}</span>
                             </span>
-                          )}
-                          {streetSansPostcode && (
-                            <span className="rounded-full bg-card px-1.5 py-0.5 text-[10px] text-muted-foreground">
-                              Street/suburb:{" "}
-                              <span className="font-semibold text-foreground">
-                                {streetSansPostcode.length > 40
-                                  ? streetSansPostcode.slice(0, 40) + "…"
-                                  : streetSansPostcode}
-                              </span>
-                            </span>
-                          )}
-                          <span className="rounded-full bg-card px-1.5 py-0.5 text-[10px] text-muted-foreground">
-                            Postcode: <span className="font-semibold text-foreground">{postcode ?? "—"}</span>
-                          </span>
-                        </div>
+                          </div>
+                        )}
                       </div>
                     );
                   })()}
                   <p className="mt-2 text-[11px] text-muted-foreground">
-                    Enter your house number above, then pick a street suggestion to{" "}
+                    Start with your house number, then pick a street suggestion to{" "}
                     {manualAddress ? "replace your saved address" : "see restaurants"} within {DELIVERY_RADIUS_KM} km.
                   </p>
                   {confirmingCancel ? (
