@@ -696,9 +696,8 @@ const Index = () => {
                     placeholder={manualAddress ? "Search a new street or suburb…" : "Start typing a suburb or street…"}
                   />
                   {(() => {
-                    const unit = houseNumber.trim();
                     const street = manualText.trim();
-                    if (!unit && !street) return null;
+                    if (!street) return null;
                     // ZA postcodes are 4 digits — pull the first match from the
                     // selected suggestion text so we can surface it on its own.
                     const postcodeMatch = street.match(/\b\d{4}\b/);
@@ -706,42 +705,24 @@ const Index = () => {
                     const streetSansPostcode = postcode
                       ? street.replace(postcode, "").replace(/,\s*,/g, ",").replace(/,\s*$/, "").trim()
                       : street;
-                    const parts = [unit, streetSansPostcode, postcode].filter(Boolean);
-                    const preview =
-                      unit && streetSansPostcode
-                        ? `${unit} ${streetSansPostcode}${postcode ? `, ${postcode}` : ""}`
-                        : parts.join(", ");
                     return (
                       <div className="mt-2 rounded-xl border border-primary/30 bg-primary/5 px-3 py-2">
                         <p className="text-[10px] font-semibold uppercase tracking-wide text-primary">Preview</p>
-                        <p className="mt-0.5 break-words text-xs text-foreground" title={preview}>
-                          {preview}
+                        <p className="mt-0.5 break-words text-xs text-foreground" title={streetSansPostcode}>
+                          {streetSansPostcode}
                         </p>
-                        <div className="mt-1.5 flex flex-wrap gap-1">
-                          {unit && (
+                        {postcode && (
+                          <div className="mt-1.5 flex flex-wrap gap-1">
                             <span className="rounded-full bg-card px-1.5 py-0.5 text-[10px] text-muted-foreground">
-                              House #: <span className="font-semibold text-foreground">{unit}</span>
+                              Postcode: <span className="font-semibold text-foreground">{postcode}</span>
                             </span>
-                          )}
-                          {streetSansPostcode && (
-                            <span className="rounded-full bg-card px-1.5 py-0.5 text-[10px] text-muted-foreground">
-                              Street/suburb:{" "}
-                              <span className="font-semibold text-foreground">
-                                {streetSansPostcode.length > 40
-                                  ? streetSansPostcode.slice(0, 40) + "…"
-                                  : streetSansPostcode}
-                              </span>
-                            </span>
-                          )}
-                          <span className="rounded-full bg-card px-1.5 py-0.5 text-[10px] text-muted-foreground">
-                            Postcode: <span className="font-semibold text-foreground">{postcode ?? "—"}</span>
-                          </span>
-                        </div>
+                          </div>
+                        )}
                       </div>
                     );
                   })()}
                   <p className="mt-2 text-[11px] text-muted-foreground">
-                    Enter your house number above, then pick a street suggestion to{" "}
+                    Start with your house number, then pick a street suggestion to{" "}
                     {manualAddress ? "replace your saved address" : "see restaurants"} within {DELIVERY_RADIUS_KM} km.
                   </p>
                   {confirmingCancel ? (
