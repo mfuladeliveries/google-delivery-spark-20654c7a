@@ -693,7 +693,7 @@ const Index = () => {
                       setManualUpdatedAt(Date.now());
                       setConfirmingCancel(false);
                     }}
-                    placeholder={manualAddress ? "Search a new street or suburb…" : "Start typing a suburb or street…"}
+                    placeholder={manualAddress ? "Search a new address, starting with your house number…" : "Start with your house number, e.g. 12A Oak Street…"}
                   />
                   {(() => {
                     const street = manualText.trim();
