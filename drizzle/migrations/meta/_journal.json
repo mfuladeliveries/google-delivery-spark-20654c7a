@@ -71,6 +71,13 @@
       "when": 1793950556305,
       "tag": "0009_strict_paid_order_cancellation",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1794175320653,
+      "tag": "0010_drop_legacy_check_area_coverage_overload",
+      "breakpoints": true
     }
   ]
 }

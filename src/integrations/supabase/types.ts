@@ -2249,12 +2249,10 @@ export type Database = {
         }
         Returns: number
       }
-      check_area_coverage:
-        | { Args: { p_lat: number; p_lng: number }; Returns: Json }
-        | {
-            Args: { p_address?: string; p_lat: number; p_lng: number }
-            Returns: Json
-          }
+      check_area_coverage: {
+        Args: { p_address?: string; p_lat: number; p_lng: number }
+        Returns: Json
+      }
       check_email_verified: { Args: { p_email: string }; Returns: Json }
       check_rate_limit: {
         Args: {
