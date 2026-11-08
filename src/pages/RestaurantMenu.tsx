@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
   ArrowLeft,
@@ -109,7 +109,12 @@ const RestaurantMenu = () => {
 
   // The branch serving the customer's selected delivery area. Its coordinates
   // drive distance gating, the delivery fee and the driver's pickup point.
-  const [branch, setBranch] = useState<RestaurantLocation | null>(null);
+  const [locations, setLocations] = useState<RestaurantLocation[] | null>(null);
+  const selectedAreaId = useRestaurantArea(geo.lat, geo.lng);
+  const branch = useMemo(() => restaurant
+    ? branchForArea(locations ?? [], restaurant.id, selectedAreaId,
+      geo.lat != null && geo.lng != null ? { lat: geo.lat, lng: geo.lng } : null)
+    : null, [locations, restaurant?.id, selectedAreaId, geo.lat, geo.lng]);
   const pickupCoords = restaurant && (branch || isCompanionStore(restaurant.name))
     ? branchCoords(restaurant, branch)
     : { lat: null as number | null, lng: null as number | null };
@@ -122,6 +127,7 @@ const RestaurantMenu = () => {
   const locationBlocked = !geo.ready || !geo.hasCoords;
   const outOfRange =
     !locationBlocked &&
+    locations !== null &&
     (!restaurantHasCoords || (distance != null && distance > DELIVERY_RADIUS_KM));
 
   // Driver-coverage check for the customer's current coords.
@@ -132,7 +138,7 @@ const RestaurantMenu = () => {
     address_tag: string | null;
   } | null>(null);
   useEffect(() => {
-    if (locationBlocked || outOfRange || geo.lat == null || geo.lng == null) {
+    if (locationBlocked || outOfRange || !restaurantHasCoords || geo.lat == null || geo.lng == null) {
       setCoverage(null);
       return;
     }
@@ -147,10 +153,10 @@ const RestaurantMenu = () => {
     return () => {
       cancelled = true;
     };
-  }, [geo.lat, geo.lng, locationBlocked, outOfRange]);
+  }, [geo.lat, geo.lng, locationBlocked, outOfRange, restaurantHasCoords]);
 
   const noDrivers = !!coverage && !coverage.covered;
-  const canOrder = !locationBlocked && !outOfRange && !noDrivers;
+  const canOrder = !locationBlocked && restaurantHasCoords && !outOfRange && !noDrivers;
   // Cart already holds another restaurant's items (the companion store is always allowed).
   const cartLockedElsewhere =
     !!cart.activeRestaurantName &&
@@ -224,30 +230,24 @@ const RestaurantMenu = () => {
     if (id) fetchData();
   }, [id, navigate]);
 
-  // Resolve which branch of this restaurant serves the customer's area.
-  // Re-runs whenever the selected area changes so coordinates, distance,
-  // fee and pickup point always match the area the customer is browsing.
-  const selectedAreaId = useRestaurantArea(geo.lat, geo.lng);
+  // Load locations separately from GPS updates. Branch selection above is
+  // synchronous, so a new GPS fix never temporarily removes a valid pickup.
   useEffect(() => {
-    if (!restaurant) return;
-    setBranch(null);
     let cancelled = false;
     (async () => {
       try {
         const { getCatalog } = await import("@/lib/catalog");
         const catalog = await getCatalog();
-        const locs = (catalog.restaurant_locations ?? []) as RestaurantLocation[];
         if (cancelled) return;
-        setBranch(branchForArea(locs, restaurant.id, selectedAreaId,
-          geo.lat != null && geo.lng != null ? { lat: geo.lat, lng: geo.lng } : null));
+        setLocations(catalog.restaurant_locations ?? []);
       } catch {
-        if (!cancelled) setBranch(null);
+        if (!cancelled) setLocations([]);
       }
     })();
     return () => {
       cancelled = true;
     };
-  }, [restaurant, selectedAreaId, geo.lat, geo.lng]);
+  }, [id]);
 
   // One-tap reorder: if a handoff was stashed from the Orders page,
   // pre-fill the cart once this restaurant's menu has loaded. Items not

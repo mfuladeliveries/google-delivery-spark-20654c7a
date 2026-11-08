@@ -1,4 +1,5 @@
 # Project rules
+- Derive menu branch and detected area synchronously from loaded catalog data; GPS updates must not clear a valid pickup while reloading the catalog, to prevent layout flicker without cross-area fallback.
 - Manage per-area restaurant coordinates through the existing branch editor and customer branch selection; do not duplicate brand listings for separate locations.
 - Apply strict branch-area matching to every restaurant; never fall back to another area's branch during menu or checkout, and resolve checkout from the actual delivery-address coordinates so browsing state cannot select the wrong pickup.
 - Use the shared cart pickup resolver for cart distance and fee previews, keyed by restaurant identity, area and customer coordinates; brand-level legacy pins must not select restaurant pickups.

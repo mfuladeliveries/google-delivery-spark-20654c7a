@@ -1,3 +1,6 @@
+# KFC page stability
+- [x] Stop GPS updates briefly clearing the KFC branch. Signed-in phone test reproduced repeated branch/warning changes before the fix and zero layout changes after it during the same six GPS updates; no runtime errors. All 28 area/pickup tests pass, including immediate area changes and no out-of-area fallback; preview build OK. No live data, orders or payments changed.
+
 # Paid order cancellation
 - [x] Add the exact warning immediately before payment and paid-order status; remove customer cancel after verified payment. Align refund policy and remove customer-issued wallet/bank refund controls.
 - [x] Apply approved live cancellation safeguards across both customer RPCs and order writes; preserve administrator exceptions and service payment workflows. Disable customer refund execution and prevent 12-hour automatic cancellation of paid orders. Live function/trigger/grant readback confirmed.
