@@ -1,3 +1,6 @@
+# KFC page stability
+- [ ] Stop GPS updates briefly clearing the KFC branch; verify the real signed-in customer menu stays stable during small location updates and still switches areas strictly.
+
 # Paid order cancellation
 - [x] Add the exact warning immediately before payment and paid-order status; remove customer cancel after verified payment. Align refund policy and remove customer-issued wallet/bank refund controls.
 - [x] Apply approved live cancellation safeguards across both customer RPCs and order writes; preserve administrator exceptions and service payment workflows. Disable customer refund execution and prevent 12-hour automatic cancellation of paid orders. Live function/trigger/grant readback confirmed.
