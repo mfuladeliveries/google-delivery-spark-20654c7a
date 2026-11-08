@@ -1,5 +1,5 @@
 # KFC page stability
-- [ ] Stop GPS updates briefly clearing the KFC branch; verify the real signed-in customer menu stays stable during small location updates and still switches areas strictly.
+- [x] Stop GPS updates briefly clearing the KFC branch. Signed-in phone test reproduced repeated branch/warning changes before the fix and zero layout changes after it during the same six GPS updates; no runtime errors. All 28 area/pickup tests pass, including immediate area changes and no out-of-area fallback; preview build OK. No live data, orders or payments changed.
 
 # Paid order cancellation
 - [x] Add the exact warning immediately before payment and paid-order status; remove customer cancel after verified payment. Align refund policy and remove customer-issued wallet/bank refund controls.
