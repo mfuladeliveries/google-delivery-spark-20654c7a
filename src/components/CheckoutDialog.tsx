@@ -22,6 +22,7 @@ import { CartItem, isCompanionStore } from "@/hooks/useCart";
 import { storeInfo } from "@/data/menu";
 import { generateDeliveryPin } from "@/lib/deliveryPin";
 import { addressHouseNumberError, mergeHouseNumber } from "@/lib/addressValidation";
+import { readHomeDeliveryAddress } from "@/lib/homeDeliveryAddress";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useCustomerCredits } from "@/hooks/useCustomerCredits";
@@ -129,7 +130,7 @@ const CheckoutDialog = ({
   const [contact, setContact] = useState("");
   const [address, setAddress] = useState("");
   const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
-  /** True only when address came from autocomplete suggestion OR map confirmation. */
+  /** Verified home selection, saved address, autocomplete or map confirmation. */
   const [addressVerified, setAddressVerified] = useState(false);
   const [showMapPicker, setShowMapPicker] = useState(false);
   const [notes, setNotes] = useState("");
@@ -194,9 +195,30 @@ const CheckoutDialog = ({
     }
   }, [open, initialFoodNote]);
 
-  // Auto-fill the customer's default saved address when the dialog opens.
+  // Snapshot the home-page delivery selection on each opening, never during edits.
+  const wasOpenRef = useRef(false);
+  useEffect(() => {
+    const justOpened = open && !wasOpenRef.current;
+    wasOpenRef.current = open;
+    if (!justOpened) return;
+    const homeAddress = readHomeDeliveryAddress();
+    if (!homeAddress) return;
+    setAddress(homeAddress.address);
+    setCoords({ lat: homeAddress.lat, lng: homeAddress.lng });
+    setAddressVerified(true);
+    setSelectedSavedId(null);
+    setSaveForNextTime(false);
+    setShowMapPicker(false);
+    setValidationErrors((prev) => {
+      const { address: _a, ...rest } = prev;
+      return rest;
+    });
+  }, [open]);
+
+  // The address book is only a fallback when no home-page address was selected.
   useEffect(() => {
     if (!open || !defaultAddress) return;
+    if (readHomeDeliveryAddress()) return;
     if (addressVerified || address.trim()) return;
     setSelectedSavedId(defaultAddress.id);
     setAddress(defaultAddress.address);
@@ -434,9 +456,7 @@ const CheckoutDialog = ({
   const creditsToApply = useWallet && walletBalance > 0 ? Math.min(walletBalance, discountedGrossTotal) : 0;
   const total = Math.max(0, discountedGrossTotal - creditsToApply);
 
-  // Load profile to prefill name + contact. We deliberately do NOT prefill the
-  // delivery address — it must always be re-selected from autocomplete or the
-  // map so the coords are guaranteed valid.
+  // Load profile for name + contact only; delivery uses the verified selection above.
   useEffect(() => {
     if (!user || profileLoaded) return;
     const loadProfile = async () => {

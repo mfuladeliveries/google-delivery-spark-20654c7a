@@ -1,4 +1,5 @@
 # KFC page stability
+- [ ] Use the customer's verified home-page address in checkout and verify the signed-in home-to-checkout handoff without placing an order.
 - [x] Stop GPS updates briefly clearing the KFC branch. Signed-in phone test reproduced repeated branch/warning changes before the fix and zero layout changes after it during the same six GPS updates; no runtime errors. All 28 area/pickup tests pass, including immediate area changes and no out-of-area fallback; preview build OK. No live data, orders or payments changed.
 
 # Paid order cancellation

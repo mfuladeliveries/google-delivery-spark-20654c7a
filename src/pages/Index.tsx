@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { isRestaurantOpen } from "@/lib/restaurantHours";
 import { addressHouseNumberError, mergeHouseNumber } from "@/lib/addressValidation";
+import { readHomeDeliveryAddress } from "@/lib/homeDeliveryAddress";
 import { supabase } from "@/integrations/supabase/client";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -110,19 +111,7 @@ const Index = () => {
 
   // Manual address override — when set, restaurants are filtered/sorted from
   // these coords instead of the live GPS / saved-address fallback.
-  const [manualAddress, setManualAddress] = useState<ValidatedAddress | null>(() => {
-    try {
-      // Session-only so a fresh app open / login always falls back to live GPS
-      // and auto-shows restaurants in the customer's current area.
-      const raw = sessionStorage.getItem("mfula-manual-area-v1");
-      if (!raw) return null;
-      const v = JSON.parse(raw);
-      if (typeof v?.lat === "number" && typeof v?.lng === "number" && typeof v?.address === "string") return v;
-    } catch {
-      /* ignore */
-    }
-    return null;
-  });
+  const [manualAddress, setManualAddress] = useState<ValidatedAddress | null>(readHomeDeliveryAddress);
   const [manualOpen, setManualOpen] = useState(false);
   const [manualText, setManualText] = useState("");
   const [manualUpdatedAt, setManualUpdatedAt] = useState<number | null>(null);
