@@ -78,6 +78,13 @@
       "when": 1794175320653,
       "tag": "0010_drop_legacy_check_area_coverage_overload",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1794235403095,
+      "tag": "0011_dispatch_waiting_orders_when_driver_online",
+      "breakpoints": true
     }
   ]
 }
