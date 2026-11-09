@@ -3171,7 +3171,10 @@ const OrdersTable = ({
                       </td>
                       <td className="px-3 py-2.5 text-xs whitespace-nowrap">
                         <div className="flex flex-col gap-1">
-                          {order.status === "no_driver_found" && onAssign && (
+                          {!order.driver_id &&
+                            ["pending", "confirmed", "preparing", "ready", "no_driver_found"].includes(order.status) &&
+                            !["pending_payment", "failed"].includes(order.payment_status || "") &&
+                            onAssign && (
                             <button
                               onClick={() => onAssign(order)}
                               className="rounded-md border border-primary/40 bg-primary/10 px-2 py-1 text-[10px] font-bold text-primary hover:bg-primary/20"
