@@ -228,18 +228,7 @@ const DriverDashboard = () => {
 
     startNotificationSound(activeOffer.id);
 
-    // One-shot OS notification when the tab is hidden
-    if (document.hidden && "Notification" in window && Notification.permission === "granted") {
-      try {
-        new Notification("🚗 New delivery waiting!", {
-          body: `Order #${activeOffer.order_number} from ${activeOffer.restaurant} — R${activeOffer.delivery_fee} delivery fee`,
-          icon: "/pwa-driver-192.png",
-          tag: `offer-${activeOffer.id}`,
-        } as NotificationOptions);
-      } catch {
-        /* ignore */
-      }
-    }
+    // OS alerts come exclusively from Web Push; keep only the in-app ringtone here.
   }, [activeOffer?.id]); // ONLY re-run when a new offer arrives — not on state changes
 
   // Stop the ringtone if the modal closes, the tab is hidden, the driver goes offline,

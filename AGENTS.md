@@ -1,4 +1,5 @@
 # Project rules
+- Reserve one-shot order pushes through the existing unique order/recipient/action log before delivery, derive recipients from saved orders, and keep background alerts exclusive to Web Push to prevent concurrent and cross-channel duplicates.
 - Read the same session-scoped verified home address for home display and checkout initialization; snapshot it once per checkout opening so address-book loads cannot overwrite the chosen delivery coordinates or subsequent checkout edits.
 - Derive menu branch and detected area synchronously from loaded catalog data; GPS updates must not clear a valid pickup while reloading the catalog, to prevent layout flicker without cross-area fallback.
 - Manage per-area restaurant coordinates through the existing branch editor and customer branch selection; do not duplicate brand listings for separate locations.

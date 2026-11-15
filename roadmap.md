@@ -1,3 +1,8 @@
+# Order action notifications
+- [x] Add saved-order assignment recipients and cancellation alerts; reserve each recipient/action before push and avoid duplicate background browser alerts.
+- [ ] Run focused duplicate/concurrency tests and deploy approved notification changes.
+- [ ] Verify real phone receipt for assignment, departure and cancellation — needs authorized test orders and notification-enabled recipient phones.
+
 # KFC page stability
 - [x] Use the customer's verified home-page address and coordinates on checkout opening, ahead of address-book defaults; preserve checkout edits. Forty focused tests pass; preview build OK. Signed-in phone address selection and KFC Delft navigation verified without orders or payments.
 - [ ] Verify the complete live home-to-checkout flow — blocked by no online Delft drivers, which correctly disables adding food; checkout initialization, address priority and reopening covered by automated tests.
