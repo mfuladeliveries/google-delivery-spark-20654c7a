@@ -1031,7 +1031,7 @@ const CheckoutDialog = ({
               hasValidSelection={addressVerified}
               onSelect={handleAddressSelect}
               onTextChange={handleAddressTextChange}
-              placeholder='Start with your house number, e.g. "12A Oak Street, Mfuleni"'
+              placeholder='e.g. "12A Oak Street" or a school, shop or hospital name'
             />
             {address.trim() && (
               <div className="mt-2 rounded-xl border border-primary/30 bg-primary/5 px-3 py-2">

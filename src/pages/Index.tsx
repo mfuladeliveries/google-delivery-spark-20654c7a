@@ -681,7 +681,7 @@ const Index = () => {
                       setManualUpdatedAt(Date.now());
                       setConfirmingCancel(false);
                     }}
-                    placeholder={manualAddress ? "Search a new address, starting with your house number…" : "Start with your house number, e.g. 12A Oak Street…"}
+                    placeholder={manualAddress ? "Search a new address…" : "House number (if any) and street, or a place name…"}
                   />
                   {(() => {
                     const street = manualText.trim();
@@ -710,7 +710,7 @@ const Index = () => {
                     );
                   })()}
                   <p className="mt-2 text-[11px] text-muted-foreground">
-                    Start with your house number, then pick a street suggestion to{" "}
+                    Add your house number if you have one (not needed for schools, shops, hospitals etc.), then pick a street suggestion to{" "}
                     {manualAddress ? "replace your saved address" : "see restaurants"} within {DELIVERY_RADIUS_KM} km.
                   </p>
                   {confirmingCancel ? (

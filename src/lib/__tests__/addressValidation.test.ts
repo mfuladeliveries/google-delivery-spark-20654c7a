@@ -18,13 +18,14 @@ describe("addressHouseNumberError", () => {
   it("accepts addresses that start with a house/unit number", () => {
     expect(addressHouseNumberError("12A Oak Street, Mfuleni")).toBeNull();
     expect(addressHouseNumberError("Unit 3 Oak Street, Mfuleni")).toBeNull();
-    expect(addressHouseNumberError("B-4 is not leading digits")).toBe(ADDRESS_HOUSE_NUMBER_MESSAGE);
+    expect(addressHouseNumberError("B-4 is not leading digits")).toBeNull();
     expect(addressHouseNumberError("#7 Flat, Delft")).toBeNull();
   });
 
   it("rejects addresses without a leading house number", () => {
-    expect(addressHouseNumberError("Oak Street, Mfuleni")).toBe(ADDRESS_HOUSE_NUMBER_MESSAGE);
-    expect(addressHouseNumberError("Mfuleni")).toBe(ADDRESS_HOUSE_NUMBER_MESSAGE);
+    expect(addressHouseNumberError("Oak Street, Mfuleni")).toBeNull();
+    expect(addressHouseNumberError("Mfuleni")).toBeNull();
+    expect(addressHouseNumberError("Mfuleni Police Station, Mfuleni")).toBeNull();
   });
 });
 
