@@ -1,6 +1,6 @@
 # Order action notifications
 - [x] Add saved-order assignment recipients and cancellation alerts; reserve each recipient/action before push and avoid duplicate background browser alerts.
-- [ ] Run focused duplicate/concurrency tests and deploy approved notification changes.
+- [x] All 18 focused notification/order-action tests passed, preview build OK, push-notify deployed successfully, and approved publishing requested for mfuladeliveries.online (completion not yet verified).
 - [ ] Verify real phone receipt for assignment, departure and cancellation — needs authorized test orders and notification-enabled recipient phones.
 
 # KFC page stability
