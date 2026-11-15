@@ -72,8 +72,8 @@ const checkoutSchema = z.object({
     .max(300, "Address must be less than 300 characters")
     .regex(/[A-Za-z]/, 'Address needs a street or suburb name, e.g. "12 Oak Street, Khayelitsha".')
     .regex(
-      /^[A-Za-z0-9\s,.\-/#'’()]+$/,
-      'Address has invalid characters. Use letters, numbers, and , . - / # only (e.g. "12A Oak St, Mfuleni").',
+      /^[\p{L}\p{N}\s,.\-/#'’()&:+@]+$/u,
+      'Address has characters we cannot use. Please keep to letters, numbers and common punctuation (e.g. "12A Oak St, Mfuleni").',
     ),
   notes: z.string().max(500, "Notes must be less than 500 characters").optional(),
   deliveryInstructions: z
