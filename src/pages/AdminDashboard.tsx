@@ -374,6 +374,7 @@ const AdminDashboard = () => {
       return;
     }
     toast.success(`Order #${cancelTarget.orderNumber} cancelled`);
+    sendPushNotification({ order_id: cancelTarget.id, order_number: cancelTarget.orderNumber, status: "cancelled" });
     setCancelTarget(null);
     fetchStats();
   };

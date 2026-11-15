@@ -229,7 +229,7 @@ const DriverDashboard = () => {
     startNotificationSound(activeOffer.id);
 
     // One-shot OS notification when the tab is hidden
-    if (document.hidden && "Notification" in window && Notification.permission === "granted") {
+    if (!document.hidden && "Notification" in window && Notification.permission === "granted") {
       try {
         new Notification("🚗 New delivery waiting!", {
           body: `Order #${activeOffer.order_number} from ${activeOffer.restaurant} — R${activeOffer.delivery_fee} delivery fee`,

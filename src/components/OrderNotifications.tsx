@@ -16,6 +16,7 @@ const statusLabels: Record<string, string> = {
   preparing: "Being Prepared",
   ready: "Ready for Pickup",
   driver_assigned: "Driver Assigned",
+  picking_up: "Driver is on the way to the restaurant",
   out_for_delivery: "Out for Delivery",
   delivered: "Delivered",
   cancelled: "Order Cancelled",
@@ -107,7 +108,7 @@ const OrderNotifications = () => {
     // Customer notifications: order status updates
     if (role === "customer" || !role) {
       const ch = supabase
-        .channel("customer-notifications")
+        .channel(`customer-notifications-${user.id}-${Math.random().toString(36).slice(2)}`)
         .on(
           "postgres_changes",
           {
@@ -134,7 +135,11 @@ const OrderNotifications = () => {
             if (payload.old?.status === newStatus) return;
 
             // Deduplication: only show cancellation and out_for_delivery once per order
-            const dedupeKey = `${orderId}-${newStatus}`;
+            const dedupeKey = `${user.id}-${orderId}-${newStatus === "rejected" ? "cancelled" : newStatus}`;
+            const oneShot = ["driver_assigned", "picking_up", "out_for_delivery", "cancelled", "rejected"].includes(newStatus);
+            if (oneShot && (shownNotifications.has(dedupeKey) || localStorage.getItem(`order-alert-${dedupeKey}`))) return;
+            // Background alerts come only from Web Push, not a second browser notification.
+            if (oneShot && document.hidden) return;
             if (
               (newStatus === "cancelled" ||
                 newStatus === "rejected" ||
@@ -152,6 +157,10 @@ const OrderNotifications = () => {
             const emoji = statusEmojis[newStatus] || "📋";
             const label = statusLabels[newStatus] || newStatus;
             const title = `${emoji} Order #${orderNumber}`;
+            if (oneShot) {
+              shownNotifications.add(dedupeKey);
+              localStorage.setItem(`order-alert-${dedupeKey}`, "1");
+            }
 
             if (newStatus === "delivered") toast.success(title, { description: label });
             else if (newStatus === "cancelled" || newStatus === "rejected")
@@ -167,7 +176,7 @@ const OrderNotifications = () => {
               shownNotifications.add(dedupeKey);
             }
 
-            if (document.hidden) sendBrowserNotification(title, label);
+            if (document.hidden && !oneShot) sendBrowserNotification(title, label);
           },
         )
         .subscribe();

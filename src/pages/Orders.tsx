@@ -38,6 +38,7 @@ import { stashReorder } from "@/lib/reorder";
 import { OrderChat } from "@/components/OrderChat";
 import { distanceKm } from "@/lib/serviceArea";
 import { canCustomerCancelOrder, PAID_ORDER_STATUS } from "@/lib/orderCancellation";
+import { sendPushNotification } from "@/lib/pushNotify";
 import { Button } from "@/components/ui/button";
 
 interface OrderItem {
@@ -270,6 +271,7 @@ const Orders = () => {
       return;
     }
     toast.success("Order cancelled");
+    sendPushNotification({ order_id: orderId, order_number: orderNumber, status: "cancelled" });
   };
 
   useEffect(() => {

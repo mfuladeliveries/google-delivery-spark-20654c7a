@@ -2,6 +2,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import webpush from "npm:web-push@3.6.7";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { z } from "npm:zod@3";
+import { orderActionKind, deliverOrderActionOnce } from "./orderActions.ts";
 
 const statusLabels: Record<string, string> = {
   pending: "Order Placed",
@@ -97,6 +98,25 @@ Deno.serve(async (req) => {
     webpush.setVapidDetails("mailto:noreply@mfula.app", publicKey, privateKey);
 
     const event = await req.json();
+    const actionKind = orderActionKind(event.status);
+    if (actionKind) {
+      const parsed = z.object({ order_id: z.string().uuid(), status: z.string() }).safeParse(event);
+      if (!parsed.success) return new Response(JSON.stringify({ error: "Invalid order notification" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      const { data: order, error } = await supabase.from("orders")
+        .select("id,order_number,status,restaurant,total,user_id,driver_id,restaurant_id,offered_to_driver_id,dispatch_phase,cancel_reason")
+        .eq("id", parsed.data.order_id).maybeSingle();
+      if (error || !order) return new Response(JSON.stringify({ error: "Order not found" }), { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      const valid = event.status === "offer_pending"
+        ? order.offered_to_driver_id === event.target_user_id && ["offer_a", "offer_b"].includes(order.dispatch_phase ?? "")
+        : event.status === "dispatch_broadcast"
+          ? ["broadcast", "waiting"].includes(order.dispatch_phase ?? "")
+          : order.status === event.status;
+      if (!valid) return new Response(JSON.stringify({ sent: 0, stale: true }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      // Recipient and order details always come from the saved order, not the caller.
+      Object.assign(event, { order_number: order.order_number, restaurant: order.restaurant, total: order.total,
+        user_id: order.user_id, driver_id: order.driver_id, restaurant_id: order.restaurant_id });
+      if (event.status === "cancelled") event.reason = order.cancel_reason;
+    }
     if (event.status === "payment_received") {
       if (!isServiceRole) return new Response(JSON.stringify({ error: "Only the payment service can announce payment" }), { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       const parsed = z.object({ order_id: z.string().uuid(), status: z.literal("payment_received"), payment_lease: z.string().uuid() }).safeParse(event);
@@ -248,6 +268,13 @@ Deno.serve(async (req) => {
 
     const targetUserIds: string[] = [];
 
+    if (status === "driver_assigned" && driver_id) targetUserIds.push(driver_id);
+    if ((status === "cancelled" || status === "rejected") && restaurant_id) {
+      if (driver_id) targetUserIds.push(driver_id);
+      const { data: owner } = await supabase.from("restaurants").select("owner_user_id").eq("id", restaurant_id).maybeSingle();
+      if (owner?.owner_user_id) targetUserIds.push(owner.owner_user_id);
+    }
+
     // Dispatch: targeted push to a specific driver
     if ((isOfferPending || isOfferMissed) && target_user_id) {
       targetUserIds.push(target_user_id);
@@ -374,14 +401,14 @@ Deno.serve(async (req) => {
       title: isBankRefundPaid
         ? `💸 Refund sent for #${order_number}`
         : isRefundChoice
-          ? `💰 Choose your refund for #${order_number}`
+          ? `❌ Order #${order_number} Cancelled`
           : isDriverCancelUnavailable || isCancelWithReason
             ? `❌ Order #${order_number} Cancelled`
             : `${emoji} Order #${order_number}`,
       body: isBankRefundPaid
         ? `Your refund${refund_amount ? ` of R${Number(refund_amount).toFixed(2)}` : ""} has been sent. It may take 3–5 business days to reflect in your bank account.`
         : isRefundChoice
-          ? `Your order was cancelled.${reasonSuffix} Tap to choose: instant wallet credit (R${Number(refundChoiceAmount).toFixed(2)}) or bank refund in 3–5 days.`
+          ? `Your order was cancelled.${reasonSuffix} Mfula administration will review your refund of R${Number(refundChoiceAmount).toFixed(2)}.`
           : isDriverCancelUnavailable
             ? `Sorry, your order was cancelled because the item is not available at ${restaurant || "the restaurant"}. You won't be charged.`
             : isCancelWithReason
@@ -389,7 +416,8 @@ Deno.serve(async (req) => {
               : label,
       icon: "/notification-logo.png",
       badge: "/favicon.ico",
-      data: { url: "/orders", order_number },
+      tag: `order-${order_id}-${status}`,
+      data: { url: "/orders", order_number, kind: status },
     });
 
     const driverBroadcastPayload = JSON.stringify({
@@ -531,12 +559,17 @@ Deno.serve(async (req) => {
       customerUserId = ord?.user_id || null;
     }
 
+    const claimedRecipients = new Map<string, boolean>();
     for (const sub of subs) {
       try {
         let payload = customerPayload;
         let isCustomerOneShot = false;
 
-        if (isOfferPending && sub.user_id === target_user_id) {
+        if (status === "driver_assigned" && sub.user_id === driver_id) {
+          payload = JSON.stringify({ title: `New order assigned — #${order_number}`, body: `Collect the order from ${restaurant}.`, icon: "/notification-logo.png", badge: "/favicon.ico", tag: `order-${order_id}-${status}`, data: { url: "/driver", order_number, kind: status } });
+        } else if ((status === "cancelled" || status === "rejected") && sub.user_id !== user_id) {
+          payload = JSON.stringify({ title: `Order #${order_number} cancelled`, body: `The order from ${restaurant} has been cancelled.${reasonSuffix}`, icon: "/notification-logo.png", badge: "/favicon.ico", tag: `order-${order_id}-cancelled`, data: { url: sub.user_id === driver_id ? "/driver" : "/restaurant/dashboard", order_number, kind: "cancelled" } });
+        } else if (isOfferPending && sub.user_id === target_user_id) {
           payload = offerPendingPayload;
         } else if (isOfferMissed && sub.user_id === target_user_id) {
           payload = offerMissedPayload;
@@ -566,7 +599,7 @@ Deno.serve(async (req) => {
 
 
         // Skip duplicate one-shot customer notifications
-        if (isCustomerOneShot) {
+        if (isCustomerOneShot && !actionKind) {
           const { error: insertErr } = await supabase
             .from("order_notification_log")
             .insert({
@@ -580,14 +613,25 @@ Deno.serve(async (req) => {
           }
         }
 
-        await webpush.sendNotification(
+        const deliver = async () => { await webpush.sendNotification(
           {
             endpoint: sub.endpoint,
             keys: { p256dh: sub.p256dh, auth: sub.auth },
           },
           payload
-        );
-        sent++;
+        ); sent++; };
+        if (actionKind) {
+          await deliverOrderActionOnce(async () => {
+            // One reservation covers all devices belonging to this recipient.
+            if (claimedRecipients.has(sub.user_id)) return claimedRecipients.get(sub.user_id) === true;
+            const { error } = await supabase.from("order_notification_log").insert({ order_id, user_id: sub.user_id, notification_kind: actionKind });
+            claimedRecipients.set(sub.user_id, !error);
+            if (error && error.code !== "23505") throw new Error("Could not reserve order notification");
+            return !error;
+          }, deliver);
+        } else {
+          await deliver();
+        }
       } catch (err: any) {
         if (err.statusCode === 410 || err.statusCode === 404) {
           expired.push(sub.id);
