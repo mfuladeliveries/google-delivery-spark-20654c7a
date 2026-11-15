@@ -27,7 +27,8 @@ export function leadingHouseNumber(address: string | null | undefined): string |
 export function addressHouseNumberError(address: string | null | undefined): string | null {
   const trimmed = (address ?? "").trim();
   if (!trimmed) return ADDRESS_REQUIRED_MESSAGE;
-  if (!leadingHouseNumber(trimmed)) return ADDRESS_HOUSE_NUMBER_MESSAGE;
+  // House numbers are optional: buildings, schools, hospitals, police
+  // stations and shops often have none.
   return null;
 }
 
