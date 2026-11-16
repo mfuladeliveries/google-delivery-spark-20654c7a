@@ -1,4 +1,4 @@
-import { useState, Component, ReactNode, lazy, Suspense } from "react";
+import { useState, useRef, Component, ReactNode, lazy, Suspense } from "react";
 import {
   Navigation,
   Phone,
@@ -11,6 +11,7 @@ import {
   XCircle,
   Store,
   Bike,
+  BellRing,
 } from "lucide-react";
 import DeliveryVerification from "@/components/DeliveryVerification";
 import {
@@ -48,6 +49,7 @@ import { sendPushNotification } from "@/lib/pushNotify";
 import { driverPayoutForFee } from "@/lib/serviceArea";
 import { OrderChat } from "@/components/OrderChat";
 import { useAuth } from "@/hooks/useAuth";
+import { Button } from "@/components/ui/button";
 
 interface Order {
   id: string;
@@ -119,6 +121,29 @@ const DriverActiveDelivery = ({
   const [cancelOrderId, setCancelOrderId] = useState<string | null>(null);
   const [cancelling, setCancelling] = useState(false);
   const { user } = useAuth();
+  const arrivalInFlight = useRef(new Set<string>());
+  const [announcedArrivals, setAnnouncedArrivals] = useState(new Set<string>());
+  const [announcingArrival, setAnnouncingArrival] = useState<string | null>(null);
+
+  const handleCustomerArrival = async (orderId: string) => {
+    if (arrivalInFlight.current.has(orderId) || announcedArrivals.has(orderId)) return;
+    arrivalInFlight.current.add(orderId);
+    setAnnouncingArrival(orderId);
+    try {
+      const { data, error } = await supabase.functions.invoke("push-notify", {
+        body: { order_id: orderId, status: "customer_arrived" },
+      });
+      if (error || data?.error || data?.stale) throw new Error("Arrival alert could not be sent");
+      setAnnouncedArrivals((previous) => new Set([...previous, orderId]));
+      if (data?.sent > 0) toast.success("Customer arrival alert sent");
+      else toast.info("Arrival alert already sent or customer notifications are unavailable. Call the customer if needed.");
+    } catch {
+      toast.error("Could not send the arrival alert. Please try again or call the customer.");
+    } finally {
+      arrivalInFlight.current.delete(orderId);
+      setAnnouncingArrival(null);
+    }
+  };
 
   const handleCancelUnavailable = async () => {
     if (!cancelOrderId) return;
@@ -270,7 +295,17 @@ const DriverActiveDelivery = ({
               {/* PIN entry — shown FIRST when out for delivery so the driver
                   never has to scroll past chat/items to complete the trip. */}
               {order.status === "out_for_delivery" && (
-                <DeliveryVerification orderId={order.id} onVerified={onDeliveryComplete} />
+                <>
+                  <Button
+                    className="w-full min-h-12 gap-2"
+                    onClick={() => void handleCustomerArrival(order.id)}
+                    disabled={announcingArrival === order.id || announcedArrivals.has(order.id)}
+                  >
+                    <BellRing className="h-5 w-5" />
+                    {announcingArrival === order.id ? "Sending…" : announcedArrivals.has(order.id) ? "Arrival alert sent" : "I'm outside — notify customer"}
+                  </Button>
+                  <DeliveryVerification orderId={order.id} onVerified={onDeliveryComplete} />
+                </>
               )}
 
               {/* Live chat with customer */}

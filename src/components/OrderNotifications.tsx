@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { useLocation, useNavigate } from "react-router-dom";
 import { canPayOrder } from "@/lib/approvalPayment";
 import { savePendingPaymentOrder } from "@/lib/pendingPaymentOrder";
+import { prepareCustomerArrivalSound, playCustomerArrivalSound, stopCustomerArrivalSound } from "@/lib/customerArrivalSound";
 
 const statusLabels: Record<string, string> = {
   awaiting_restaurant: "Waiting for Approval",
@@ -66,6 +67,38 @@ const OrderNotifications = () => {
 
   // Subscribe to Web Push notifications for background alerts
   usePushNotifications();
+
+  useEffect(() => {
+    if (!user || loading || (role && role !== "customer")) return;
+    const prepare = () => prepareCustomerArrivalSound();
+    const onPush = (event: MessageEvent) => {
+      const alert = event.data;
+      if (alert?.type !== "customer-arrival" || alert.recipient_user_id !== user.id || document.hidden || !alert.order_id) return;
+      const key = `order-alert-${user.id}-${alert.order_id}-customer_arrived`;
+      if (shownNotifications.has(key)) return;
+      try { if (localStorage.getItem(key)) return; localStorage.setItem(key, "1"); } catch { /* use in-memory dedupe */ }
+      shownNotifications.add(key);
+      playCustomerArrivalSound();
+      toast.info(`Driver is outside — Order #${alert.order_number}`, {
+        description: "Your driver has arrived. Please have your delivery PIN ready.",
+        duration: 15000,
+        action: { label: "View order", onClick: () => { stopCustomerArrivalSound(); navigate("/orders"); } },
+        onDismiss: stopCustomerArrivalSound,
+      });
+    };
+    const onHidden = () => { if (document.hidden) stopCustomerArrivalSound(); };
+    window.addEventListener("pointerdown", prepare, { once: true });
+    window.addEventListener("keydown", prepare, { once: true });
+    navigator.serviceWorker?.addEventListener("message", onPush);
+    document.addEventListener("visibilitychange", onHidden);
+    return () => {
+      window.removeEventListener("pointerdown", prepare);
+      window.removeEventListener("keydown", prepare);
+      navigator.serviceWorker?.removeEventListener("message", onPush);
+      document.removeEventListener("visibilitychange", onHidden);
+      stopCustomerArrivalSound();
+    };
+  }, [user?.id, role, loading, navigate]);
 
   useEffect(() => {
     if (!user || loading) return;

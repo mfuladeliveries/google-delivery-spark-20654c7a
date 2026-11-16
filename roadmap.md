@@ -1,7 +1,8 @@
 # Order action notifications
+- [x] Add a once-only customer arrival alert and driver “I'm outside” button without changing PIN delivery; 22 focused tests pass, preview build OK, signed-in simulated customer arrival shows one alert/one playback call, push-notify deployed and publishing requested. Real driver-to-phone receipt and audible playback remain unverified.
 - [x] Add saved-order assignment recipients and cancellation alerts; reserve each recipient/action before push and avoid duplicate background browser alerts.
 - [x] All 18 focused notification/order-action tests passed, preview build OK, push-notify deployed successfully, and approved publishing requested for mfuladeliveries.online (completion not yet verified).
-- [ ] Verify real phone receipt for assignment, departure and cancellation — needs authorized test orders and notification-enabled recipient phones.
+- [ ] Verify real phone receipt and arrival ringing for assignment, departure, arrival and cancellation — needs authorized test orders and notification-enabled recipient phones; closed-app sound follows phone settings.
 
 # KFC page stability
 - [x] Use the customer's verified home-page address and coordinates on checkout opening, ahead of address-book defaults; preserve checkout edits. Forty focused tests pass; preview build OK. Signed-in phone address selection and KFC Delft navigation verified without orders or payments.
