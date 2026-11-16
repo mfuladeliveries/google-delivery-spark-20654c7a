@@ -1,4 +1,5 @@
 # Order action notifications
+- [ ] Add a once-only customer arrival alert and driver “I'm outside” button; ring in the open app and enable phone notification sound, then activate live and verify available checks.
 - [x] Add saved-order assignment recipients and cancellation alerts; reserve each recipient/action before push and avoid duplicate background browser alerts.
 - [x] All 18 focused notification/order-action tests passed, preview build OK, push-notify deployed successfully, and approved publishing requested for mfuladeliveries.online (completion not yet verified).
 - [ ] Verify real phone receipt for assignment, departure and cancellation — needs authorized test orders and notification-enabled recipient phones.

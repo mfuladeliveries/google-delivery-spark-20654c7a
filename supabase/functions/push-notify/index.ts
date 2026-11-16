@@ -2,7 +2,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import webpush from "npm:web-push@3.6.7";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { z } from "npm:zod@3";
-import { orderActionKind, deliverOrderActionOnce } from "./orderActions.ts";
+import { orderActionKind, deliverOrderActionOnce, canAnnounceCustomerArrival } from "./orderActions.ts";
 
 const statusLabels: Record<string, string> = {
   pending: "Order Placed",
@@ -13,6 +13,7 @@ const statusLabels: Record<string, string> = {
   picking_up: "Driver is heading to the restaurant",
   arrived_at_restaurant: "Driver has arrived at the restaurant",
   out_for_delivery: "Your food is on the way",
+  customer_arrived: "Your driver has arrived and is outside. Please collect your order and have your delivery PIN ready.",
   delivered: "Your order has arrived",
   cancelled: "Order Cancelled",
   rejected: "Order Rejected",
@@ -27,6 +28,7 @@ const statusEmojis: Record<string, string> = {
   picking_up: "🚗",
   arrived_at_restaurant: "🏪",
   out_for_delivery: "🍔",
+  customer_arrived: "🔔",
   delivered: "🎉",
   cancelled: "❌",
   rejected: "🚫",
@@ -106,7 +108,12 @@ Deno.serve(async (req) => {
         .select("id,order_number,status,restaurant,total,user_id,driver_id,restaurant_id,offered_to_driver_id,dispatch_phase,cancel_reason")
         .eq("id", parsed.data.order_id).maybeSingle();
       if (error || !order) return new Response(JSON.stringify({ error: "Order not found" }), { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-      const valid = event.status === "offer_pending"
+      if (event.status === "customer_arrived" && !canAnnounceCustomerArrival(order, callerUserId, isServiceRole)) {
+        return new Response(JSON.stringify({ error: "Only the assigned driver can announce arrival while delivering" }), { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+      const valid = event.status === "customer_arrived"
+        ? order.status === "out_for_delivery"
+        : event.status === "offer_pending"
         ? order.offered_to_driver_id === event.target_user_id && ["offer_a", "offer_b"].includes(order.dispatch_phase ?? "")
         : event.status === "dispatch_broadcast"
           ? ["broadcast", "waiting"].includes(order.dispatch_phase ?? "")
@@ -314,6 +321,7 @@ Deno.serve(async (req) => {
         "picking_up",
         "arrived_at_restaurant",
         "out_for_delivery",
+        "customer_arrived",
         "delivered",
         "cancelled",
         "rejected",
@@ -398,7 +406,9 @@ Deno.serve(async (req) => {
 
     // Build payloads per audience
     const customerPayload = JSON.stringify({
-      title: isBankRefundPaid
+      title: status === "customer_arrived"
+        ? `🔔 Driver is outside — Order #${order_number}`
+        : isBankRefundPaid
         ? `💸 Refund sent for #${order_number}`
         : isRefundChoice
           ? `❌ Order #${order_number} Cancelled`
@@ -417,7 +427,7 @@ Deno.serve(async (req) => {
       icon: "/notification-logo.png",
       badge: "/favicon.ico",
       tag: `order-${order_id}-${status}`,
-      data: { url: "/orders", order_number, kind: status },
+      data: { url: "/orders", order_id, order_number, kind: status, recipient_user_id: user_id },
     });
 
     const driverBroadcastPayload = JSON.stringify({
