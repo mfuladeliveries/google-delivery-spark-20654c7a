@@ -12,6 +12,7 @@ self.addEventListener("push", (event) => {
   try {
     const data = event.data.json();
     const { title, body, icon, badge, data: notifData } = data;
+    const isCustomerArrival = notifData?.kind === "customer_arrived";
 
     // Driver-bound pushes (new offers, broadcasts) get the louder pattern.
     const url = notifData?.url || "";
@@ -23,17 +24,25 @@ self.addEventListener("push", (event) => {
       (typeof title === "string" && /delivery|order offer/i.test(title));
 
     event.waitUntil(
-      self.registration.showNotification(title || "Mfula Deliveries", {
+      (async () => {
+      const clients = isCustomerArrival
+        ? await self.clients.matchAll({ type: "window", includeUncontrolled: true })
+        : [];
+      const visibleClients = clients.filter((client) => client.visibilityState === "visible");
+      for (const client of visibleClients) client.postMessage({ type: "customer-arrival", ...notifData });
+      return self.registration.showNotification(title || "Mfula Deliveries", {
         body: body || "",
         icon: icon || "/notification-logo.png",
         badge: badge || "/favicon.ico",
         vibrate: isDriverAlert ? DRIVER_ALERT_VIBRATION : DEFAULT_VIBRATION,
-        tag: `order-${notifData?.order_number || "general"}`,
+        tag: isCustomerArrival ? data.tag || `arrival-${notifData?.order_id}` : `order-${notifData?.order_number || "general"}`,
         renotify: false,
         requireInteraction: true,
-        silent: true,
+        // Custom ringing is possible in an open app; closed-app sound is controlled by the phone.
+        silent: isCustomerArrival ? visibleClients.length > 0 : true,
         data: notifData,
-      })
+      });
+      })()
     );
   } catch {
     // Fallback for non-JSON payloads
