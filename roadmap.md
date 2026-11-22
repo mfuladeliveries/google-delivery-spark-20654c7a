@@ -1,3 +1,7 @@
+# Hidden-screen refreshes
+- [ ] Pause order, payment and dashboard polling while hidden; refresh on return without duplicate timers; preserve background push, driver GPS and order workflows.
+- [ ] Run focused lifecycle tests and check preview behavior; live role flows require a reachable backend and authorized role sessions.
+
 # Order action notifications
 - [x] Add a once-only customer arrival alert and driver “I'm outside” button without changing PIN delivery; 22 focused tests pass, preview build OK, signed-in simulated customer arrival shows one alert/one playback call, push-notify deployed and publishing requested. Real driver-to-phone receipt and audible playback remain unverified.
 - [x] Add saved-order assignment recipients and cancellation alerts; reserve each recipient/action before push and avoid duplicate background browser alerts.

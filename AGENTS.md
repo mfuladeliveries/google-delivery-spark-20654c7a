@@ -1,4 +1,5 @@
 # Project rules
+- Use shared visibility-aware refresh scheduling for screen polling and lifecycle gating for conditional payment checks; resume on return without overlapping timers while preserving background push and driver GPS.
 - Treat customer arrival as a deduplicated assigned-driver alert while out_for_delivery, not a new fulfilment status; preserve PIN handover and use the messaging worker for foreground ringing and platform-controlled background sound.
 - Reserve one-shot order pushes through the existing unique order/recipient/action log before delivery, derive recipients from saved orders, and keep background alerts exclusive to Web Push to prevent concurrent and cross-channel duplicates.
 - Read the same session-scoped verified home address for home display and checkout initialization; snapshot it once per checkout opening so address-book loads cannot overwrite the chosen delivery coordinates or subsequent checkout edits.
